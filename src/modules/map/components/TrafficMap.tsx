@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { View, Alert, LogBox } from 'react-native';
+import * as Location from 'expo-location';
 import GebetaMap, { GebetaMapRef } from '@gebeta/tiles-react-native';
 import { Input } from '../../../shared/components';
 import { ReportBottomSheet } from './ReportBottomSheet';
@@ -7,6 +8,7 @@ import { ReportBottomSheet } from './ReportBottomSheet';
 export default function TrafficMap() {
     const mapRef = useRef<GebetaMapRef>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
     useEffect(() => {
         // suppress MapLibre sprite loading warnings
@@ -14,7 +16,26 @@ export default function TrafficMap() {
             'MapLibre error',
             'Failed to load sprite',
         ]);
+
+        getUserLocation();
     }, []);
+
+    const getUserLocation = async () => {
+        try {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status === 'granted') {
+                const location = await Location.getCurrentPositionAsync({
+                    accuracy: Location.Accuracy.High,
+                });
+                setUserLocation({
+                    lat: location.coords.latitude,
+                    lng: location.coords.longitude,
+                });
+            }
+        } catch (error) {
+            console.log('Error getting location:', error);
+        }
+    };
 
     const handleMapClick = (lngLat: [number, number]) => {
         Alert.alert(
@@ -59,7 +80,7 @@ export default function TrafficMap() {
                 </View>
             </View>
 
-            <ReportBottomSheet />
+            <ReportBottomSheet userLocation={userLocation} />
         </View>
     );
 }
