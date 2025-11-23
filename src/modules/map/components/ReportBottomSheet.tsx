@@ -26,7 +26,7 @@ export const ReportBottomSheet: React.FC = () => {
             {!showReportOptions ? (
                 <View>
                     <Button
-                        title="Tell what you see"
+                        title="Share what you see"
                         icon="+"
                         onPress={() => setShowReportOptions(true)}
                     />
