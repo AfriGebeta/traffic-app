@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { View, Alert } from 'react-native';
+import React, { useRef, useState, useEffect } from 'react';
+import { View, Alert, LogBox } from 'react-native';
 import GebetaMap, { GebetaMapRef } from '@gebeta/tiles-react-native';
 import { Input } from '../../../shared/components';
 import { ReportBottomSheet } from './ReportBottomSheet';
@@ -7,6 +7,14 @@ import { ReportBottomSheet } from './ReportBottomSheet';
 export default function TrafficMap() {
     const mapRef = useRef<GebetaMapRef>(null);
     const [searchQuery, setSearchQuery] = useState('');
+
+    useEffect(() => {
+        // suppress MapLibre sprite loading warnings
+        LogBox.ignoreLogs([
+            'MapLibre error',
+            'Failed to load sprite',
+        ]);
+    }, []);
 
     const handleMapClick = (lngLat: [number, number]) => {
         Alert.alert(
