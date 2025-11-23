@@ -1,24 +1,27 @@
 import React, { useState } from 'react';
-import { View, Alert, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { BottomSheet, Button } from '../../../shared/components';
 import { colors } from '../../../shared/theme/colors';
+import { INCIDENT_TYPES } from '../../incidents/types/incident.types';
 
-const reportOptions = [
-    { id: 'police', label: 'Police', icon: 'shield-checkmark' as const, color: '#F59E0B' },
-    { id: 'traffic', label: 'Traffic', icon: 'car' as const, color: '#F59E0B' },
-    { id: 'crash', label: 'Crash', icon: 'warning' as const, color: '#F59E0B' },
-    { id: 'closure', label: 'Closure', icon: 'close-circle' as const, color: '#F59E0B' },
-    { id: 'hazard', label: 'Hazard', icon: 'alert-circle' as const, color: '#F59E0B' },
-    { id: 'weather', label: 'Bad Weather', icon: 'rainy' as const, color: '#F59E0B' },
-];
+interface ReportBottomSheetProps {
+    userLocation: { lat: number; lng: number } | null;
+}
 
-export const ReportBottomSheet: React.FC = () => {
+export const ReportBottomSheet: React.FC<ReportBottomSheetProps> = ({ userLocation }) => {
+    const router = useRouter();
     const [showReportOptions, setShowReportOptions] = useState(false);
 
-    const handleOptionPress = (optionId: string, optionLabel: string) => {
-        Alert.alert('Selected', optionLabel);
-        //handle option selection not done
+    const handleOptionPress = (optionId: string) => {
+        const params = new URLSearchParams({
+            type: optionId,
+            lat: userLocation?.lat.toString() || '',
+            lng: userLocation?.lng.toString() || '',
+        });
+        router.push(`/incident-report?${params.toString()}`);
+        setShowReportOptions(false);
     };
 
     return (
@@ -51,12 +54,12 @@ export const ReportBottomSheet: React.FC = () => {
                     </View>
 
                     <View className="gap-3">
-                        {reportOptions.map((option) => (
+                        {INCIDENT_TYPES.map((option) => (
                             <TouchableOpacity
                                 key={option.id}
                                 className="bg-gray-50 rounded-xl p-4 flex-row items-center border-2"
                                 style={{ borderColor: colors.primary.light }}
-                                onPress={() => handleOptionPress(option.id, option.label)}
+                                onPress={() => handleOptionPress(option.id)}
                                 activeOpacity={0.7}
                             >
                                 <View
