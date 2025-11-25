@@ -32,7 +32,7 @@ export default function IncidentReportScreen() {
             Alert.alert('Success', 'Incident reported successfully!', [
                 {
                     text: 'OK',
-                    onPress: () => router.back(),
+                    onPress: () => router.push('/?refresh=true'),
                 },
             ]);
         } else if (error) {

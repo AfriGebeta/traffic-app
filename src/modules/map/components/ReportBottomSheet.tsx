@@ -8,9 +8,10 @@ import { INCIDENT_TYPES } from '../../incidents/types/incident.types';
 
 interface ReportBottomSheetProps {
     userLocation: { lat: number; lng: number } | null;
+    onIncidentReported?: () => void;
 }
 
-export const ReportBottomSheet: React.FC<ReportBottomSheetProps> = ({ userLocation }) => {
+export const ReportBottomSheet: React.FC<ReportBottomSheetProps> = ({ userLocation, onIncidentReported }) => {
     const router = useRouter();
     const [showReportOptions, setShowReportOptions] = useState(false);
 
@@ -19,6 +20,7 @@ export const ReportBottomSheet: React.FC<ReportBottomSheetProps> = ({ userLocati
             type: optionId,
             lat: userLocation?.lat.toString() || '',
             lng: userLocation?.lng.toString() || '',
+            refresh: 'true', 
         });
         router.push(`/incident-report?${params.toString()}`);
         setShowReportOptions(false);
