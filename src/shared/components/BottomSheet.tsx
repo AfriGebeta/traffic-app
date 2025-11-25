@@ -9,7 +9,7 @@ interface BottomSheetProps {
     children: React.ReactNode;
 }
 
-export const BottomSheet: React.FC<BottomSheetProps> = ({ children }) => {
+export const BottomSheet: React.FC<BottomSheetProps> = React.memo(({ children }) => {
     const translateY = useRef(new Animated.Value(SCREEN_HEIGHT - MIN_HEIGHT)).current;
 
     const panResponder = useRef(
@@ -66,4 +66,4 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({ children }) => {
             </View>
         </Animated.View>
     );
-};
+});

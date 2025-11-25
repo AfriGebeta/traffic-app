@@ -1,14 +1,19 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, Alert, LogBox } from 'react-native';
+import { View, Alert, LogBox, Text, ScrollView } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import * as Location from 'expo-location';
-import GebetaMap, { GebetaMapRef } from '@gebeta/tiles-react-native';
+import GebetaMap, { GebetaMapRef } from '../../../lib/gebeta-map/GebetaMap';
 import { Input } from '../../../shared/components';
 import { ReportBottomSheet } from './ReportBottomSheet';
+import { useIncidents } from '../../incidents/hooks/useIncidents';
+import { getIncidentIconUrl, getIncidentColor, getIncidentIconName } from '../../incidents/utils/incidentIcons';
 
 export default function TrafficMap() {
     const mapRef = useRef<GebetaMapRef>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+    const { incidents, refetch } = useIncidents();
+    const params = useLocalSearchParams();
 
     useEffect(() => {
         // suppress MapLibre sprite loading warnings
@@ -19,6 +24,13 @@ export default function TrafficMap() {
 
         getUserLocation();
     }, []);
+
+    // refresh when returning from incident report
+    useEffect(() => {
+        if (params.refresh === 'true') {
+            refetch();
+        }
+    }, [params.refresh, refetch]);
 
     const getUserLocation = async () => {
         try {
@@ -38,31 +50,87 @@ export default function TrafficMap() {
     };
 
     const handleMapClick = (lngLat: [number, number]) => {
-        Alert.alert(
-            'Map Clicked',
-            `Longitude: ${lngLat[0].toFixed(6)}\nLatitude: ${lngLat[1].toFixed(6)}`
-        );
-    };
+        // Add a default marker
+        // const marker = mapRef.current?.addMarker();
+        // const mapInstance = mapRef.current?.getMapInstance();
+        // if (marker && mapInstance) {
+        // marker.setLngLat(lngLat).addTo(mapInstance);
+
+        // mapRef.current?.addImageMarker(
+        //     lngLat,
+        //     "https://cdn-icons-png.flaticon.com/512/3081/3081559.png",
+        //     [40, 40],
+        //     () => alert("Marker clicked!"),
+        //     10,
+        //     "<b>Custom Marker Popup</b>"
+        // );
+
+    }
+    // };
+
 
     const handleMapLoaded = () => {
-        console.log('Map loaded successfully!');
-        if (mapRef.current) {
-            mapRef.current.addImageMarker(
-                [38.7463, 9.0223],
-                'https://via.placeholder.com/32x32/007cbf/ffffff?text=M',
-                [32, 32],
-                () => {
-                    Alert.alert('Marker Clicked', 'You clicked on Addis Ababa!');
-                }
-            );
-        }
+        // if (mapRef.current) {
+        //     // Add a green test marker with checkmark icon
+        //     mapRef.current.addImageMarker(
+        //         [38.7463, 9.0223],
+        //         '', // Empty string to use colored circle
+        //         [40, 40],
+        //         () => {
+        //             Alert.alert('Test Marker', 'map loaded ');
+        //         },
+        //         10,
+        //         undefined,
+        //         '#10B981', // Green color
+        //         'checkmark-circle' // Ionicon name
+        //     );
+        // }
+
+        addIncidentMarkers();
     };
+
+    const addIncidentMarkers = () => {
+        if (!mapRef.current || incidents.length === 0) {
+            return;
+        }
+
+        incidents.forEach((incident) => {
+            const iconUrl = getIncidentIconUrl(incident.type);
+            const color = getIncidentColor(incident.type);
+            const iconName = getIncidentIconName(incident.type);
+
+            mapRef.current?.addImageMarker(
+                [incident.lng, incident.lat],
+                iconUrl,
+                [40, 40],
+                () => {
+                    Alert.alert(
+                        `${incident.type.charAt(0).toUpperCase() + incident.type.slice(1)} Incident`,
+                        `${incident.description}`
+                    );
+                },
+                10,
+                undefined,
+                color,
+                iconName
+            );
+        });
+    };
+
+    //adding markers when loaded
+    useEffect(() => {
+        if (incidents.length > 0 && mapRef.current) {
+            addIncidentMarkers();
+        }
+
+    }, [incidents]);
 
     return (
         <View className="flex-1">
             <GebetaMap
                 ref={mapRef}
                 apiKey={process.env.EXPO_PUBLIC_GEBETA_API_KEY!}
+                mapStyleUrl={`https://tiles.gebeta.app/styles/standard/style.json?apiKey=${process.env.EXPO_PUBLIC_GEBETA_API_KEY}`}
                 center={[38.7463, 9.0223]}
                 zoom={12}
                 onMapClick={handleMapClick}
@@ -80,7 +148,29 @@ export default function TrafficMap() {
                 </View>
             </View>
 
-            <ReportBottomSheet userLocation={userLocation} />
+            <ReportBottomSheet userLocation={userLocation} onIncidentReported={refetch} />
+
+            {/* for debug - if backend not responding*/}
+            {/* <View className="absolute bottom-32 left-4 right-4 bg-white rounded-xl shadow-lg p-4 max-h-48">
+                <Text className="font-bold text-lg mb-2">
+                    Incidents ({incidents.length})
+                </Text>
+                <ScrollView>
+                    {incidents.length === 0 ? (
+                        <Text className="text-gray-500">No incidents found</Text>
+                    ) : (
+                        incidents.map((incident) => (
+                            <View key={incident.id} className="mb-2 pb-2 border-b border-gray-200">
+                                <Text className="font-semibold capitalize">{incident.type}</Text>
+                                <Text className="text-sm text-gray-600">{incident.description}</Text>
+                                <Text className="text-xs text-gray-400">
+                                    {incident.lat.toFixed(4)}, {incident.lng.toFixed(4)}
+                                </Text>
+                            </View>
+                        ))
+                    )}
+                </ScrollView>
+            </View> */}
         </View>
     );
 }
