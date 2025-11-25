@@ -5,4 +5,8 @@ export const incidentService = {
     async report(data: IncidentReportRequest) {
         return apiService.post<Incident>('/api/incidents/report', data);
     },
+
+    async getIncidents() {
+        return apiService.get<Incident[]>('/api/incidents');
+    },
 };
