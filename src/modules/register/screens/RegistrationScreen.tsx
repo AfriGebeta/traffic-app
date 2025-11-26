@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { View, Alert } from 'react-native';
+import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { PlateNumberStep } from '../components/PlateNumberStep';
 import { CarModelStep } from '../components/CarModelStep';
 import { useVehicleRegistration } from '../hooks/useVehicleRegistration';
+import { showToast } from '../../../shared/utils/toast';
+import { useTranslation } from 'react-i18next';
 
 export default function RegistrationScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const [step, setStep] = useState<'plate' | 'model'>('plate');
     const [plate, setPlate] = useState('');
@@ -24,14 +27,12 @@ export default function RegistrationScreen() {
         const vehicle = await register({ plate, model });
 
         if (vehicle) {
-            Alert.alert('Success', 'Vehicle registered successfully!', [
-                {
-                    text: 'OK',
-                    onPress: () => router.replace('/'),
-                },
-            ]);
+            showToast.success(t('vehicle-registered-successfully'));
+            setTimeout(() => {
+                router.replace('/');
+            }, 1000);
         } else if (error) {
-            Alert.alert('Error', error);
+            showToast.error(error);
         }
     };
 

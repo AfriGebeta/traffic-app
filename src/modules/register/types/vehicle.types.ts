@@ -13,7 +13,7 @@ export interface VehicleRegistrationRequest {
     model: string;
 }
 
-export const REGION_CODES = ['ET', 'AA', 'AF', 'AM', 'BG', 'DR', 'GM', 'HR', 'OR', 'SM', 'UN','AU'] as const;
+export const REGION_CODES = ['ET', 'AA', 'AF', 'AM', 'BG', 'DR', 'GM', 'HR', 'OR', 'SM', 'UN', 'AU'] as const;
 
 export type RegionCode = typeof REGION_CODES[number];
 
@@ -23,11 +23,12 @@ export const CAR_MODELS = [
     'BMW',
     'Mercedes-Benz',
     'BYD',
-    'Honda CR-V',
+    'Honda',
     'Hyundai',
     'Nissan',
     'Mazda',
     'Volkswagen',
+    'Ford',
     'Other',
 ] as const;
 
