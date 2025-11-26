@@ -16,8 +16,10 @@ export const BottomSheet: React.FC<BottomSheetProps> = React.memo(({ children })
         PanResponder.create({
             onStartShouldSetPanResponder: () => false,
             onMoveShouldSetPanResponder: (_, gestureState) => {
-                return Math.abs(gestureState.dy) > 5;
+                
+                return Math.abs(gestureState.dy) > 10 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
             },
+            onPanResponderTerminationRequest: () => false,
             onPanResponderMove: (_, gestureState) => {
                 const newY = SCREEN_HEIGHT - MIN_HEIGHT + gestureState.dy;
                 if (newY >= SCREEN_HEIGHT - MAX_HEIGHT && newY <= SCREEN_HEIGHT - MIN_HEIGHT) {

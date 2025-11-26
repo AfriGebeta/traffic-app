@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Button } from '../../../shared/components';
 import { CAR_MODELS, CarModel } from '../types/vehicle.types';
 import { colors } from '../../../shared/theme/colors';
+import { useTranslation } from 'react-i18next';
 
 interface CarModelStepProps {
     plate: string;
@@ -18,6 +19,7 @@ export const CarModelStep: React.FC<CarModelStepProps> = ({
     onSubmit,
     loading,
 }) => {
+    const { t } = useTranslation();
     const [selectedModel, setSelectedModel] = useState<CarModel | null>(null);
 
     const handleSubmit = () => {
@@ -33,13 +35,13 @@ export const CarModelStep: React.FC<CarModelStepProps> = ({
             </TouchableOpacity>
 
             <Text className="text-3xl font-bold text-gray-800 mb-2">
-                Select Your Car Model
+                {t('select-your-car-model')}
             </Text>
             <Text className="text-gray-500 mb-2">
-                Plate: {plate}
+                {t('plate')}: {plate}
             </Text>
             <Text className="text-gray-400 text-sm mb-6">
-                Choose your vehicle model from the list
+                {t('choose-your-vehicle-model-from-the-list')}
             </Text>
 
             <ScrollView className="flex-1 mb-6" showsVerticalScrollIndicator={false}>
@@ -78,7 +80,7 @@ export const CarModelStep: React.FC<CarModelStepProps> = ({
 
             <View className="pb-6">
                 <Button
-                    title="Register Vehicle"
+                    title={t('register-vehicle')}
                     onPress={handleSubmit}
                     disabled={!selectedModel}
                     loading={loading}

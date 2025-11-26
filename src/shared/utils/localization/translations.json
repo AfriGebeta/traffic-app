@@ -1,0 +1,227 @@
+[
+    {
+        "key": "app-name",
+        "EN_US": "Traffic App",
+        "AM": "የትራፊክ መተግበሪያ"
+    },
+    {
+        "key": "welcome",
+        "EN_US": "Welcome",
+        "AM": "እንኳን ደህና መጡ"
+    },
+    {
+        "key": "next",
+        "EN_US": "Next",
+        "AM": "ይቀጥሉ"
+    },
+    {
+        "key": "where-to-go",
+        "EN_US": "Where to go?",
+        "AM": "ወዴት እንሂድ?"
+    },
+    {
+        "key": "share-what-you-see",
+        "EN_US": "Share what you see",
+        "AM": "በመንገድዎ ያዩትን ያጋሩ"
+    },
+    {
+        "key":"select-the-type-of-incident-to-other-drivers",
+        "EN_US":"Select the type of incident you saw",
+        "AM":"ያዩትን ከተዘረዘሩት ውስጥ ይምረጡ"
+    },
+    {
+        "key": "recents",
+        "EN_US": "Recents",
+        "AM": "የቅርብ ጊዜ"
+    },
+    {
+        "key": "tell-what-you-see",
+        "EN_US": "Tell what you see",
+        "AM": "የሚያዩትን ይንገሩን"
+    },
+    {
+        "key": "traffic-police",
+        "EN_US": "Traffic Police",
+        "AM": "የትራፊክ ፖሊስ"
+    },
+    {
+        "key": "traffic",
+        "EN_US": "Traffic",
+        "AM": "የመንገድ መዘጋጋት"
+    },
+    {
+        "key": "crash",
+        "EN_US": "Crash",
+        "AM": "ግጭት"
+    },
+    {
+        "key": "accident",
+        "EN_US": "Accident",
+        "AM": "አደጋ"
+    },
+    {
+        "key": "closure",
+        "EN_US": "Closure",
+        "AM": "መንገዱ ተዘግቷል"
+    },
+    {
+        "key": "hazard",
+        "EN_US": "Hazard",
+        "AM": "አደገኛ"
+    },
+    {
+        "key": "bad-weather",
+        "EN_US": "Bad Weather",
+        "AM": "መጥፎ የአየር ሁኔታ"
+    },
+    {
+        "key": "broken-road",
+        "EN_US": "Broken Road",
+        "AM": "የተሰባበረ መንገድ"
+    },
+    {
+        "key": "report",
+        "EN_US": "Report",
+        "AM": "ሪፖርት"
+    },
+    {
+        "key": "description",
+        "EN_US": "Description",
+        "AM": "መግለጫ"
+    },
+    {
+        "key": "describe-situation",
+        "EN_US": "Describe the situation (optional)...",
+        "AM": "ሁኔታውን ይግለጹ (አማራጭ)..."
+    },
+    {
+        "key": "submit-report",
+        "EN_US": "Submit Report",
+        "AM": "ጥቆማ ይስጡ"
+    },
+    {
+        "key": "cancel",
+        "EN_US": "Cancel",
+        "AM": "ተመለስ"
+    },
+    {
+        "key": "success",
+        "EN_US": "Success",
+        "AM": "ተሳክቷል"
+    },
+    {
+        "key":"characters",
+        "EN_US":"Characters",
+        "AM":"ቃላት"
+    },
+    {
+        "key": "incident-reported-successfully",
+        "EN_US": "Incident reported successfully!",
+        "AM": "ጥቆማዎ በተሳካ ሁኔታ ተመዝግቧል!"
+    },
+    {
+        "key": "error",
+        "EN_US": "Error",
+        "AM": "ስህተት"
+    },
+    {
+        "key": "location-not-available",
+        "EN_US": "Location not available",
+        "AM": "አካባቢ አይገኝም"
+    },
+    {
+        "key": "getting-location",
+        "EN_US": "Getting your location...",
+        "AM": "አካባቢዎን እያገኘን ነው..."
+    },
+    {
+        "key": "location",
+        "EN_US": "Location",
+        "AM": "አካባቢ"
+    },
+    {
+        "key": "incidents",
+        "EN_US": "Incidents",
+        "AM": "አደጋዎች"
+    },
+    {
+        "key": "no-incidents-found",
+        "EN_US": "No incidents found",
+        "AM": "ምንም አደጋዎች አልተገኙም"
+    },
+    {
+        "key": "map-loaded",
+        "EN_US": "Map loaded successfully!",
+        "AM": "ካርታ በተሳካ ሁኔታ ተጫነ!"
+    },
+    {
+        "key": "test-marker",
+        "EN_US": "Test Marker",
+        "AM": "የሙከራ ምልክት"
+    },
+    {
+        "key": "incident",
+        "EN_US": "Incident",
+        "AM": "አደጋ"
+    },
+    {
+        "key": "confirmed",
+        "EN_US": "Confirmed",
+        "AM": "ተረጋግጧል"
+    },
+    {
+        "key": "reported",
+        "EN_US": "Reported",
+        "AM": "ሪፖርት ተደርጓል"
+    },
+    {
+        "key": "yes",
+        "EN_US": "Yes",
+        "AM": "አዎ"
+    },
+    {
+        "key": "no",
+        "EN_US": "No",
+        "AM": "አይ"
+    },
+    {
+        "key": "ok",
+        "EN_US": "OK",
+        "AM": "እሺ"
+    },
+    {
+        "key": "lets-register-your-vehicle-to-get-you-started",
+        "EN_US": "Let's register your vehicle to get you started",
+        "AM": "ለመጀመር መኪናዎን በቀላሉ ይመዝግቡ"
+    },
+    {
+        "key": "plate-number",
+        "EN_US": "Plate Number",
+        "AM": "የሰሌዳ ቁጥርዎን ያስገቡ"
+    },
+    {
+        "key": "select-your-car-model",
+        "EN_US": "Select your car model",
+        "AM": "የመኪናዎን ኣይነት ይምረጡ"
+    },
+    {
+        "key": "plate",
+        "EN_US": "Plate",
+        "AM": "ሰሌዳ"
+    },
+    {
+        "key": "choose-your-vehicle-model-from-the-list",
+        "EN_US": "Choose your vehicle model from the list",
+        "AM": "ከተዘረዘሩት ውስጥ የመኪናዎን ኣይነት ይምረጡ"
+    },
+    {
+        "key": "register-vehicle",
+        "EN_US": "Register Vehicle",
+        "AM": "መኪናዎን ይመዝግቡ"
+    },
+    {
+        "key":"vehicle-registered-successfully",
+        "EN_US":"Vehicle Registered Successfully",
+        "AM":"በተሳካ ሁኔታ ተመዝግቧል"
+    }
+]

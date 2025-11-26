@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, Alert, LogBox, Text, ScrollView } from 'react-native';
+import { View, LogBox, Text, ScrollView } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import * as Location from 'expo-location';
 import GebetaMap, { GebetaMapRef } from '../../../lib/gebeta-map/GebetaMap';
@@ -7,6 +7,8 @@ import { Input } from '../../../shared/components';
 import { ReportBottomSheet } from './ReportBottomSheet';
 import { useIncidents } from '../../incidents/hooks/useIncidents';
 import { getIncidentIconUrl, getIncidentColor, getIncidentIconName } from '../../incidents/utils/incidentIcons';
+import { showToast } from '../../../shared/utils/toast';
+import { useTranslation } from 'react-i18next';
 
 export default function TrafficMap() {
     const mapRef = useRef<GebetaMapRef>(null);
@@ -14,6 +16,7 @@ export default function TrafficMap() {
     const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
     const { incidents, refetch } = useIncidents();
     const params = useLocalSearchParams();
+    const {t} = useTranslation();
 
     useEffect(() => {
         // suppress MapLibre sprite loading warnings
@@ -70,23 +73,10 @@ export default function TrafficMap() {
 
 
     const handleMapLoaded = () => {
-        // if (mapRef.current) {
-        //     // Add a green test marker with checkmark icon
-        //     mapRef.current.addImageMarker(
-        //         [38.7463, 9.0223],
-        //         '', // Empty string to use colored circle
-        //         [40, 40],
-        //         () => {
-        //             Alert.alert('Test Marker', 'map loaded ');
-        //         },
-        //         10,
-        //         undefined,
-        //         '#10B981', // Green color
-        //         'checkmark-circle' // Ionicon name
-        //     );
-        // }
-
-        addIncidentMarkers();
+        // small delay
+        setTimeout(() => {
+            addIncidentMarkers();
+        }, 1000);
     };
 
     const addIncidentMarkers = () => {
@@ -94,27 +84,31 @@ export default function TrafficMap() {
             return;
         }
 
-        incidents.forEach((incident) => {
-            const iconUrl = getIncidentIconUrl(incident.type);
-            const color = getIncidentColor(incident.type);
-            const iconName = getIncidentIconName(incident.type);
+        try {
+            incidents.forEach((incident) => {
+                const iconUrl = getIncidentIconUrl(incident.type);
+                const color = getIncidentColor(incident.type);
+                const iconName = getIncidentIconName(incident.type);
 
-            mapRef.current?.addImageMarker(
-                [incident.lng, incident.lat],
-                iconUrl,
-                [40, 40],
-                () => {
-                    Alert.alert(
-                        `${incident.type.charAt(0).toUpperCase() + incident.type.slice(1)} Incident`,
-                        `${incident.description}`
-                    );
-                },
-                10,
-                undefined,
-                color,
-                iconName
-            );
-        });
+                mapRef.current?.addImageMarker(
+                    [incident.lng, incident.lat],
+                    iconUrl,
+                    [40, 40],
+                    () => {
+                        showToast.info(
+                            incident.description,
+                            `${incident.type.charAt(0).toUpperCase() + incident.type.slice(1)} Incident`
+                        );
+                    },
+                    10,
+                    undefined,
+                    color,
+                    iconName
+                );
+            });
+        } catch (error) {
+            console.log('error adding markers:', error);
+        }
     };
 
     //adding markers when loaded
@@ -140,7 +134,7 @@ export default function TrafficMap() {
             <View className="absolute top-12 left-4 right-4">
                 <View className="bg-white rounded-2xl shadow-lg">
                     <Input
-                        placeholder="Where to go?"
+                        placeholder={t('where-to-go')}
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                         icon="search"
