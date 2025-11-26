@@ -5,6 +5,8 @@ import { useRouter } from 'expo-router';
 import { BottomSheet, Button } from '../../../shared/components';
 import { colors } from '../../../shared/theme/colors';
 import { INCIDENT_TYPES } from '../../incidents/types/incident.types';
+import { useTranslation } from 'react-i18next';
+import { getIncidentTranslationKey } from '../../incidents/utils/incidentTranslations';
 
 interface ReportBottomSheetProps {
     userLocation: { lat: number; lng: number } | null;
@@ -12,6 +14,7 @@ interface ReportBottomSheetProps {
 }
 
 export const ReportBottomSheet: React.FC<ReportBottomSheetProps> = ({ userLocation, onIncidentReported }) => {
+    const { t } = useTranslation();
     const router = useRouter();
     const [showReportOptions, setShowReportOptions] = useState(false);
 
@@ -20,7 +23,7 @@ export const ReportBottomSheet: React.FC<ReportBottomSheetProps> = ({ userLocati
             type: optionId,
             lat: userLocation?.lat.toString() || '',
             lng: userLocation?.lng.toString() || '',
-            refresh: 'true', 
+            refresh: 'true',
         });
         router.push(`/incident-report?${params.toString()}`);
         setShowReportOptions(false);
@@ -31,12 +34,12 @@ export const ReportBottomSheet: React.FC<ReportBottomSheetProps> = ({ userLocati
             {!showReportOptions ? (
                 <View>
                     <Button
-                        title="Share what you see"
+                        title={t('share-what-you-see')}
                         icon="+"
                         onPress={() => setShowReportOptions(true)}
                     />
                     <Text className="text-2xl font-bold text-gray-800 mt-6">
-                        Recents
+                        {t('recents')}
                     </Text>
                 </View>
             ) : (
@@ -47,10 +50,10 @@ export const ReportBottomSheet: React.FC<ReportBottomSheetProps> = ({ userLocati
                         </TouchableOpacity>
                         <View className="flex-1">
                             <Text className="text-2xl font-bold" style={{ color: colors.primary.main }}>
-                                Tell what you see
+                                {t('share-what-you-see')}
                             </Text>
                             <Text className="text-gray-500 text-sm mt-1">
-                                Select the type of incident to other drivers
+                                {t('select-the-type-of-incident-to-other-drivers')}
                             </Text>
                         </View>
                     </View>
@@ -71,7 +74,7 @@ export const ReportBottomSheet: React.FC<ReportBottomSheetProps> = ({ userLocati
                                     <Ionicons name={option.icon} size={24} color={option.color} />
                                 </View>
                                 <Text className="text-lg font-bold text-gray-800 flex-1">
-                                    {option.label}
+                                    {t(getIncidentTranslationKey(option.id as any))}
                                 </Text>
                                 <Ionicons name="chevron-forward" size={20} color={colors.primary.light} />
                             </TouchableOpacity>
