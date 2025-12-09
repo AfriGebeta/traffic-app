@@ -25,9 +25,9 @@
         "AM": "በመንገድዎ ያዩትን ያጋሩ"
     },
     {
-        "key":"select-the-type-of-incident-to-other-drivers",
-        "EN_US":"Select the type of incident you saw",
-        "AM":"ያዩትን ከተዘረዘሩት ውስጥ ይምረጡ"
+        "key": "select-the-type-of-incident-to-other-drivers",
+        "EN_US": "Select the type of incident you saw",
+        "AM": "ያዩትን ከተዘረዘሩት ውስጥ ይምረጡ"
     },
     {
         "key": "recents",
@@ -80,6 +80,16 @@
         "AM": "የተሰባበረ መንገድ"
     },
     {
+        "key": "other",
+        "EN_US": "Other",
+        "AM": "ሌሎች"
+    },
+    {
+        "key": "contribute",
+        "EN_US": "Contribute",
+        "AM": "ቦታ ይጠቁሙ "
+    },
+    {
         "key": "report",
         "EN_US": "Report",
         "AM": "ሪፖርት"
@@ -110,9 +120,9 @@
         "AM": "ተሳክቷል"
     },
     {
-        "key":"characters",
-        "EN_US":"Characters",
-        "AM":"ቃላት"
+        "key": "characters",
+        "EN_US": "Characters",
+        "AM": "ቃላት"
     },
     {
         "key": "incident-reported-successfully",
@@ -220,8 +230,109 @@
         "AM": "መኪናዎን ይመዝግቡ"
     },
     {
-        "key":"vehicle-registered-successfully",
-        "EN_US":"Vehicle Registered Successfully",
-        "AM":"በተሳካ ሁኔታ ተመዝግቧል"
+        "key": "vehicle-registered-successfully",
+        "EN_US": "Vehicle Registered Successfully",
+        "AM": "በተሳካ ሁኔታ ተመዝግቧል"
+    },
+    {
+        "key": "gas-station",
+        "EN_US": "Gas Station",
+        "AM": "ነዳጅ ማደያ"
+    },
+    {
+        "key": "taxi-station",
+        "EN_US": "Taxi Station",
+        "AM": "ታክሲ ተራ"
+    },
+    {
+        "key": "repair-shop",
+        "EN_US": "Repair Shop",
+        "AM": "ጋራዥ"
+    },
+    {
+        "key": "coming-soon",
+        "EN_US": "soon",
+        "AM": "በቅርቡ"
+    },
+    {
+        "key": "restaurants",
+        "EN_US": "Restaurants",
+        "AM": "ሬስቶራንት"
+    },
+    {
+        "key": "contribute-a-place",
+        "EN_US": "Contribute a Place",
+        "AM": "አዲስ ቦታ ይጠቁሙ"
+    },
+    {
+        "key": "help-others-by-adding-useful-locations",
+        "EN_US": "Help others by adding useful locations",
+        "AM": "ጠቃሚ ቦታዎችን በመጨመር ሌሎችን ይርዱ"
+    },
+    {
+        "key": "add-new",
+        "EN_US": "Add a new",
+        "AM": "አዲስ"
     }
+,
+{
+    "key": "fill-in-the-details",
+    "EN_US": "Fill in the details",
+    "AM": "ዝርዝሮችን ይሙሉ"
+},
+{
+    "key": "place-name",
+    "EN_US": "Place Name",
+    "AM": "የቦታ ስም"
+},
+{
+    "key": "place-name-placeholder",
+    "EN_US": "e.g., Total Gas Station",
+    "AM": "ለምሳሌ፣ ቶታል ነዳጅ ማደያ"
+},
+{
+    "key": "add-details-about-place",
+    "EN_US": "Add details about this place",
+    "AM": "ስለዚህ ቦታ ዝርዝር ያስገቡ"
+},
+{
+    "key": "pick-location-on-map",
+    "EN_US": "Pick location on map",
+    "AM": "በካርታ ላይ አድራሻ ይምረጡ"
+},
+{
+    "key": "photos",
+    "EN_US": "Photos",
+    "AM": "ፎቶዎች"
+},
+{
+    "key": "camera",
+    "EN_US": "Camera",
+    "AM": "ካሜራ"
+},
+{
+    "key": "gallery",
+    "EN_US": "Gallery",
+    "AM": "ጋለሪ"
+},
+{
+    "key": "uploading",
+    "EN_US": "Uploading...",
+    "AM": "በመጫን ላይ..."
+},
+{
+    "key": "submit-contribution",
+    "EN_US": "Submit Contribution",
+    "AM": "ጥቆማ ያስገቡ"
+},
+{
+    "key": "submitting",
+    "EN_US": "Submitting...",
+    "AM": "በማስገባት ላይ..."
+},
+{
+    "key": "location",
+    "EN_US": "Location",
+    "AM": "አድራሻ"
+}
 ]
