@@ -14,6 +14,7 @@ export const getIncidentColor = (type: IncidentType): string => {
         hazard: '#EC4899',
         weather: '#6B7280',
         'broken-road': '#F97316',
+        other: '#F97316',
     };
 
     return colorMap[type] || colorMap.hazard;
@@ -29,6 +30,7 @@ export const getIncidentIconName = (type: IncidentType): string => {
         hazard: 'alert-circle',
         weather: 'rainy',
         'broken-road': 'construct',
+        other: 'apps-outline',
     };
 
     return iconMap[type] || 'alert-circle';

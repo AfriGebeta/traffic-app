@@ -38,6 +38,15 @@ export const ReportBottomSheet: React.FC<ReportBottomSheetProps> = ({ userLocati
                         icon="+"
                         onPress={() => setShowReportOptions(true)}
                     />
+
+                    <TouchableOpacity
+                        className="bg-green-500 rounded-xl py-4 items-center justify-center mt-3 "
+                        onPress={() => router.push('/places/contribute')}
+                        activeOpacity={0.8}
+                    >
+                        <Text className="text-white font-semibold text-xl">{t('contribute')}</Text>
+                    </TouchableOpacity>
+
                     <Text className="text-2xl font-bold text-gray-800 mt-6">
                         {t('recents')}
                     </Text>
@@ -58,7 +67,7 @@ export const ReportBottomSheet: React.FC<ReportBottomSheetProps> = ({ userLocati
                         </View>
                     </View>
 
-                    <View className="gap-3">
+                    <View className="gap-2">
                         {INCIDENT_TYPES.map((option) => (
                             <TouchableOpacity
                                 key={option.id}

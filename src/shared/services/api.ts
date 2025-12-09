@@ -20,6 +20,8 @@ class ApiService {
     ): Promise<ApiResponse<T>> {
         try {
             const url = `${this.baseUrl}${endpoint}`;
+            console.log('API Request:', options.method || 'GET', url);
+
             const config: RequestInit = {
                 ...options,
                 headers: {
@@ -29,6 +31,17 @@ class ApiService {
             };
 
             const response = await fetch(url, config);
+            console.log('API Response status:', response.status);
+
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const text = await response.text();
+                console.error('Non-JSON response:', text.substring(0, 200));
+                return {
+                    error: `Server returned non-JSON response (${response.status})`,
+                };
+            }
+
             const data = await response.json();
 
             if (!response.ok) {
@@ -42,6 +55,7 @@ class ApiService {
                 data: data as T,
             };
         } catch (error) {
+            console.error('API Error:', error);
             return {
                 error: error instanceof Error ? error.message : 'network error occurred',
             };
