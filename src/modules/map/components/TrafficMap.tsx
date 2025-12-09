@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, LogBox, Text, ScrollView } from 'react-native';
+import { View, LogBox, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import * as Location from 'expo-location';
 import GebetaMap, { GebetaMapRef } from '../../../lib/gebeta-map/GebetaMap';
@@ -9,14 +9,17 @@ import { useIncidents } from '../../incidents/hooks/useIncidents';
 import { getIncidentIconUrl, getIncidentColor, getIncidentIconName } from '../../incidents/utils/incidentIcons';
 import { showToast } from '../../../shared/utils/toast';
 import { useTranslation } from 'react-i18next';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function TrafficMap() {
     const mapRef = useRef<GebetaMapRef>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+    const [initialCenter] = useState<[number, number]>([38.7463, 9.0223]);
+    const [initialZoom] = useState(12);
     const { incidents, refetch } = useIncidents();
     const params = useLocalSearchParams();
-    const {t} = useTranslation();
+    const { t } = useTranslation();
 
     useEffect(() => {
         // suppress MapLibre sprite loading warnings
@@ -125,8 +128,8 @@ export default function TrafficMap() {
                 ref={mapRef}
                 apiKey={process.env.EXPO_PUBLIC_GEBETA_API_KEY!}
                 mapStyleUrl={`https://tiles.gebeta.app/styles/standard/style.json?apiKey=${process.env.EXPO_PUBLIC_GEBETA_API_KEY}`}
-                center={[38.7463, 9.0223]}
-                zoom={12}
+                center={initialCenter}
+                zoom={initialZoom}
                 onMapClick={handleMapClick}
                 onMapLoaded={handleMapLoaded}
             />
@@ -139,6 +142,38 @@ export default function TrafficMap() {
                         onChangeText={setSearchQuery}
                         icon="search"
                     />
+                </View>
+                <View className="flex-row gap-2 mt-2 justify-around">
+                    <TouchableOpacity
+                        className="bg-white rounded-full px-3 py-2 shadow-md flex-row items-center gap-1.5"
+                        onPress={() => showToast.info(t('coming-soon'), t('gas-station'))}
+                    >
+                        <Ionicons name="water" size={16} color="#EF4444" />
+                        <Text className="text-xs font-medium text-gray-700">{t('gas-station')}</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        className="bg-white rounded-full px-3 py-2 shadow-md flex-row items-center gap-1.5"
+                        onPress={() => showToast.info(t('coming-soon'), t('taxi-station'))}
+                    >
+                        <Ionicons name="car" size={16} color="#3B82F6" />
+                        <Text className="text-xs font-medium text-gray-700">{t('taxi-station')}</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        className="bg-white rounded-full px-3 py-2 shadow-md flex-row items-center gap-1.5"
+                        onPress={() => showToast.info(t('coming-soon'), t('repair-shop'))}
+                    >
+                        <Ionicons name="construct" size={16} color="#F59E0B" />
+                        <Text className="text-xs font-medium text-gray-700">{t('repair-shop')}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        className="bg-white rounded-full px-3 py-2 shadow-md flex-row items-center gap-1.5"
+                        onPress={() => showToast.info(t('coming-soon'), t('restaurants'))}
+                    >
+                        <Ionicons name="fast-food-outline" size={16} color="#EC4899" />
+                        <Text className="text-xs font-medium text-gray-700">{t('restaurants')}</Text>
+                    </TouchableOpacity>
                 </View>
             </View>
 
