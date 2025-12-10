@@ -40,7 +40,7 @@ export const ReportBottomSheet: React.FC<ReportBottomSheetProps> = ({ userLocati
                     />
 
                     <TouchableOpacity
-                        className="bg-green-500 rounded-xl py-4 items-center justify-center mt-3 "
+                        className="bg-blue-500 rounded-xl py-4 items-center justify-center mt-3 "
                         onPress={() => router.push('/places/contribute')}
                         activeOpacity={0.8}
                     >
