@@ -1,25 +1,33 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, LogBox, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, LogBox, TouchableOpacity, Text } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import * as Location from 'expo-location';
 import GebetaMap, { GebetaMapRef } from '../../../lib/gebeta-map/GebetaMap';
 import { Input } from '../../../shared/components';
 import { ReportBottomSheet } from './ReportBottomSheet';
+import { SearchResults } from './SearchResults';
 import { useIncidents } from '../../incidents/hooks/useIncidents';
 import { getIncidentIconUrl, getIncidentColor, getIncidentIconName } from '../../incidents/utils/incidentIcons';
 import { showToast } from '../../../shared/utils/toast';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
+import { navigationService, GeocodingPlace } from '../../navigation/services/navigation.service';
 
 export default function TrafficMap() {
     const mapRef = useRef<GebetaMapRef>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<GeocodingPlace[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [showSearchContainer, setShowSearchContainer] = useState(false);
     const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [initialCenter] = useState<[number, number]>([38.7463, 9.0223]);
     const [initialZoom] = useState(12);
     const { incidents, refetch } = useIncidents();
     const params = useLocalSearchParams();
     const { t } = useTranslation();
+    const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const searchMarkerRef = useRef<any>(null);
+    const skipSearchRef = useRef(false);
 
     useEffect(() => {
         // suppress MapLibre sprite loading warnings
@@ -53,6 +61,82 @@ export default function TrafficMap() {
         } catch (error) {
             console.log('Error getting location:', error);
         }
+    };
+
+    const handleSearch = async (query: string) => {
+        if (!query.trim()) {
+            setSearchResults([]);
+            setIsSearching(false);
+            return;
+        }
+
+        setIsSearching(true);
+        try {
+            const results = await navigationService.geocodePlace(query);
+            setSearchResults(results);
+        } catch (error) {
+            showToast.error('Search failed', 'Could not find location');
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    useEffect(() => {
+        if (searchTimeoutRef.current) {
+            clearTimeout(searchTimeoutRef.current);
+        }
+        if (skipSearchRef.current) {
+            skipSearchRef.current = false;
+            setShowSearchContainer(false);
+            return;
+        }
+
+        if (searchQuery.trim()) {
+            setShowSearchContainer(true);
+            searchTimeoutRef.current = setTimeout(() => {
+                handleSearch(searchQuery);
+            }, 500);
+        } else {
+            setSearchResults([]);
+            setIsSearching(false);
+            setShowSearchContainer(false);
+        }
+
+        return () => {
+            if (searchTimeoutRef.current) {
+                clearTimeout(searchTimeoutRef.current);
+            }
+        };
+    }, [searchQuery]);
+
+    const handleSelectPlace = (place: GeocodingPlace) => {
+        if (searchMarkerRef.current) {
+            mapRef.current?.clearMarkers();
+            addIncidentMarkers();
+        }
+
+        mapRef.current?.flyTo({
+            center: [place.longitude, place.latitude],
+            zoom: 15,
+            duration: 1000
+        });
+
+        const marker = mapRef.current?.addImageMarker(
+            [place.longitude, place.latitude],
+            '',
+            [40, 40],
+            () => showToast.info(place.name, place.type),
+            10,
+            undefined,
+            '#3B82F6',
+            'location'
+        );
+        searchMarkerRef.current = marker;
+
+        setSearchResults([]);
+
+        skipSearchRef.current = true;
+        setSearchQuery(place.name);
     };
 
     const handleMapClick = (lngLat: [number, number]) => {
@@ -141,8 +225,26 @@ export default function TrafficMap() {
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                         icon="search"
+                        showClearButton={true}
+                        onClear={() => {
+                            setSearchQuery('');
+                            setSearchResults([]);
+                            setShowSearchContainer(false);
+                        }}
                     />
                 </View>
+
+                <SearchResults
+                    results={searchResults}
+                    onSelectPlace={handleSelectPlace}
+                    onClose={() => {
+                        setSearchResults([]);
+                        setSearchQuery('');
+                        setShowSearchContainer(false);
+                    }}
+                    isLoading={isSearching}
+                    showContainer={showSearchContainer}
+                />
                 <View className="flex-row gap-2 mt-2 justify-around">
                     <TouchableOpacity
                         className="bg-white rounded-full px-3 py-2 shadow-md flex-row items-center gap-1.5"

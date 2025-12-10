@@ -9,6 +9,8 @@ interface InputProps extends TextInputProps {
     secureTextEntry?: boolean;
     className?: string;
     icon?: keyof typeof Ionicons.glyphMap;
+    showClearButton?: boolean;
+    onClear?: () => void;
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -17,6 +19,8 @@ export const Input: React.FC<InputProps> = ({
     secureTextEntry,
     className,
     icon,
+    showClearButton,
+    onClear,
     ...props
 }) => {
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -59,6 +63,18 @@ export const Input: React.FC<InputProps> = ({
                     placeholderTextColor={colors.gray[800]}
                     {...props}
                 />
+                {showClearButton && props.value && (
+                    <TouchableOpacity
+                        onPress={onClear}
+                        className="p-1"
+                    >
+                        <Ionicons
+                            name="close"
+                            size={20}
+                            color="#9CA3AF"
+                        />
+                    </TouchableOpacity>
+                )}
                 {secureTextEntry && (
                     <TouchableOpacity
                         onPress={() => setIsPasswordVisible(!isPasswordVisible)}
