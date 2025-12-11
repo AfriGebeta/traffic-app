@@ -28,6 +28,13 @@ export default function TrafficMap() {
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const searchMarkerRef = useRef<any>(null);
     const skipSearchRef = useRef(false);
+    const [selectedDestination, setSelectedDestination] = useState<GeocodingPlace | null>(null);
+    const [isNavigating, setIsNavigating] = useState(false);
+    const [navigationMode, setNavigationMode] = useState(false);
+    const [currentHeading, setCurrentHeading] = useState(0);
+    const locationSubscription = useRef<Location.LocationSubscription | null>(null);
+    const routeCoordinates = useRef<[number, number][]>([]);
+    const currentRouteIndex = useRef(0);
 
     useEffect(() => {
         // suppress MapLibre sprite loading warnings
@@ -134,9 +141,230 @@ export default function TrafficMap() {
         searchMarkerRef.current = marker;
 
         setSearchResults([]);
+        setSelectedDestination(place);
 
         skipSearchRef.current = true;
         setSearchQuery(place.name);
+    };
+
+    const findClosestPointOnRoute = (userLat: number, userLng: number): number => {
+        let closestIndex = 0;
+        let minDistance = Infinity;
+
+        routeCoordinates.current.forEach((coord, index) => {
+            const [lng, lat] = coord;
+            const distance = Math.sqrt(
+                Math.pow(lat - userLat, 2) + Math.pow(lng - userLng, 2)
+            );
+            if (distance < minDistance) {
+                minDistance = distance;
+                closestIndex = index;
+            }
+        });
+
+        return closestIndex;
+    };
+
+    const startLocationTracking = async () => {
+        try {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                showToast.error('Permission Denied', 'Location permission is required for navigation');
+                return;
+            }
+
+            //start watching location with heading
+            locationSubscription.current = await Location.watchPositionAsync(
+                {
+                    accuracy: Location.Accuracy.BestForNavigation,
+                    timeInterval: 1000,
+                    distanceInterval: 5,
+                },
+                (location) => {
+                    const newLocation = {
+                        lat: location.coords.latitude,
+                        lng: location.coords.longitude,
+                    };
+                    setUserLocation(newLocation);
+
+                    //update heading
+                    if (location.coords.heading !== null && location.coords.heading !== undefined) {
+                        setCurrentHeading(location.coords.heading);
+                    }
+
+                    //update camera
+                    if (navigationMode) {
+                        const heading = location.coords.heading !== null && location.coords.heading !== undefined
+                            ? location.coords.heading
+                            : 0;
+
+                        mapRef.current?.flyTo({
+                            center: [location.coords.longitude, location.coords.latitude],
+                            zoom: 18,
+                            duration: 500,
+                            pitch: 60,
+                            heading: heading,
+                        });
+
+                        //update route index
+                        currentRouteIndex.current = findClosestPointOnRoute(
+                            location.coords.latitude,
+                            location.coords.longitude
+                        );
+
+                        //update route to show latest
+                        updateRemainingRoute();
+                    }
+                }
+            );
+        } catch (error) {
+            console.error('Error starting location tracking:', error);
+        }
+    };
+
+    const stopLocationTracking = () => {
+        if (locationSubscription.current) {
+            locationSubscription.current.remove();
+            locationSubscription.current = null;
+        }
+    };
+
+
+
+    const updateRemainingRoute = () => {
+        if (currentRouteIndex.current >= routeCoordinates.current.length - 1) {
+            return;
+        }
+
+        
+        const remainingCoordinates = routeCoordinates.current.slice(currentRouteIndex.current);
+
+        if (remainingCoordinates.length > 1) {
+            const routeGeoJSON = {
+                type: 'Feature',
+                properties: {},
+                geometry: {
+                    type: 'LineString',
+                    coordinates: remainingCoordinates
+                }
+            };
+
+            mapRef.current?.displayRoute(routeGeoJSON, {
+                color: '#3B82F6',
+                width: 5,
+                opacity: 0.8
+            });
+        }
+    };
+
+
+
+    const handleNavigate = async () => {
+        if (!userLocation || !selectedDestination) {
+            showToast.error('Navigation Error', 'User location or destination not available');
+            return;
+        }
+
+        console.log('Starting navigation...');
+        console.log('Origin:', [userLocation.lat, userLocation.lng]);
+        console.log('Destination:', [selectedDestination.latitude, selectedDestination.longitude]);
+
+        setIsNavigating(true);
+        try {
+            const navigationData = await navigationService.getNavigation({
+                origin: [userLocation.lat, userLocation.lng],
+                destination: [selectedDestination.latitude, selectedDestination.longitude]
+            });
+
+            console.log('Navigation data received:', navigationData);
+
+            if (navigationData && navigationData.direction) {
+                
+                const routeGeoJSON = {
+                    type: 'Feature',
+                    properties: {
+                        distance: navigationData.totalDistance,
+                        duration: navigationData.timetaken
+                    },
+                    geometry: {
+                        type: 'LineString',
+                        coordinates: navigationData.direction.map(coord => [coord[1], coord[0]]) // lng lat
+                    }
+                };
+
+                console.log('Route GeoJSON:', JSON.stringify(routeGeoJSON, null, 2));
+
+                
+                mapRef.current?.displayRoute(routeGeoJSON, {
+                    color: '#3B82F6',
+                    width: 5,
+                    opacity: 0.8
+                });
+
+                
+                const distanceKm = (navigationData.totalDistance / 1000).toFixed(2);
+                const durationMin = (navigationData.timetaken / 60).toFixed(0);
+                showToast.success('Route Found', `${distanceKm} km • ${durationMin} min`);
+
+                
+                routeCoordinates.current = navigationData.direction.map(coord => [coord[1], coord[0]]);
+
+                
+                setNavigationMode(true);
+
+                //set camera
+                if (userLocation) {
+                    mapRef.current?.flyTo({
+                        center: [userLocation.lng, userLocation.lat],
+                        zoom: 18,
+                        duration: 1500,
+                        pitch: 60,
+                        heading: currentHeading,
+                    });
+                }
+
+               
+                startLocationTracking();
+            } else {
+                console.log('No navigation data or direction');
+                showToast.error('Navigation Error', 'No route data received');
+            }
+        } catch (error) {
+            console.error('Navigation error:', error);
+            showToast.error('Navigation Error', 'Could not calculate route');
+        } finally {
+            setIsNavigating(false);
+        }
+    };
+
+    const handleStopNavigation = () => {
+        setNavigationMode(false);
+        stopLocationTracking();
+        mapRef.current?.clearRoute();
+        setSelectedDestination(null);
+
+        //reset camera
+        if (userLocation) {
+            mapRef.current?.flyTo({
+                center: [userLocation.lng, userLocation.lat],
+                zoom: 15,
+                duration: 1000,
+                pitch: 0,
+                heading: 0,
+            });
+        }
+    };
+
+    // cleanup
+    useEffect(() => {
+        return () => {
+            stopLocationTracking();
+        };
+    }, []);
+
+    const handleClearRoute = () => {
+        mapRef.current?.clearRoute();
+        setSelectedDestination(null);
     };
 
     const handleMapClick = (lngLat: [number, number]) => {
@@ -216,68 +444,123 @@ export default function TrafficMap() {
                 zoom={initialZoom}
                 onMapClick={handleMapClick}
                 onMapLoaded={handleMapLoaded}
+                userLocation={userLocation}
+                showUserLocation={navigationMode}
+                userHeading={currentHeading}
             />
 
-            <View className="absolute top-12 left-4 right-4">
-                <View className="bg-white rounded-2xl shadow-lg">
-                    <Input
-                        placeholder={t('where-to-go')}
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                        icon="search"
-                        showClearButton={true}
-                        onClear={() => {
-                            setSearchQuery('');
+            {navigationMode && (
+                <View className="absolute top-12 left-4 right-4">
+                    <View className="bg-blue-600 rounded-2xl shadow-lg p-4">
+                        <View className="flex-row items-center justify-between">
+                            <View className="flex-1">
+                                <Text className="text-white text-lg font-bold">Navigating...</Text>
+                                <Text className="text-blue-100 text-sm">{selectedDestination?.name}</Text>
+                            </View>
+                            <TouchableOpacity
+                                className="bg-white rounded-full p-2"
+                                onPress={handleStopNavigation}
+                            >
+                                <Ionicons name="close" size={20} color="#2563EB" />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            )}
+
+            {!navigationMode && (
+                <View className="absolute top-12 left-4 right-4">
+                    <View className="bg-white rounded-2xl shadow-lg">
+                        <Input
+                            placeholder={t('where-to-go')}
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                            icon="search"
+                            showClearButton={true}
+                            onClear={() => {
+                                setSearchQuery('');
+                                setSearchResults([]);
+                                setShowSearchContainer(false);
+                            }}
+                        />
+                    </View>
+
+                    <SearchResults
+                        results={searchResults}
+                        onSelectPlace={handleSelectPlace}
+                        onClose={() => {
                             setSearchResults([]);
+                            setSearchQuery('');
                             setShowSearchContainer(false);
                         }}
+                        isLoading={isSearching}
+                        showContainer={showSearchContainer}
                     />
+                    {selectedDestination && !navigationMode && (
+                        <View className="mt-2 bg-white rounded-2xl shadow-lg p-3 flex-row items-center justify-between">
+                            <View className="flex-1">
+                                <Text className="text-sm font-semibold text-gray-900">{selectedDestination.name}</Text>
+                                <Text className="text-xs text-gray-500">{selectedDestination.type}</Text>
+                            </View>
+                            <View className="flex-row gap-2">
+                                <TouchableOpacity
+                                    className="bg-blue-500 rounded-full px-4 py-2 flex-row items-center gap-1.5"
+                                    onPress={handleNavigate}
+                                    disabled={isNavigating}
+                                >
+                                    <Ionicons name="navigate" size={16} color="#FFFFFF" />
+                                    <Text className="text-xs font-medium text-white">
+                                        {isNavigating ? 'Loading...' : 'Navigate'}
+                                    </Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    className="bg-gray-200 rounded-full p-2"
+                                    onPress={handleClearRoute}
+                                >
+                                    <Ionicons name="close" size={16} color="#6B7280" />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    )}
+
+
+
+
+
+                    <View className="flex-row gap-2 mt-2 justify-around">
+                        <TouchableOpacity
+                            className="bg-white rounded-full px-3 py-2 shadow-md flex-row items-center gap-1.5"
+                            onPress={() => showToast.info(t('coming-soon'), t('gas-station'))}
+                        >
+                            <Ionicons name="water" size={16} color="#EF4444" />
+                            <Text className="text-xs font-medium text-gray-700">{t('gas-station')}</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            className="bg-white rounded-full px-3 py-2 shadow-md flex-row items-center gap-1.5"
+                            onPress={() => showToast.info(t('coming-soon'), t('taxi-station'))}
+                        >
+                            <Ionicons name="car" size={16} color="#3B82F6" />
+                            <Text className="text-xs font-medium text-gray-700">{t('taxi-station')}</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            className="bg-white rounded-full px-3 py-2 shadow-md flex-row items-center gap-1.5"
+                            onPress={() => showToast.info(t('coming-soon'), t('repair-shop'))}
+                        >
+                            <Ionicons name="construct" size={16} color="#F59E0B" />
+                            <Text className="text-xs font-medium text-gray-700">{t('repair-shop')}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            className="bg-white rounded-full px-3 py-2 shadow-md flex-row items-center gap-1.5"
+                            onPress={() => showToast.info(t('coming-soon'), t('restaurants'))}
+                        >
+                            <Ionicons name="fast-food-outline" size={16} color="#EC4899" />
+                            <Text className="text-xs font-medium text-gray-700">{t('restaurants')}</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
-
-                <SearchResults
-                    results={searchResults}
-                    onSelectPlace={handleSelectPlace}
-                    onClose={() => {
-                        setSearchResults([]);
-                        setSearchQuery('');
-                        setShowSearchContainer(false);
-                    }}
-                    isLoading={isSearching}
-                    showContainer={showSearchContainer}
-                />
-                <View className="flex-row gap-2 mt-2 justify-around">
-                    <TouchableOpacity
-                        className="bg-white rounded-full px-3 py-2 shadow-md flex-row items-center gap-1.5"
-                        onPress={() => showToast.info(t('coming-soon'), t('gas-station'))}
-                    >
-                        <Ionicons name="water" size={16} color="#EF4444" />
-                        <Text className="text-xs font-medium text-gray-700">{t('gas-station')}</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        className="bg-white rounded-full px-3 py-2 shadow-md flex-row items-center gap-1.5"
-                        onPress={() => showToast.info(t('coming-soon'), t('taxi-station'))}
-                    >
-                        <Ionicons name="car" size={16} color="#3B82F6" />
-                        <Text className="text-xs font-medium text-gray-700">{t('taxi-station')}</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        className="bg-white rounded-full px-3 py-2 shadow-md flex-row items-center gap-1.5"
-                        onPress={() => showToast.info(t('coming-soon'), t('repair-shop'))}
-                    >
-                        <Ionicons name="construct" size={16} color="#F59E0B" />
-                        <Text className="text-xs font-medium text-gray-700">{t('repair-shop')}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        className="bg-white rounded-full px-3 py-2 shadow-md flex-row items-center gap-1.5"
-                        onPress={() => showToast.info(t('coming-soon'), t('restaurants'))}
-                    >
-                        <Ionicons name="fast-food-outline" size={16} color="#EC4899" />
-                        <Text className="text-xs font-medium text-gray-700">{t('restaurants')}</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
+            )}
 
             <ReportBottomSheet userLocation={userLocation} onIncidentReported={refetch} />
 
