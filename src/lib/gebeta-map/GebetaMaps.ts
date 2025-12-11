@@ -17,6 +17,7 @@ export interface FlyToOptions {
     zoom?: number;
     duration?: number;
     pitch?: number;
+    heading?: number;
 }
 
 export class GebetaMaps {
@@ -112,6 +113,7 @@ export class GebetaMaps {
             animationMode: 'flyTo',
             animationDuration: options.duration || 4000,
             pitch: options.pitch,
+            heading: options.heading,
         });
     }
 
