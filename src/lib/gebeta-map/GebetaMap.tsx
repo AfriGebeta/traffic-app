@@ -59,6 +59,9 @@ export interface GebetaMapProps {
     onMapLoaded?: () => void;
     mapStyleUrl?: string; // URL to style JSON
     mapStyleJson?: Record<string, unknown>; // Direct style JSON object
+    userLocation?: { lat: number; lng: number } | null;
+    showUserLocation?: boolean;
+    userHeading?: number;
 }
 
 export type MarkerData = {
@@ -81,9 +84,10 @@ interface MapMarker {
 // const STYLE_URL = "https://tiles.gebeta.app/styles/standard/style.json?device=mobile";
 
 const GebetaMapImpl = forwardRef<GebetaMapRef, GebetaMapProps>(
-    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson }, ref) => {
+    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, userLocation, showUserLocation, userHeading }, ref) => {
         const [mapStyleState, setMapStyleState] = useState<Record<string, unknown> | null>(null);
         const [markers, setMarkers] = useState<MapMarker[]>([]);
+        const [currentRoute, setCurrentRoute] = useState<any>(null);
         const cameraRef = useRef<any>(null);
         const [loading, setLoading] = useState(true);
         const [controller] = useState(() => new GebetaMaps({ apiKey }));
@@ -134,8 +138,14 @@ const GebetaMapImpl = forwardRef<GebetaMapRef, GebetaMapProps>(
             geocode: (...args) => gebetaMapsInstance.current!.geocode(...args),
             reverseGeocode: (...args) => gebetaMapsInstance.current!.reverseGeocode(...args),
             getDirections: (...args) => gebetaMapsInstance.current!.getDirections(...args),
-            displayRoute: (...args) => gebetaMapsInstance.current!.displayRoute(...args),
-            clearRoute: () => gebetaMapsInstance.current!.clearRoute(),
+            displayRoute: (...args) => {
+                gebetaMapsInstance.current!.displayRoute(...args);
+                setCurrentRoute(gebetaMapsInstance.current!.getCurrentRoute());
+            },
+            clearRoute: () => {
+                gebetaMapsInstance.current!.clearRoute();
+                setCurrentRoute(null);
+            },
             getCurrentRoute: () => gebetaMapsInstance.current!.getCurrentRoute(),
             getRouteSummary: () => gebetaMapsInstance.current!.getRouteSummary(),
             updateRouteStyle: (...args) => gebetaMapsInstance.current!.updateRouteStyle(...args),
@@ -188,10 +198,28 @@ const GebetaMapImpl = forwardRef<GebetaMapRef, GebetaMapProps>(
             processStyle();
         }, [apiKey, mapStyleUrl, mapStyleJson]);
 
-        const handleMapLoad = () => {
+        const handleMapLoad = async () => {
             if (gebetaMapsInstance.current && cameraRef.current) {
                 gebetaMapsInstance.current.setCameraInstance(cameraRef.current);
             }
+
+            //navigation img
+            if (mapViewRef.current) {
+                try {
+                
+                    const arrowSvg = `data:image/svg+xml;base64,${btoa(`
+                        <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="20" cy="20" r="18" fill="#3B82F6" stroke="white" stroke-width="3"/>
+                            <path d="M20 10 L20 30 M20 10 L15 15 M20 10 L25 15" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                        </svg>
+                    `)}`;
+
+                    await mapViewRef.current.addImage('navigation-arrow', arrowSvg);
+                } catch (error) {
+                    console.log('Error adding navigation arrow image:', error);
+                }
+            }
+
             onMapLoaded?.();
         };
 
@@ -227,6 +255,60 @@ const GebetaMapImpl = forwardRef<GebetaMapRef, GebetaMapProps>(
                         ref={cameraRef}
                         centerCoordinate={center}
                         zoomLevel={zoom} />
+                    {currentRoute && (
+                        <>
+                            <MapLibreGL.ShapeSource
+                                id="route-source"
+                                shape={currentRoute}
+                            >
+                                <MapLibreGL.LineLayer
+                                    id="route-layer"
+                                    style={{
+                                        lineColor: currentRoute?.style?.color || '#007cbf',
+                                        lineWidth: currentRoute?.style?.width || 3,
+                                        lineOpacity: currentRoute?.style?.opacity || 1,
+                                        lineCap: 'round',
+                                        lineJoin: 'round'
+                                    }}
+                                />
+                            </MapLibreGL.ShapeSource>
+                        </>
+                    )}
+                    {showUserLocation && userLocation && (
+                        <MapLibreGL.ShapeSource
+                            id="user-location-source"
+                            shape={{
+                                type: 'Feature',
+                                properties: {},
+                                geometry: {
+                                    type: 'Point',
+                                    coordinates: [userLocation.lng, userLocation.lat]
+                                }
+                            }}
+                        >
+                            <MapLibreGL.SymbolLayer
+                                id="user-location-layer"
+                                style={{
+                                    iconImage: 'navigation-arrow',
+                                    iconSize: 1.5,
+                                    iconRotate: userHeading || 0,
+                                    iconRotationAlignment: 'map',
+                                    iconAllowOverlap: true,
+                                    iconIgnorePlacement: true,
+                                }}
+                            />
+                            <MapLibreGL.CircleLayer
+                                id="user-location-circle"
+                                style={{
+                                    circleRadius: 20,
+                                    circleColor: '#3B82F6',
+                                    circleOpacity: 0.3,
+                                    circleStrokeWidth: 2,
+                                    circleStrokeColor: '#FFFFFF',
+                                }}
+                            />
+                        </MapLibreGL.ShapeSource>
+                    )}
                     {markers.map((marker, index) => (
                         <MapLibreGL.PointAnnotation
                             key={marker.id || index}
