@@ -35,3 +35,4 @@ export const getIncidentIconName = (type: IncidentType): string => {
 
     return iconMap[type] || 'alert-circle';
 };
+

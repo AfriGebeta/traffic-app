@@ -206,7 +206,7 @@ const GebetaMapImpl = forwardRef<GebetaMapRef, GebetaMapProps>(
             //navigation img
             if (mapViewRef.current) {
                 try {
-                
+
                     const arrowSvg = `data:image/svg+xml;base64,${btoa(`
                         <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
                             <circle cx="20" cy="20" r="18" fill="#3B82F6" stroke="white" stroke-width="3"/>
@@ -277,6 +277,7 @@ const GebetaMapImpl = forwardRef<GebetaMapRef, GebetaMapProps>(
                     {showUserLocation && userLocation && (
                         <MapLibreGL.ShapeSource
                             id="user-location-source"
+                            key={`user-location-${userLocation.lat}-${userLocation.lng}`}
                             shape={{
                                 type: 'Feature',
                                 properties: {},

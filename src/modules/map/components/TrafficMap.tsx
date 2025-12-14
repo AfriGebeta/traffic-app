@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, LogBox } from 'react-native';
+import { View, LogBox, Text, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import GebetaMap, { GebetaMapRef } from '../../../lib/gebeta-map/GebetaMap';
 import { Input } from '../../../shared/components';
 import { ReportBottomSheet } from './ReportBottomSheet';
@@ -27,7 +28,7 @@ export default function TrafficMap() {
     const { t } = useTranslation();
     const params = useLocalSearchParams();
     const { incidents, refetch } = useIncidents();
-    const { userLocation } = useUserLocation();
+    const { userLocation, setUserLocation } = useUserLocation();
 
     const {
         searchQuery,
@@ -47,6 +48,8 @@ export default function TrafficMap() {
         isNavigating,
         navigationMode,
         currentHeading,
+        simulateMovement,
+        setSimulateMovement,
         handleNavigate,
         handleStopNavigation,
         handleClearRoute,
@@ -94,7 +97,7 @@ export default function TrafficMap() {
     };
 
     const handleMapClick = () => {
-        
+
     };
 
     const handleMapLoaded = () => {
@@ -141,6 +144,13 @@ export default function TrafficMap() {
         }
     }, [incidents]);
 
+    //for console
+    // useEffect(() => {
+    //     if (navigationMode && userLocation) {
+    //         console.log('TrafficMap - User location updated:', userLocation);
+    //     }
+    // }, [userLocation, navigationMode]);
+
     return (
         <View className="flex-1">
             <GebetaMap
@@ -160,6 +170,8 @@ export default function TrafficMap() {
                 <NavigationBar
                     destination={selectedDestination}
                     onStop={handleStopNavigation}
+                    simulateMovement={simulateMovement}
+                    userLocation={userLocation}
                 />
             )}
 
@@ -189,12 +201,31 @@ export default function TrafficMap() {
                     />
 
                     {selectedDestination && (
-                        <DestinationCard
-                            destination={selectedDestination}
-                            isNavigating={isNavigating}
-                            onNavigate={handleNavigate}
-                            onClear={handleClearRoute}
-                        />
+                        <>
+                            {/* for testing */}
+                            <View className="mt-2 bg-gray-100 rounded-2xl shadow-lg p-3">
+                                <TouchableOpacity
+                                    className="flex-row items-center justify-between"
+                                    onPress={() => setSimulateMovement(!simulateMovement)}
+                                >
+                                    <View className="flex-row items-center gap-2">
+                                        <Ionicons
+                                            name={simulateMovement ? "checkmark-circle" : "ellipse-outline"}
+                                            size={20}
+                                            color={simulateMovement ? "#10B981" : "#6B7280"}
+                                        />
+                                        <Text className="text-sm font-medium text-gray-700">Simulate Movement (testing)</Text>
+                                    </View>
+                                </TouchableOpacity>
+                            </View>
+
+                            <DestinationCard
+                                destination={selectedDestination}
+                                isNavigating={isNavigating}
+                                onNavigate={() => handleNavigate(setUserLocation)}
+                                onClear={handleClearRoute}
+                            />
+                        </>
                     )}
 
                     <QuickActions />
