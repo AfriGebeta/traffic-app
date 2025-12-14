@@ -12,8 +12,10 @@ export const useNavigation = (
     const [isNavigating, setIsNavigating] = useState(false);
     const [navigationMode, setNavigationMode] = useState(false);
     const [currentHeading, setCurrentHeading] = useState(0);
+    const [simulateMovement, setSimulateMovement] = useState(false);
 
     const locationSubscription = useRef<Location.LocationSubscription | null>(null);
+    const simulationInterval = useRef<ReturnType<typeof setInterval> | null>(null);
     const routeCoordinates = useRef<[number, number][]>([]);
     const currentRouteIndex = useRef(0);
 
@@ -54,7 +56,7 @@ export const useNavigation = (
 
             mapRef.current?.displayRoute(routeGeoJSON, {
                 color: '#3B82F6',
-                width: 5,
+                width: 7,
                 opacity: 0.8
             });
         }
@@ -68,39 +70,52 @@ export const useNavigation = (
                 return;
             }
 
+            // stop existing subs
+            if (locationSubscription.current) {
+                locationSubscription.current.remove();
+            }
+
+            console.log('starting location tracking for navigation...');
+
             locationSubscription.current = await Location.watchPositionAsync(
                 {
                     accuracy: Location.Accuracy.BestForNavigation,
-                    timeInterval: 1000,
-                    distanceInterval: 5,
+                    timeInterval: 2000,     
+                    distanceInterval: 3,   
+                    mayShowUserSettingsDialog: true,
                 },
                 (location) => {
+                    console.log('Navigation location update:', location.coords.latitude, location.coords.longitude);
+
                     const heading = location.coords.heading !== null && location.coords.heading !== undefined
                         ? location.coords.heading
                         : 0;
 
                     setCurrentHeading(heading);
 
-                    if (navigationMode) {
-                        mapRef.current?.flyTo({
-                            center: [location.coords.longitude, location.coords.latitude],
-                            zoom: 18,
-                            duration: 500,
-                            pitch: 60,
-                            heading: heading,
-                        });
+                    // update camera when nav
+                    mapRef.current?.flyTo({
+                        center: [location.coords.longitude, location.coords.latitude],
+                        zoom: 18,
+                        duration: 500,
+                        pitch: 60,
+                        heading: heading,
+                    });
 
-                        currentRouteIndex.current = findClosestPointOnRoute(
-                            location.coords.latitude,
-                            location.coords.longitude
-                        );
+                    currentRouteIndex.current = findClosestPointOnRoute(
+                        location.coords.latitude,
+                        location.coords.longitude
+                    );
 
-                        updateRemainingRoute();
-                    }
+                    updateRemainingRoute();
                 }
             );
+
+            console.log('Location tracking started successfully');
+            showToast.success('location tracking started')
         } catch (error) {
             console.error('Error starting location tracking:', error);
+            showToast.error('Location Error', 'Could not start location tracking');
         }
     };
 
@@ -111,7 +126,62 @@ export const useNavigation = (
         }
     };
 
-    const handleNavigate = async () => {
+    const calculateBearing = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+        const toRad = (deg: number) => (deg * Math.PI) / 180;
+        const toDeg = (rad: number) => (rad * 180) / Math.PI;
+
+        const dLng = toRad(lng2 - lng1);
+        const y = Math.sin(dLng) * Math.cos(toRad(lat2));
+        const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) -
+            Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLng);
+
+        let bearing = toDeg(Math.atan2(y, x));
+        return (bearing + 360) % 360;
+    };
+
+    const startSimulation = (setUserLocation: (location: { lat: number; lng: number }) => void) => {
+        currentRouteIndex.current = 0;
+
+        simulationInterval.current = setInterval(() => {
+            if (currentRouteIndex.current >= routeCoordinates.current.length) {
+                stopSimulation();
+                showToast.success('Arrived', 'You have reached your destination!');
+                handleStopNavigation();
+                return;
+            }
+
+            const [lng, lat] = routeCoordinates.current[currentRouteIndex.current];
+
+            let heading = 0;
+            if (currentRouteIndex.current < routeCoordinates.current.length - 1) {
+                const [nextLng, nextLat] = routeCoordinates.current[currentRouteIndex.current + 1];
+                heading = calculateBearing(lat, lng, nextLat, nextLng);
+            }
+
+            setUserLocation({ lat, lng });
+            setCurrentHeading(heading);
+
+            mapRef.current?.flyTo({
+                center: [lng, lat],
+                zoom: 18,
+                duration: 500,
+                pitch: 60,
+                heading: heading,
+            });
+
+            updateRemainingRoute();
+            currentRouteIndex.current += 1;
+        }, 1000);
+    };
+
+    const stopSimulation = () => {
+        if (simulationInterval.current) {
+            clearInterval(simulationInterval.current);
+            simulationInterval.current = null;
+        }
+    };
+
+    const handleNavigate = async (setUserLocation?: (location: { lat: number; lng: number }) => void) => {
         if (!userLocation || !selectedDestination) {
             showToast.error('Navigation Error', 'User location or destination not available');
             return;
@@ -160,7 +230,11 @@ export const useNavigation = (
                     });
                 }
 
-                startLocationTracking();
+                if (simulateMovement && setUserLocation) {
+                    startSimulation(setUserLocation);
+                } else {
+                    startLocationTracking();
+                }
             } else {
                 showToast.error('Navigation Error', 'No route data received');
             }
@@ -175,6 +249,7 @@ export const useNavigation = (
     const handleStopNavigation = () => {
         setNavigationMode(false);
         stopLocationTracking();
+        stopSimulation();
         mapRef.current?.clearRoute();
         setSelectedDestination(null);
 
@@ -197,6 +272,7 @@ export const useNavigation = (
     useEffect(() => {
         return () => {
             stopLocationTracking();
+            stopSimulation();
         };
     }, []);
 
@@ -206,6 +282,8 @@ export const useNavigation = (
         isNavigating,
         navigationMode,
         currentHeading,
+        simulateMovement,
+        setSimulateMovement,
         handleNavigate,
         handleStopNavigation,
         handleClearRoute,
