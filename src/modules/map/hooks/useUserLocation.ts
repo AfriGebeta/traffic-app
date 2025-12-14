@@ -9,7 +9,7 @@ export const useUserLocation = () => {
         try {
             const { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') {
-                console.log('Location permission denied');
+                console.log('location denied');
                 return;
             }
 
@@ -37,7 +37,7 @@ export const useUserLocation = () => {
                 }
             );
         } catch (error) {
-            console.log('Error getting location:', error);
+            console.log('error getting location:', error);
         }
     };
 
