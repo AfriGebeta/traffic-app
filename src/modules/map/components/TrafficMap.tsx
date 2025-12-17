@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { View, LogBox, Text, TouchableOpacity } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import GebetaMap, { GebetaMapRef } from '../../../lib/gebeta-map/GebetaMap';
 import { Input } from '../../../shared/components';
@@ -9,10 +9,12 @@ import { SearchResults } from './SearchResults';
 import { NavigationBar } from './NavigationBar';
 import { DestinationCard } from './DestinationCard';
 import { QuickActions } from './QuickActions';
+import { IncidentAlert } from './IncidentAlert';
 import { useIncidents } from '../../incidents/hooks/useIncidents';
 import { useUserLocation } from '../hooks/useUserLocation';
 import { useSearch } from '../hooks/useSearch';
 import { useNavigation } from '../hooks/useNavigation';
+import { useIncidentAlerts } from '../hooks/useIncidentAlerts';
 import { getIncidentIconUrl, getIncidentColor, getIncidentIconName } from '../../incidents/utils/incidentIcons';
 import { showToast } from '../../../shared/utils/toast';
 import { useTranslation } from 'react-i18next';
@@ -50,10 +52,15 @@ export default function TrafficMap() {
         currentHeading,
         simulateMovement,
         setSimulateMovement,
+        snappedLocation,
+        routeCoordinates,
         handleNavigate,
         handleStopNavigation,
         handleClearRoute,
-    } = useNavigation(mapRef, userLocation);
+    } = useNavigation(mapRef, userLocation, setUserLocation);
+
+    //alerting incidents
+    const activeIncidentAlert = useIncidentAlerts(userLocation, incidents, navigationMode, routeCoordinates);
 
     useEffect(() => {
         LogBox.ignoreLogs(['MapLibre error', 'Failed to load sprite']);
@@ -64,6 +71,13 @@ export default function TrafficMap() {
             refetch();
         }
     }, [params.refresh, refetch]);
+
+    //refetching after report
+    useFocusEffect(
+        React.useCallback(() => {
+            refetch();
+        }, [])
+    );
 
     const handleSelectPlace = (place: GeocodingPlace) => {
         if (searchMarkerRef.current) {
@@ -145,11 +159,14 @@ export default function TrafficMap() {
     }, [incidents]);
 
     //for console
-    // useEffect(() => {
-    //     if (navigationMode && userLocation) {
-    //         console.log('TrafficMap - User location updated:', userLocation);
-    //     }
-    // }, [userLocation, navigationMode]);
+    useEffect(() => {
+        if (navigationMode) {
+            console.log('navigation mode:', navigationMode);
+            console.log('user location:', userLocation);
+            console.log('snapped location:', snappedLocation);
+            console.log('using location:', navigationMode && snappedLocation ? snappedLocation : userLocation);
+        }
+    }, [userLocation, snappedLocation, navigationMode]);
 
     return (
         <View className="flex-1">
@@ -161,10 +178,18 @@ export default function TrafficMap() {
                 zoom={initialZoom}
                 onMapClick={handleMapClick}
                 onMapLoaded={handleMapLoaded}
-                userLocation={userLocation}
+                userLocation={navigationMode && snappedLocation ? snappedLocation : userLocation}
                 showUserLocation={navigationMode}
                 userHeading={currentHeading}
             />
+
+            {activeIncidentAlert && (
+                <IncidentAlert
+                    incidentName={activeIncidentAlert.incidentName}
+                    distance={activeIncidentAlert.distance}
+                    incidentType={activeIncidentAlert.incidentType}
+                />
+            )}
 
             {navigationMode && selectedDestination && (
                 <NavigationBar

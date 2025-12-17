@@ -15,7 +15,7 @@ import {
     Image,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
-import MapLibreGL from "@maplibre/maplibre-react-native";
+import * as MapLibreGL from "@maplibre/maplibre-react-native";
 import type { Fence, FencePoint } from "./FenceManager";
 import { FlyToOptions, GebetaMaps } from "./GebetaMaps";
 
@@ -208,9 +208,9 @@ const GebetaMapImpl = forwardRef<GebetaMapRef, GebetaMapProps>(
                 try {
 
                     const arrowSvg = `data:image/svg+xml;base64,${btoa(`
-                        <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="20" cy="20" r="18" fill="#3B82F6" stroke="white" stroke-width="3"/>
-                            <path d="M20 10 L20 30 M20 10 L15 15 M20 10 L25 15" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                        <svg width="50" height="50" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="25" cy="25" r="20" fill="#3B82F6" stroke="white" stroke-width="3"/>
+                            <polygon points="25,10 18,32 25,28 32,32" fill="white"/>
                         </svg>
                     `)}`;
 
@@ -275,40 +275,64 @@ const GebetaMapImpl = forwardRef<GebetaMapRef, GebetaMapProps>(
                         </>
                     )}
                     {showUserLocation && userLocation && (
-                        <MapLibreGL.ShapeSource
-                            id="user-location-source"
-                            key={`user-location-${userLocation.lat}-${userLocation.lng}`}
-                            shape={{
-                                type: 'Feature',
-                                properties: {},
-                                geometry: {
-                                    type: 'Point',
-                                    coordinates: [userLocation.lng, userLocation.lat]
-                                }
-                            }}
+                        <MapLibreGL.PointAnnotation
+                            key={`user-${userLocation.lat}-${userLocation.lng}`}
+                            id="user-location-marker"
+                            coordinate={[userLocation.lng, userLocation.lat]}
                         >
-                            <MapLibreGL.SymbolLayer
-                                id="user-location-layer"
-                                style={{
-                                    iconImage: 'navigation-arrow',
-                                    iconSize: 1.5,
-                                    iconRotate: userHeading || 0,
-                                    iconRotationAlignment: 'map',
-                                    iconAllowOverlap: true,
-                                    iconIgnorePlacement: true,
-                                }}
-                            />
-                            <MapLibreGL.CircleLayer
-                                id="user-location-circle"
-                                style={{
-                                    circleRadius: 20,
-                                    circleColor: '#3B82F6',
-                                    circleOpacity: 0.3,
-                                    circleStrokeWidth: 2,
-                                    circleStrokeColor: '#FFFFFF',
-                                }}
-                            />
-                        </MapLibreGL.ShapeSource>
+                            <View style={{
+                                width: 50,
+                                height: 50,
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transform: [{ rotate: `${userHeading || 0}deg` }]
+                            }}>
+                                {/*outer glow*/}
+                                <View style={{
+                                    position: 'absolute',
+                                    width: 50,
+                                    height: 50,
+                                    borderRadius: 25,
+                                    backgroundColor: '#3B82F6',
+                                    opacity: 0.2,
+                                }} />
+                                {/*main arrow shape*/}
+                                <View style={{
+                                    width: 0,
+                                    height: 0,
+                                    backgroundColor: 'transparent',
+                                    borderStyle: 'solid',
+                                    borderLeftWidth: 16,
+                                    borderRightWidth: 16,
+                                    borderBottomWidth: 40,
+                                    borderLeftColor: 'transparent',
+                                    borderRightColor: 'transparent',
+                                    borderBottomColor: '#3B82F6',
+                                    shadowColor: '#000',
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowOpacity: 0.4,
+                                    shadowRadius: 4,
+                                    elevation: 8,
+                                }}>
+                                    {/*white border thing */}
+                                    <View style={{
+                                        position: 'absolute',
+                                        top: 2,
+                                        left: -14,
+                                        width: 0,
+                                        height: 0,
+                                        backgroundColor: 'transparent',
+                                        borderStyle: 'solid',
+                                        borderLeftWidth: 14,
+                                        borderRightWidth: 14,
+                                        borderBottomWidth: 36,
+                                        borderLeftColor: 'transparent',
+                                        borderRightColor: 'transparent',
+                                        borderBottomColor: '#FFFFFF',
+                                    }} />
+                                </View>
+                            </View>
+                        </MapLibreGL.PointAnnotation>
                     )}
                     {markers.map((marker, index) => (
                         <MapLibreGL.PointAnnotation
