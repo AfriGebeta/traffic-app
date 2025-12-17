@@ -6,43 +6,85 @@ import { showToast } from '../../../shared/utils/toast';
 
 export const useNavigation = (
     mapRef: React.RefObject<GebetaMapRef | null>,
-    userLocation: { lat: number; lng: number } | null
+    userLocation: { lat: number; lng: number } | null,
+    setUserLocation?: (location: { lat: number; lng: number }) => void
 ) => {
     const [selectedDestination, setSelectedDestination] = useState<GeocodingPlace | null>(null);
     const [isNavigating, setIsNavigating] = useState(false);
     const [navigationMode, setNavigationMode] = useState(false);
     const [currentHeading, setCurrentHeading] = useState(0);
     const [simulateMovement, setSimulateMovement] = useState(false);
+    const [snappedLocation, setSnappedLocation] = useState<{ lat: number; lng: number } | null>(null);
 
     const locationSubscription = useRef<Location.LocationSubscription | null>(null);
     const simulationInterval = useRef<ReturnType<typeof setInterval> | null>(null);
     const routeCoordinates = useRef<[number, number][]>([]);
     const currentRouteIndex = useRef(0);
 
-    const findClosestPointOnRoute = (userLat: number, userLng: number): number => {
-        let closestIndex = 0;
+    const findClosestPointOnRoute = (userLat: number, userLng: number): { index: number; snappedLat: number; snappedLng: number } => {
+        let closestIndex = currentRouteIndex.current; 
         let minDistance = Infinity;
+        let snappedLat = userLat;
+        let snappedLng = userLng;
 
-        routeCoordinates.current.forEach((coord, index) => {
-            const [lng, lat] = coord;
+        const searchStart = Math.max(0, currentRouteIndex.current - 5);
+        const searchEnd = Math.min(routeCoordinates.current.length - 1, currentRouteIndex.current + 20);
+
+        for (let i = searchStart; i < searchEnd; i++) {
+            const [lng1, lat1] = routeCoordinates.current[i];
+            const [lng2, lat2] = routeCoordinates.current[i + 1];
+
+            const projected = projectPointOnSegment(userLat, userLng, lat1, lng1, lat2, lng2);
             const distance = Math.sqrt(
-                Math.pow(lat - userLat, 2) + Math.pow(lng - userLng, 2)
+                Math.pow(projected.lat - userLat, 2) + Math.pow(projected.lng - userLng, 2)
             );
+
             if (distance < minDistance) {
                 minDistance = distance;
-                closestIndex = index;
+                closestIndex = i;
+                snappedLat = projected.lat;
+                snappedLng = projected.lng;
             }
-        });
+        }
 
-        return closestIndex;
+        return { index: closestIndex, snappedLat, snappedLng };
     };
 
-    const updateRemainingRoute = () => {
+    const projectPointOnSegment = (
+        pointLat: number,
+        pointLng: number,
+        lat1: number,
+        lng1: number,
+        lat2: number,
+        lng2: number
+    ): { lat: number; lng: number } => {
+        const dx = lng2 - lng1;
+        const dy = lat2 - lat1;
+
+        if (dx === 0 && dy === 0) {
+            return { lat: lat1, lng: lng1 };
+        }
+
+        const t = Math.max(0, Math.min(1,
+            ((pointLng - lng1) * dx + (pointLat - lat1) * dy) / (dx * dx + dy * dy)
+        ));
+
+        return {
+            lat: lat1 + t * dy,
+            lng: lng1 + t * dx
+        };
+    };
+
+    const updateRemainingRoute = (snappedLng?: number, snappedLat?: number) => {
         if (currentRouteIndex.current >= routeCoordinates.current.length - 1) {
             return;
         }
 
         const remainingCoordinates = routeCoordinates.current.slice(currentRouteIndex.current);
+
+        if (snappedLng !== undefined && snappedLat !== undefined) {
+            remainingCoordinates[0] = [snappedLng, snappedLat];
+        }
 
         if (remainingCoordinates.length > 1) {
             const routeGeoJSON = {
@@ -80,8 +122,8 @@ export const useNavigation = (
             locationSubscription.current = await Location.watchPositionAsync(
                 {
                     accuracy: Location.Accuracy.BestForNavigation,
-                    timeInterval: 2000,     
-                    distanceInterval: 3,   
+                    timeInterval: 1000, 
+                    distanceInterval: 2, 
                     mayShowUserSettingsDialog: true,
                 },
                 (location) => {
@@ -93,26 +135,39 @@ export const useNavigation = (
 
                     setCurrentHeading(heading);
 
-                    // update camera when nav
-                    mapRef.current?.flyTo({
-                        center: [location.coords.longitude, location.coords.latitude],
-                        zoom: 18,
-                        duration: 500,
-                        pitch: 60,
-                        heading: heading,
-                    });
-
-                    currentRouteIndex.current = findClosestPointOnRoute(
+                    const closest = findClosestPointOnRoute(
                         location.coords.latitude,
                         location.coords.longitude
                     );
 
-                    updateRemainingRoute();
+                    currentRouteIndex.current = closest.index;
+
+                    const snapped = {
+                        lat: closest.snappedLat,
+                        lng: closest.snappedLng
+                    };
+
+                    setSnappedLocation(snapped);
+
+                    if (setUserLocation) {
+                        setUserLocation(snapped);
+                    }
+
+                    mapRef.current?.flyTo({
+                        center: [closest.snappedLng, closest.snappedLat],
+                        zoom: 18,
+                        duration: 800,
+                        pitch: 60,
+                        heading: heading,
+                    });
+
+                  
+                    updateRemainingRoute(closest.snappedLng, closest.snappedLat);
                 }
             );
 
-            console.log('Location tracking started successfully');
-            showToast.success('location tracking started')
+            //console.log('Location tracking started successfully');
+            //showToast.success('location tracking started')
         } catch (error) {
             console.error('Error starting location tracking:', error);
             showToast.error('Location Error', 'Could not start location tracking');
@@ -158,18 +213,21 @@ export const useNavigation = (
                 heading = calculateBearing(lat, lng, nextLat, nextLng);
             }
 
-            setUserLocation({ lat, lng });
+            const location = { lat, lng };
+
+            setUserLocation(location);
+            setSnappedLocation(location);
             setCurrentHeading(heading);
 
             mapRef.current?.flyTo({
                 center: [lng, lat],
                 zoom: 18,
-                duration: 500,
+                duration: 800,
                 pitch: 60,
                 heading: heading,
             });
 
-            updateRemainingRoute();
+            updateRemainingRoute(lng, lat);
             currentRouteIndex.current += 1;
         }, 1000);
     };
@@ -284,6 +342,8 @@ export const useNavigation = (
         currentHeading,
         simulateMovement,
         setSimulateMovement,
+        snappedLocation,
+        routeCoordinates: routeCoordinates.current,
         handleNavigate,
         handleStopNavigation,
         handleClearRoute,

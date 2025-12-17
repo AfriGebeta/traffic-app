@@ -90,6 +90,16 @@
         "AM": "ቦታ ይጠቁሙ "
     },
     {
+        "key": "ahead",
+        "EN_US": "Ahead",
+        "AM": "በቅርብ ርቀት ላይ"
+    },
+    {
+        "key": "in",
+        "EN_US": "in",
+        "AM": "በ"
+    },
+    {
         "key": "report",
         "EN_US": "Report",
         "AM": "ሪፖርት"
@@ -273,66 +283,65 @@
         "key": "add-new",
         "EN_US": "Add a new",
         "AM": "አዲስ"
+    },
+    {
+        "key": "fill-in-the-details",
+        "EN_US": "Fill in the details",
+        "AM": "ዝርዝሮችን ይሙሉ"
+    },
+    {
+        "key": "place-name",
+        "EN_US": "Place Name",
+        "AM": "የቦታ ስም"
+    },
+    {
+        "key": "place-name-placeholder",
+        "EN_US": "e.g., Total Gas Station",
+        "AM": "ለምሳሌ፣ ቶታል ነዳጅ ማደያ"
+    },
+    {
+        "key": "add-details-about-place",
+        "EN_US": "Add details about this place",
+        "AM": "ስለዚህ ቦታ ዝርዝር ያስገቡ"
+    },
+    {
+        "key": "pick-location-on-map",
+        "EN_US": "Pick location on map",
+        "AM": "በካርታ ላይ አድራሻ ይምረጡ"
+    },
+    {
+        "key": "photos",
+        "EN_US": "Photos",
+        "AM": "ፎቶዎች"
+    },
+    {
+        "key": "camera",
+        "EN_US": "Camera",
+        "AM": "ካሜራ"
+    },
+    {
+        "key": "gallery",
+        "EN_US": "Gallery",
+        "AM": "ጋለሪ"
+    },
+    {
+        "key": "uploading",
+        "EN_US": "Uploading...",
+        "AM": "በመጫን ላይ..."
+    },
+    {
+        "key": "submit-contribution",
+        "EN_US": "Submit Contribution",
+        "AM": "ጥቆማ ያስገቡ"
+    },
+    {
+        "key": "submitting",
+        "EN_US": "Submitting...",
+        "AM": "በማስገባት ላይ..."
+    },
+    {
+        "key": "location",
+        "EN_US": "Location",
+        "AM": "አድራሻ"
     }
-,
-{
-    "key": "fill-in-the-details",
-    "EN_US": "Fill in the details",
-    "AM": "ዝርዝሮችን ይሙሉ"
-},
-{
-    "key": "place-name",
-    "EN_US": "Place Name",
-    "AM": "የቦታ ስም"
-},
-{
-    "key": "place-name-placeholder",
-    "EN_US": "e.g., Total Gas Station",
-    "AM": "ለምሳሌ፣ ቶታል ነዳጅ ማደያ"
-},
-{
-    "key": "add-details-about-place",
-    "EN_US": "Add details about this place",
-    "AM": "ስለዚህ ቦታ ዝርዝር ያስገቡ"
-},
-{
-    "key": "pick-location-on-map",
-    "EN_US": "Pick location on map",
-    "AM": "በካርታ ላይ አድራሻ ይምረጡ"
-},
-{
-    "key": "photos",
-    "EN_US": "Photos",
-    "AM": "ፎቶዎች"
-},
-{
-    "key": "camera",
-    "EN_US": "Camera",
-    "AM": "ካሜራ"
-},
-{
-    "key": "gallery",
-    "EN_US": "Gallery",
-    "AM": "ጋለሪ"
-},
-{
-    "key": "uploading",
-    "EN_US": "Uploading...",
-    "AM": "በመጫን ላይ..."
-},
-{
-    "key": "submit-contribution",
-    "EN_US": "Submit Contribution",
-    "AM": "ጥቆማ ያስገቡ"
-},
-{
-    "key": "submitting",
-    "EN_US": "Submitting...",
-    "AM": "በማስገባት ላይ..."
-},
-{
-    "key": "location",
-    "EN_US": "Location",
-    "AM": "አድራሻ"
-}
 ]

@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { BottomSheet, Button } from '../../../shared/components';
 import { colors } from '../../../shared/theme/colors';
-import { INCIDENT_TYPES } from '../../incidents/types/incident.types';
+import { INCIDENT_TYPES, IncidentType } from '../../incidents/types/incident.types';
 import { useTranslation } from 'react-i18next';
 import { getIncidentTranslationKey } from '../../incidents/utils/incidentTranslations';
 
@@ -13,12 +13,36 @@ interface ReportBottomSheetProps {
     onIncidentReported?: () => void;
 }
 
-export const ReportBottomSheet: React.FC<ReportBottomSheetProps> = ({ userLocation, onIncidentReported }) => {
+const IncidentOption = React.memo<{
+    option: typeof INCIDENT_TYPES[number];
+    onPress: (id: string) => void;
+    t: (key: string) => string;
+}>(({ option, onPress, t }) => (
+    <TouchableOpacity
+        className="bg-gray-50 rounded-xl p-4 flex-row items-center border-2"
+        style={{ borderColor: colors.primary.light }}
+        onPress={() => onPress(option.id)}
+        activeOpacity={0.7}
+    >
+        <View
+            className="w-12 h-12 rounded-full items-center justify-center mr-3"
+            style={{ backgroundColor: option.color + '20' }}
+        >
+            <Ionicons name={option.icon} size={24} color={option.color} />
+        </View>
+        <Text className="text-lg font-bold text-gray-800 flex-1">
+            {t(getIncidentTranslationKey(option.id as IncidentType))}
+        </Text>
+        <Ionicons name="chevron-forward" size={20} color={colors.primary.light} />
+    </TouchableOpacity>
+));
+
+export const ReportBottomSheet: React.FC<ReportBottomSheetProps> = React.memo(({ userLocation }) => {
     const { t } = useTranslation();
     const router = useRouter();
     const [showReportOptions, setShowReportOptions] = useState(false);
 
-    const handleOptionPress = (optionId: string) => {
+    const handleOptionPress = React.useCallback((optionId: string) => {
         const params = new URLSearchParams({
             type: optionId,
             lat: userLocation?.lat.toString() || '',
@@ -27,10 +51,10 @@ export const ReportBottomSheet: React.FC<ReportBottomSheetProps> = ({ userLocati
         });
         router.push(`/incident-report?${params.toString()}`);
         setShowReportOptions(false);
-    };
+    }, [userLocation, router]);
 
     return (
-        <BottomSheet>
+        <BottomSheet expandWhenOpen={showReportOptions}>
             {!showReportOptions ? (
                 <View>
                     <Button
@@ -47,9 +71,9 @@ export const ReportBottomSheet: React.FC<ReportBottomSheetProps> = ({ userLocati
                         <Text className="text-white font-semibold text-xl">{t('contribute')}</Text>
                     </TouchableOpacity>
 
-                    <Text className="text-2xl font-bold text-gray-800 mt-6">
+                    {/* <Text className="text-2xl font-bold text-gray-800 mt-6">
                         {t('recents')}
-                    </Text>
+                    </Text> */}
                 </View>
             ) : (
                 <View>
@@ -69,28 +93,16 @@ export const ReportBottomSheet: React.FC<ReportBottomSheetProps> = ({ userLocati
 
                     <View className="gap-2">
                         {INCIDENT_TYPES.map((option) => (
-                            <TouchableOpacity
+                            <IncidentOption
                                 key={option.id}
-                                className="bg-gray-50 rounded-xl p-4 flex-row items-center border-2"
-                                style={{ borderColor: colors.primary.light }}
-                                onPress={() => handleOptionPress(option.id)}
-                                activeOpacity={0.7}
-                            >
-                                <View
-                                    className="w-12 h-12 rounded-full items-center justify-center mr-3"
-                                    style={{ backgroundColor: option.color + '20' }}
-                                >
-                                    <Ionicons name={option.icon} size={24} color={option.color} />
-                                </View>
-                                <Text className="text-lg font-bold text-gray-800 flex-1">
-                                    {t(getIncidentTranslationKey(option.id as any))}
-                                </Text>
-                                <Ionicons name="chevron-forward" size={20} color={colors.primary.light} />
-                            </TouchableOpacity>
+                                option={option}
+                                onPress={handleOptionPress}
+                                t={t}
+                            />
                         ))}
                     </View>
                 </View>
             )}
         </BottomSheet>
     );
-};
+});

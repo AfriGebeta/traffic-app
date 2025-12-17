@@ -35,8 +35,8 @@ export default function IncidentReportScreen() {
         if (incident) {
             showToast.success(t('incident-reported-successfully'));
             setTimeout(() => {
-                router.push('/?refresh=true');
-            }, 1000);
+                router.back();
+            }, 500);
         } else if (error) {
             showToast.error(error);
         }
