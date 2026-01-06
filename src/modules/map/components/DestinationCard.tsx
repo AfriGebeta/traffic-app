@@ -17,27 +17,29 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({
     onClear,
 }) => {
     return (
-        <View className="mt-2 bg-white rounded-2xl shadow-lg p-3 flex-row items-center justify-between">
-            <View className="flex-1">
-                <Text className="text-sm font-semibold text-gray-900">{destination.name}</Text>
-                <Text className="text-xs text-gray-500">{destination.type}</Text>
+        <View className="mt-3 bg-white rounded-3xl shadow-lg p-4 flex-row items-center justify-between">
+            <View className="flex-1 mr-3">
+                <Text className="text-base font-semibold text-gray-900" numberOfLines={1}>
+                    {destination.name}
+                </Text>
+                <Text className="text-sm text-gray-500 mt-0.5">{destination.type}</Text>
             </View>
             <View className="flex-row gap-2">
                 <TouchableOpacity
-                    className="bg-blue-500 rounded-full px-4 py-2 flex-row items-center gap-1.5"
+                    className="bg-yellow-400 rounded-full px-5 py-3 flex-row items-center gap-2"
                     onPress={onNavigate}
                     disabled={isNavigating}
                 >
-                    <Ionicons name="navigate" size={16} color="#FFFFFF" />
-                    <Text className="text-xs font-medium text-white">
-                        {isNavigating ? 'Loading...' : 'Navigate'}
+                    <Ionicons name="navigate" size={18} color="#78350F" />
+                    <Text className="text-sm font-semibold text-yellow-900">
+                        {isNavigating ? 'Loading...' : 'Go'}
                     </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    className="bg-gray-200 rounded-full p-2"
+                    className="bg-gray-100 rounded-full p-3"
                     onPress={onClear}
                 >
-                    <Ionicons name="close" size={16} color="#6B7280" />
+                    <Ionicons name="close" size={18} color="#6B7280" />
                 </TouchableOpacity>
             </View>
         </View>
