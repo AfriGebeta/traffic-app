@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import * as Location from 'expo-location';
 import { GebetaMapRef } from '../../../lib/gebeta-map/GebetaMap';
-import { navigationService, GeocodingPlace } from '../../navigation/services/navigation.service';
+import { navigationService } from '../services/navigation.service';
+import type { GeocodingPlace, Maneuver } from '../types/navigation.types';
 import { showToast } from '../../../shared/utils/toast';
+import { decodePolyline } from '../../../shared/utils/polyline';
 
 export const useNavigation = (
     mapRef: React.RefObject<GebetaMapRef | null>,
@@ -15,14 +17,21 @@ export const useNavigation = (
     const [currentHeading, setCurrentHeading] = useState(0);
     const [simulateMovement, setSimulateMovement] = useState(false);
     const [snappedLocation, setSnappedLocation] = useState<{ lat: number; lng: number } | null>(null);
+    const [currentInstruction, setCurrentInstruction] = useState<string>('');
+    const [remainingDistance, setRemainingDistance] = useState<number>(0);
+    const [remainingTime, setRemainingTime] = useState<number>(0);
 
     const locationSubscription = useRef<Location.LocationSubscription | null>(null);
     const simulationInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+    const instructionHideTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const routeCoordinates = useRef<[number, number][]>([]);
+    const maneuvers = useRef<Maneuver[]>([]);
     const currentRouteIndex = useRef(0);
+    const currentManeuverIndex = useRef(0);
+    const maneuverCompleted = useRef(false);
 
     const findClosestPointOnRoute = (userLat: number, userLng: number): { index: number; snappedLat: number; snappedLng: number } => {
-        let closestIndex = currentRouteIndex.current; 
+        let closestIndex = currentRouteIndex.current;
         let minDistance = Infinity;
         let snappedLat = userLat;
         let snappedLng = userLng;
@@ -31,8 +40,8 @@ export const useNavigation = (
         const searchEnd = Math.min(routeCoordinates.current.length - 1, currentRouteIndex.current + 20);
 
         for (let i = searchStart; i < searchEnd; i++) {
-            const [lng1, lat1] = routeCoordinates.current[i];
-            const [lng2, lat2] = routeCoordinates.current[i + 1];
+            const [lat1, lng1] = routeCoordinates.current[i];
+            const [lat2, lng2] = routeCoordinates.current[i + 1];
 
             const projected = projectPointOnSegment(userLat, userLng, lat1, lng1, lat2, lng2);
             const distance = Math.sqrt(
@@ -75,6 +84,82 @@ export const useNavigation = (
         };
     };
 
+    const calculateRemainingStats = (routeIndex: number) => {
+        if (maneuvers.current.length === 0) return;
+
+        // Calculate remaining distance and time from current maneuver onwards
+        let totalDistance = 0;
+        let totalTime = 0;
+
+        for (let i = currentManeuverIndex.current; i < maneuvers.current.length; i++) {
+            const maneuver = maneuvers.current[i];
+
+            if (i === currentManeuverIndex.current) {
+                // For current maneuver, calculate only the remaining portion
+                const maneuverProgress = (routeIndex - maneuver.begin_shape_index) /
+                    (maneuver.end_shape_index - maneuver.begin_shape_index);
+                const remainingPortion = Math.max(0, 1 - maneuverProgress);
+
+                totalDistance += maneuver.length * remainingPortion;
+                totalTime += maneuver.time * remainingPortion;
+            } else {
+                // For future maneuvers, add full distance and time
+                totalDistance += maneuver.length;
+                totalTime += maneuver.time;
+            }
+        }
+
+        setRemainingDistance(totalDistance);
+        setRemainingTime(totalTime);
+    };
+
+    const updateCurrentManeuver = (routeIndex: number) => {
+        const currentManeuver = maneuvers.current[currentManeuverIndex.current];
+
+        if (!currentManeuver) return;
+
+        // Check if we've reached the end of the current maneuver
+        const maneuverProgress = (routeIndex - currentManeuver.begin_shape_index) /
+            (currentManeuver.end_shape_index - currentManeuver.begin_shape_index);
+
+        // If we're at or past the end of the maneuver (95% threshold to account for GPS accuracy)
+        if (maneuverProgress >= 0.95 && !maneuverCompleted.current) {
+            maneuverCompleted.current = true;
+
+            // Clear any existing timeout
+            if (instructionHideTimeout.current) {
+                clearTimeout(instructionHideTimeout.current);
+            }
+
+            // Hide instruction after 2 seconds
+            instructionHideTimeout.current = setTimeout(() => {
+                setCurrentInstruction('');
+            }, 2000);
+        }
+
+        // Move to next maneuver
+        if (routeIndex >= currentManeuver.end_shape_index &&
+            currentManeuverIndex.current < maneuvers.current.length - 1) {
+            currentManeuverIndex.current++;
+            maneuverCompleted.current = false;
+
+            // Clear any pending hide timeout
+            if (instructionHideTimeout.current) {
+                clearTimeout(instructionHideTimeout.current);
+                instructionHideTimeout.current = null;
+            }
+
+            const nextManeuver = maneuvers.current[currentManeuverIndex.current];
+            setCurrentInstruction(nextManeuver.instruction);
+        } else if (!maneuverCompleted.current) {
+            // Still in the middle of the maneuver, show instruction
+            setCurrentInstruction(currentManeuver.instruction);
+        }
+
+        // Update remaining distance and time
+        calculateRemainingStats(routeIndex);
+    };
+
     const updateRemainingRoute = (snappedLng?: number, snappedLat?: number) => {
         if (currentRouteIndex.current >= routeCoordinates.current.length - 1) {
             return;
@@ -83,7 +168,7 @@ export const useNavigation = (
         const remainingCoordinates = routeCoordinates.current.slice(currentRouteIndex.current);
 
         if (snappedLng !== undefined && snappedLat !== undefined) {
-            remainingCoordinates[0] = [snappedLng, snappedLat];
+            remainingCoordinates[0] = [snappedLat, snappedLng];
         }
 
         if (remainingCoordinates.length > 1) {
@@ -92,7 +177,7 @@ export const useNavigation = (
                 properties: {},
                 geometry: {
                     type: 'LineString',
-                    coordinates: remainingCoordinates
+                    coordinates: remainingCoordinates.map(coord => [coord[1], coord[0]])
                 }
             };
 
@@ -112,23 +197,20 @@ export const useNavigation = (
                 return;
             }
 
-            // stop existing subs
             if (locationSubscription.current) {
                 locationSubscription.current.remove();
             }
 
-            console.log('starting location tracking for navigation...');
+            console.log('Starting location tracking for navigation...');
 
             locationSubscription.current = await Location.watchPositionAsync(
                 {
                     accuracy: Location.Accuracy.BestForNavigation,
-                    timeInterval: 1000, 
-                    distanceInterval: 2, 
+                    timeInterval: 1000,
+                    distanceInterval: 2,
                     mayShowUserSettingsDialog: true,
                 },
                 (location) => {
-                    console.log('Navigation location update:', location.coords.latitude, location.coords.longitude);
-
                     const heading = location.coords.heading !== null && location.coords.heading !== undefined
                         ? location.coords.heading
                         : 0;
@@ -141,6 +223,7 @@ export const useNavigation = (
                     );
 
                     currentRouteIndex.current = closest.index;
+                    updateCurrentManeuver(closest.index);
 
                     const snapped = {
                         lat: closest.snappedLat,
@@ -161,13 +244,9 @@ export const useNavigation = (
                         heading: heading,
                     });
 
-                  
                     updateRemainingRoute(closest.snappedLng, closest.snappedLat);
                 }
             );
-
-            //console.log('Location tracking started successfully');
-            //showToast.success('location tracking started')
         } catch (error) {
             console.error('Error starting location tracking:', error);
             showToast.error('Location Error', 'Could not start location tracking');
@@ -178,6 +257,10 @@ export const useNavigation = (
         if (locationSubscription.current) {
             locationSubscription.current.remove();
             locationSubscription.current = null;
+        }
+        if (instructionHideTimeout.current) {
+            clearTimeout(instructionHideTimeout.current);
+            instructionHideTimeout.current = null;
         }
     };
 
@@ -196,6 +279,12 @@ export const useNavigation = (
 
     const startSimulation = (setUserLocation: (location: { lat: number; lng: number }) => void) => {
         currentRouteIndex.current = 0;
+        currentManeuverIndex.current = 0;
+        maneuverCompleted.current = false;
+
+        if (maneuvers.current.length > 0) {
+            setCurrentInstruction(maneuvers.current[0].instruction);
+        }
 
         simulationInterval.current = setInterval(() => {
             if (currentRouteIndex.current >= routeCoordinates.current.length) {
@@ -205,11 +294,11 @@ export const useNavigation = (
                 return;
             }
 
-            const [lng, lat] = routeCoordinates.current[currentRouteIndex.current];
+            const [lat, lng] = routeCoordinates.current[currentRouteIndex.current];
 
             let heading = 0;
             if (currentRouteIndex.current < routeCoordinates.current.length - 1) {
-                const [nextLng, nextLat] = routeCoordinates.current[currentRouteIndex.current + 1];
+                const [nextLat, nextLng] = routeCoordinates.current[currentRouteIndex.current + 1];
                 heading = calculateBearing(lat, lng, nextLat, nextLng);
             }
 
@@ -218,6 +307,7 @@ export const useNavigation = (
             setUserLocation(location);
             setSnappedLocation(location);
             setCurrentHeading(heading);
+            updateCurrentManeuver(currentRouteIndex.current);
 
             mapRef.current?.flyTo({
                 center: [lng, lat],
@@ -237,6 +327,10 @@ export const useNavigation = (
             clearInterval(simulationInterval.current);
             simulationInterval.current = null;
         }
+        if (instructionHideTimeout.current) {
+            clearTimeout(instructionHideTimeout.current);
+            instructionHideTimeout.current = null;
+        }
     };
 
     const handleNavigate = async (setUserLocation?: (location: { lat: number; lng: number }) => void) => {
@@ -252,16 +346,37 @@ export const useNavigation = (
                 destination: [selectedDestination.latitude, selectedDestination.longitude]
             });
 
-            if (navigationData && navigationData.direction) {
+            if (navigationData?.data?.trip?.legs?.[0]) {
+                const leg = navigationData.data.trip.legs[0];
+
+                // Decode the polyline shape
+                const decodedCoordinates = decodePolyline(leg.shape, 6);
+
+                // Store maneuvers and route coordinates
+                maneuvers.current = leg.maneuvers;
+                routeCoordinates.current = decodedCoordinates;
+                currentManeuverIndex.current = 0;
+                maneuverCompleted.current = false;
+
+                // Set initial instruction
+                if (leg.maneuvers.length > 0) {
+                    setCurrentInstruction(leg.maneuvers[0].instruction);
+                }
+
+                // Set route summary
+                setRemainingDistance(leg.summary.length);
+                setRemainingTime(leg.summary.time);
+
                 const routeGeoJSON = {
                     type: 'Feature',
                     properties: {
-                        distance: navigationData.totalDistance,
-                        duration: navigationData.timetaken
+                        distance: leg.summary.length,
+                        duration: leg.summary.time,
+                        maneuvers: leg.maneuvers
                     },
                     geometry: {
                         type: 'LineString',
-                        coordinates: navigationData.direction.map(coord => [coord[1], coord[0]])
+                        coordinates: decodedCoordinates.map(coord => [coord[1], coord[0]])
                     }
                 };
 
@@ -271,11 +386,10 @@ export const useNavigation = (
                     opacity: 0.8
                 });
 
-                const distanceKm = (navigationData.totalDistance / 1000).toFixed(2);
-                const durationMin = (navigationData.timetaken / 60).toFixed(0);
+                const distanceKm = leg.summary.length.toFixed(2);
+                const durationMin = (leg.summary.time / 60).toFixed(0);
                 showToast.success('Route Found', `${distanceKm} km • ${durationMin} min`);
 
-                routeCoordinates.current = navigationData.direction.map(coord => [coord[1], coord[0]]);
                 setNavigationMode(true);
 
                 if (userLocation) {
@@ -310,6 +424,11 @@ export const useNavigation = (
         stopSimulation();
         mapRef.current?.clearRoute();
         setSelectedDestination(null);
+        setCurrentInstruction('');
+        setRemainingDistance(0);
+        setRemainingTime(0);
+        currentManeuverIndex.current = 0;
+        maneuverCompleted.current = false;
 
         if (userLocation) {
             mapRef.current?.flyTo({
@@ -325,6 +444,9 @@ export const useNavigation = (
     const handleClearRoute = () => {
         mapRef.current?.clearRoute();
         setSelectedDestination(null);
+        setCurrentInstruction('');
+        setRemainingDistance(0);
+        setRemainingTime(0);
     };
 
     useEffect(() => {
@@ -343,6 +465,9 @@ export const useNavigation = (
         simulateMovement,
         setSimulateMovement,
         snappedLocation,
+        currentInstruction,
+        remainingDistance,
+        remainingTime,
         routeCoordinates: routeCoordinates.current,
         handleNavigate,
         handleStopNavigation,
