@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { navigationService, GeocodingPlace } from '../../navigation/services/navigation.service';
+import { navigationService } from '../../navigation/services/navigation.service';
+import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 import { showToast } from '../../../shared/utils/toast';
 
 export const useSearch = () => {
