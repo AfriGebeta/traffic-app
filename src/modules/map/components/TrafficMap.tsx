@@ -3,6 +3,7 @@ import { View, LogBox } from 'react-native';
 import { useLocalSearchParams, useFocusEffect } from 'expo-router';
 import GebetaMap, { GebetaMapRef } from '../../../lib/gebeta-map/GebetaMap';
 import { NavigationBar } from './NavigationBar';
+import { NavigationOverlay } from './NavigationOverlay';
 import { IncidentAlert } from './IncidentAlert';
 import { MapOverlay } from './MapOverlay';
 import { IncidentReportSheet } from './IncidentReportSheet';
@@ -139,15 +140,23 @@ export default function TrafficMap() {
             )}
 
             {navigationMode && selectedDestination && (
-                <NavigationBar
-                    destination={selectedDestination}
-                    onStop={handleStopNavigation}
-                    simulateMovement={simulateMovement}
-                    userLocation={userLocation}
-                    currentInstruction={currentInstruction}
-                    remainingDistance={remainingDistance}
-                    remainingTime={remainingTime}
-                />
+                <>
+                    <NavigationBar
+                        destination={selectedDestination}
+                        onStop={handleStopNavigation}
+                        simulateMovement={simulateMovement}
+                        userLocation={userLocation}
+                        currentInstruction={currentInstruction}
+                        remainingDistance={remainingDistance}
+                        remainingTime={remainingTime}
+                    />
+                    <NavigationOverlay
+                        remainingTime={remainingTime}
+                        remainingDistance={remainingDistance}
+                        onReportPress={() => setShowReportOptions(true)}
+                        onVoiceReportPress={() => showToast.info(t('coming-soon'), 'Voice Report')}
+                    />
+                </>
             )}
 
             {!navigationMode && (
