@@ -22,7 +22,7 @@ export const useNavigation = (
     const currentRouteIndex = useRef(0);
 
     const findClosestPointOnRoute = (userLat: number, userLng: number): { index: number; snappedLat: number; snappedLng: number } => {
-        let closestIndex = currentRouteIndex.current; 
+        let closestIndex = currentRouteIndex.current
         let minDistance = Infinity;
         let snappedLat = userLat;
         let snappedLng = userLng;
@@ -122,8 +122,8 @@ export const useNavigation = (
             locationSubscription.current = await Location.watchPositionAsync(
                 {
                     accuracy: Location.Accuracy.BestForNavigation,
-                    timeInterval: 1000, 
-                    distanceInterval: 2, 
+                    timeInterval: 1000,
+                    distanceInterval: 2,
                     mayShowUserSettingsDialog: true,
                 },
                 (location) => {
@@ -161,7 +161,7 @@ export const useNavigation = (
                         heading: heading,
                     });
 
-                  
+
                     updateRemainingRoute(closest.snappedLng, closest.snappedLat);
                 }
             );

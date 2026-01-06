@@ -28,7 +28,7 @@ export interface NavigationResponse {
 
 export const navigationService = {
     async geocodePlace(placeName: string): Promise<GeocodingPlace[]> {
-        const response = await apiService.post<{ response: GeocodingResponse }>('/api/navigation/request-geocoding', {
+        const response = await apiService.post<{ response: GeocodingPlace[] }>('/api/navigation/request-geocoding', {
             placeName
         });
 
@@ -37,7 +37,8 @@ export const navigationService = {
             return [];
         }
 
-        return response.data.response.data || [];
+        const results = response.data.response || [];
+        return results;
     },
 
     async getNavigation(request: NavigationRequest): Promise<NavigationResponse | null> {

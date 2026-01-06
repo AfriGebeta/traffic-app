@@ -63,7 +63,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                         {simulateMovement && (
                             <View className="bg-blue-500 rounded-lg px-2 py-1 mt-2 self-start">
                                 <Text className="text-white text-xs font-semibold">
-                                   Simulation Mode
+                                    Simulation Mode
                                 </Text>
                             </View>
                         )}
