@@ -13,12 +13,12 @@ import { IncidentAlert } from './IncidentAlert';
 import { useIncidents } from '../../incidents/hooks/useIncidents';
 import { useUserLocation } from '../hooks/useUserLocation';
 import { useSearch } from '../hooks/useSearch';
-import { useNavigation } from '../hooks/useNavigation';
+import { useNavigation } from '../../navigation/hooks/useNavigation';
 import { useIncidentAlerts } from '../hooks/useIncidentAlerts';
 import { getIncidentIconUrl, getIncidentColor, getIncidentIconName } from '../../incidents/utils/incidentIcons';
 import { showToast } from '../../../shared/utils/toast';
 import { useTranslation } from 'react-i18next';
-import { GeocodingPlace } from '../../navigation/services/navigation.service';
+import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 
 export default function TrafficMap() {
     const mapRef = useRef<GebetaMapRef>(null);
@@ -53,6 +53,9 @@ export default function TrafficMap() {
         simulateMovement,
         setSimulateMovement,
         snappedLocation,
+        currentInstruction,
+        remainingDistance,
+        remainingTime,
         routeCoordinates,
         handleNavigate,
         handleStopNavigation,
@@ -197,6 +200,9 @@ export default function TrafficMap() {
                     onStop={handleStopNavigation}
                     simulateMovement={simulateMovement}
                     userLocation={userLocation}
+                    currentInstruction={currentInstruction}
+                    remainingDistance={remainingDistance}
+                    remainingTime={remainingTime}
                 />
             )}
 

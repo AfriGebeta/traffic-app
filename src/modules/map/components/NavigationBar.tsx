@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { GeocodingPlace } from '../../navigation/services/navigation.service';
+import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 
 interface NavigationBarProps {
     destination: GeocodingPlace;
     onStop: () => void;
     simulateMovement?: boolean;
     userLocation?: { lat: number; lng: number } | null;
+    currentInstruction?: string;
+    remainingDistance?: number;
+    remainingTime?: number;
 }
 
 const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
@@ -34,6 +37,9 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
     onStop,
     simulateMovement,
     userLocation,
+    currentInstruction,
+    remainingDistance,
+    remainingTime,
 }) => {
     const [distance, setDistance] = useState<number>(0);
 
@@ -49,14 +55,38 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
         }
     }, [userLocation, destination]);
 
+    const formatTime = (seconds: number): string => {
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) {
+            return `${minutes} min`;
+        }
+        const hours = Math.floor(minutes / 60);
+        const remainingMinutes = minutes % 60;
+        return `${hours}h ${remainingMinutes}m`;
+    };
+
     return (
         <View className="absolute top-12 left-4 right-4">
             <View className="bg-blue-600 rounded-2xl shadow-lg p-4">
+                {currentInstruction && (
+                    <View className="mb-3 pb-3 border-b border-blue-500">
+                        <Text className="text-white text-lg font-semibold">
+                            {currentInstruction}
+                        </Text>
+                    </View>
+                )}
                 <View className="flex-row items-center justify-between">
                     <View className="flex-1">
-                        <Text className="text-white text-3xl font-bold">
-                            {formatDistance(distance)}
-                        </Text>
+                        <View className="flex-row items-baseline gap-3">
+                            <Text className="text-white text-3xl font-bold">
+                                {remainingDistance ? formatDistance(remainingDistance) : formatDistance(distance)}
+                            </Text>
+                            {remainingTime !== undefined && (
+                                <Text className="text-blue-100 text-lg">
+                                    {formatTime(remainingTime)}
+                                </Text>
+                            )}
+                        </View>
                         <Text className="text-blue-100 text-sm mt-1">
                             {destination.name}
                         </Text>
