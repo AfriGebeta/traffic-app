@@ -27,6 +27,7 @@ export default function PlacesLayout() {
                     name="add"
                     options={{
                         title: 'Add Place Details',
+                        headerShown: false,
                     }}
                 />
                 <Stack.Screen

@@ -195,6 +195,11 @@
         "AM": "ሪፖርት ተደርጓል"
     },
     {
+        "key": "add-place-details",
+        "EN_US": "Add Place Details",
+        "AM": "ቦታውን ይግለፁ"
+    },
+    {
         "key": "yes",
         "EN_US": "Yes",
         "AM": "አዎ"
@@ -253,6 +258,16 @@
         "key": "taxi-station",
         "EN_US": "Taxi Station",
         "AM": "ታክሲ ተራ"
+    },
+    {
+        "key": "parking",
+        "EN_US": "Parking",
+        "AM": "የመኪና ማቆሚያ"
+    },
+    {
+        "key": "hospital",
+        "EN_US": "Hospital",
+        "AM": "ሆስፒታል"
     },
     {
         "key": "repair-shop",
@@ -343,5 +358,30 @@
         "key": "location",
         "EN_US": "Location",
         "AM": "አድራሻ"
+    },
+    {
+        "key": "speed-bump",
+        "EN_US": "Speed Bump",
+        "AM": "አድራሻ"
+    },
+    {
+        "key": "flooding",
+        "EN_US": "Flooding",
+        "AM": "አድራሻ"
+    },
+    {
+        "key": "pot-hole",
+        "EN_US": "Pot Hole",
+        "AM": "አድራሻ"
+    },
+    {
+        "key": "gated-community",
+        "EN_US": "Gated Community",
+        "AM": "የታጠረ መንደር"
+    },
+    {
+        "key": "traffic-jam",
+        "EN_US": "Traffic Jam",
+        "AM": "የመንገድ መዘጋጋት"
     }
 ]
