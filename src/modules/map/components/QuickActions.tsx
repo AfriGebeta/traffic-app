@@ -43,17 +43,17 @@ export const QuickActions: React.FC<QuickActionsProps> = ({ onSelectCategory }) 
                     key={category.id}
                     onPress={() => handleSelect(category.id)}
                     className={`mr-2 px-4 py-2 rounded-full flex-row items-center ${selectedCategory === category.id
-                            ? 'bg-yellow-400 border-2 border-yellow-500'
-                            : 'bg-white border-2 border-gray-200'
+                        ? 'bg-orange-400 border-2 border-orange-400'
+                        : 'bg-white border-2 border-gray-200'
                         }`}
                 >
                     <Ionicons
                         name={category.icon}
                         size={16}
-                        color={selectedCategory === category.id ? '#78350F' : '#6B7280'}
+                        color={selectedCategory === category.id ? '#FFFFFF' : '#6B7280'}
                     />
                     <Text
-                        className={`ml-2 text-sm font-medium ${selectedCategory === category.id ? 'text-yellow-900' : 'text-gray-700'
+                        className={`ml-2 text-sm font-medium ${selectedCategory === category.id ? 'text-white' : 'text-gray-700'
                             }`}
                     >
                         {t(category.nameKey)}

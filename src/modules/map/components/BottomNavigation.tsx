@@ -53,8 +53,8 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
                                 onPress={() => handleTabPress(tab.id)}
                                 className="items-center -mt-8"
                             >
-                                <View className="bg-yellow-400 rounded-full p-4 shadow-lg border-4 border-white">
-                                    <Ionicons name={tab.icon} size={28} color="#78350F" />
+                                <View className="bg-orange-400 rounded-full p-4 shadow-lg border-4 border-white">
+                                    <Ionicons name={tab.icon} size={28} color="#FFFFFF" />
                                 </View>
                             </TouchableOpacity>
                         );
@@ -69,10 +69,10 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
                             <Ionicons
                                 name={isActive ? tab.activeIcon : tab.icon}
                                 size={24}
-                                color={isActive ? '#F59E0B' : '#9CA3AF'}
+                                color={isActive ? '#FFA500' : '#9CA3AF'}
                             />
                             <Text
-                                className={`text-xs mt-1 ${isActive ? 'text-yellow-600 font-semibold' : 'text-gray-500'
+                                className={`text-xs mt-1 ${isActive ? 'text-orange-500 font-semibold' : 'text-gray-500'
                                     }`}
                             >
                                 {tab.label}

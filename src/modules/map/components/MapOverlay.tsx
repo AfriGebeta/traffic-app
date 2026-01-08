@@ -31,6 +31,7 @@ interface MapOverlayProps {
     userLocation: { lat: number; lng: number } | null;
     mapRef: React.RefObject<GebetaMapRef | null>;
     onReportPress: () => void;
+    onAddPlacePress: () => void;
 }
 
 export const MapOverlay: React.FC<MapOverlayProps> = ({
@@ -51,9 +52,9 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
     userLocation,
     mapRef,
     onReportPress,
+    onAddPlacePress,
 }) => {
     const { t } = useTranslation();
-    const router = useRouter();
 
     return (
         <>
@@ -131,7 +132,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                         showToast.info(t('coming-soon'), tabId);
                     }
                 }}
-                onAddPress={() => router.push('/places/contribute')}
+                onAddPress={onAddPlacePress}
             />
         </>
     );

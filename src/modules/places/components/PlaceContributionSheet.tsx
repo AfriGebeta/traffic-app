@@ -4,36 +4,28 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { BottomSheet } from '../../../shared/components';
-import { INCIDENT_TYPES, IncidentType } from '../../incidents/types/incident.types';
-import { getIncidentTranslationKey } from '../../incidents/utils/incidentTranslations';
+import { PLACE_TYPES, PlaceType } from '../types/place.types';
+import { getPlaceTranslationKey } from '../utils/placeTranslations';
 
-interface IncidentReportSheetProps {
+interface PlaceContributionSheetProps {
     isVisible: boolean;
     onClose: () => void;
-    userLocation: { lat: number; lng: number } | null;
 }
 
-export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
+export const PlaceContributionSheet: React.FC<PlaceContributionSheetProps> = ({
     isVisible,
     onClose,
-    userLocation,
 }) => {
     const { t } = useTranslation();
     const router = useRouter();
 
-    const handleIncidentOptionPress = React.useCallback(
-        (optionId: string) => {
-            const params = new URLSearchParams({
-                type: optionId,
-                lat: userLocation?.lat.toString() || '',
-                lng: userLocation?.lng.toString() || '',
-                refresh: 'true',
-            });
-            router.push(`/incident-report?${params.toString()}`);
-            onClose();
-        },
-        [userLocation, router, onClose]
-    );
+    const handlePlaceTypeSelect = (placeType: string) => {
+        router.push({
+            pathname: '/places/add',
+            params: { type: placeType },
+        });
+        onClose();
+    };
 
     if (!isVisible) return null;
 
@@ -49,21 +41,20 @@ export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
                         <Ionicons name="arrow-back" size={22} color="#374151" />
                     </TouchableOpacity>
                     <View className="flex-1">
-                        <Text className="text-2xl font-bold text-gray-900">Share What You See</Text>
+                        <Text className="text-2xl font-bold text-gray-900">{t('contribute-a-place')}</Text>
                         <Text className="text-gray-500 text-sm mt-1">
-                            Help other drivers by reporting incidents
+                            {t('help-others-by-adding-useful-locations')}
                         </Text>
                     </View>
                 </View>
 
-                {/* Incident Grid */}
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
                     <View className="flex-row flex-wrap gap-3">
-                        {INCIDENT_TYPES.map((option) => (
+                        {PLACE_TYPES.map((placeType) => (
                             <TouchableOpacity
-                                key={option.id}
+                                key={placeType.id}
                                 className="bg-white rounded-2xl p-4 items-center border-2 border-gray-100 active:border-orange-200 active:bg-orange-50"
-                                onPress={() => handleIncidentOptionPress(option.id)}
+                                onPress={() => handlePlaceTypeSelect(placeType.id)}
                                 activeOpacity={0.7}
                                 style={{
                                     width: '48%',
@@ -76,12 +67,12 @@ export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
                             >
                                 <View
                                     className="w-16 h-16 rounded-2xl items-center justify-center mb-3"
-                                    style={{ backgroundColor: option.color + '15' }}
+                                    style={{ backgroundColor: placeType.color + '15' }}
                                 >
-                                    <Ionicons name={option.icon} size={28} color={option.color} />
+                                    <Text className="text-4xl">{placeType.emoji}</Text>
                                 </View>
                                 <Text className="text-base font-semibold text-gray-900 text-center">
-                                    {t(getIncidentTranslationKey(option.id as IncidentType))}
+                                    {t(getPlaceTranslationKey(placeType.id as PlaceType))}
                                 </Text>
                             </TouchableOpacity>
                         ))}

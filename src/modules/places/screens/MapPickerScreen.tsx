@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import GebetaMap, { GebetaMapRef } from '../../../lib/gebeta-map/GebetaMap';
 import { useLocation } from '../../../shared/contexts/LocationContext';
+import { Button } from '../../../shared/components';
 
 export default function MapPickerScreen() {
     const router = useRouter();
@@ -12,18 +13,21 @@ export default function MapPickerScreen() {
     const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
 
     const handleMapClick = (lngLat: [number, number]) => {
-        // Clear previous markers
         mapRef.current?.clearMarkers();
 
-        // Set new location
         const location = { lng: lngLat[0], lat: lngLat[1] };
         setSelectedLocation(location);
 
-        // Add marker at clicked location
+
         mapRef.current?.addImageMarker(
             lngLat,
-            'https://via.placeholder.com/40x40/10B981/ffffff?text=📍',
-            [40, 40]
+            '',
+            [40, 40],
+            undefined,
+            10,
+            undefined,
+            '#FFA500',
+            'location'
         );
     };
 
@@ -63,15 +67,7 @@ export default function MapPickerScreen() {
                         </Text>
                     </View>
 
-                    <TouchableOpacity
-                        className="bg-blue-500 rounded-2xl p-4 flex-row items-center justify-center"
-                        onPress={handleConfirm}
-                    >
-                        <Ionicons name="checkmark-circle" size={24} color="white" />
-                        <Text className="text-white font-semibold text-lg ml-2">
-                            Confirm Location
-                        </Text>
-                    </TouchableOpacity>
+                    <Button title="Confirm Location" onPress={handleConfirm} />
                 </View>
             )}
         </View>

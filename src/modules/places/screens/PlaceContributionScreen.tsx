@@ -6,23 +6,30 @@ import { PLACE_TYPES } from '../types/place.types';
 import { useTranslation } from 'react-i18next';
 import { getPlaceTranslationKey } from '../utils/placeTranslations';
 
-
 export default function PlaceContributionScreen() {
     const router = useRouter();
     const { t } = useTranslation();
 
     const handlePlaceTypeSelect = (placeType: string) => {
-
         router.push({
             pathname: '/places/add',
-            params: { type: placeType }
+            params: { type: placeType },
         });
     };
 
     return (
         <View className="flex-1 bg-gray-50 mt-8">
-            <View className=" px-4 py-6 border-b border-gray-50">
-                <Text className="text-2xl font-bold text-gray-900">{t('contribute-a-place')} </Text>
+            <View className="px-4 py-6 border-b border-gray-50">
+                <View className="flex-row items-center mb-2">
+                    <TouchableOpacity
+                        onPress={() => router.back()}
+                        className="mr-4"
+                        activeOpacity={0.7}
+                    >
+                        <Ionicons name="arrow-back" size={28} color="#FFA500" />
+                    </TouchableOpacity>
+                    <Text className="text-2xl font-bold text-gray-900">{t('contribute-a-place')}</Text>
+                </View>
                 <Text className="text-gray-600 mt-2">{t('help-others-by-adding-useful-locations')}</Text>
             </View>
 

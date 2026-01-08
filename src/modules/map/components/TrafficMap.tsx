@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { View, LogBox } from 'react-native';
-import { useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { useLocalSearchParams, useFocusEffect, useRouter } from 'expo-router';
 import GebetaMap, { GebetaMapRef } from '../../../lib/gebeta-map/GebetaMap';
 import { NavigationBar } from './NavigationBar';
 import { NavigationOverlay } from './NavigationOverlay';
@@ -20,6 +20,7 @@ import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 export default function TrafficMap() {
     const mapRef = useRef<GebetaMapRef>(null);
     const searchMarkerRef = useRef<any>(null);
+    const router = useRouter();
 
     const [initialCenter] = useState<[number, number]>([38.7463, 9.0223]);
     const [initialZoom] = useState(12);
@@ -182,6 +183,7 @@ export default function TrafficMap() {
                     userLocation={userLocation}
                     mapRef={mapRef}
                     onReportPress={() => setShowReportOptions(true)}
+                    onAddPlacePress={() => router.push('/places/contribute')}
                 />
             )}
 
