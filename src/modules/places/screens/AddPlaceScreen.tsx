@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,7 +17,7 @@ export default function AddPlaceScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
     const placeType = params.type as PlaceType;
-    const { selectedLocation, setSelectedLocation } = useLocation();
+    const { selectedLocation } = useLocation();
 
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
@@ -26,7 +26,7 @@ export default function AddPlaceScreen() {
     const [uploading, setUploading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
-    const placeInfo = PLACE_TYPES.find(p => p.id === placeType);
+    const placeInfo = PLACE_TYPES.find((p) => p.id === placeType);
 
     useFocusEffect(
         React.useCallback(() => {
@@ -79,7 +79,7 @@ export default function AddPlaceScreen() {
         setUploading(true);
         try {
             const url = await uploadToCloudinary(uri);
-            setImages(prev => [...prev, url]);
+            setImages((prev) => [...prev, url]);
             showToast.success('Image uploaded', 'Photo added successfully');
         } catch (error) {
             showToast.error('Upload failed', 'Could not upload image');
@@ -89,7 +89,7 @@ export default function AddPlaceScreen() {
     };
 
     const removeImage = (index: number) => {
-        setImages(prev => prev.filter((_, i) => i !== index));
+        setImages((prev) => prev.filter((_, i) => i !== index));
     };
 
     const handlePickLocation = () => {
@@ -109,15 +109,6 @@ export default function AddPlaceScreen() {
 
         setSubmitting(true);
         try {
-            console.log('Submitting place:', {
-                name: name.trim(),
-                type: placeType,
-                lat: coordinates.lat,
-                lng: coordinates.lng,
-                description: description.trim(),
-                images,
-            });
-
             await placeService.contributePlace({
                 name: name.trim(),
                 type: placeType,
@@ -140,37 +131,47 @@ export default function AddPlaceScreen() {
     };
 
     return (
-        <View className="flex-1 bg-gray-50 ">
-            <View className="bg-white px-4 py-6 border-b border-gray-200">
+        <View className="flex-1 bg-gray-50">
+            <View className="bg-white px-6 pt-16 pb-4 border-b border-gray-100">
                 <View className="flex-row items-center">
-                    <View
-                        className="w-12 h-12 rounded-full items-center justify-center mr-3"
-                        style={{ backgroundColor: `${placeInfo?.color}20` }}
+                    <TouchableOpacity
+                        onPress={() => router.back()}
+                        className="mr-4"
+                        activeOpacity={0.7}
                     >
-                        <Text className="text-2xl">{placeInfo?.emoji}</Text>
-                    </View>
-                    <View>
-                        <Text className="text-xl font-bold text-gray-900">
-                            {placeType ? t(getPlaceTranslationKey(placeType)) : placeInfo?.label}
-                        </Text>
-                        <Text className="text-gray-600 text-sm">{t('fill-in-the-details')}</Text>
-                    </View>
+                        <Ionicons name="arrow-back" size={24} color="#000000" />
+                    </TouchableOpacity>
+                    <Text className="text-xl font-bold text-gray-900">{t('add-place-details')}</Text>
                 </View>
             </View>
 
-            <ScrollView className="flex-1 p-4">
-                <View className="gap-4">
+            <View className="bg-white mx-6 mt-6 mb-4 rounded-2xl p-4 flex-row items-center border border-gray-100">
+                <View
+                    className="w-14 h-14 rounded-2xl items-center justify-center mr-4"
+                    style={{ backgroundColor: `${placeInfo?.color}15` }}
+                >
+                    <Text className="text-3xl">{placeInfo?.emoji}</Text>
+                </View>
+                <View className="flex-1">
+                    <Text className="text-lg font-bold text-gray-900">
+                        {placeType ? t(getPlaceTranslationKey(placeType)) : placeInfo?.label}
+                    </Text>
+                    <Text className="text-gray-500 text-sm">{t('fill-in-the-details')}</Text>
+                </View>
+            </View>
+
+            <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
+                <View className="gap-5 pb-6">
+
                     <View>
-                        <Text className="text-sm font-medium text-gray-700 mb-2">{t('place-name')} *</Text>
-                        <Input
-                            placeholder={t('place-name-placeholder')}
-                            value={name}
-                            onChangeText={setName}
-                        />
+                        <Text className="text-sm font-semibold text-gray-700 mb-2">
+                            {t('place-name')} <Text className="text-orange-500">*</Text>
+                        </Text>
+                        <Input placeholder={t('place-name-placeholder')} value={name} onChangeText={setName} />
                     </View>
 
                     <View>
-                        <Text className="text-sm font-medium text-gray-700 mb-2">{t('description')}</Text>
+                        <Text className="text-sm font-semibold text-gray-700 mb-2">{t('description')}</Text>
                         <Input
                             placeholder={t('add-details-about-place')}
                             value={description}
@@ -181,52 +182,77 @@ export default function AddPlaceScreen() {
                     </View>
 
                     <View>
-                        <Text className="text-sm font-medium text-gray-700 mb-2">{t('location')}</Text>
+                        <Text className="text-sm font-semibold text-gray-700 mb-2">
+                            {t('location')} <Text className="text-orange-500">*</Text>
+                        </Text>
                         <TouchableOpacity
-                            className="bg-white border border-gray-300 rounded-xl p-4 flex-row items-center justify-between"
+                            className="bg-white border-2 border-gray-200 rounded-2xl p-4 flex-row items-center justify-between active:border-orange-200"
                             onPress={handlePickLocation}
                             activeOpacity={0.7}
+                            style={{
+                                shadowColor: '#000',
+                                shadowOffset: { width: 0, height: 1 },
+                                shadowOpacity: 0.05,
+                                shadowRadius: 4,
+                                elevation: 1,
+                            }}
                         >
-                            <View className="flex-row items-center flex-1" pointerEvents="none">
-                                <Ionicons name="location" size={24} color={coordinates ? '#10B981' : '#9CA3AF'} />
-                                <Text className={`ml-3 ${coordinates ? 'text-gray-900' : 'text-gray-500'}`}>
-                                    {coordinates
-                                        ? `${coordinates.lat.toFixed(4)}, ${coordinates.lng.toFixed(4)}`
-                                        : t('pick-location-on-map')
-                                    }
-                                </Text>
+                            <View className="flex-row items-center flex-1">
+                                <View
+                                    className={`w-10 h-10 rounded-full items-center justify-center ${coordinates ? 'bg-green-100' : 'bg-gray-100'
+                                        }`}
+                                >
+                                    <Ionicons name="location" size={20} color={coordinates ? '#10B981' : '#9CA3AF'} />
+                                </View>
+                                <View className="ml-3 flex-1">
+                                    <Text className={`text-sm font-medium ${coordinates ? 'text-gray-900' : 'text-gray-500'}`}>
+                                        {coordinates ? 'Location Selected' : t('pick-location-on-map')}
+                                    </Text>
+                                    {coordinates && (
+                                        <Text className="text-xs text-gray-500 mt-0.5">
+                                            {coordinates.lat.toFixed(4)}, {coordinates.lng.toFixed(4)}
+                                        </Text>
+                                    )}
+                                </View>
                             </View>
-                            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+                            <Ionicons name="chevron-forward" size={20} color="#D1D5DB" />
                         </TouchableOpacity>
                     </View>
 
+                    {/* Photos */}
                     <View>
-                        <Text className="text-sm font-medium text-gray-700 mb-2">{t('photos')}</Text>
+                        <Text className="text-sm font-semibold text-gray-700 mb-2">{t('photos')}</Text>
 
                         <View className="flex-row gap-3 mb-3">
                             <TouchableOpacity
-                                className="bg-white border-2 border-dashed border-gray-300 rounded-xl w-24 h-24 items-center justify-center"
+                                className="bg-white border-2 border-dashed border-gray-300 rounded-2xl w-28 h-28 items-center justify-center active:border-orange-300 active:bg-orange-50"
                                 onPress={takePhoto}
                                 disabled={uploading}
+                                activeOpacity={0.7}
                             >
-                                <Ionicons name="camera" size={32} color="#9CA3AF" />
-                                <Text className="text-xs text-gray-500 mt-1">{t('camera')}</Text>
+                                <View className="bg-gray-100 rounded-full p-3 mb-2">
+                                    <Ionicons name="camera" size={24} color="#6B7280" />
+                                </View>
+                                <Text className="text-xs font-medium text-gray-600">{t('camera')}</Text>
                             </TouchableOpacity>
 
                             <TouchableOpacity
-                                className="bg-white border-2 border-dashed border-gray-300 rounded-xl w-24 h-24 items-center justify-center"
+                                className="bg-white border-2 border-dashed border-gray-300 rounded-2xl w-28 h-28 items-center justify-center active:border-orange-300 active:bg-orange-50"
                                 onPress={pickImage}
                                 disabled={uploading}
+                                activeOpacity={0.7}
                             >
-                                <Ionicons name="images" size={32} color="#9CA3AF" />
-                                <Text className="text-xs text-gray-500 mt-1">{t('gallery')}</Text>
+                                <View className="bg-gray-100 rounded-full p-3 mb-2">
+                                    <Ionicons name="images" size={24} color="#6B7280" />
+                                </View>
+                                <Text className="text-xs font-medium text-gray-600">{t('gallery')}</Text>
                             </TouchableOpacity>
                         </View>
 
                         {uploading && (
-                            <View className="flex-row items-center mb-3">
+                            <View className="flex-row items-center mb-3 bg-blue-50 rounded-xl p-3">
                                 <ActivityIndicator size="small" color="#3B82F6" />
-                                <Text className="text-sm text-gray-600 ml-2">{t('uploading')}</Text>
+                                <Text className="text-sm text-blue-700 ml-2 font-medium">{t('uploading')}</Text>
                             </View>
                         )}
 
@@ -234,13 +260,11 @@ export default function AddPlaceScreen() {
                             <View className="flex-row flex-wrap gap-3">
                                 {images.map((uri, index) => (
                                     <View key={index} className="relative">
-                                        <Image
-                                            source={{ uri }}
-                                            className="w-24 h-24 rounded-xl"
-                                        />
+                                        <Image source={{ uri }} className="w-28 h-28 rounded-2xl" />
                                         <TouchableOpacity
-                                            className="absolute -top-2 -right-2 bg-red-500 rounded-full w-6 h-6 items-center justify-center"
+                                            className="absolute -top-2 -right-2 bg-red-500 rounded-full w-7 h-7 items-center justify-center shadow-lg"
                                             onPress={() => removeImage(index)}
+                                            activeOpacity={0.8}
                                         >
                                             <Ionicons name="close" size={16} color="white" />
                                         </TouchableOpacity>
@@ -252,7 +276,7 @@ export default function AddPlaceScreen() {
                 </View>
             </ScrollView>
 
-            <View className="bg-white p-4 border-t border-gray-200">
+            <View className="bg-white px-6 py-4 border-t border-gray-100">
                 <Button
                     title={submitting ? t('submitting') : t('submit-contribution')}
                     onPress={handleSubmit}

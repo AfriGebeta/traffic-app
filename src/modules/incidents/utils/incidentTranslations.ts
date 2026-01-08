@@ -4,13 +4,15 @@ import { IncidentType } from '../types/incident.types';
 export const getIncidentTranslationKey = (type: IncidentType): string => {
     const keyMap: Record<IncidentType, string> = {
         'police': 'traffic-police',
-        'traffic': 'traffic',
+        'traffic_jam': 'traffic-jam',
         'crash': 'crash',
         'accident': 'accident',
         'closure': 'closure',
-        'hazard': 'hazard',
-        'weather': 'bad-weather',
-        'broken-road': 'broken-road',
+        'speed_bump': 'speed-bump',
+        'pot_hole': 'pot-hole',
+        'flooding': 'flooding',
+        'gated_community': 'gated-community',
+        'other': 'other',
     };
 
     return keyMap[type] || type;

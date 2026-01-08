@@ -60,7 +60,7 @@ export const Input: React.FC<InputProps> = ({
                     secureTextEntry={secureTextEntry && !isPasswordVisible}
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
-                    placeholderTextColor={colors.gray[800]}
+                    placeholderTextColor={colors.gray[500]}
                     {...props}
                 />
                 {showClearButton && props.value && (

@@ -23,17 +23,10 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     if (!showContainer) return null;
 
     return (
-        <View className="mt-2 bg-white rounded-2xl shadow-lg max-h-96">
-            <View className="flex-row items-center justify-between p-4 border-b border-gray-200">
-                <Text className="text-lg font-semibold">Search Results</Text>
-                <TouchableOpacity onPress={onClose}>
-                    <Ionicons name="close" size={24} color="#6B7280" />
-                </TouchableOpacity>
-            </View>
-
+        <View className="mt-3 bg-white rounded-3xl shadow-lg max-h-96 overflow-hidden">
             {isLoading ? (
                 <View className="p-8 items-center justify-center">
-                    <ActivityIndicator size="large" color="#3B82F6" />
+                    <ActivityIndicator size="large" color="#F59E0B" />
                     <Text className="text-gray-500 mt-2">Searching...</Text>
                 </View>
             ) : results.length === 0 ? (
@@ -46,11 +39,11 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
                     {results.map((place, index) => (
                         <TouchableOpacity
                             key={index}
-                            className="p-4 border-b border-gray-100 flex-row items-center"
+                            className="p-4 border-b border-gray-100 flex-row items-center active:bg-gray-50"
                             onPress={() => onSelectPlace(place)}
                         >
-                            <View className="w-10 h-10 rounded-full bg-blue-100 items-center justify-center mr-3">
-                                <Ionicons name="location" size={20} color="#3B82F6" />
+                            <View className="w-10 h-10 rounded-full bg-yellow-100 items-center justify-center mr-3">
+                                <Ionicons name="location" size={20} color="#F59E0B" />
                             </View>
                             <View className="flex-1">
                                 <Text className="font-semibold text-gray-900" numberOfLines={1}>
