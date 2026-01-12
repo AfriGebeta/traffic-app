@@ -32,6 +32,10 @@ interface MapOverlayProps {
     mapRef: React.RefObject<GebetaMapRef | null>;
     onReportPress: () => void;
     onAddPlacePress: () => void;
+    onVoicePress?: () => void;
+    isRecording?: boolean;
+    isProcessingVoice?: boolean;
+    voiceNavigationData?: any;
 }
 
 export const MapOverlay: React.FC<MapOverlayProps> = ({
@@ -53,6 +57,10 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
     mapRef,
     onReportPress,
     onAddPlacePress,
+    onVoicePress,
+    isRecording,
+    isProcessingVoice,
+    voiceNavigationData,
 }) => {
     const { t } = useTranslation();
 
@@ -64,6 +72,9 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                     onChangeText={onSearchChange}
                     onClear={onSearchClear}
                     placeholder={t('where-to-go')}
+                    onVoicePress={onVoicePress}
+                    isRecording={isRecording}
+                    isProcessingVoice={isProcessingVoice}
                 />
 
                 <QuickActions
