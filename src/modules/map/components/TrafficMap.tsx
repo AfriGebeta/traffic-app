@@ -7,10 +7,12 @@ import { NavigationOverlay } from './NavigationOverlay';
 import { IncidentAlert } from './IncidentAlert';
 import { MapOverlay } from './MapOverlay';
 import { IncidentReportSheet } from './IncidentReportSheet';
+import { VoiceRecordingOverlay } from './VoiceRecordingOverlay';
 import { useIncidents } from '../../incidents/hooks/useIncidents';
 import { useUserLocation } from '../hooks/useUserLocation';
 import { useSearch } from '../hooks/useSearch';
 import { useNavigation } from '../../navigation/hooks/useNavigation';
+import { useVoiceNavigation } from '../../navigation/hooks/useVoiceNavigation';
 import { useIncidentAlerts } from '../hooks/useIncidentAlerts';
 import { useMapMarkers } from '../hooks/useMapMarkers';
 import { showToast } from '../../../shared/utils/toast';
@@ -64,22 +66,6 @@ export default function TrafficMap() {
     const activeIncidentAlert = useIncidentAlerts(userLocation, incidents, navigationMode, routeCoordinates);
     const { addIncidentMarkers } = useMapMarkers(mapRef, incidents);
 
-    useEffect(() => {
-        LogBox.ignoreLogs(['MapLibre error', 'Failed to load sprite']);
-    }, []);
-
-    useEffect(() => {
-        if (params.refresh === 'true') {
-            refetch();
-        }
-    }, [params.refresh, refetch]);
-
-    useFocusEffect(
-        React.useCallback(() => {
-            refetch();
-        }, [])
-    );
-
     const handleSelectPlace = (place: GeocodingPlace) => {
         if (searchMarkerRef.current) {
             mapRef.current?.clearMarkers();
@@ -111,6 +97,34 @@ export default function TrafficMap() {
         setSearchQuery(place.name);
     };
 
+    const {
+        isRecording,
+        isProcessingVoice,
+        navigationData: voiceNavigationData,
+        handleVoicePress,
+    } = useVoiceNavigation({
+        mapRef,
+        userLocation,
+        language: 'amh',
+        onDestinationFound: handleSelectPlace,
+    });
+
+    useEffect(() => {
+        LogBox.ignoreLogs(['MapLibre error', 'Failed to load sprite']);
+    }, []);
+
+    useEffect(() => {
+        if (params.refresh === 'true') {
+            refetch();
+        }
+    }, [params.refresh, refetch]);
+
+    useFocusEffect(
+        React.useCallback(() => {
+            refetch();
+        }, [])
+    );
+
     const handleMapLoaded = () => {
         setTimeout(() => {
             addIncidentMarkers();
@@ -139,6 +153,11 @@ export default function TrafficMap() {
                     incidentType={activeIncidentAlert.incidentType}
                 />
             )}
+
+            <VoiceRecordingOverlay
+                isRecording={isRecording}
+                isProcessing={isProcessingVoice}
+            />
 
             {navigationMode && selectedDestination && (
                 <>
@@ -184,6 +203,10 @@ export default function TrafficMap() {
                     mapRef={mapRef}
                     onReportPress={() => setShowReportOptions(true)}
                     onAddPlacePress={() => router.push('/places/contribute')}
+                    onVoicePress={handleVoicePress}
+                    isRecording={isRecording}
+                    isProcessingVoice={isProcessingVoice}
+                    voiceNavigationData={voiceNavigationData}
                 />
             )}
 
