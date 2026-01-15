@@ -63,10 +63,15 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
     voiceNavigationData,
 }) => {
     const { t } = useTranslation();
+    const router = useRouter();
+
+    const handleProfilePress = () => {
+        showToast.info(t('coming-soon'), 'Profile');
+    };
 
     return (
         <>
-            <View className="absolute top-12 left-4 right-4">
+            <View className="absolute top-8 left-4 right-4">
                 <SearchBar
                     value={searchQuery}
                     onChangeText={onSearchChange}
@@ -75,6 +80,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                     onVoicePress={onVoicePress}
                     isRecording={isRecording}
                     isProcessingVoice={isProcessingVoice}
+                    onProfilePress={handleProfilePress}
                 />
 
                 <QuickActions
