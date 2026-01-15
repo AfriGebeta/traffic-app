@@ -10,6 +10,7 @@ interface SearchBarProps {
     onVoicePress?: () => void;
     isRecording?: boolean;
     isProcessingVoice?: boolean;
+    onProfilePress?: () => void;
 }
 
 export const SearchBar: React.FC<SearchBarProps> = ({
@@ -20,38 +21,52 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     onVoicePress,
     isRecording = false,
     isProcessingVoice = false,
+    onProfilePress,
 }) => {
     return (
-        <View className="bg-white rounded-full shadow-lg flex-row items-center px-4 py-3">
-            <Ionicons name="search" size={20} color="#F59E0B" />
-            <TextInput
-                className="flex-1 ml-3 text-gray-700 text-base"
-                placeholder={placeholder}
-                placeholderTextColor="#9CA3AF"
-                value={value}
-                onChangeText={onChangeText}
-                editable={!isRecording && !isProcessingVoice}
-            />
-            {value.length > 0 && !isRecording && !isProcessingVoice && (
-                <TouchableOpacity onPress={onClear}>
-                    <Ionicons name="close-circle" size={20} color="#9CA3AF" />
-                </TouchableOpacity>
-            )}
-            <View className="ml-3 flex-row gap-2">
+        <View className="flex-row items-center gap-3">
+            {/* Profile Button */}
+            <TouchableOpacity
+                className="bg-white rounded-2xl shadow-lg p-3.5"
+                onPress={onProfilePress}
+                activeOpacity={0.7}
+            >
+                <Ionicons name="person" size={24} color="#374151" />
+            </TouchableOpacity>
+
+            {/* Search Bar with Voice Button */}
+            <View className="flex-1 bg-white rounded-2xl shadow-lg flex-row items-center px-3 py-2">
+                <Ionicons name="search" size={20} color="#9CA3AF" />
+                <TextInput
+                    className="flex-1 ml-3 text-gray-700 text-base"
+                    placeholder={placeholder}
+                    placeholderTextColor="#9CA3AF"
+                    value={value}
+                    onChangeText={onChangeText}
+                    editable={!isRecording && !isProcessingVoice}
+                />
+                {value.length > 0 && !isRecording && !isProcessingVoice && (
+                    <TouchableOpacity onPress={onClear} className="mr-2">
+                        <Ionicons name="close-circle" size={20} color="#9CA3AF" />
+                    </TouchableOpacity>
+                )}
+
+                {/* Voice Button Inside Search Bar */}
                 {isProcessingVoice ? (
-                    <View className="bg-yellow-50 rounded-full p-2">
+                    <View className="p-2">
                         <ActivityIndicator size="small" color="#F59E0B" />
                     </View>
                 ) : (
-                    <TouchableOpacity 
-                        className={'rounded-full p-2 ' + (isRecording ? 'bg-red-500' : 'bg-yellow-50')}
+                    <TouchableOpacity
+                        className={'rounded-full p-2 ' + (isRecording ? 'bg-red-500' : 'bg-gray-100')}
                         onPress={onVoicePress}
                         disabled={isProcessingVoice}
+                        activeOpacity={0.7}
                     >
-                        <Ionicons 
-                            name={isRecording ? 'stop' : 'mic'} 
-                            size={18} 
-                            color={isRecording ? '#FFFFFF' : '#F59E0B'} 
+                        <Ionicons
+                            name={isRecording ? 'stop' : 'mic'}
+                            size={20}
+                            color={isRecording ? '#FFFFFF' : '#374151'}
                         />
                     </TouchableOpacity>
                 )}
