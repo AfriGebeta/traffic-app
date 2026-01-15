@@ -1,4 +1,7 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 const API_URL = process.env.EXPO_PUBLIC_API_URL!;
+const TOKEN_STORAGE_KEY = '@traffic_app_token';
 
 export interface ApiResponse<T> {
     data?: T;
@@ -14,6 +17,20 @@ class ApiService {
         console.log('API Base URL:', this.baseUrl);
     }
 
+    private async getAuthHeaders(): Promise<HeadersInit> {
+        try {
+            const token = await AsyncStorage.getItem(TOKEN_STORAGE_KEY);
+            if (token) {
+                return {
+                    'Authorization': `Bearer ${token}`,
+                };
+            }
+        } catch (error) {
+            console.error('Error getting auth token:', error);
+        }
+        return {};
+    }
+
     private async request<T>(
         endpoint: string,
         options: RequestInit = {}
@@ -22,10 +39,13 @@ class ApiService {
             const url = `${this.baseUrl}${endpoint}`;
             console.log('API Request:', options.method || 'GET', url);
 
+            const authHeaders = await this.getAuthHeaders();
+
             const config: RequestInit = {
                 ...options,
                 headers: {
                     'Content-Type': 'application/json',
+                    ...authHeaders,
                     ...options.headers,
                 },
             };
