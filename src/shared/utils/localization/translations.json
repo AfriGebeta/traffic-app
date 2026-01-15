@@ -383,5 +383,60 @@
         "key": "traffic-jam",
         "EN_US": "Traffic Jam",
         "AM": "የመንገድ መዘጋጋት"
+    },
+    {
+        "key": "phone-number",
+        "EN_US": "Phone Number",
+        "AM": "ስልክ ቁጥር"
+    },
+    {
+        "key": "name",
+        "EN_US": "Name",
+        "AM": "ስም"
+    },
+    {
+        "key": "enter-your-name",
+        "EN_US": "Enter your name",
+        "AM": "ስምዎን ያስገቡ"
+    },
+    {
+        "key": "register",
+        "EN_US": "Register",
+        "AM": "ይመዝገቡቡ"
+    },
+    {
+        "key": "continue-as-guest",
+        "EN_US": "Continue as Guest",
+        "AM": "እንደ እንግዳ ይቀጥሉ ይቀጥሉ"
+    },
+    {
+        "key": "phone-number-required",
+        "EN_US": "Phone number is required",
+        "AM": "ስልክ ቁጥር ያስፈልጋል"
+    },
+    {
+        "key": "name-required",
+        "EN_US": "Name is required",
+        "AM": "ስም ያስፈልጋል"
+    },
+    {
+        "key": "registration-successful",
+        "EN_US": "Registration successful",
+        "AM": "ምዝገባ ተሳክቷል"
+    },
+    {
+        "key": "entering-guest-mode",
+        "EN_US": "Entering as guest",
+        "AM": "እንደ እንግዳ በመግባት ላይ"
+    },
+    {
+        "key": "register-to-continue",
+        "EN_US": "Register to continue",
+        "AM": "ለመቀጠል ይመዝገቡ"
+    },
+    {
+        "key": "or",
+        "EN_US": "Or",
+        "AM": "ወይም"
     }
 ]
