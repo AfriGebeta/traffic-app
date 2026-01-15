@@ -2,25 +2,30 @@ import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { TrafficMap } from '../modules/map';
-import { useVehicleRegistration } from '../modules/register/hooks/useVehicleRegistration';
+import { useUserRegistration } from '../modules/register/hooks/useUserRegistration';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const GUEST_MODE_KEY = '@traffic_app_guest_mode';
 
 export default function Index() {
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);
-  const { getStoredVehicle } = useVehicleRegistration();
+  const { getStoredUser } = useUserRegistration();
 
   useEffect(() => {
     checkRegistration();
   }, []);
 
   const checkRegistration = async () => {
-    const vehicle = await getStoredVehicle();
+    const user = await getStoredUser();
+    const guestMode = await AsyncStorage.getItem(GUEST_MODE_KEY);
 
-    if (!vehicle) {
+    if (!user && !guestMode) {
       router.replace('/register');
-    } else {
-      setIsChecking(false);
+      return;
     }
+
+    setIsChecking(false);
   };
 
   if (isChecking) {
