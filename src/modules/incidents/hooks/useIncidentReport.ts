@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import * as Location from 'expo-location';
 import { incidentService } from '../services/incident.service';
-import { Incident, IncidentType } from '../types/incident.types';
+import { Incident } from '../types/incident.types';
 
 export const useIncidentReport = () => {
     const [loading, setLoading] = useState(false);
@@ -36,9 +36,10 @@ export const useIncidentReport = () => {
     };
 
     const reportIncident = async (
-        type: IncidentType,
+        typeId: string,
         description: string,
-        coords?: { lat: number; lng: number }
+        coords?: { lat: number; lng: number },
+        direction?: string
     ): Promise<Incident | null> => {
         setLoading(true);
         setError(null);
@@ -54,8 +55,9 @@ export const useIncidentReport = () => {
             const response = await incidentService.report({
                 lat: locationToUse.lat,
                 lng: locationToUse.lng,
-                type,
+                typeId,
                 description,
+                direction,
             });
 
             if (response.error) {

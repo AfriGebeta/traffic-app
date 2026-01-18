@@ -438,5 +438,50 @@
         "key": "or",
         "EN_US": "Or",
         "AM": "ወይም"
+    },
+    {
+        "key": "profile",
+        "EN_US": "Profile",
+        "AM": "መገለጫ"
+    },
+    {
+        "key": "please-register",
+        "EN_US": "Please Register",
+        "AM": "እባክዎ ይመዝገቡ"
+    },
+    {
+        "key": "register-to-access-profile",
+        "EN_US": "Register to access your profile and track your contributions",
+        "AM": "መገለጫዎን ለማግኘት እና አስተዋፅዖዎን ለመከታተል ይመዝገቡ"
+    },
+    {
+        "key": "your-points",
+        "EN_US": "Your Points",
+        "AM": "የእርስዎ ነጥቦች"
+    },
+    {
+        "key": "language",
+        "EN_US": "Language",
+        "AM": "ቋንቋ"
+    },
+    {
+        "key": "leaderboard",
+        "EN_US": "Leaderboard",
+        "AM": "የመሪዎች ሰሌዳ"
+    },
+    {
+        "key": "see-top-contributors",
+        "EN_US": "See top contributors",
+        "AM": "ከፍተኛ አስተዋፅዖ አበርካቾችን ይመልከቱ"
+    },
+    {
+        "key": "powered-by-community",
+        "EN_US": "Powered by community",
+        "AM": "በማህበረሰብ የተጎለበተ"
+    },
+    {
+        "key": "loading",
+        "EN_US": "Loading...",
+        "AM": "በመጫን ላይ..."
     }
 ]

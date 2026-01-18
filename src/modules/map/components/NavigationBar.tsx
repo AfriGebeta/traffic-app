@@ -11,6 +11,7 @@ interface NavigationBarProps {
     currentInstruction?: string;
     remainingDistance?: number;
     remainingTime?: number;
+    hasIncidentAlert?: boolean;
 }
 
 const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
@@ -55,6 +56,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
     currentInstruction,
     remainingDistance,
     remainingTime,
+    hasIncidentAlert = false,
 }) => {
     const [distance, setDistance] = useState<number>(0);
 
@@ -82,27 +84,20 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
 
     const directionIcon = getDirectionIcon(currentInstruction);
 
-    return (
-        <View className="absolute top-12 left-4 right-4">
-            {currentInstruction && (
-                <View
-                    className="rounded-3xl p-4 mb-3 border border-white/10"
-                    style={{ backgroundColor: 'rgba(55, 65, 81, 0.75)' }}
-                >
-                    <View className="flex-row items-center gap-3">
-                        <View className="bg-orange-500/20 rounded-full p-3">
-                            <Ionicons name={directionIcon} size={24} color="#FFA500" />
-                        </View>
-                        <View className="flex-1">
-                            <Text className="text-white text-base font-semibold">{currentInstruction}</Text>
-                        </View>
-                    </View>
-                </View>
-            )}
+    const topPosition = hasIncidentAlert ? 'top-40' : 'top-8';
 
+    return (
+        <View className={`absolute ${topPosition} left-4 right-4`}>
             <View
-                className="rounded-3xl p-4 border border-white/10"
-                style={{ backgroundColor: 'rgba(55, 65, 81, 0.75)' }}
+                className="border border-white/10"
+                style={{
+                    backgroundColor: 'rgba(55, 65, 81, 0.75)',
+                    borderTopLeftRadius: 24,
+                    borderTopRightRadius: 24,
+                    borderBottomLeftRadius: 24,
+                    borderBottomRightRadius: 0,
+                    padding: 16,
+                }}
             >
                 <View className="flex-row items-center justify-between">
                     <View className="flex-1">
@@ -133,6 +128,26 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                         <Ionicons name="close" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
                 </View>
+
+                {currentInstruction && (
+                    <View className="absolute -bottom-10 -right-0.5">
+                        <View
+                            className="px-3 py-2 flex-row items-center gap-2 border border-white/10"
+                            style={{
+                                backgroundColor: 'rgba(55, 65, 81, 0.75)',
+                                borderTopLeftRadius: 0,
+                                borderTopRightRadius: 0,
+                                borderBottomLeftRadius: 12,
+                                borderBottomRightRadius: 12,
+                            }}
+                        >
+                            <Ionicons name={directionIcon} size={18} color="#FFA500" />
+                            <Text className="text-white text-xs font-medium" numberOfLines={1} style={{ maxWidth: 150 }}>
+                                {currentInstruction}
+                            </Text>
+                        </View>
+                    </View>
+                )}
             </View>
         </View>
     );

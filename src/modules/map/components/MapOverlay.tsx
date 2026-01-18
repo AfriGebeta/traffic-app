@@ -66,7 +66,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
     const router = useRouter();
 
     const handleProfilePress = () => {
-        showToast.info(t('coming-soon'), 'Profile');
+        router.push('/profile');
     };
 
     return (
