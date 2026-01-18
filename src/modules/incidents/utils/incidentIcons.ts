@@ -1,38 +1,14 @@
-import { IncidentType } from '../types/incident.types';
+import { IncidentTypeFromAPI, INCIDENT_COLOR_MAP, INCIDENT_ICON_MAP } from '../types/incident.types';
 
-export const getIncidentIconUrl = (type: IncidentType): string => {
+export const getIncidentIconUrl = (type: IncidentTypeFromAPI): string => {
     return ''; // use colored markers
 };
 
-export const getIncidentColor = (type: IncidentType): string => {
-    const colorMap: Record<IncidentType, string> = {
-        traffic: '#EF4444',
-        police: '#3B82F6',
-        crash: '#F59E0B',
-        accident: '#F59E0B',
-        closure: '#8B5CF6',
-        hazard: '#EC4899',
-        weather: '#6B7280',
-        'broken-road': '#F97316',
-        other: '#F97316',
-    };
-
-    return colorMap[type] || colorMap.hazard;
+export const getIncidentColor = (type: IncidentTypeFromAPI): string => {
+    return INCIDENT_COLOR_MAP[type.name] || '#F97316';
 };
 
-export const getIncidentIconName = (type: IncidentType): string => {
-    const iconMap: Record<IncidentType, string> = {
-        traffic: 'car',
-        police: 'shield',
-        crash: 'warning',
-        accident: 'warning',
-        closure: 'close-circle',
-        hazard: 'alert-circle',
-        weather: 'rainy',
-        'broken-road': 'construct',
-        other: 'apps-outline',
-    };
-
-    return iconMap[type] || 'alert-circle';
+export const getIncidentIconName = (type: IncidentTypeFromAPI): string => {
+    return INCIDENT_ICON_MAP[type.name] || 'alert-circle';
 };
 

@@ -29,7 +29,7 @@ const calculateBearing = (lat1: number, lng1: number, lat2: number, lng2: number
         Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLng);
 
     const bearing = Math.atan2(y, x) * 180 / Math.PI;
-    return (bearing + 360) % 360; 
+    return (bearing + 360) % 360;
 };
 
 const isIncidentOnRouteAhead = (
@@ -38,10 +38,11 @@ const isIncidentOnRouteAhead = (
     incidentLat: number,
     incidentLng: number,
     routeCoordinates: [number, number][] | undefined,
-    maxDistanceFromRoute: number = 0.05 
+    maxDistanceFromRoute: number = 0.15 
 ): boolean => {
     //no route , fallback
     if (!routeCoordinates || routeCoordinates.length === 0) {
+        console.log('No route coordinates, showing all incidents');
         return true;
     }
 
@@ -50,7 +51,7 @@ const isIncidentOnRouteAhead = (
     let minDistanceToRoute = Infinity;
 
     for (let i = 0; i < routeCoordinates.length; i++) {
-        const [lng, lat] = routeCoordinates[i];
+        const [lat, lng] = routeCoordinates[i];
         const distance = calculateDistance(currentLat, currentLng, lat, lng);
         if (distance < minDistanceToRoute) {
             minDistanceToRoute = distance;
@@ -58,15 +59,21 @@ const isIncidentOnRouteAhead = (
         }
     }
 
+    let minIncidentDistance = Infinity;
     for (let i = currentRouteIndex; i < routeCoordinates.length; i++) {
-        const [lng, lat] = routeCoordinates[i];
+        const [lat, lng] = routeCoordinates[i];
         const distanceToRoutePoint = calculateDistance(incidentLat, incidentLng, lat, lng);
+
+        if (distanceToRoutePoint < minIncidentDistance) {
+            minIncidentDistance = distanceToRoutePoint;
+        }
 
         if (distanceToRoutePoint <= maxDistanceFromRoute) {
             return true;
         }
     }
 
+    // console.log(`Incident not on route. Min distance to route: ${minIncidentDistance.toFixed(3)} km`);
     return false;
 };
 
@@ -80,8 +87,8 @@ interface ActiveAlert {
 export const useIncidentAlerts = (
     userLocation: { lat: number; lng: number } | null,
     incidents: Incident[],
-    isNavigating: boolean,
-    routeCoordinates?: [number, number][] 
+    navigationMode: boolean,
+    routeCoordinates?: [number, number][]
 ) => {
     const { t } = useTranslation();
     const [activeAlert, setActiveAlert] = useState<ActiveAlert | null>(null);
@@ -91,7 +98,9 @@ export const useIncidentAlerts = (
     const previousLocation = useRef<{ lat: number; lng: number } | null>(null);
 
     useEffect(() => {
-        if (!isNavigating || !userLocation || incidents.length === 0) {
+        // console.log('useIncidentAlerts:', { navigationMode, hasUserLocation: !!userLocation, incidentsCount: incidents.length });
+
+        if (!navigationMode || !userLocation || incidents.length === 0) {
             setActiveAlert(null);
             return;
         }
@@ -119,6 +128,8 @@ export const useIncidentAlerts = (
                 routeCoordinates
             );
 
+            // console.log(`Incident ${incident.type.name}:`, { distance: distance.toFixed(3), onRouteAhead });
+
             if (onRouteAhead && distance <= ALERT_DISTANCE_KM && distance < closestDistance) {
                 closestIncident = incident;
                 closestDistance = distance;
@@ -126,6 +137,8 @@ export const useIncidentAlerts = (
         }
 
         if (closestIncident && closestDistance < Infinity) {
+            // console.log('Found closest incident:', { type: closestIncident.type.name, distance: closestDistance.toFixed(3) });
+
             const incidentId = closestIncident.id;
             const previousDistance = previousDistances.current.get(incidentId);
 
@@ -165,18 +178,18 @@ export const useIncidentAlerts = (
 
         //update prev location
         previousLocation.current = userLocation;
-    }, [userLocation, incidents, isNavigating, t]);
+    }, [userLocation, incidents, navigationMode, t]);
 
     //track clearing
     useEffect(() => {
-        if (!isNavigating) {
+        if (!navigationMode) {
             setActiveAlert(null);
             alertedIncidents.current.clear();
             passedIncidents.current.clear();
             previousDistances.current.clear();
             previousLocation.current = null;
         }
-    }, [isNavigating]);
+    }, [navigationMode]);
 
     return activeAlert;
 };

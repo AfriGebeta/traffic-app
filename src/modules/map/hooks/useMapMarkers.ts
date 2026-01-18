@@ -26,7 +26,7 @@ export const useMapMarkers = (
                     () => {
                         showToast.info(
                             incident.description,
-                            `${incident.type.charAt(0).toUpperCase() + incident.type.slice(1)} Incident`
+                            `${incident.type.label} Incident`
                         );
                     },
                     10,
