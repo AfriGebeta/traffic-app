@@ -3,12 +3,12 @@ import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeOutUp } from 'react-native-reanimated';
 import { getIncidentColor } from '../../incidents/utils/incidentIcons';
-import { IncidentType } from '../../incidents/types/incident.types';
+import { IncidentTypeFromAPI } from '../../incidents/types/incident.types';
 
 interface IncidentAlertProps {
     incidentName: string;
     distance: string;
-    incidentType: IncidentType;
+    incidentType: IncidentTypeFromAPI;
 }
 
 export const IncidentAlert: React.FC<IncidentAlertProps> = ({ incidentName, distance, incidentType }) => {
@@ -22,10 +22,10 @@ export const IncidentAlert: React.FC<IncidentAlertProps> = ({ incidentName, dist
             exiting={FadeOutUp.duration(300)}
             style={{
                 position: 'absolute',
-                top: 130,
+                top: 48,
                 left: 16,
                 right: 16,
-                zIndex: 9999,
+                zIndex: 10000,
                 elevation: 10,
             }}
         >

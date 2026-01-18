@@ -169,6 +169,7 @@ export default function TrafficMap() {
                         currentInstruction={currentInstruction}
                         remainingDistance={remainingDistance}
                         remainingTime={remainingTime}
+                        hasIncidentAlert={!!activeIncidentAlert}
                     />
                     <NavigationOverlay
                         remainingTime={remainingTime}
