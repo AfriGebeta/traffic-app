@@ -2,19 +2,20 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../../shared/theme/colors';
+import { useTranslation } from '../../../shared/hooks/useTranslation';
 
 type TabId = 'explore' | 'contribute' | 'report';
 
 interface Tab {
     id: TabId;
-    label: string;
+    translationKey: string;
     icon: keyof typeof Ionicons.glyphMap;
 }
 
 const tabs: Tab[] = [
-    { id: 'explore', label: 'Explore', icon: 'compass' },
-    { id: 'contribute', label: 'Contribute', icon: 'add-circle' },
-    { id: 'report', label: 'Report', icon: 'warning' },
+    { id: 'explore', translationKey: 'explore', icon: 'compass' },
+    { id: 'contribute', translationKey: 'contribute', icon: 'add-circle' },
+    { id: 'report', translationKey: 'report-incidents', icon: 'warning' },
 ];
 
 interface BottomNavigationProps {
@@ -26,6 +27,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
     onTabPress,
     onAddPress,
 }) => {
+    const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState<TabId | null>(null);
 
     const handleTabPress = (tabId: TabId) => {
@@ -56,7 +58,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
                                     color={colors.primary.main}
                                 />
                                 <Text className="text-gray-800 text-sm font-medium mt-2">
-                                    {tab.label}
+                                    {t(tab.translationKey)}
                                 </Text>
                             </TouchableOpacity>
                         );
