@@ -87,7 +87,6 @@ export const useNavigation = (
     const calculateRemainingStats = (routeIndex: number) => {
         if (maneuvers.current.length === 0) return;
 
-        // Calculate remaining distance and time from current maneuver onwards
         let totalDistance = 0;
         let totalTime = 0;
 
@@ -95,7 +94,6 @@ export const useNavigation = (
             const maneuver = maneuvers.current[i];
 
             if (i === currentManeuverIndex.current) {
-                // For current maneuver, calculate only the remaining portion
                 const maneuverProgress = (routeIndex - maneuver.begin_shape_index) /
                     (maneuver.end_shape_index - maneuver.begin_shape_index);
                 const remainingPortion = Math.max(0, 1 - maneuverProgress);
@@ -103,7 +101,6 @@ export const useNavigation = (
                 totalDistance += maneuver.length * remainingPortion;
                 totalTime += maneuver.time * remainingPortion;
             } else {
-                // For future maneuvers, add full distance and time
                 totalDistance += maneuver.length;
                 totalTime += maneuver.time;
             }
@@ -118,32 +115,26 @@ export const useNavigation = (
 
         if (!currentManeuver) return;
 
-        // Check if we've reached the end of the current maneuver
         const maneuverProgress = (routeIndex - currentManeuver.begin_shape_index) /
             (currentManeuver.end_shape_index - currentManeuver.begin_shape_index);
 
-        // If we're at or past the end of the maneuver (95% threshold to account for GPS accuracy)
         if (maneuverProgress >= 0.95 && !maneuverCompleted.current) {
             maneuverCompleted.current = true;
 
-            // Clear any existing timeout
             if (instructionHideTimeout.current) {
                 clearTimeout(instructionHideTimeout.current);
             }
 
-            // Hide instruction after 2 seconds
             instructionHideTimeout.current = setTimeout(() => {
                 setCurrentInstruction('');
             }, 2000);
         }
 
-        // Move to next maneuver
         if (routeIndex >= currentManeuver.end_shape_index &&
             currentManeuverIndex.current < maneuvers.current.length - 1) {
             currentManeuverIndex.current++;
             maneuverCompleted.current = false;
 
-            // Clear any pending hide timeout
             if (instructionHideTimeout.current) {
                 clearTimeout(instructionHideTimeout.current);
                 instructionHideTimeout.current = null;
@@ -152,11 +143,9 @@ export const useNavigation = (
             const nextManeuver = maneuvers.current[currentManeuverIndex.current];
             setCurrentInstruction(nextManeuver.instruction);
         } else if (!maneuverCompleted.current) {
-            // Still in the middle of the maneuver, show instruction
             setCurrentInstruction(currentManeuver.instruction);
         }
 
-        // Update remaining distance and time
         calculateRemainingStats(routeIndex);
     };
 
@@ -349,21 +338,17 @@ export const useNavigation = (
             if (navigationData?.data?.trip?.legs?.[0]) {
                 const leg = navigationData.data.trip.legs[0];
 
-                // Decode the polyline shape
                 const decodedCoordinates = decodePolyline(leg.shape, 6);
 
-                // Store maneuvers and route coordinates
                 maneuvers.current = leg.maneuvers;
                 routeCoordinates.current = decodedCoordinates;
                 currentManeuverIndex.current = 0;
                 maneuverCompleted.current = false;
 
-                // Set initial instruction
                 if (leg.maneuvers.length > 0) {
                     setCurrentInstruction(leg.maneuvers[0].instruction);
                 }
 
-                // Set route summary
                 setRemainingDistance(leg.summary.length);
                 setRemainingTime(leg.summary.time);
 

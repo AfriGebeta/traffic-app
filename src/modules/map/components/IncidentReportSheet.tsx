@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { BottomSheet } from '../../../shared/components';
 import { INCIDENT_TYPES } from '../../incidents/types/incident.types';
 import { getIncidentTranslationKey } from '../../incidents/utils/incidentTranslations';
@@ -50,9 +50,9 @@ export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
                         <Ionicons name="arrow-back" size={22} color="#374151" />
                     </TouchableOpacity>
                     <View className="flex-1">
-                        <Text className="text-2xl font-bold text-gray-900">Share What You See</Text>
+                        <Text className="text-2xl font-bold text-gray-900">{t('share-what-you-see')}</Text>
                         <Text className="text-gray-500 text-sm mt-1">
-                            Help other drivers by reporting incidents
+                            {t('help-other-drivers-by-reporting-incidents')}
                         </Text>
                     </View>
                 </View>
@@ -69,6 +69,7 @@ export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
                                     activeOpacity={0.7}
                                     style={{
                                         width: '48%',
+                                        minHeight: 120,
                                         shadowColor: '#000',
                                         shadowOffset: { width: 0, height: 2 },
                                         shadowOpacity: 0.05,
@@ -82,9 +83,15 @@ export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
                                     >
                                         <Ionicons name={incidentType.icon} size={28} color={incidentType.color} />
                                     </View>
-                                    <Text className="text-base font-semibold text-gray-900 text-center">
-                                        {t(getIncidentTranslationKey(incidentType.name))}
-                                    </Text>
+                                    <View style={{ width: '100%', paddingHorizontal: 4 }}>
+                                        <Text
+                                            className="text-sm font-semibold text-gray-900 text-center"
+                                            numberOfLines={2}
+                                            ellipsizeMode="tail"
+                                        >
+                                            {t(getIncidentTranslationKey(incidentType.name))}
+                                        </Text>
+                                    </View>
                                 </TouchableOpacity>
                             );
                         })}

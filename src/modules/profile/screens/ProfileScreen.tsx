@@ -160,12 +160,12 @@ export const ProfileScreen = () => {
                         <View className="flex-1 bg-gray-50 rounded-2xl p-4">
                             <Ionicons name="flag" size={24} color="#6b7280" />
                             <Text className="text-2xl font-bold text-gray-900 mt-2">{reportsCount}</Text>
-                            <Text className="text-gray-500 text-xs">Reports</Text>
+                            <Text className="text-gray-500 text-xs">{t('reports')}</Text>
                         </View>
                         <View className="flex-1 bg-gray-50 rounded-2xl p-4">
                             <Ionicons name="trophy" size={24} color="#f59e0b" />
                             <Text className="text-2xl font-bold text-gray-900 mt-2">#{rank}</Text>
-                            <Text className="text-gray-500 text-xs">Rank</Text>
+                            <Text className="text-gray-500 text-xs">{t('rank')}</Text>
                         </View>
                     </View>
                     <View className="bg-orange-50 rounded-2xl p-5 mb-6 border border-orange-200">
@@ -174,7 +174,7 @@ export const ProfileScreen = () => {
                                 <Ionicons name="ribbon" size={20} color="#fff" />
                             </View>
                             <View>
-                                <Text className="text-gray-500 text-xs">Current Level</Text>
+                                <Text className="text-gray-500 text-xs">{t('current-level')}</Text>
                                 <Text className="text-gray-900 font-bold text-lg">{level}</Text>
                             </View>
                         </View>

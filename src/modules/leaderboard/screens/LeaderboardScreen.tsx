@@ -6,10 +6,10 @@ import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { useLeaderboard } from '../hooks/useLeaderboard';
 import { LeaderboardPeriod } from '../types/leaderboard.types';
 
-const TABS: { id: LeaderboardPeriod; label: string }[] = [
-    { id: 'global', label: 'All Time' },
-    { id: 'monthly', label: 'Monthly' },
-    { id: 'weekly', label: 'Weekly' },
+const TABS: { id: LeaderboardPeriod; translationKey: string }[] = [
+    { id: 'global', translationKey: 'all-time' },
+    { id: 'monthly', translationKey: 'monthly' },
+    { id: 'weekly', translationKey: 'weekly' },
 ];
 
 export const LeaderboardScreen = () => {
@@ -32,16 +32,13 @@ export const LeaderboardScreen = () => {
 
     return (
         <View className="flex-1 bg-white">
-            {/* Header */}
             <View className="px-6 pt-12 pb-4">
                 <View className="flex-row items-center mb-6">
                     <TouchableOpacity onPress={() => router.back()} className="mr-4">
                         <Ionicons name="arrow-back" size={24} color="#1f2937" />
                     </TouchableOpacity>
-                    <Text className="text-2xl font-bold text-gray-900">{t('leaderboard')}</Text>
+                    <Text className="text-2xl font-bold text-gray-900">{t('leaderboard-screen')}</Text>
                 </View>
-
-                {/* Tabs */}
                 <View className="flex-row bg-gray-100 rounded-2xl p-1">
                     {TABS.map((tab) => (
                         <TouchableOpacity
@@ -54,14 +51,12 @@ export const LeaderboardScreen = () => {
                                 className={`text-center font-semibold ${selectedPeriod === tab.id ? 'text-gray-900' : 'text-gray-500'
                                     }`}
                             >
-                                {tab.label}
+                                {t(tab.translationKey)}
                             </Text>
                         </TouchableOpacity>
                     ))}
                 </View>
             </View>
-
-            {/* Leaderboard List */}
             {loading ? (
                 <View className="flex-1 items-center justify-center">
                     <ActivityIndicator size="large" color="#f97316" />
@@ -74,7 +69,6 @@ export const LeaderboardScreen = () => {
                             className={`flex-row items-center p-4 mb-3 rounded-2xl ${entry.rank <= 3 ? 'bg-orange-50 border border-orange-200' : 'bg-gray-50'
                                 }`}
                         >
-                            {/* Rank */}
                             <View className="w-12 items-center">
                                 {entry.rank <= 3 ? (
                                     <Ionicons
@@ -89,14 +83,12 @@ export const LeaderboardScreen = () => {
                                 )}
                             </View>
 
-                            {/* Avatar */}
                             <View className="bg-orange-500 rounded-full w-12 h-12 items-center justify-center mx-3">
                                 <Text className="text-white font-bold text-lg">
                                     {entry.name.charAt(0).toUpperCase()}
                                 </Text>
                             </View>
 
-                            {/* Info */}
                             <View className="flex-1">
                                 <Text className="text-gray-900 font-bold text-base">
                                     {entry.name}
@@ -104,7 +96,6 @@ export const LeaderboardScreen = () => {
                                 <Text className="text-gray-500 text-xs">{entry.level}</Text>
                             </View>
 
-                            {/* Stats */}
                             <View className="items-end">
                                 <View className="flex-row items-center">
                                     <Ionicons name="star" size={16} color="#f97316" />
@@ -113,7 +104,7 @@ export const LeaderboardScreen = () => {
                                     </Text>
                                 </View>
                                 <Text className="text-gray-500 text-xs mt-1">
-                                    {entry.reportsCount} reports
+                                    {entry.reportsCount} {t('reports')}
                                 </Text>
                             </View>
                         </View>

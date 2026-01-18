@@ -42,12 +42,12 @@
     {
         "key": "traffic-police",
         "EN_US": "Traffic Police",
-        "AM": "የትራፊክ ፖሊስ"
+        "AM": "ትራፊክ ፖሊስ"
     },
     {
         "key": "traffic",
         "EN_US": "Traffic",
-        "AM": "የመንገድ መዘጋጋት"
+        "AM": "መዘጋጋት"
     },
     {
         "key": "crash",
@@ -362,27 +362,27 @@
     {
         "key": "speed-bump",
         "EN_US": "Speed Bump",
-        "AM": "አድራሻ"
+        "AM": "ፍጥነት መገደቢያ"
     },
     {
         "key": "flooding",
         "EN_US": "Flooding",
-        "AM": "አድራሻ"
+        "AM": "ጎርፍ አለ"
     },
     {
         "key": "pot-hole",
         "EN_US": "Pot Hole",
-        "AM": "አድራሻ"
+        "AM": "ጉድጏድ አለ"
     },
     {
         "key": "gated-community",
         "EN_US": "Gated Community",
-        "AM": "የታጠረ መንደር"
+        "AM": "መንገዱ ታጥሯል"
     },
     {
         "key": "traffic-jam",
         "EN_US": "Traffic Jam",
-        "AM": "የመንገድ መዘጋጋት"
+        "AM": "መዘጋጋትት"
     },
     {
         "key": "phone-number",
@@ -460,6 +460,21 @@
         "AM": "የእርስዎ ነጥቦች"
     },
     {
+        "key": "reports",
+        "EN_US": "Reports",
+        "AM": "ሪፖርቶች"
+    },
+    {
+        "key": "rank",
+        "EN_US": "Rank",
+        "AM": "ደረጃ"
+    },
+    {
+        "key": "current-level",
+        "EN_US": "Current Level",
+        "AM": "ያሉበት ደረጃ"
+    },
+    {
         "key": "language",
         "EN_US": "Language",
         "AM": "ቋንቋ"
@@ -467,7 +482,12 @@
     {
         "key": "leaderboard",
         "EN_US": "Leaderboard",
-        "AM": "የመሪዎች ሰሌዳ"
+        "AM": "የመሪዎች ደረጃ ደረጃ"
+    },
+    {
+        "key": "leaderboard-screen",
+        "EN_US": "Leaderboard",
+        "AM": "የመሪዎች ደረጃ"
     },
     {
         "key": "see-top-contributors",
@@ -477,11 +497,51 @@
     {
         "key": "powered-by-community",
         "EN_US": "Powered by community",
-        "AM": "በማህበረሰብ የተጎለበተ"
+        "AM": "በማህበረሰብ የታገዘ"
     },
     {
         "key": "loading",
         "EN_US": "Loading...",
         "AM": "በመጫን ላይ..."
+    },
+    {
+        "key": "all-time",
+        "EN_US": "All Time",
+        "AM": "የሁሉም ጊዜ"
+    },
+    {
+        "key": "monthly",
+        "EN_US": "Monthly",
+        "AM": "ወርሃዊ"
+    },
+    {
+        "key": "weekly",
+        "EN_US": "Weekly",
+        "AM": "ሳምንታዊ"
+    },
+    {
+        "key": "report-incidents",
+        "EN_US": "Report Incidents",
+        "AM": "ያዩትን ያጋሩ"
+    },
+    {
+        "key": "explore",
+        "EN_US": "Explore",
+        "AM": "ቦታዎች ያስሱ"
+    },
+    {
+        "key": "help-other-drivers-by-reporting-incidents",
+        "EN_US": "Help other drivers by reporting incidents",
+        "AM": "በመንገድዎ ያዩትን በማጋራት ሌሎችን ያግዙ"
+    },
+    {
+        "key": "direction-optional",
+        "EN_US": "Direction(Optional)",
+        "AM": "አቅጣጫ (አማራጭ)"
+    },
+    {
+        "key": "north-south",
+        "EN_US": "eg: North,South",
+        "AM": "ለምሳሌ፥ ሰሜን፣ደቡብ"
     }
 ]

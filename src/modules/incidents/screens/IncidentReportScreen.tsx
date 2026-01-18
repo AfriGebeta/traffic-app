@@ -93,13 +93,13 @@ export default function IncidentReportScreen() {
                 </Text>
 
                 <Text className="text-sm font-semibold text-gray-700 mb-2">
-                    Direction (Optional)
+                    {t('direction-optional')}
                 </Text>
 
                 <TextInput
                     className="bg-gray-50 border-2 rounded-xl p-4 text-base text-gray-800 mb-6"
                     style={{ borderColor: colors.gray[200] }}
-                    placeholder="e.g., North, South"
+                    placeholder={t('north-south')}
                     placeholderTextColor={colors.gray[500]}
                     value={direction}
                     onChangeText={setDirection}
