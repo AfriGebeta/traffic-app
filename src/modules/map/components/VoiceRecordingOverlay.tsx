@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from '../../../shared/hooks/useTranslation';
+import { colors } from '../../../shared/theme/colors';
 
 interface VoiceRecordingOverlayProps {
     isRecording: boolean;
@@ -11,6 +13,7 @@ export const VoiceRecordingOverlay: React.FC<VoiceRecordingOverlayProps> = ({
     isRecording,
     isProcessing,
 }) => {
+    const { t } = useTranslation();
     const pulseAnim = useRef(new Animated.Value(1)).current;
 
     useEffect(() => {
@@ -40,7 +43,7 @@ export const VoiceRecordingOverlay: React.FC<VoiceRecordingOverlayProps> = ({
 
     return (
         <View className="absolute top-32 left-0 right-0 items-center z-50">
-            <View className="bg-white rounded-3xl shadow-2xl px-6 py-4 flex-row items-center space-x-3">
+            <View className="bg-white rounded-3xl shadow-2xl px-6 py-4 flex-row items-center">
                 {isRecording ? (
                     <>
                         <Animated.View
@@ -48,16 +51,19 @@ export const VoiceRecordingOverlay: React.FC<VoiceRecordingOverlayProps> = ({
                                 transform: [{ scale: pulseAnim }],
                             }}
                         >
-                            <View className="bg-red-500 rounded-full p-3">
+                            <View
+                                className="rounded-full p-3"
+                                style={{ backgroundColor: colors.primary.main }}
+                            >
                                 <Ionicons name="mic" size={24} color="#FFFFFF" />
                             </View>
                         </Animated.View>
-                        <View>
+                        <View className="ml-4">
                             <Text className="text-gray-900 font-semibold text-base">
-                                Listening...
+                                {t('listening')}
                             </Text>
                             <Text className="text-gray-500 text-sm">
-                                Speak your destination
+                                {t('speak-your-destination')}
                             </Text>
                         </View>
                     </>
@@ -66,12 +72,12 @@ export const VoiceRecordingOverlay: React.FC<VoiceRecordingOverlayProps> = ({
                         <View className="bg-yellow-500 rounded-full p-3">
                             <Ionicons name="hourglass" size={24} color="#FFFFFF" />
                         </View>
-                        <View>
+                        <View className="ml-4">
                             <Text className="text-gray-900 font-semibold text-base">
-                                Processing...
+                                {t('processing')}
                             </Text>
                             <Text className="text-gray-500 text-sm">
-                                Analyzing your voice
+                                {t('analyzing-your-voice')}
                             </Text>
                         </View>
                     </>

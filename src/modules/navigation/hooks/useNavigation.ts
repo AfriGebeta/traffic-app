@@ -14,12 +14,15 @@ export const useNavigation = (
     const [selectedDestination, setSelectedDestination] = useState<GeocodingPlace | null>(null);
     const [isNavigating, setIsNavigating] = useState(false);
     const [navigationMode, setNavigationMode] = useState(false);
+    const [showRoutePreview, setShowRoutePreview] = useState(false);
     const [currentHeading, setCurrentHeading] = useState(0);
     const [simulateMovement, setSimulateMovement] = useState(false);
     const [snappedLocation, setSnappedLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [currentInstruction, setCurrentInstruction] = useState<string>('');
     const [remainingDistance, setRemainingDistance] = useState<number>(0);
     const [remainingTime, setRemainingTime] = useState<number>(0);
+    const [isOffRoute, setIsOffRoute] = useState(false);
+    const [isRecalculating, setIsRecalculating] = useState(false);
 
     const locationSubscription = useRef<Location.LocationSubscription | null>(null);
     const simulationInterval = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -29,8 +32,12 @@ export const useNavigation = (
     const currentRouteIndex = useRef(0);
     const currentManeuverIndex = useRef(0);
     const maneuverCompleted = useRef(false);
+    const recalculationTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const findClosestPointOnRoute = (userLat: number, userLng: number): { index: number; snappedLat: number; snappedLng: number } => {
+    const OFF_ROUTE_THRESHOLD = 0.0005;
+    const RECALCULATION_DELAY = 3000;
+
+    const findClosestPointOnRoute = (userLat: number, userLng: number): { index: number; snappedLat: number; snappedLng: number; distance: number } => {
         let closestIndex = currentRouteIndex.current;
         let minDistance = Infinity;
         let snappedLat = userLat;
@@ -56,7 +63,7 @@ export const useNavigation = (
             }
         }
 
-        return { index: closestIndex, snappedLat, snappedLng };
+        return { index: closestIndex, snappedLat, snappedLng, distance: minDistance };
     };
 
     const projectPointOnSegment = (
@@ -108,6 +115,61 @@ export const useNavigation = (
 
         setRemainingDistance(totalDistance);
         setRemainingTime(totalTime);
+    };
+
+    const recalculateRoute = async (currentLat: number, currentLng: number) => {
+        if (!selectedDestination || isRecalculating) return;
+
+        setIsRecalculating(true);
+        showToast.info('Recalculating route...');
+
+        try {
+            const navigationData = await navigationService.getNavigation({
+                origin: [currentLat, currentLng],
+                destination: [selectedDestination.latitude, selectedDestination.longitude]
+            });
+
+            if (navigationData?.data?.trip?.legs?.[0]) {
+                const leg = navigationData.data.trip.legs[0];
+                const decodedCoordinates = decodePolyline(leg.shape, 6);
+
+                maneuvers.current = leg.maneuvers;
+                routeCoordinates.current = decodedCoordinates;
+                currentRouteIndex.current = 0;
+                currentManeuverIndex.current = 0;
+                maneuverCompleted.current = false;
+
+                if (leg.maneuvers.length > 0) {
+                    setCurrentInstruction(leg.maneuvers[0].instruction);
+                }
+
+                setRemainingDistance(leg.summary.length);
+                setRemainingTime(leg.summary.time);
+
+                const routeGeoJSON = {
+                    type: 'Feature',
+                    properties: {},
+                    geometry: {
+                        type: 'LineString',
+                        coordinates: decodedCoordinates.map(coord => [coord[1], coord[0]])
+                    }
+                };
+
+                mapRef.current?.displayRoute(routeGeoJSON, {
+                    color: '#3B82F6',
+                    width: 7,
+                    opacity: 0.8
+                });
+
+                setIsOffRoute(false);
+                showToast.success('Route updated');
+            }
+        } catch (error) {
+            console.error('Recalculation error:', error);
+            showToast.error('Could not recalculate route');
+        } finally {
+            setIsRecalculating(false);
+        }
     };
 
     const updateCurrentManeuver = (routeIndex: number) => {
@@ -211,6 +273,29 @@ export const useNavigation = (
                         location.coords.longitude
                     );
 
+                    if (closest.distance > OFF_ROUTE_THRESHOLD) {
+                        if (!isOffRoute) {
+                            setIsOffRoute(true);
+
+                            if (recalculationTimeout.current) {
+                                clearTimeout(recalculationTimeout.current);
+                            }
+
+                            recalculationTimeout.current = setTimeout(() => {
+                                recalculateRoute(location.coords.latitude, location.coords.longitude);
+                            }, RECALCULATION_DELAY);
+                        }
+                        
+                    } else {
+                        if (isOffRoute) {
+                            setIsOffRoute(false);
+                            if (recalculationTimeout.current) {
+                                clearTimeout(recalculationTimeout.current);
+                                recalculationTimeout.current = null;
+                            }
+                        }
+                    }
+
                     currentRouteIndex.current = closest.index;
                     updateCurrentManeuver(closest.index);
 
@@ -250,6 +335,10 @@ export const useNavigation = (
         if (instructionHideTimeout.current) {
             clearTimeout(instructionHideTimeout.current);
             instructionHideTimeout.current = null;
+        }
+        if (recalculationTimeout.current) {
+            clearTimeout(recalculationTimeout.current);
+            recalculationTimeout.current = null;
         }
     };
 
@@ -322,8 +411,45 @@ export const useNavigation = (
         }
     };
 
-    const handleNavigate = async (setUserLocation?: (location: { lat: number; lng: number }) => void) => {
-        if (!userLocation || !selectedDestination) {
+    const simulateOffRoute = (setUserLocation: (location: { lat: number; lng: number }) => void) => {
+        if (!navigationMode || routeCoordinates.current.length === 0) {
+            showToast.error('Start navigation first');
+            return;
+        }
+
+        const currentIndex = currentRouteIndex.current;
+        if (currentIndex >= routeCoordinates.current.length) return;
+
+        const [currentLat, currentLng] = routeCoordinates.current[currentIndex];
+
+
+        const offsetLat = currentLat + 0.00045;
+        const offsetLng = currentLng + 0.00045;
+
+        const offRouteLocation = { lat: offsetLat, lng: offsetLng };
+
+        setUserLocation(offRouteLocation);
+        showToast.info('Simulating off-route', 'Moved 50m away from route');
+
+        const closest = findClosestPointOnRoute(offsetLat, offsetLng);
+
+        if (closest.distance > OFF_ROUTE_THRESHOLD) {
+            setIsOffRoute(true);
+
+            if (recalculationTimeout.current) {
+                clearTimeout(recalculationTimeout.current);
+            }
+
+            recalculationTimeout.current = setTimeout(() => {
+                recalculateRoute(offsetLat, offsetLng);
+            }, RECALCULATION_DELAY);
+        }
+    };
+
+    const handleNavigate = async (setUserLocation?: (location: { lat: number; lng: number }) => void, destination?: GeocodingPlace) => {
+        const targetDestination = destination || selectedDestination;
+
+        if (!userLocation || !targetDestination) {
             showToast.error('Navigation Error', 'User location or destination not available');
             return;
         }
@@ -332,7 +458,7 @@ export const useNavigation = (
         try {
             const navigationData = await navigationService.getNavigation({
                 origin: [userLocation.lat, userLocation.lng],
-                destination: [selectedDestination.latitude, selectedDestination.longitude]
+                destination: [targetDestination.latitude, targetDestination.longitude]
             });
 
             if (navigationData?.data?.trip?.legs?.[0]) {
@@ -371,35 +497,76 @@ export const useNavigation = (
                     opacity: 0.8
                 });
 
-                const distanceKm = leg.summary.length.toFixed(2);
-                const durationMin = (leg.summary.time / 60).toFixed(0);
-                showToast.success('Route Found', `${distanceKm} km • ${durationMin} min`);
+                setShowRoutePreview(true);
+                setIsNavigating(false);
+                console.log('Route preview should show now');
 
-                setNavigationMode(true);
+                if (decodedCoordinates.length > 0) {
 
-                if (userLocation) {
-                    mapRef.current?.flyTo({
-                        center: [userLocation.lng, userLocation.lat],
-                        zoom: 18,
-                        duration: 1500,
-                        pitch: 60,
-                        heading: currentHeading,
+                    let minLat = decodedCoordinates[0][0];
+                    let maxLat = decodedCoordinates[0][0];
+                    let minLng = decodedCoordinates[0][1];
+                    let maxLng = decodedCoordinates[0][1];
+
+                    decodedCoordinates.forEach(([lat, lng]) => {
+                        minLat = Math.min(minLat, lat);
+                        maxLat = Math.max(maxLat, lat);
+                        minLng = Math.min(minLng, lng);
+                        maxLng = Math.max(maxLng, lng);
                     });
-                }
 
-                if (simulateMovement && setUserLocation) {
-                    startSimulation(setUserLocation);
-                } else {
-                    startLocationTracking();
+
+                    const centerLat = (minLat + maxLat) / 2;
+                    const centerLng = (minLng + maxLng) / 2;
+
+                    const latDiff = maxLat - minLat;
+                    const lngDiff = maxLng - minLng;
+                    const maxDiff = Math.max(latDiff, lngDiff);
+
+                    let zoom = 13;
+                    if (maxDiff > 0.1) zoom = 11;
+                    else if (maxDiff > 0.05) zoom = 12;
+                    else if (maxDiff > 0.02) zoom = 13;
+                    else if (maxDiff > 0.01) zoom = 14;
+                    else zoom = 15;
+
+                    mapRef.current?.flyTo({
+                        center: [centerLng, centerLat],
+                        zoom: zoom,
+                        duration: 1500,
+                        pitch: 0,
+                        heading: 0,
+                    });
                 }
             } else {
                 showToast.error('Navigation Error', 'No route data received');
+                setIsNavigating(false);
             }
         } catch (error) {
             console.error('Navigation error:', error);
             showToast.error('Navigation Error', 'Could not calculate route');
-        } finally {
             setIsNavigating(false);
+        }
+    };
+
+    const handleStartNavigation = (setUserLocation?: (location: { lat: number; lng: number }) => void) => {
+        setShowRoutePreview(false);
+        setNavigationMode(true);
+
+        if (userLocation) {
+            mapRef.current?.flyTo({
+                center: [userLocation.lng, userLocation.lat],
+                zoom: 18,
+                duration: 1500,
+                pitch: 60,
+                heading: currentHeading,
+            });
+        }
+
+        if (simulateMovement && setUserLocation) {
+            startSimulation(setUserLocation);
+        } else {
+            startLocationTracking();
         }
     };
 
@@ -446,6 +613,8 @@ export const useNavigation = (
         setSelectedDestination,
         isNavigating,
         navigationMode,
+        showRoutePreview,
+        setShowRoutePreview,
         currentHeading,
         simulateMovement,
         setSimulateMovement,
@@ -453,9 +622,13 @@ export const useNavigation = (
         currentInstruction,
         remainingDistance,
         remainingTime,
+        isOffRoute,
+        isRecalculating,
         routeCoordinates: routeCoordinates.current,
         handleNavigate,
+        handleStartNavigation,
         handleStopNavigation,
         handleClearRoute,
+        simulateOffRoute,
     };
 };

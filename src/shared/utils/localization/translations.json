@@ -382,7 +382,7 @@
     {
         "key": "traffic-jam",
         "EN_US": "Traffic Jam",
-        "AM": "መዘጋጋትት"
+        "AM": "መዘጋጋት"
     },
     {
         "key": "phone-number",
@@ -402,7 +402,7 @@
     {
         "key": "register",
         "EN_US": "Register",
-        "AM": "ይመዝገቡቡ"
+        "AM": "ይመዝገቡ"
     },
     {
         "key": "continue-as-guest",
@@ -482,7 +482,7 @@
     {
         "key": "leaderboard",
         "EN_US": "Leaderboard",
-        "AM": "የመሪዎች ደረጃ ደረጃ"
+        "AM": "የመሪዎች ደረጃ"
     },
     {
         "key": "leaderboard-screen",
@@ -543,5 +543,45 @@
         "key": "north-south",
         "EN_US": "eg: North,South",
         "AM": "ለምሳሌ፥ ሰሜን፣ደቡብ"
+    },
+    {
+        "key": "directions",
+        "EN_US": "Directions",
+        "AM": "አቅጣጫዎች"
+    },
+    {
+        "key": "your-location",
+        "EN_US": "Your location",
+        "AM": "የእርስዎ አካባቢ"
+    },
+    {
+        "key": "eta",
+        "EN_US": "ETA",
+        "AM": "የመድረሻ ጊዜ"
+    },
+    {
+        "key": "listening",
+        "EN_US": "Listening...",
+        "AM": "እየሰማ ነው..."
+    },
+    {
+        "key": "speak-your-destination",
+        "EN_US": "Speak your destination",
+        "AM": "መድረሻዎን ይናገሩ"
+    },
+    {
+        "key": "processing",
+        "EN_US": "Processing...",
+        "AM": "በማስኬድ ላይ..."
+    },
+    {
+        "key": "analyzing-your-voice",
+        "EN_US": "Analyzing your voice",
+        "AM": "ድምፅዎን በመተንተን ላይ"
+    },
+    {
+        "key": "go",
+        "EN_US": "Go",
+        "AM": "ይሂዱ"
     }
 ]

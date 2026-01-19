@@ -23,7 +23,7 @@ interface QuickActionsProps {
 
 export const QuickActions: React.FC<QuickActionsProps> = ({ onSelectCategory }) => {
     const { t } = useTranslation();
-    const [selectedCategory, setSelectedCategory] = useState<string | null>('restaurants');
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
     const handleSelect = (categoryId: string) => {
         const newSelection = selectedCategory === categoryId ? null : categoryId;

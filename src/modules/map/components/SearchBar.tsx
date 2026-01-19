@@ -25,7 +25,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 }) => {
     return (
         <View className="flex-row items-center gap-3">
-            {/* Profile Button */}
             <TouchableOpacity
                 className="bg-white rounded-2xl shadow-lg p-3.5"
                 onPress={onProfilePress}
@@ -34,7 +33,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                 <Ionicons name="person" size={24} color="#374151" />
             </TouchableOpacity>
 
-            {/* Search Bar with Voice Button */}
             <View className="flex-1 bg-white rounded-2xl shadow-lg flex-row items-center px-3 py-2">
                 <Ionicons name="search" size={20} color="#9CA3AF" />
                 <TextInput
@@ -51,7 +49,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                     </TouchableOpacity>
                 )}
 
-                {/* Voice Button Inside Search Bar */}
                 {isProcessingVoice ? (
                     <View className="p-2">
                         <ActivityIndicator size="small" color="#F59E0B" />

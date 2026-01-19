@@ -124,7 +124,11 @@ export default function RegistrationScreen() {
                             {loading ? (
                                 <ActivityIndicator color="white" />
                             ) : (
-                                <Text className="text-white text-base font-semibold">
+                                <Text
+                                    className="text-white text-base font-semibold px-4"
+                                    numberOfLines={2}
+                                    style={{ minWidth: 80 }}
+                                >
                                     {t('register') || 'Register'}
                                 </Text>
                             )}
