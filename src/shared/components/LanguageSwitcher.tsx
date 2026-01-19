@@ -7,7 +7,7 @@ import { colors } from '../theme/colors';
 
 const LANGUAGES = [
     { code: 'en' as const, label: 'English', flag: '🇬🇧' },
-    { code: 'am' as const, label: 'አማርኛኛ', flag: '🇪🇹' },
+    { code: 'am' as const, label: 'አማርኛ', flag: '🇪🇹' },
 ];
 
 export const LanguageSwitcher: React.FC = () => {
@@ -30,7 +30,7 @@ export const LanguageSwitcher: React.FC = () => {
                 onPress={() => setShowDropdown(!showDropdown)}
             >
                 <Text className="text-lg mr-1">{currentLanguage.flag}</Text>
-                <Text className="font-semibold text-gray-800 mr-2">
+                <Text className="font-semibold text-gray-800 mr-2" style={{ minWidth: 60 }}>
                     {currentLanguage.label}
                 </Text>
                 <Ionicons
@@ -57,6 +57,7 @@ export const LanguageSwitcher: React.FC = () => {
                             <Text
                                 className={`font-semibold ${lang.code === language ? 'text-blue-500' : 'text-gray-700'
                                     }`}
+                                style={{ minWidth: 60 }}
                             >
                                 {lang.label}
                             </Text>

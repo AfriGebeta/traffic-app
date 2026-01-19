@@ -20,12 +20,12 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
                 <Ionicons name="locate" size={24} color="#F59E0B" />
             </TouchableOpacity>
 
-            <TouchableOpacity
+            {/* <TouchableOpacity
                 onPress={onOverlayPress}
                 className="bg-white rounded-full p-3 shadow-lg"
             >
                 <Ionicons name="layers-outline" size={24} color="#6B7280" />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
         </View>
     );
 };

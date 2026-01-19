@@ -184,9 +184,15 @@ export const ProfileScreen = () => {
                         className="bg-gray-50 rounded-2xl p-5 mb-6 flex-row items-center justify-between"
                         onPress={() => router.push('/leaderboard')}
                     >
-                        <View className="flex-row items-center flex-1">
+                        <View className="flex-row items-center flex-1 mr-2">
                             <Ionicons name="podium" size={24} color="#6b7280" />
-                            <Text className="text-gray-900 font-semibold ml-3">{t('leaderboard')}</Text>
+                            <Text
+                                className="text-gray-900 font-semibold ml-3"
+                                numberOfLines={2}
+                                style={{ flex: 1 }}
+                            >
+                                {t('leaderboard')}
+                            </Text>
                         </View>
                         <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
                     </TouchableOpacity>

@@ -7,6 +7,9 @@ interface NavigationOverlayProps {
     remainingDistance?: number;
     onReportPress?: () => void;
     onVoiceReportPress?: () => void;
+    isOffRoute?: boolean;
+    isRecalculating?: boolean;
+    onTestOffRoute?: () => void;
 }
 
 const formatDistance = (km: number): string => {
@@ -26,6 +29,9 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
     remainingDistance,
     onReportPress,
     onVoiceReportPress,
+    isOffRoute,
+    isRecalculating,
+    onTestOffRoute,
 }) => {
     return (
         <View className="absolute bottom-6 left-4 right-4">
@@ -33,6 +39,15 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                 className="rounded-3xl p-4 border border-white/10"
                 style={{ backgroundColor: 'rgba(55, 65, 81, 0.75)' }}
             >
+                {/*off-route*/}
+                {(isOffRoute || isRecalculating) && (
+                    <View className="mb-3 bg-orange-500/20 border border-orange-500/50 rounded-xl p-2">
+                        <Text className="text-orange-300 text-sm text-center font-semibold">
+                            {isRecalculating ? ' Recalculating route...' : ' Off route'}
+                        </Text>
+                    </View>
+                )}
+
                 <View className="mb-3">
                     <Text className="text-gray-300 text-sm text-center">
                         {remainingTime ? formatTime(remainingTime) : '10 min'} •{' '}
@@ -58,6 +73,18 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                         <Ionicons name="mic" size={20} color="#FFA500" />
                     </TouchableOpacity>
                 </View>
+
+                {/*test button REMOVE IT LATER*/}
+                {__DEV__ && onTestOffRoute && (
+                    <TouchableOpacity
+                        className="mt-3 bg-purple-500/20 border border-purple-500/50 rounded-xl py-2"
+                        onPress={onTestOffRoute}
+                    >
+                        <Text className="text-purple-300 text-xs text-center font-semibold">
+                             Test Off-Route Detection
+                        </Text>
+                    </TouchableOpacity>
+                )}
             </View>
         </View>
     );

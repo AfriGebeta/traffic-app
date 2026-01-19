@@ -97,35 +97,6 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                     showContainer={showSearchContainer}
                 />
 
-                {selectedDestination && (
-                    <>
-                        {/* for testing */}
-                        <View className="mt-2 bg-gray-100 rounded-2xl shadow-lg p-3">
-                            <TouchableOpacity
-                                className="flex-row items-center justify-between"
-                                onPress={onSimulateToggle}
-                            >
-                                <View className="flex-row items-center gap-2">
-                                    <Ionicons
-                                        name={simulateMovement ? 'checkmark-circle' : 'ellipse-outline'}
-                                        size={20}
-                                        color={simulateMovement ? '#10B981' : '#6B7280'}
-                                    />
-                                    <Text className="text-sm font-medium text-gray-700">
-                                        Simulate Movement (testing)
-                                    </Text>
-                                </View>
-                            </TouchableOpacity>
-                        </View>
-
-                        <DestinationCard
-                            destination={selectedDestination}
-                            isNavigating={isNavigating}
-                            onNavigate={onNavigate}
-                            onClear={onClearRoute}
-                        />
-                    </>
-                )}
             </View>
 
             <FloatingActions

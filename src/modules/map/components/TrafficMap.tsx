@@ -8,6 +8,7 @@ import { IncidentAlert } from './IncidentAlert';
 import { MapOverlay } from './MapOverlay';
 import { IncidentReportSheet } from './IncidentReportSheet';
 import { VoiceRecordingOverlay } from './VoiceRecordingOverlay';
+import { RoutePreview } from '../../navigation/components/RoutePreview';
 import { useIncidents } from '../../incidents/hooks/useIncidents';
 import { useUserLocation } from '../hooks/useUserLocation';
 import { useSearch } from '../hooks/useSearch';
@@ -50,6 +51,8 @@ export default function TrafficMap() {
         setSelectedDestination,
         isNavigating,
         navigationMode,
+        showRoutePreview,
+        setShowRoutePreview,
         currentHeading,
         simulateMovement,
         setSimulateMovement,
@@ -57,10 +60,14 @@ export default function TrafficMap() {
         currentInstruction,
         remainingDistance,
         remainingTime,
+        isOffRoute,
+        isRecalculating,
         routeCoordinates,
         handleNavigate,
+        handleStartNavigation,
         handleStopNavigation,
         handleClearRoute,
+        simulateOffRoute,
     } = useNavigation(mapRef, userLocation, setUserLocation);
 
     const activeIncidentAlert = useIncidentAlerts(userLocation, incidents, navigationMode, routeCoordinates);
@@ -72,12 +79,6 @@ export default function TrafficMap() {
             addIncidentMarkers();
         }
 
-        mapRef.current?.flyTo({
-            center: [place.longitude, place.latitude],
-            zoom: 15,
-            duration: 1000,
-        });
-
         const marker = mapRef.current?.addImageMarker(
             [place.longitude, place.latitude],
             '',
@@ -85,7 +86,7 @@ export default function TrafficMap() {
             () => showToast.info(place.name, place.type),
             10,
             undefined,
-            '#3B82F6',
+            '#F97316',
             'location'
         );
         searchMarkerRef.current = marker;
@@ -95,6 +96,10 @@ export default function TrafficMap() {
 
         skipSearchRef.current = true;
         setSearchQuery(place.name);
+
+        setTimeout(() => {
+            handleNavigate(setUserLocation, place);
+        }, 300);
     };
 
     const {
@@ -176,6 +181,9 @@ export default function TrafficMap() {
                         remainingDistance={remainingDistance}
                         onReportPress={() => setShowReportOptions(true)}
                         onVoiceReportPress={() => showToast.info(t('coming-soon'), 'Voice Report')}
+                        isOffRoute={isOffRoute}
+                        isRecalculating={isRecalculating}
+                        onTestOffRoute={() => simulateOffRoute(setUserLocation)}
                     />
                 </>
             )}
@@ -208,6 +216,21 @@ export default function TrafficMap() {
                     isRecording={isRecording}
                     isProcessingVoice={isProcessingVoice}
                     voiceNavigationData={voiceNavigationData}
+                />
+            )}
+
+            {showRoutePreview && selectedDestination && (
+                <RoutePreview
+                    distance={remainingDistance}
+                    duration={remainingTime}
+                    destinationName={selectedDestination.name}
+                    simulateMovement={simulateMovement}
+                    onSimulateToggle={() => setSimulateMovement(!simulateMovement)}
+                    onStartNavigation={() => handleStartNavigation(setUserLocation)}
+                    onCancel={() => {
+                        setShowRoutePreview(false);
+                        handleClearRoute();
+                    }}
                 />
             )}
 
