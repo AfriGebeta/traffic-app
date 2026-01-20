@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUserRegistration } from '../../register/hooks/useUserRegistration';
 import { User } from '../../register/types/user.types';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
@@ -14,6 +15,7 @@ export const ProfileScreen = () => {
     const { getStoredUser } = useUserRegistration();
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
+    const insets = useSafeAreaInsets();
 
     const [level, setLevel] = useState('');
     const [rank, setRank] = useState(0);
@@ -199,7 +201,10 @@ export const ProfileScreen = () => {
                 </View>
             </ScrollView>
 
-            <View className="items-center py-6 border-t border-gray-100">
+            <View
+                className="items-center border-t border-gray-100"
+                style={{ paddingTop: 24, paddingBottom: Math.max(insets.bottom + 8, 24) }}
+            >
                 <View className="flex-row items-center mb-1">
                     <Image
                         source={require('../../../../assets/images/favicon.png')}
