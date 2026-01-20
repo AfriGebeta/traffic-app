@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -9,6 +9,7 @@ import { SearchResults } from './SearchResults';
 import { DestinationCard } from './DestinationCard';
 import { FloatingActions } from './FloatingActions';
 import { BottomNavigation } from './BottomNavigation';
+import { MapThemeSelector } from './MapThemeSelector';
 import { showToast } from '../../../shared/utils/toast';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 import type { GebetaMapRef } from '../../../lib/gebeta-map/GebetaMap';
@@ -64,6 +65,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
 }) => {
     const { t } = useTranslation();
     const router = useRouter();
+    const [showThemeSelector, setShowThemeSelector] = useState(false);
 
     const handleProfilePress = () => {
         router.push('/profile');
@@ -109,7 +111,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                         });
                     }
                 }}
-                onOverlayPress={() => showToast.info(t('coming-soon'), 'Map Overlay')}
+                onOverlayPress={() => setShowThemeSelector(true)}
             />
 
             <BottomNavigation
@@ -121,6 +123,11 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                     }
                 }}
                 onAddPress={onAddPlacePress}
+            />
+
+            <MapThemeSelector
+                visible={showThemeSelector}
+                onClose={() => setShowThemeSelector(false)}
             />
         </>
     );

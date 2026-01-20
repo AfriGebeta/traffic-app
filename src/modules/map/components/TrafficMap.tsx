@@ -16,6 +16,7 @@ import { useNavigation } from '../../navigation/hooks/useNavigation';
 import { useVoiceNavigation } from '../../navigation/hooks/useVoiceNavigation';
 import { useIncidentAlerts } from '../hooks/useIncidentAlerts';
 import { useMapMarkers } from '../hooks/useMapMarkers';
+import { useMapTheme } from '../context/MapThemeContext';
 import { showToast } from '../../../shared/utils/toast';
 import { useTranslation } from 'react-i18next';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
@@ -33,6 +34,7 @@ export default function TrafficMap() {
     const params = useLocalSearchParams();
     const { incidents, refetch } = useIncidents();
     const { userLocation, setUserLocation } = useUserLocation();
+    const { currentTheme } = useMapTheme();
 
     const {
         searchQuery,
@@ -141,7 +143,8 @@ export default function TrafficMap() {
             <GebetaMap
                 ref={mapRef}
                 apiKey={process.env.EXPO_PUBLIC_GEBETA_API_KEY!}
-                mapStyleUrl={`https://tiles.gebeta.app/styles/standard/style.json?apiKey=${process.env.EXPO_PUBLIC_GEBETA_API_KEY}`}
+                mapStyleUrl={currentTheme.styleUrl ? `${currentTheme.styleUrl}?apiKey=${process.env.EXPO_PUBLIC_GEBETA_API_KEY}` : undefined}
+                mapStyleJson={currentTheme.styleJson}
                 center={initialCenter}
                 zoom={initialZoom}
                 onMapClick={() => { }}
