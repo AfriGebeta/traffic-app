@@ -12,7 +12,7 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
     onOverlayPress,
 }) => {
     return (
-        <View className="absolute right-4 bottom-44 gap-3">
+        <View className="absolute right-4 bottom-52 gap-3">
             <TouchableOpacity
                 onPress={onLocationPress}
                 className="bg-white rounded-full p-3 shadow-lg"

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../../shared/theme/colors';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 
@@ -29,6 +30,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
 }) => {
     const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState<TabId | null>(null);
+    const insets = useSafeAreaInsets();
 
     const handleTabPress = (tabId: TabId) => {
         if (tabId === 'contribute') {
@@ -40,7 +42,10 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
     };
 
     return (
-        <View className="absolute bottom-9 left-4 right-4">
+        <View
+            className="absolute left-4 right-4"
+            style={{ bottom: Math.max(insets.bottom + 8, 36) }}
+        >
 
             <View className="bg-gray-100 rounded-3xl shadow-2xl p-3">
                 <View className="flex-row items-center justify-between gap-2">
