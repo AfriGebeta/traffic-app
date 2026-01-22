@@ -24,6 +24,7 @@ import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 export default function TrafficMap() {
     const mapRef = useRef<GebetaMapRef>(null);
     const searchMarkerRef = useRef<any>(null);
+    const userLocationMarkerRef = useRef<any>(null);
     const router = useRouter();
 
     const [initialCenter] = useState<[number, number]>([38.7463, 9.0223]);
@@ -108,7 +109,8 @@ export default function TrafficMap() {
         isRecording,
         isProcessingVoice,
         navigationData: voiceNavigationData,
-        handleVoicePress,
+        handleVoiceStart,
+        handleVoiceStop,
     } = useVoiceNavigation({
         mapRef,
         userLocation,
@@ -136,6 +138,44 @@ export default function TrafficMap() {
         setTimeout(() => {
             addIncidentMarkers();
         }, 1000);
+    };
+
+    const handleLocationPress = () => {
+        console.log('Location button pressed, userLocation:', userLocation);
+        console.log('mapRef.current:', mapRef.current);
+
+        if (!userLocation) {
+            showToast.error('Location not available', 'Please wait for location to load');
+            return;
+        }
+
+        if (!mapRef.current) {
+            showToast.error('Map not ready', 'Please try again');
+            return;
+        }
+
+        if (userLocationMarkerRef.current) {
+            mapRef.current.clearMarkers();
+            addIncidentMarkers();
+        }
+
+        const marker = mapRef.current.addImageMarker(
+            [userLocation.lng, userLocation.lat],
+            '',
+            [20, 20],
+            () => showToast.info('Your Location', 'Current position'),
+            10,
+            undefined,
+            '#ffa500',
+            'radio-button-on'
+        );
+        userLocationMarkerRef.current = marker;
+
+        mapRef.current.flyTo({
+            center: [userLocation.lng, userLocation.lat],
+            zoom: 15,
+            duration: 1000,
+        });
     };
 
     return (
@@ -215,7 +255,9 @@ export default function TrafficMap() {
                     mapRef={mapRef}
                     onReportPress={() => setShowReportOptions(true)}
                     onAddPlacePress={() => router.push('/places/contribute')}
-                    onVoicePress={handleVoicePress}
+                    onLocationPress={handleLocationPress}
+                    onVoicePress={handleVoiceStart}
+                    onVoiceRelease={handleVoiceStop}
                     isRecording={isRecording}
                     isProcessingVoice={isProcessingVoice}
                     voiceNavigationData={voiceNavigationData}

@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import customMapTheme from '../../../../assets/map-styles/custom-map-theme.json';
+import customMapTheme3 from '../../../../assets/map-styles/custom-map-theme (3).json';
+import DarkTheme from '../../../../assets/map-styles/dark-theme.json';
 
-export type MapThemeId = 'standard' | 'basic';
+export type MapThemeId = 'standard' | 'custom3' | 'dark';
 
 export interface MapTheme {
     id: MapThemeId;
@@ -24,12 +25,12 @@ export const MAP_THEMES: MapTheme[] = [
         styleUrl: `https://tiles.gebeta.app/styles/standard/style.json`,
     },
     {
-        id: 'basic',
-        name: 'Basic',
-        nameAmharic: 'መሠረታዊ',
-        icon: 'layers-outline',
+        id: 'custom3',
+        name: 'Green',
+        nameAmharic: 'አረንጏዴ',
+        icon: 'color-palette-outline',
         styleJson: (() => {
-            const theme = JSON.parse(JSON.stringify(customMapTheme));
+            const theme = JSON.parse(JSON.stringify(customMapTheme3));
             if (theme.sources) {
                 Object.keys(theme.sources).forEach(sourceKey => {
                     const source = theme.sources[sourceKey];
@@ -42,7 +43,28 @@ export const MAP_THEMES: MapTheme[] = [
                     }
                 });
             }
-            console.log('Basic theme processed:', theme.sources);
+            return theme as Record<string, unknown>;
+        })(),
+    },
+    {
+        id: 'dark',
+        name: 'Dark',
+        nameAmharic: 'ጨለማ',
+        icon: 'moon-outline',
+        styleJson: (() => {
+            const theme = JSON.parse(JSON.stringify(DarkTheme));
+            if (theme.sources) {
+                Object.keys(theme.sources).forEach(sourceKey => {
+                    const source = theme.sources[sourceKey];
+                    if (source.tiles && Array.isArray(source.tiles)) {
+                        source.tiles = source.tiles.map((tile: string) => {
+                            const processedTile = tile.replace('~~TILE_ENDPOINT~~', 'https://tiles.gebeta.app/tiles');
+                            const separator = processedTile.includes('?') ? '&' : '?';
+                            return `${processedTile}${separator}apiKey=${process.env.EXPO_PUBLIC_GEBETA_API_KEY}`;
+                        });
+                    }
+                });
+            }
             return theme as Record<string, unknown>;
         })(),
     },

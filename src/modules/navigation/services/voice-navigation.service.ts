@@ -56,11 +56,6 @@ export const voiceNavigationService = {
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error('Voice navigation error:', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    body: errorText
-                });
 
                 try {
                     const errorData = JSON.parse(errorText);
@@ -75,7 +70,7 @@ export const voiceNavigationService = {
                         };
                     }
                 } catch (e) {
-                    
+
                 }
 
                 return null;
