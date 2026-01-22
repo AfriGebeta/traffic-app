@@ -51,11 +51,11 @@ export const MapThemeSelector: React.FC<MapThemeSelectorProps> = ({
                                 <TouchableOpacity
                                     key={theme.id}
                                     onPress={() => handleSelectTheme(theme)}
-                                    className={`items-center p-4 rounded-2xl ${isSelected ? 'bg-amber-100 border-2 border-amber-500' : 'bg-gray-100'
+                                    className={`items-center p-4 px-2 rounded-2xl ${isSelected ? 'bg-amber-100 border-2 border-amber-500' : 'bg-gray-100'
                                         }`}
-                                    style={{ width: '45%' }}
+                                    style={{ width: '30%' }}
                                 >
-                                    <View className={`w-16 h-16 rounded-xl items-center justify-center mb-2 ${isSelected ? 'bg-amber-500' : 'bg-gray-300'
+                                    <View className={`w-12 h-12 rounded-xl items-center justify-center mb-2 ${isSelected ? 'bg-amber-500' : 'bg-gray-300'
                                         }`}>
                                         <Ionicons
                                             name={theme.icon as any}
