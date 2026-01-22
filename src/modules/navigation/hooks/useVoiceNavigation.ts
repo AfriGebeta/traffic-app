@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useVoiceRecording } from './useVoiceRecording';
 import { voiceNavigationService } from '../services/voice-navigation.service';
 import { showToast } from '../../../shared/utils/toast';
@@ -29,9 +29,41 @@ export const useVoiceNavigation = ({
     } = useVoiceRecording();
 
     const [navigationData, setNavigationData] = useState<VoiceNavigationData | null>(null);
+    const recordingStartTime = useRef<number | null>(null);
+    const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const handleVoicePress = async () => {
+    const handleVoiceStart = async () => {
+        if (!isRecording && !isProcessing) {
+            recordingStartTime.current = Date.now();
+
+            holdTimer.current = setTimeout(async () => {
+                holdTimer.current = null;
+                const started = await startRecording();
+                if (!started) {
+                    showToast.error('Recording Error', 'Failed to start recording');
+                    recordingStartTime.current = null;
+                }
+            }, 1000);
+        }
+    };
+
+    const handleVoiceStop = async () => {
+
+        if (holdTimer.current) {
+            clearTimeout(holdTimer.current);
+            holdTimer.current = null;
+            recordingStartTime.current = null;
+            showToast.info('Press and hold', 'Hold the button to speak');
+            return;
+        }
+
+        if (!recordingStartTime.current) {
+            return;
+        }
+
         if (isRecording) {
+            recordingStartTime.current = null;
+
             // Stop recording and process
             const audioUri = await stopRecording();
             if (!audioUri) {
@@ -45,7 +77,6 @@ export const useVoiceNavigation = ({
             }
 
             setIsProcessing(true);
-            // Don't show toast here - the overlay will show "Processing..."
 
             try {
                 const response = await voiceNavigationService.processVoiceNavigation(
@@ -61,7 +92,6 @@ export const useVoiceNavigation = ({
                 }
 
                 if (!response.success) {
-                    // Check for specific error messages
                     const errorMsg = response?.message || '';
                     if (errorMsg.includes('Transcription failed') || errorMsg.includes('empty text')) {
                         showToast.error('Could not hear you', 'Please speak louder and try again');
@@ -73,13 +103,9 @@ export const useVoiceNavigation = ({
                     return;
                 }
 
-                // Show transcription
                 showToast.success('Understood', response.transcription);
-
-                // Store navigation data
                 setNavigationData(response.navigationData);
 
-                // Convert to GeocodingPlace format for normal navigation
                 if (response.navigationData?.destination) {
                     const dest = response.navigationData.destination;
                     const geocodingPlace: GeocodingPlace = {
@@ -91,7 +117,6 @@ export const useVoiceNavigation = ({
                         type: dest.type,
                     };
 
-                    // Trigger the normal navigation flow
                     if (onDestinationFound) {
                         onDestinationFound(geocodingPlace);
                     }
@@ -103,17 +128,18 @@ export const useVoiceNavigation = ({
                     showToast.error('Route not found', 'Could not find a route to this destination');
                 }
             } catch (error) {
-                console.error('Voice navigation error:', error);
                 showToast.error('Something went wrong', 'Please try again');
             } finally {
                 setIsProcessing(false);
             }
+        }
+    };
+
+    const handleVoicePress = async () => {
+        if (isRecording) {
+            await handleVoiceStop();
         } else {
-            // Start recording
-            const started = await startRecording();
-            if (started) {
-                // Don't show toast here - the overlay will show "Listening..."
-            }
+            await handleVoiceStart();
         }
     };
 
@@ -127,6 +153,8 @@ export const useVoiceNavigation = ({
         isProcessingVoice: isProcessing,
         navigationData,
         handleVoicePress,
+        handleVoiceStart,
+        handleVoiceStop,
         clearVoiceNavigation,
         cancelRecording,
     };

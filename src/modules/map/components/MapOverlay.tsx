@@ -33,7 +33,9 @@ interface MapOverlayProps {
     mapRef: React.RefObject<GebetaMapRef | null>;
     onReportPress: () => void;
     onAddPlacePress: () => void;
+    onLocationPress?: () => void;
     onVoicePress?: () => void;
+    onVoiceRelease?: () => void;
     isRecording?: boolean;
     isProcessingVoice?: boolean;
     voiceNavigationData?: any;
@@ -58,7 +60,9 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
     mapRef,
     onReportPress,
     onAddPlacePress,
+    onLocationPress,
     onVoicePress,
+    onVoiceRelease,
     isRecording,
     isProcessingVoice,
     voiceNavigationData,
@@ -79,9 +83,6 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                     onChangeText={onSearchChange}
                     onClear={onSearchClear}
                     placeholder={t('where-to-go')}
-                    onVoicePress={onVoicePress}
-                    isRecording={isRecording}
-                    isProcessingVoice={isProcessingVoice}
                     onProfilePress={handleProfilePress}
                 />
 
@@ -102,16 +103,12 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
             </View>
 
             <FloatingActions
-                onLocationPress={() => {
-                    if (userLocation && mapRef.current) {
-                        mapRef.current.flyTo({
-                            center: [userLocation.lng, userLocation.lat],
-                            zoom: 15,
-                            duration: 1000,
-                        });
-                    }
-                }}
-                onOverlayPress={() => setShowThemeSelector(true)}
+                onLocationPress={onLocationPress}
+                onThemePress={() => setShowThemeSelector(true)}
+                onVoicePressIn={onVoicePress}
+                onVoicePressOut={onVoiceRelease}
+                isRecording={isRecording}
+                isProcessingVoice={isProcessingVoice}
             />
 
             <BottomNavigation
