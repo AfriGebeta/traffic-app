@@ -12,7 +12,7 @@ import { leaderboardService } from '../../leaderboard/services/leaderboard.servi
 export const ProfileScreen = () => {
     const router = useRouter();
     const { t } = useTranslation();
-    const { getStoredUser } = useUserRegistration();
+    const { getStoredUser, clearAuth } = useUserRegistration();
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const insets = useSafeAreaInsets();
@@ -41,6 +41,11 @@ export const ProfileScreen = () => {
         }
 
         setLoading(false);
+    };
+
+    const handleLogout = async () => {
+        await clearAuth();
+        router.replace('/');
     };
 
     const getInitial = (name: string): string => {
@@ -197,6 +202,22 @@ export const ProfileScreen = () => {
                             </Text>
                         </View>
                         <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        className="bg-white rounded-2xl p-3 mb-6 flex-row items-center justify-between border border-red-200"
+                        onPress={handleLogout}
+                    >
+                        <View className="flex-row items-center flex-1 mr-2">
+                            <Ionicons name="log-out-outline" size={24} color="#ef4444" />
+                            <Text
+                                className="text-red-600 font-semibold ml-3"
+                                numberOfLines={2}
+                                style={{ flex: 1 }}
+                            >
+                                {t('logout')}
+                            </Text>
+                        </View>
                     </TouchableOpacity>
                 </View>
             </ScrollView>

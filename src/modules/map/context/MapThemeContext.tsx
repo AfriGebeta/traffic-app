@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import customMapTheme3 from '../../../../assets/map-styles/custom-map-theme (3).json';
-import DarkTheme from '../../../../assets/map-styles/dark-theme.json';
+import customMapTheme3 from '../../../../assets/map-styles/custom-map-theme (9).json';
+import DarkTheme from '../../../../assets/map-styles/dark-custom.json';
+import RasterTheme from '../../../../assets/map-styles/raster.json';
 
-export type MapThemeId = 'standard' | 'custom3' | 'dark';
+export type MapThemeId = 'standard' | 'custom3' | 'dark' | 'raster';
 
 export interface MapTheme {
     id: MapThemeId;
@@ -18,16 +19,9 @@ const STORAGE_KEY = '@map_theme';
 
 export const MAP_THEMES: MapTheme[] = [
     {
-        id: 'standard',
+        id: 'custom3',
         name: 'Standard',
         nameAmharic: 'መደበኛ',
-        icon: 'map-outline',
-        styleUrl: `https://tiles.gebeta.app/styles/standard/style.json`,
-    },
-    {
-        id: 'custom3',
-        name: 'Green',
-        nameAmharic: 'አረንጏዴ',
         icon: 'color-palette-outline',
         styleJson: (() => {
             const theme = JSON.parse(JSON.stringify(customMapTheme3));
@@ -45,6 +39,13 @@ export const MAP_THEMES: MapTheme[] = [
             }
             return theme as Record<string, unknown>;
         })(),
+    },
+    {
+        id: 'standard',
+        name: 'Classic',
+        nameAmharic: 'ክላሲክ',
+        icon: 'map-outline',
+        styleUrl: `https://tiles.gebeta.app/styles/standard/style.json`,
     },
     {
         id: 'dark',
@@ -67,6 +68,32 @@ export const MAP_THEMES: MapTheme[] = [
             }
             return theme as Record<string, unknown>;
         })(),
+    },
+    {
+        id: 'raster',
+        name: 'Satellite',
+        nameAmharic: 'ሳተላይት',
+        icon: 'globe-outline',
+        styleJson: {
+            version: 8,
+            name: 'Satellite',
+            sources: {
+                'satellite': {
+                    type: 'raster',
+                    tiles: [`https://tiles.gebeta.app/tiles/raster/{z}/{x}/{y}.png?apiKey=${process.env.EXPO_PUBLIC_GEBETA_API_KEY}`],
+                    tileSize: 256,
+                    minzoom: 0,
+                    maxzoom: 16,
+                },
+            },
+            layers: [
+                {
+                    id: 'satellite-layer',
+                    type: 'raster',
+                    source: 'satellite',
+                },
+            ],
+        } as Record<string, unknown>,
     },
 ];
 

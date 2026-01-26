@@ -47,7 +47,13 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
             style={{ bottom: Math.max(insets.bottom + 8, 36) }}
         >
 
-            <View className="bg-gray-100 rounded-3xl shadow-2xl p-3">
+            <View className="bg-white rounded-3xl p-3 border border-gray-200" style={{
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: -2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 8,
+                elevation: 8,
+            }}>
                 <View className="flex-row items-center justify-between gap-2">
                     {tabs.map((tab) => {
                         return (
