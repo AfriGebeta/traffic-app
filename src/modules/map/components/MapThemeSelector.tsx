@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Modal, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMapTheme, MapTheme } from '../context/MapThemeContext';
 
 interface MapThemeSelectorProps {
@@ -16,6 +17,7 @@ export const MapThemeSelector: React.FC<MapThemeSelectorProps> = ({
     const { t, i18n } = useTranslation();
     const { currentTheme, setTheme, themes } = useMapTheme();
     const isAmharic = i18n.language === 'am';
+    const insets = useSafeAreaInsets();
 
     const handleSelectTheme = (theme: MapTheme) => {
         setTheme(theme.id);
@@ -35,6 +37,7 @@ export const MapThemeSelector: React.FC<MapThemeSelectorProps> = ({
             >
                 <Pressable
                     className="bg-white rounded-t-3xl p-6"
+                    style={{ paddingBottom: Math.max(insets.bottom, 28) }}
                     onPress={(e) => e.stopPropagation()}
                 >
                     <View className="items-center mb-4">
@@ -44,37 +47,75 @@ export const MapThemeSelector: React.FC<MapThemeSelectorProps> = ({
                         </Text>
                     </View>
 
-                    <View className="flex-row justify-around mt-4 mb-6">
-                        {themes.map((theme) => {
-                            const isSelected = currentTheme.id === theme.id;
-                            return (
-                                <TouchableOpacity
-                                    key={theme.id}
-                                    onPress={() => handleSelectTheme(theme)}
-                                    className={`items-center p-4 px-2 rounded-2xl ${isSelected ? 'bg-amber-100 border-2 border-amber-500' : 'bg-gray-100'
-                                        }`}
-                                    style={{ width: '30%' }}
-                                >
-                                    <View className={`w-12 h-12 rounded-xl items-center justify-center mb-2 ${isSelected ? 'bg-amber-500' : 'bg-gray-300'
-                                        }`}>
-                                        <Ionicons
-                                            name={theme.icon as any}
-                                            size={32}
-                                            color={isSelected ? 'white' : '#6B7280'}
-                                        />
-                                    </View>
-                                    <Text className={`font-semibold ${isSelected ? 'text-amber-700' : 'text-gray-600'
-                                        }`}>
-                                        {isAmharic ? theme.nameAmharic : theme.name}
-                                    </Text>
-                                    {isSelected && (
-                                        <View className="absolute top-2 right-2">
-                                            <Ionicons name="checkmark-circle" size={20} color="#F59E0B" />
+                    <View className="mt-4 mb-6 gap-3">
+                        <View className="flex-row gap-3">
+                            {themes.slice(0, 2).map((theme) => {
+                                const isSelected = currentTheme.id === theme.id;
+                                return (
+                                    <TouchableOpacity
+                                        key={theme.id}
+                                        onPress={() => handleSelectTheme(theme)}
+                                        className={`flex-1 items-center p-4 rounded-2xl ${isSelected ? 'bg-amber-100 border-2 border-amber-500' : 'bg-gray-100'
+                                            }`}
+                                    >
+                                        <View className={`w-12 h-12 rounded-xl items-center justify-center mb-2 ${isSelected ? 'bg-amber-500' : 'bg-gray-300'
+                                            }`}>
+                                            <Ionicons
+                                                name={theme.icon as any}
+                                                size={32}
+                                                color={isSelected ? 'white' : '#6B7280'}
+                                            />
                                         </View>
-                                    )}
-                                </TouchableOpacity>
-                            );
-                        })}
+                                        <Text
+                                            className={`font-semibold text-center ${isSelected ? 'text-amber-700' : 'text-gray-600'}`}
+                                            numberOfLines={2}
+                                            style={{ width: '100%' }}
+                                        >
+                                            {isAmharic ? theme.nameAmharic : theme.name}
+                                        </Text>
+                                        {isSelected && (
+                                            <View className="absolute top-2 right-2">
+                                                <Ionicons name="checkmark-circle" size={20} color="#F59E0B" />
+                                            </View>
+                                        )}
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                        <View className="flex-row gap-3">
+                            {themes.slice(2, 4).map((theme) => {
+                                const isSelected = currentTheme.id === theme.id;
+                                return (
+                                    <TouchableOpacity
+                                        key={theme.id}
+                                        onPress={() => handleSelectTheme(theme)}
+                                        className={`flex-1 items-center p-4 rounded-2xl ${isSelected ? 'bg-amber-100 border-2 border-amber-500' : 'bg-gray-100'
+                                            }`}
+                                    >
+                                        <View className={`w-12 h-12 rounded-xl items-center justify-center mb-2 ${isSelected ? 'bg-amber-500' : 'bg-gray-300'
+                                            }`}>
+                                            <Ionicons
+                                                name={theme.icon as any}
+                                                size={32}
+                                                color={isSelected ? 'white' : '#6B7280'}
+                                            />
+                                        </View>
+                                        <Text
+                                            className={`font-semibold text-center ${isSelected ? 'text-amber-700' : 'text-gray-600'}`}
+                                            numberOfLines={2}
+                                            style={{ width: '100%' }}
+                                        >
+                                            {isAmharic ? theme.nameAmharic : theme.name}
+                                        </Text>
+                                        {isSelected && (
+                                            <View className="absolute top-2 right-2">
+                                                <Ionicons name="checkmark-circle" size={20} color="#F59E0B" />
+                                            </View>
+                                        )}
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
                     </View>
 
                     <TouchableOpacity

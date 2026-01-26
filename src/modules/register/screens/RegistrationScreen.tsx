@@ -48,10 +48,7 @@ export default function RegistrationScreen() {
     };
 
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            className="flex-1 bg-white"
-        >
+        <View className="flex-1 bg-white">
             <View className="absolute top-12 right-6 z-50">
                 <LanguageSwitcher />
             </View>
@@ -59,8 +56,9 @@ export default function RegistrationScreen() {
             <ScrollView
                 contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
                 keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
             >
-                <View className="flex-1 px-6 py-8 justify-center">
+                <View className="px-6 py-8">
                     <View className="items-center mb-8">
                         <Image
                             source={require('../../../../assets/images/favicon.png')}
@@ -149,10 +147,8 @@ export default function RegistrationScreen() {
                             </Text>
                         </TouchableOpacity>
                     </View>
-
-
                 </View>
             </ScrollView>
-        </KeyboardAvoidingView>
+        </View>
     );
 }
