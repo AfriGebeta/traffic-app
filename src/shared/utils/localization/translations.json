@@ -583,5 +583,10 @@
         "key": "go",
         "EN_US": "Go",
         "AM": "ይሂዱ"
+    },
+    {
+        "key": "logout",
+        "EN_US": "Logout",
+        "AM": "ይውጡ"
     }
 ]
