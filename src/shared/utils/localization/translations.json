@@ -588,5 +588,55 @@
         "key": "logout",
         "EN_US": "Logout",
         "AM": "ይውጡ"
+    },
+    {
+        "key": "location-unavailable",
+        "EN_US": "Location unavailable",
+        "AM": "አካባቢ አይገኝም"
+    },
+    {
+        "key": "please-wait-for-location",
+        "EN_US": "Please wait for location to load",
+        "AM": "እባክዎ አካባቢው እስኪጫን ድረስ ይጠብቁ"
+    },
+    {
+        "key": "search-failed",
+        "EN_US": "Search failed",
+        "AM": "ፍለጋ አልተሳካም"
+    },
+    {
+        "key": "please-try-again",
+        "EN_US": "Please try again",
+        "AM": "እባክዎ እንደገና ይሞክሩ"
+    },
+    {
+        "key": "museum",
+        "EN_US": "Museums",
+        "AM": "ሙዚየሞች"
+    },
+    {
+        "key": "hotel",
+        "EN_US": "Hotels",
+        "AM": "ሆቴሎች"
+    },
+    {
+        "key": "park",
+        "EN_US": "Parks",
+        "AM": "መናፈሻዎች"
+    },
+    {
+        "key": "mall",
+        "EN_US": "Malls",
+        "AM": "ሞሎች"
+    },
+    {
+        "key": "places",
+        "EN_US": "places",
+        "AM": "ቦታዎች"
+    },
+    {
+        "key": "see-more",
+        "EN_US": "See More",
+        "AM": "ተጨማሪ ይመልከቱ"
     }
 ]

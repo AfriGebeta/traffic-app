@@ -33,12 +33,16 @@ interface MapOverlayProps {
     mapRef: React.RefObject<GebetaMapRef | null>;
     onReportPress: () => void;
     onAddPlacePress: () => void;
+    onExplorePress: () => void;
     onLocationPress?: () => void;
     onVoicePress?: () => void;
     onVoiceRelease?: () => void;
     isRecording?: boolean;
     isProcessingVoice?: boolean;
     voiceNavigationData?: any;
+    onExploreCategory?: (categoryId: string) => void;
+    isExploring?: boolean;
+    selectedExploreCategory?: string | null;
 }
 
 export const MapOverlay: React.FC<MapOverlayProps> = ({
@@ -60,12 +64,16 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
     mapRef,
     onReportPress,
     onAddPlacePress,
+    onExplorePress,
     onLocationPress,
     onVoicePress,
     onVoiceRelease,
     isRecording,
     isProcessingVoice,
     voiceNavigationData,
+    onExploreCategory,
+    isExploring = false,
+    selectedExploreCategory = null,
 }) => {
     const { t } = useTranslation();
     const router = useRouter();
@@ -87,9 +95,9 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                 />
 
                 <QuickActions
-                    onSelectCategory={(categoryId) => {
-                        showToast.info(t('coming-soon'), categoryId);
-                    }}
+                    onSelectCategory={onExploreCategory}
+                    isLoading={isExploring}
+                    selectedCategory={selectedExploreCategory}
                 />
 
                 <SearchResults
@@ -115,6 +123,8 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                 onTabPress={(tabId) => {
                     if (tabId === 'report') {
                         onReportPress();
+                    } else if (tabId === 'explore') {
+                        onExplorePress();
                     } else {
                         showToast.info(t('coming-soon'), tabId);
                     }

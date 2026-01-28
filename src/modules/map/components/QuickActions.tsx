@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
@@ -19,15 +19,27 @@ const categories: Category[] = [
 
 interface QuickActionsProps {
     onSelectCategory?: (categoryId: string) => void;
+    isLoading?: boolean;
+    selectedCategory?: string | null;
 }
 
-export const QuickActions: React.FC<QuickActionsProps> = ({ onSelectCategory }) => {
+export const QuickActions: React.FC<QuickActionsProps> = ({
+    onSelectCategory,
+    isLoading = false,
+    selectedCategory: externalSelectedCategory
+}) => {
     const { t } = useTranslation();
-    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [internalSelectedCategory, setInternalSelectedCategory] = useState<string | null>(null);
+
+    const selectedCategory = externalSelectedCategory !== undefined
+        ? externalSelectedCategory
+        : internalSelectedCategory;
 
     const handleSelect = (categoryId: string) => {
         const newSelection = selectedCategory === categoryId ? null : categoryId;
-        setSelectedCategory(newSelection);
+        if (externalSelectedCategory === undefined) {
+            setInternalSelectedCategory(newSelection);
+        }
         onSelectCategory?.(categoryId);
     };
 
@@ -47,11 +59,15 @@ export const QuickActions: React.FC<QuickActionsProps> = ({ onSelectCategory }) 
                         : 'bg-white border-2 border-gray-200'
                         }`}
                 >
-                    <Ionicons
-                        name={category.icon}
-                        size={16}
-                        color={selectedCategory === category.id ? '#FFFFFF' : '#6B7280'}
-                    />
+                    {isLoading && selectedCategory === category.id ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                        <Ionicons
+                            name={category.icon}
+                            size={16}
+                            color={selectedCategory === category.id ? '#FFFFFF' : '#6B7280'}
+                        />
+                    )}
                     <Text
                         className={`ml-2 text-sm font-medium ${selectedCategory === category.id ? 'text-white' : 'text-gray-700'
                             }`}
