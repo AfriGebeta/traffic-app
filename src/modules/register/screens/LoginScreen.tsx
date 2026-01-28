@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Image, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useUserRegistration } from '../hooks/useUserRegistration';
+import { useUserLogin } from '../hooks/useUserLogin';
 import { showToast } from '../../../shared/utils/toast';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../../../shared/theme/colors';
@@ -10,18 +10,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const GUEST_MODE_KEY = '@traffic_app_guest_mode';
 
-export default function RegistrationScreen() {
+export default function LoginScreen() {
     const { t } = useTranslation();
     const router = useRouter();
     const [phoneNumber, setPhoneNumber] = useState('');
     const [name, setName] = useState('');
-    const { register, loading, error } = useUserRegistration();
+    const { login, loading, error } = useUserLogin();
 
-    const navigateToLogin = () => {
-        router.push('/login' as any);
-    };
-
-    const handleRegister = async () => {
+    const handleLogin = async () => {
         if (!phoneNumber.trim()) {
             showToast.error(t('phone-number-required') || 'Phone number is required');
             return;
@@ -33,20 +29,20 @@ export default function RegistrationScreen() {
         }
 
         const fullPhoneNumber = `+251${phoneNumber.trim()}`;
-        const result = await register({ phoneNumber: fullPhoneNumber, name: name.trim() });
+        const result = await login({ phoneNumber: fullPhoneNumber, name: name.trim() });
 
         if (result) {
-            showToast.success(t('registration-successful') || 'Registration successful');
+            showToast.success(t('login-successful') || 'Login successful');
             setTimeout(() => {
                 router.replace('/');
             }, 1000);
         } else if (error) {
             showToast.error(error);
 
-            if (error.toLowerCase().includes('already registered')) {
+            if (error.toLowerCase().includes('not found') || error.toLowerCase().includes('register first')) {
                 setTimeout(() => {
-                    showToast.info('Redirecting to login...');
-                    setTimeout(() => navigateToLogin(), 1500);
+                    showToast.info('Redirecting to registration...');
+                    setTimeout(() => navigateToRegister(), 1500);
                 }, 2000);
             }
         }
@@ -56,6 +52,10 @@ export default function RegistrationScreen() {
         await AsyncStorage.setItem(GUEST_MODE_KEY, 'true');
         showToast.success(t('entering-guest-mode') || 'Entering as guest');
         router.replace('/');
+    };
+
+    const navigateToRegister = () => {
+        router.push('/register' as any);
     };
 
     return (
@@ -84,10 +84,10 @@ export default function RegistrationScreen() {
 
                     <View className="mb-8">
                         <Text className="text-3xl font-bold text-gray-900 mb-2 text-center">
-                            {t('welcome') || 'Welcome'}
+                            {t('welcome-back') || 'Welcome Back'}
                         </Text>
                         <Text className="text-base text-gray-600 text-center">
-                            {t('register-to-continue') || 'Register to continue'}
+                            {t('login-to-continue') || 'Login to continue'}
                         </Text>
                     </View>
 
@@ -130,33 +130,29 @@ export default function RegistrationScreen() {
                         <TouchableOpacity
                             className="rounded-xl py-4 items-center mb-3"
                             style={{ backgroundColor: loading ? colors.primary.light : colors.primary.main }}
-                            onPress={handleRegister}
+                            onPress={handleLogin}
                             disabled={loading}
                             activeOpacity={0.8}
                         >
                             {loading ? (
                                 <ActivityIndicator color="white" />
                             ) : (
-                                <Text
-                                    className="text-white text-base font-semibold px-4"
-                                    numberOfLines={2}
-                                    style={{ minWidth: 80 }}
-                                >
-                                    {t('register') || 'Register'}
+                                <Text className="text-white text-base font-semibold">
+                                    {t('login') || 'Login'}
                                 </Text>
                             )}
                         </TouchableOpacity>
 
                         <TouchableOpacity
                             className="py-3 items-center mb-3"
-                            onPress={navigateToLogin}
+                            onPress={navigateToRegister}
                             disabled={loading}
                             activeOpacity={0.8}
                         >
                             <Text className="text-gray-600 text-sm">
-                                {t('already-have-account') || 'Already have an account?'}{' '}
+                                {t('dont-have-account') || "Don't have an account?"}{' '}
                                 <Text className="font-bold" style={{ color: colors.primary.main }}>
-                                    {t('login') || 'Login'}
+                                    {t('register') || 'Register'}
                                 </Text>
                             </Text>
                         </TouchableOpacity>
