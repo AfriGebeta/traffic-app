@@ -39,6 +39,9 @@ interface MapOverlayProps {
     isRecording?: boolean;
     isProcessingVoice?: boolean;
     voiceNavigationData?: any;
+    onExploreCategory?: (categoryId: string) => void;
+    isExploring?: boolean;
+    selectedExploreCategory?: string | null;
 }
 
 export const MapOverlay: React.FC<MapOverlayProps> = ({
@@ -66,6 +69,9 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
     isRecording,
     isProcessingVoice,
     voiceNavigationData,
+    onExploreCategory,
+    isExploring = false,
+    selectedExploreCategory = null,
 }) => {
     const { t } = useTranslation();
     const router = useRouter();
@@ -87,9 +93,9 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                 />
 
                 <QuickActions
-                    onSelectCategory={(categoryId) => {
-                        showToast.info(t('coming-soon'), categoryId);
-                    }}
+                    onSelectCategory={onExploreCategory}
+                    isLoading={isExploring}
+                    selectedCategory={selectedExploreCategory}
                 />
 
                 <SearchResults

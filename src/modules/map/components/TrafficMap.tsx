@@ -8,6 +8,7 @@ import { IncidentAlert } from './IncidentAlert';
 import { MapOverlay } from './MapOverlay';
 import { IncidentReportSheet } from './IncidentReportSheet';
 import { VoiceRecordingOverlay } from './VoiceRecordingOverlay';
+import { PlaceDetailsSheet } from './PlaceDetailsSheet';
 import { RoutePreview } from '../../navigation/components/RoutePreview';
 import { useIncidents } from '../../incidents/hooks/useIncidents';
 import { useUserLocation } from '../hooks/useUserLocation';
@@ -17,25 +18,31 @@ import { useVoiceNavigation } from '../../navigation/hooks/useVoiceNavigation';
 import { useIncidentAlerts } from '../hooks/useIncidentAlerts';
 import { useMapMarkers } from '../hooks/useMapMarkers';
 import { useMapTheme } from '../context/MapThemeContext';
+import { useExplore } from '../hooks/useExplore';
 import { showToast } from '../../../shared/utils/toast';
 import { useTranslation } from 'react-i18next';
+import { colors } from '../../../shared/theme/colors';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 
 export default function TrafficMap() {
     const mapRef = useRef<GebetaMapRef>(null);
     const searchMarkerRef = useRef<any>(null);
     const userLocationMarkerRef = useRef<any>(null);
+    const exploreMarkersRef = useRef<any[]>([]);
     const router = useRouter();
 
     const [initialCenter] = useState<[number, number]>([38.7463, 9.0223]);
     const [initialZoom] = useState(12);
     const [showReportOptions, setShowReportOptions] = useState(false);
+    const [selectedExploreCategory, setSelectedExploreCategory] = useState<string | null>(null);
+    const [selectedExplorePlace, setSelectedExplorePlace] = useState<GeocodingPlace | null>(null);
 
     const { t } = useTranslation();
     const params = useLocalSearchParams();
     const { incidents, refetch } = useIncidents();
     const { userLocation, setUserLocation } = useUserLocation();
     const { currentTheme } = useMapTheme();
+    const { isLoading: isExploring, results: exploreResults, searchNearby, clearResults: clearExploreResults } = useExplore();
 
     const {
         searchQuery,
@@ -89,7 +96,7 @@ export default function TrafficMap() {
             () => showToast.info(place.name, place.type),
             10,
             undefined,
-            '#F97316',
+            colors.primary.main,
             'location'
         );
         searchMarkerRef.current = marker;
@@ -117,6 +124,106 @@ export default function TrafficMap() {
         language: 'amh',
         onDestinationFound: handleSelectPlace,
     });
+
+    const handleExploreCategory = async (categoryId: string) => {
+        if (!userLocation) {
+            showToast.error(t('location-unavailable'), t('please-wait-for-location'));
+            return;
+        }
+
+        if (selectedExploreCategory === categoryId) {
+            setSelectedExploreCategory(null);
+            clearExploreResults();
+            setSearchResults([]);
+            setShowSearchContainer(false);
+
+            exploreMarkersRef.current.forEach(() => {
+                mapRef.current?.clearMarkers();
+            });
+            exploreMarkersRef.current = [];
+            addIncidentMarkers();
+            return;
+        }
+
+        setSelectedExploreCategory(categoryId);
+
+        try {
+            const places = await searchNearby(categoryId, userLocation);
+
+            exploreMarkersRef.current.forEach(() => {
+                mapRef.current?.clearMarkers();
+            });
+            exploreMarkersRef.current = [];
+
+            mapRef.current?.clearMarkers();
+
+            places.forEach((place) => {
+                const marker = mapRef.current?.addImageMarker(
+                    [place.longitude, place.latitude],
+                    '',
+                    [28, 28],
+                    () => {
+                        setSelectedExplorePlace(place);
+                    },
+                    10,
+                    undefined,
+                    colors.primary.main,
+                    getIconForCategory(categoryId)
+                );
+                if (marker) {
+                    exploreMarkersRef.current.push(marker);
+                }
+            });
+
+            addIncidentMarkers();
+
+            setSearchResults([]);
+            setShowSearchContainer(false);
+
+            if (places.length > 0) {
+                const bounds = places.reduce((acc, place) => {
+                    return {
+                        minLng: Math.min(acc.minLng, place.longitude),
+                        maxLng: Math.max(acc.maxLng, place.longitude),
+                        minLat: Math.min(acc.minLat, place.latitude),
+                        maxLat: Math.max(acc.maxLat, place.latitude),
+                    };
+                }, {
+                    minLng: places[0].longitude,
+                    maxLng: places[0].longitude,
+                    minLat: places[0].latitude,
+                    maxLat: places[0].latitude,
+                });
+
+                const centerLng = (bounds.minLng + bounds.maxLng) / 2;
+                const centerLat = (bounds.minLat + bounds.maxLat) / 2;
+
+                mapRef.current?.flyTo({
+                    center: [centerLng, centerLat],
+                    zoom: 13,
+                    duration: 1000,
+                });
+            }
+        } catch (error) {
+            showToast.error(t('search-failed'), t('please-try-again'));
+            setSelectedExploreCategory(null);
+        }
+    };
+
+    const getIconForCategory = (categoryId: string): string => {
+        const iconMap: Record<string, string> = {
+            restaurants: 'restaurant',
+            gas: 'water',
+            parking: 'car',
+            hospital: 'medical',
+            repair: 'construct',
+        };
+        return iconMap[categoryId] || 'location';
+    };
+
+    const handleNavigateToExplorePlace = (place: GeocodingPlace) => {
+        handleSelectPlace(place);
+    };
 
     useEffect(() => {
         LogBox.ignoreLogs(['MapLibre error', 'Failed to load sprite']);
@@ -244,6 +351,8 @@ export default function TrafficMap() {
                         setSearchResults([]);
                         setSearchQuery('');
                         setShowSearchContainer(false);
+                        setSelectedExploreCategory(null);
+                        clearExploreResults();
                     }}
                     selectedDestination={selectedDestination}
                     isNavigating={isNavigating}
@@ -261,6 +370,9 @@ export default function TrafficMap() {
                     isRecording={isRecording}
                     isProcessingVoice={isProcessingVoice}
                     voiceNavigationData={voiceNavigationData}
+                    onExploreCategory={handleExploreCategory}
+                    isExploring={isExploring}
+                    selectedExploreCategory={selectedExploreCategory}
                 />
             )}
 
@@ -283,6 +395,12 @@ export default function TrafficMap() {
                 isVisible={showReportOptions}
                 onClose={() => setShowReportOptions(false)}
                 userLocation={userLocation}
+            />
+
+            <PlaceDetailsSheet
+                place={selectedExplorePlace}
+                onClose={() => setSelectedExplorePlace(null)}
+                onNavigate={handleNavigateToExplorePlace}
             />
         </View>
     );
