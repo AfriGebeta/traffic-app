@@ -18,7 +18,19 @@ export const useUserRegistration = () => {
             const response = await userService.register(data);
 
             if (response.error) {
-                setError(response.error);
+                let errorMessage = response.error;
+
+                if (errorMessage.toLowerCase().includes('already') ||
+                    errorMessage.toLowerCase().includes('exist') ||
+                    errorMessage.toLowerCase().includes('duplicate')) {
+                    errorMessage = 'User already registered. Please login instead.';
+                } else if (errorMessage.toLowerCase().includes('invalid')) {
+                    errorMessage = 'Invalid phone number or name. Please check your details.';
+                } else if (errorMessage.toLowerCase().includes('network')) {
+                    errorMessage = 'Network error. Please check your connection.';
+                }
+
+                setError(errorMessage);
                 return null;
             }
 

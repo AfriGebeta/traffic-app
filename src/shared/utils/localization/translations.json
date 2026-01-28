@@ -638,5 +638,35 @@
         "key": "see-more",
         "EN_US": "See More",
         "AM": "ተጨማሪ ይመልከቱ"
+    },
+    {
+        "key": "login",
+        "EN_US": "Login",
+        "AM": "ይግቡ"
+    },
+    {
+        "key": "welcome-back",
+        "EN_US": "Welcome Back",
+        "AM": "እንኳን ደህና ተመለሱ"
+    },
+    {
+        "key": "login-to-continue",
+        "EN_US": "Login to continue",
+        "AM": "ለመቀጠል ይግቡ"
+    },
+    {
+        "key": "login-successful",
+        "EN_US": "Login successful",
+        "AM": "መግባት ተሳክቷል"
+    },
+    {
+        "key": "dont-have-account",
+        "EN_US": "Don't have an account?",
+        "AM": "መለያ የለዎትም?"
+    },
+    {
+        "key": "already-have-account",
+        "EN_US": "Already have an account?",
+        "AM": "መለያ አለዎት?"
     }
 ]
