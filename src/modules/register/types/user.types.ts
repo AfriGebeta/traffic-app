@@ -15,5 +15,9 @@ export interface AuthResponse {
 export interface UserRegistrationRequest {
     phoneNumber: string;
     name: string;
-    deviceId: string;
+}
+
+export interface UserLoginRequest {
+    phoneNumber: string;
+    name: string;
 }
