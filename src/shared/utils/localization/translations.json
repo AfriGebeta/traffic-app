@@ -608,5 +608,35 @@
         "key": "please-try-again",
         "EN_US": "Please try again",
         "AM": "እባክዎ እንደገና ይሞክሩ"
+    },
+    {
+        "key": "museum",
+        "EN_US": "Museums",
+        "AM": "ሙዚየሞች"
+    },
+    {
+        "key": "hotel",
+        "EN_US": "Hotels",
+        "AM": "ሆቴሎች"
+    },
+    {
+        "key": "park",
+        "EN_US": "Parks",
+        "AM": "መናፈሻዎች"
+    },
+    {
+        "key": "mall",
+        "EN_US": "Malls",
+        "AM": "ሞሎች"
+    },
+    {
+        "key": "places",
+        "EN_US": "places",
+        "AM": "ቦታዎች"
+    },
+    {
+        "key": "see-more",
+        "EN_US": "See More",
+        "AM": "ተጨማሪ ይመልከቱ"
     }
 ]

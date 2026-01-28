@@ -9,6 +9,7 @@ import { MapOverlay } from './MapOverlay';
 import { IncidentReportSheet } from './IncidentReportSheet';
 import { VoiceRecordingOverlay } from './VoiceRecordingOverlay';
 import { PlaceDetailsSheet } from './PlaceDetailsSheet';
+import { ExploreSheet } from '../../explore/components/ExploreSheet';
 import { RoutePreview } from '../../navigation/components/RoutePreview';
 import { useIncidents } from '../../incidents/hooks/useIncidents';
 import { useUserLocation } from '../hooks/useUserLocation';
@@ -34,6 +35,7 @@ export default function TrafficMap() {
     const [initialCenter] = useState<[number, number]>([38.7463, 9.0223]);
     const [initialZoom] = useState(12);
     const [showReportOptions, setShowReportOptions] = useState(false);
+    const [showExploreSheet, setShowExploreSheet] = useState(false);
     const [selectedExploreCategory, setSelectedExploreCategory] = useState<string | null>(null);
     const [selectedExplorePlace, setSelectedExplorePlace] = useState<GeocodingPlace | null>(null);
 
@@ -364,6 +366,7 @@ export default function TrafficMap() {
                     mapRef={mapRef}
                     onReportPress={() => setShowReportOptions(true)}
                     onAddPlacePress={() => router.push('/places/contribute')}
+                    onExplorePress={() => setShowExploreSheet(true)}
                     onLocationPress={handleLocationPress}
                     onVoicePress={handleVoiceStart}
                     onVoiceRelease={handleVoiceStop}
@@ -401,6 +404,13 @@ export default function TrafficMap() {
                 place={selectedExplorePlace}
                 onClose={() => setSelectedExplorePlace(null)}
                 onNavigate={handleNavigateToExplorePlace}
+            />
+
+            <ExploreSheet
+                visible={showExploreSheet}
+                onClose={() => setShowExploreSheet(false)}
+                userLocation={userLocation}
+                onPlaceSelect={handleSelectPlace}
             />
         </View>
     );

@@ -33,6 +33,7 @@ interface MapOverlayProps {
     mapRef: React.RefObject<GebetaMapRef | null>;
     onReportPress: () => void;
     onAddPlacePress: () => void;
+    onExplorePress: () => void;
     onLocationPress?: () => void;
     onVoicePress?: () => void;
     onVoiceRelease?: () => void;
@@ -63,6 +64,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
     mapRef,
     onReportPress,
     onAddPlacePress,
+    onExplorePress,
     onLocationPress,
     onVoicePress,
     onVoiceRelease,
@@ -121,6 +123,8 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                 onTabPress={(tabId) => {
                     if (tabId === 'report') {
                         onReportPress();
+                    } else if (tabId === 'explore') {
+                        onExplorePress();
                     } else {
                         showToast.info(t('coming-soon'), tabId);
                     }
