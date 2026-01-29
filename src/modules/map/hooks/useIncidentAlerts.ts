@@ -38,7 +38,7 @@ const isIncidentOnRouteAhead = (
     incidentLat: number,
     incidentLng: number,
     routeCoordinates: [number, number][] | undefined,
-    maxDistanceFromRoute: number = 0.15 
+    maxDistanceFromRoute: number = 0.15
 ): boolean => {
     //no route , fallback
     if (!routeCoordinates || routeCoordinates.length === 0) {
@@ -51,7 +51,7 @@ const isIncidentOnRouteAhead = (
     let minDistanceToRoute = Infinity;
 
     for (let i = 0; i < routeCoordinates.length; i++) {
-        const [lat, lng] = routeCoordinates[i];
+        const [lng, lat] = routeCoordinates[i];
         const distance = calculateDistance(currentLat, currentLng, lat, lng);
         if (distance < minDistanceToRoute) {
             minDistanceToRoute = distance;
@@ -61,7 +61,7 @@ const isIncidentOnRouteAhead = (
 
     let minIncidentDistance = Infinity;
     for (let i = currentRouteIndex; i < routeCoordinates.length; i++) {
-        const [lat, lng] = routeCoordinates[i];
+        const [lng, lat] = routeCoordinates[i];
         const distanceToRoutePoint = calculateDistance(incidentLat, incidentLng, lat, lng);
 
         if (distanceToRoutePoint < minIncidentDistance) {
@@ -73,7 +73,6 @@ const isIncidentOnRouteAhead = (
         }
     }
 
-    // console.log(`Incident not on route. Min distance to route: ${minIncidentDistance.toFixed(3)} km`);
     return false;
 };
 
@@ -98,7 +97,13 @@ export const useIncidentAlerts = (
     const previousLocation = useRef<{ lat: number; lng: number } | null>(null);
 
     useEffect(() => {
-        // console.log('useIncidentAlerts:', { navigationMode, hasUserLocation: !!userLocation, incidentsCount: incidents.length });
+        console.log('useIncidentAlerts:', {
+            navigationMode,
+            hasUserLocation: !!userLocation,
+            incidentsCount: incidents.length,
+            hasRouteCoordinates: !!routeCoordinates,
+            routeCoordinatesLength: routeCoordinates?.length || 0
+        });
 
         if (!navigationMode || !userLocation || incidents.length === 0) {
             setActiveAlert(null);
@@ -128,7 +133,11 @@ export const useIncidentAlerts = (
                 routeCoordinates
             );
 
-            // console.log(`Incident ${incident.type.name}:`, { distance: distance.toFixed(3), onRouteAhead });
+            console.log(`incident ${incident.type.name}:`, {
+                distance: distance.toFixed(3),
+                onRouteAhead,
+                withinAlertDistance: distance <= ALERT_DISTANCE_KM
+            });
 
             if (onRouteAhead && distance <= ALERT_DISTANCE_KM && distance < closestDistance) {
                 closestIncident = incident;
@@ -137,7 +146,7 @@ export const useIncidentAlerts = (
         }
 
         if (closestIncident && closestDistance < Infinity) {
-            // console.log('Found closest incident:', { type: closestIncident.type.name, distance: closestDistance.toFixed(3) });
+            console.log('found closest incident:', { type: closestIncident.type.name, distance: closestDistance.toFixed(3) });
 
             const incidentId = closestIncident.id;
             const previousDistance = previousDistances.current.get(incidentId);

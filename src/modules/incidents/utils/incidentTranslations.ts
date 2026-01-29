@@ -1,7 +1,8 @@
 import { IncidentTypeFromAPI } from '../types/incident.types';
 
 export const getIncidentTranslationKey = (type: IncidentTypeFromAPI | string): string => {
-    const typeName = typeof type === 'string' ? type : type.name;
+    const typeName = (typeof type === 'string' ? type : type.name).trim();
+
 
     const keyMap: Record<string, string> = {
         'TRAFFIC_POLICE': 'traffic-police',
@@ -16,6 +17,7 @@ export const getIncidentTranslationKey = (type: IncidentTypeFromAPI | string): s
         'accident': 'accident',
         'ROAD_CLOSURE': 'closure',
         'closure': 'closure',
+        'road-closure': 'closure',
         'SPEED_BUMP': 'speed-bump',
         'speed-bump': 'speed-bump',
         'speed_bump': 'speed-bump',
@@ -31,5 +33,6 @@ export const getIncidentTranslationKey = (type: IncidentTypeFromAPI | string): s
         'other': 'other',
     };
 
-    return keyMap[typeName] || typeName.toLowerCase().replace('_', '-');
+    const translationKey = keyMap[typeName] || typeName.toLowerCase().replace('_', '-');
+    return translationKey;
 };

@@ -1,7 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { View, LogBox } from 'react-native';
 import { useLocalSearchParams, useFocusEffect, useRouter } from 'expo-router';
-import GebetaMap, { GebetaMapRef } from '../../../lib/gebeta-map/GebetaMap';
+import CustomGebetaMap from '../../../components/GebetaMap';
+import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 import { NavigationBar } from './NavigationBar';
 import { NavigationOverlay } from './NavigationOverlay';
 import { IncidentAlert } from './IncidentAlert';
@@ -22,14 +23,11 @@ import { useMapTheme } from '../context/MapThemeContext';
 import { useExplore } from '../hooks/useExplore';
 import { showToast } from '../../../shared/utils/toast';
 import { useTranslation } from 'react-i18next';
-import { colors } from '../../../shared/theme/colors';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 
 export default function TrafficMap() {
     const mapRef = useRef<GebetaMapRef>(null);
     const searchMarkerRef = useRef<any>(null);
-    const userLocationMarkerRef = useRef<any>(null);
-    const exploreMarkersRef = useRef<any[]>([]);
     const router = useRouter();
 
     const [initialCenter] = useState<[number, number]>([38.7463, 9.0223]);
@@ -38,6 +36,7 @@ export default function TrafficMap() {
     const [showExploreSheet, setShowExploreSheet] = useState(false);
     const [selectedExploreCategory, setSelectedExploreCategory] = useState<string | null>(null);
     const [selectedExplorePlace, setSelectedExplorePlace] = useState<GeocodingPlace | null>(null);
+    const [showUserLocationMarker, setShowUserLocationMarker] = useState(false);
 
     const { t } = useTranslation();
     const params = useLocalSearchParams();
@@ -68,18 +67,19 @@ export default function TrafficMap() {
         currentHeading,
         simulateMovement,
         setSimulateMovement,
-        snappedLocation,
         currentInstruction,
         remainingDistance,
         remainingTime,
         isOffRoute,
         isRecalculating,
         routeCoordinates,
+        routeGeoJSON,
         handleNavigate,
         handleStartNavigation,
         handleStopNavigation,
         handleClearRoute,
         simulateOffRoute,
+        recalculateRoute,
     } = useNavigation(mapRef, userLocation, setUserLocation);
 
     const activeIncidentAlert = useIncidentAlerts(userLocation, incidents, navigationMode, routeCoordinates);
@@ -97,9 +97,7 @@ export default function TrafficMap() {
             [40, 40],
             () => showToast.info(place.name, place.type),
             10,
-            undefined,
-            colors.primary.main,
-            'location'
+            undefined
         );
         searchMarkerRef.current = marker;
 
@@ -138,12 +136,6 @@ export default function TrafficMap() {
             clearExploreResults();
             setSearchResults([]);
             setShowSearchContainer(false);
-
-            exploreMarkersRef.current.forEach(() => {
-                mapRef.current?.clearMarkers();
-            });
-            exploreMarkersRef.current = [];
-            addIncidentMarkers();
             return;
         }
 
@@ -151,33 +143,6 @@ export default function TrafficMap() {
 
         try {
             const places = await searchNearby(categoryId, userLocation);
-
-            exploreMarkersRef.current.forEach(() => {
-                mapRef.current?.clearMarkers();
-            });
-            exploreMarkersRef.current = [];
-
-            mapRef.current?.clearMarkers();
-
-            places.forEach((place) => {
-                const marker = mapRef.current?.addImageMarker(
-                    [place.longitude, place.latitude],
-                    '',
-                    [28, 28],
-                    () => {
-                        setSelectedExplorePlace(place);
-                    },
-                    10,
-                    undefined,
-                    colors.primary.main,
-                    getIconForCategory(categoryId)
-                );
-                if (marker) {
-                    exploreMarkersRef.current.push(marker);
-                }
-            });
-
-            addIncidentMarkers();
 
             setSearchResults([]);
             setShowSearchContainer(false);
@@ -212,17 +177,6 @@ export default function TrafficMap() {
         }
     };
 
-    const getIconForCategory = (categoryId: string): string => {
-        const iconMap: Record<string, string> = {
-            restaurants: 'restaurant',
-            gas: 'water',
-            parking: 'car',
-            hospital: 'medical',
-            repair: 'construct',
-        };
-        return iconMap[categoryId] || 'location';
-    };
-
     const handleNavigateToExplorePlace = (place: GeocodingPlace) => {
         handleSelectPlace(place);
     };
@@ -251,7 +205,6 @@ export default function TrafficMap() {
 
     const handleLocationPress = () => {
         console.log('Location button pressed, userLocation:', userLocation);
-        console.log('mapRef.current:', mapRef.current);
 
         if (!userLocation) {
             showToast.error('Location not available', 'Please wait for location to load');
@@ -263,22 +216,7 @@ export default function TrafficMap() {
             return;
         }
 
-        if (userLocationMarkerRef.current) {
-            mapRef.current.clearMarkers();
-            addIncidentMarkers();
-        }
-
-        const marker = mapRef.current.addImageMarker(
-            [userLocation.lng, userLocation.lat],
-            '',
-            [20, 20],
-            () => showToast.info('Your Location', 'Current position'),
-            10,
-            undefined,
-            '#ffa500',
-            'radio-button-on'
-        );
-        userLocationMarkerRef.current = marker;
+        setShowUserLocationMarker(true);
 
         mapRef.current.flyTo({
             center: [userLocation.lng, userLocation.lat],
@@ -289,7 +227,7 @@ export default function TrafficMap() {
 
     return (
         <View className="flex-1">
-            <GebetaMap
+            <CustomGebetaMap
                 ref={mapRef}
                 apiKey={process.env.EXPO_PUBLIC_GEBETA_API_KEY!}
                 mapStyleUrl={currentTheme.styleUrl ? `${currentTheme.styleUrl}?apiKey=${process.env.EXPO_PUBLIC_GEBETA_API_KEY}` : undefined}
@@ -298,9 +236,20 @@ export default function TrafficMap() {
                 zoom={initialZoom}
                 onMapClick={() => { }}
                 onMapLoaded={handleMapLoaded}
-                userLocation={navigationMode && snappedLocation ? snappedLocation : userLocation}
-                showUserLocation={navigationMode}
+                routeGeoJSON={routeGeoJSON}
+                routeStyle={{
+                    color: '#3B82F6',
+                    width: 5,
+                    opacity: 0.8
+                }}
+                isNavigating={navigationMode}
+                userLocation={userLocation}
                 userHeading={currentHeading}
+                showUserLocationMarker={showUserLocationMarker}
+                incidents={incidents}
+                explorePlaces={exploreResults}
+                exploreCategory={selectedExploreCategory}
+                onExplorePlacePress={(place) => setSelectedExplorePlace(place)}
             />
 
             {activeIncidentAlert && (
@@ -336,6 +285,7 @@ export default function TrafficMap() {
                         isOffRoute={isOffRoute}
                         isRecalculating={isRecalculating}
                         onTestOffRoute={() => simulateOffRoute(setUserLocation)}
+                        onRecalculateRoute={recalculateRoute}
                     />
                 </>
             )}
