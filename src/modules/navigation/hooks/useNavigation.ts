@@ -48,11 +48,11 @@ export const useNavigation = (
         const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
 
         const bearing = Math.atan2(y, x) * 180 / Math.PI;
-        return (bearing + 360) % 360; 
+        return (bearing + 360) % 360;
     };
 
     const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
-        const R = 6371000; 
+        const R = 6371000;
         const dLat = (lat2 - lat1) * Math.PI / 180;
         const dLng = (lng2 - lng1) * Math.PI / 180;
         const a =
@@ -182,7 +182,7 @@ export const useNavigation = (
                     cameraPitch: 60,
                     cameraZoom: 18,
                     updateInterval: 1000,
-                    offRouteThreshold: 30, 
+                    offRouteThreshold: 30,
                     onNavigationUpdate: (state: any) => {
                         console.log('navigation Update:', {
                             isNavigating: state.isNavigating,
@@ -232,7 +232,7 @@ export const useNavigation = (
                         showToast.success('Navigation Complete', 'You have arrived at your destination!');
                         handleStopNavigation();
                     },
-                } as any); 
+                } as any);
             }
 
             setIsRecalculating(false);
@@ -293,7 +293,7 @@ export const useNavigation = (
                             }
                         });
                         const [closestLng, closestLat] = routeCoordinates.current[closestIndex];
-                        const R = 6371000; 
+                        const R = 6371000;
                         const dLat = (latitude - closestLat) * Math.PI / 180;
                         const dLng = (longitude - closestLng) * Math.PI / 180;
                         const a =
@@ -304,9 +304,9 @@ export const useNavigation = (
                             Math.sin(dLng / 2);
                         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
                         const distanceFromRoute = R * c;
-                        const OFF_ROUTE_THRESHOLD = 40; 
+                        const OFF_ROUTE_THRESHOLD = 40;
                         if (distanceFromRoute > OFF_ROUTE_THRESHOLD && !isOffRoute) {
-                            
+
                             console.log('off route detected (Manual)');
                             console.log(`distance from route: ${distanceFromRoute.toFixed(1)}m`);
                             console.log(`auto-reroute in 3 seconds...`);
@@ -323,7 +323,7 @@ export const useNavigation = (
                                 recalculateRoute();
                             }, 3000);
                         } else if (distanceFromRoute <= OFF_ROUTE_THRESHOLD && isOffRoute) {
-                            
+
                             console.log('back on route (Manual)');
                             console.log('cancelling pending reroute');
 
@@ -363,7 +363,7 @@ export const useNavigation = (
                                 const [lng1, lat1] = remainingCoords[i];
                                 const [lng2, lat2] = remainingCoords[i + 1];
 
-                                const R = 6371000; 
+                                const R = 6371000;
                                 const dLat = (lat2 - lat1) * Math.PI / 180;
                                 const dLng = (lng2 - lng1) * Math.PI / 180;
                                 const a =
@@ -405,12 +405,29 @@ export const useNavigation = (
                             }
                         });
 
-                        const MAP_MATCHING_THRESHOLD = 10;
+                        const MAP_MATCHING_THRESHOLD = 20;
                         if (minDistance <= MAP_MATCHING_THRESHOLD) {
                             const [snappedLng, snappedLat] = routeCoordinates.current[closestIndex];
                             displayLat = snappedLat;
                             displayLng = snappedLng;
                             console.log(`map matched: ${minDistance.toFixed(1)}m from route, snapped to route`);
+
+                            // Update route line to start from snapped position
+                            const remainingCoords = routeCoordinates.current.slice(closestIndex);
+                            if (remainingCoords.length > 0) {
+                                // Replace first coordinate with exact snapped position
+                                remainingCoords[0] = [snappedLng, snappedLat];
+
+                                const remainingGeoJSON = {
+                                    type: 'Feature',
+                                    properties: {},
+                                    geometry: {
+                                        type: 'LineString',
+                                        coordinates: remainingCoords,
+                                    }
+                                };
+                                setRouteGeoJSON(remainingGeoJSON);
+                            }
                         }
                     }
 
@@ -499,7 +516,7 @@ export const useNavigation = (
                     const [lng1, lat1] = remainingCoords[i];
                     const [lng2, lat2] = remainingCoords[i + 1];
 
-                    const R = 6371000; 
+                    const R = 6371000;
                     const dLat = (lat2 - lat1) * Math.PI / 180;
                     const dLng = (lng2 - lng1) * Math.PI / 180;
                     const a =
@@ -514,7 +531,7 @@ export const useNavigation = (
 
                 setRemainingDistance(totalDistance);
 
-                const averageSpeedMps = (35 * 1000) / 3600; 
+                const averageSpeedMps = (35 * 1000) / 3600;
                 const estimatedTime = totalDistance / averageSpeedMps;
                 setRemainingTime(estimatedTime);
 
@@ -569,8 +586,8 @@ export const useNavigation = (
 
             const route = {
                 coordinates: decodedCoordinates.map(coord => [coord[1], coord[0]]) as [number, number][],
-                distance: leg.summary.length * 1000, 
-                duration: leg.summary.time, 
+                distance: leg.summary.length * 1000,
+                duration: leg.summary.time,
                 instructions: leg.maneuvers.map((maneuver: any) => ({
                     type: 'turn' as const,
                     distance: maneuver.length * 1000,
@@ -712,7 +729,7 @@ export const useNavigation = (
                 cameraPitch: 60,
                 cameraZoom: 18,
                 updateInterval: 1000,
-                offRouteThreshold: 30, 
+                offRouteThreshold: 30,
                 onNavigationUpdate: (state: any) => {
                     console.log('📊 Navigation Update:', {
                         isNavigating: state.isNavigating,
@@ -904,7 +921,7 @@ export const useNavigation = (
 
         setUserLocation(offRouteLocation);
 
-        const R = 6371000; 
+        const R = 6371000;
         const dLat = (offsetLat - currentLat) * Math.PI / 180;
         const dLng = (offsetLng - currentLng) * Math.PI / 180;
         const a =
