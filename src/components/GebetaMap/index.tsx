@@ -86,6 +86,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             addMarker: () => ({}),
             clearMarkers: () => { },
             getMarkers: () => [],
+            
             getMapInstance: () => mapViewRef.current,
             startFence: () => { },
             addFencePoint: () => { },
@@ -105,6 +106,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             geocode: async () => [],
             reverseGeocode: async () => [],
             getDirections: async () => null,
+
             convertDirectionsToNavigationRoute: () => null,
             displayRoute: () => { },
             clearRoute: () => { },
@@ -231,6 +233,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
                     {routeGeoJSON && (
                         <MapLibreGL.ShapeSource
+                            key={`route-${JSON.stringify(routeGeoJSON.geometry.coordinates[0])}`}
                             id="route-preview-source"
                             shape={routeGeoJSON}
                         >
@@ -249,6 +252,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
                     {isNavigating && userLocation && (
                         <MapLibreGL.PointAnnotation
+                            key="nav-marker"
                             id="user-location-marker-nav"
                             coordinate={[userLocation.lng, userLocation.lat]}
                         >

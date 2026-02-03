@@ -41,7 +41,7 @@ export default function TrafficMap() {
     const { t } = useTranslation();
     const params = useLocalSearchParams();
     const { incidents, refetch } = useIncidents();
-    const { userLocation, setUserLocation } = useUserLocation();
+    const { userLocation, setUserLocation, stopLocationTracking: stopBackgroundTracking, startLocationTracking: startBackgroundTracking } = useUserLocation();
     const { currentTheme } = useMapTheme();
     const { isLoading: isExploring, results: exploreResults, searchNearby, clearResults: clearExploreResults } = useExplore();
 
@@ -80,7 +80,7 @@ export default function TrafficMap() {
         handleClearRoute,
         simulateOffRoute,
         recalculateRoute,
-    } = useNavigation(mapRef, userLocation, setUserLocation);
+    } = useNavigation(mapRef, userLocation, setUserLocation, stopBackgroundTracking, startBackgroundTracking);
 
     const activeIncidentAlert = useIncidentAlerts(userLocation, incidents, navigationMode, routeCoordinates);
     const { addIncidentMarkers } = useMapMarkers(mapRef, incidents);

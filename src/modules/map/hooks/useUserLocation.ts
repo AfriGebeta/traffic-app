@@ -26,8 +26,8 @@ export const useUserLocation = () => {
             locationSubscription.current = await Location.watchPositionAsync(
                 {
                     accuracy: Location.Accuracy.High,
-                    timeInterval: 5000,      
-                    distanceInterval: 10,    
+                    timeInterval: 5000,
+                    distanceInterval: 10,
                 },
                 (location) => {
                     setUserLocation({
@@ -56,5 +56,5 @@ export const useUserLocation = () => {
         };
     }, []);
 
-    return { userLocation, setUserLocation };
+    return { userLocation, setUserLocation, stopLocationTracking, startLocationTracking };
 };
