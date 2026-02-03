@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next';
 import { userService } from '../services/user.service';
 import { AuthResponse, UserLoginRequest } from '../types/user.types';
 
@@ -7,6 +8,7 @@ const USER_STORAGE_KEY = '@traffic_app_user';
 const TOKEN_STORAGE_KEY = '@traffic_app_token';
 
 export const useUserLogin = () => {
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -22,11 +24,11 @@ export const useUserLogin = () => {
 
                 if (errorMessage.toLowerCase().includes('not found') ||
                     errorMessage.toLowerCase().includes('does not exist')) {
-                    errorMessage = 'User not found. Please register first.';
+                    errorMessage = t('user-not-found') || 'User not found. Please register first.';
                 } else if (errorMessage.toLowerCase().includes('invalid')) {
-                    errorMessage = 'Invalid credentials. Please check your details.';
+                    errorMessage = t('invalid-phone-or-name') || 'Invalid credentials. Please check your details.';
                 } else if (errorMessage.toLowerCase().includes('network')) {
-                    errorMessage = 'Network error. Please check your connection.';
+                    errorMessage = t('network-error') || 'Network error. Please check your connection.';
                 }
 
                 setError(errorMessage);
@@ -41,7 +43,7 @@ export const useUserLogin = () => {
 
             return null;
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Login failed';
+            const errorMessage = err instanceof Error ? err.message : (t('login-failed') || 'Login failed');
             setError(errorMessage);
             return null;
         } finally {

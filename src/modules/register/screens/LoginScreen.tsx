@@ -41,7 +41,7 @@ export default function LoginScreen() {
 
             if (error.toLowerCase().includes('not found') || error.toLowerCase().includes('register first')) {
                 setTimeout(() => {
-                    showToast.info('Redirecting to registration...');
+                    showToast.info(t('redirecting-to-registration') || 'Redirecting to registration...');
                     setTimeout(() => navigateToRegister(), 1500);
                 }, 2000);
             }
@@ -137,7 +137,11 @@ export default function LoginScreen() {
                             {loading ? (
                                 <ActivityIndicator color="white" />
                             ) : (
-                                <Text className="text-white text-base font-semibold">
+                                <Text
+                                    className="text-white text-base font-semibold px-4"
+                                    numberOfLines={2}
+                                    style={{ minWidth: 80 }}
+                                >
                                     {t('login') || 'Login'}
                                 </Text>
                             )}

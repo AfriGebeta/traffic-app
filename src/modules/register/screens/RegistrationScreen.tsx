@@ -33,19 +33,24 @@ export default function RegistrationScreen() {
         }
 
         const fullPhoneNumber = `+251${phoneNumber.trim()}`;
-        const result = await register({ phoneNumber: fullPhoneNumber, name: name.trim() });
 
-        if (result) {
-            showToast.success(t('registration-successful') || 'Registration successful');
-            setTimeout(() => {
-                router.replace('/');
-            }, 1000);
-        } else if (error) {
-            showToast.error(error);
+        try {
+            const result = await register({ phoneNumber: fullPhoneNumber, name: name.trim() });
 
-            if (error.toLowerCase().includes('already registered')) {
+            if (result) {
+                showToast.success(t('registration-successful') || 'Registration successful');
                 setTimeout(() => {
-                    showToast.info('Redirecting to login...');
+                    router.replace('/');
+                }, 1000);
+            }
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Registration failed';
+            showToast.error(errorMessage);
+
+            if (errorMessage.toLowerCase().includes('already registered') ||
+                errorMessage.toLowerCase().includes('already exist')) {
+                setTimeout(() => {
+                    showToast.info(t('redirecting-to-login') || 'Redirecting to login...');
                     setTimeout(() => navigateToLogin(), 1500);
                 }, 2000);
             }

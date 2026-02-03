@@ -698,5 +698,45 @@
         "key": "mall-nearby",
         "EN_US": "Malls Nearby",
         "AM": "በአቅራቢያ ያሉ ሞሎች"
+    },
+    {
+        "key": "user-already-registered",
+        "EN_US": "This user is already registered. Please login instead.",
+        "AM": "ይህ ደንበኛ ቀደም ብሎ ተመዝግቧል።"
+    },
+    {
+        "key": "invalid-phone-or-name",
+        "EN_US": "Invalid phone number or name. Please check your details.",
+        "AM": "ልክ ያልሆነ ስልክ ቁጥር ወይም ስም። እባክዎ በድጋሚ ያረጋግጡ።"
+    },
+    {
+        "key": "network-error",
+        "EN_US": "Network error. Please check your connection.",
+        "AM": "የኔትወርክ ችግር እባክዎ ግንኙነትዎን ያረጋግጡ።"
+    },
+    {
+        "key": "registration-failed",
+        "EN_US": "Registration failed",
+        "AM": "ምዝገባው አልተሳካም"
+    },
+    {
+        "key": "redirecting-to-login",
+        "EN_US": "Redirecting to login...",
+        "AM": "ወደ መግቢያ በማዞር ላይ..."
+    },
+    {
+        "key": "user-not-found",
+        "EN_US": "User not found. Please register first.",
+        "AM": "ደንበኛው አልተገኘም። እባክዎ መጀመሪያ ይመዝገቡ።"
+    },
+    {
+        "key": "login-failed",
+        "EN_US": "Login failed",
+        "AM": "መግባት አልተሳካም"
+    },
+    {
+        "key": "redirecting-to-registration",
+        "EN_US": "Redirecting to registration...",
+        "AM": "ወደ ምዝገባ በማዞር ላይ..."
     }
 ]

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next';
 import { userService } from '../services/user.service';
 import { AuthResponse, UserRegistrationRequest } from '../types/user.types';
 
@@ -7,6 +8,7 @@ const USER_STORAGE_KEY = '@traffic_app_user';
 const TOKEN_STORAGE_KEY = '@traffic_app_token';
 
 export const useUserRegistration = () => {
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -22,31 +24,34 @@ export const useUserRegistration = () => {
 
                 if (errorMessage.toLowerCase().includes('already') ||
                     errorMessage.toLowerCase().includes('exist') ||
-                    errorMessage.toLowerCase().includes('duplicate')) {
-                    errorMessage = 'User already registered. Please login instead.';
+                    errorMessage.toLowerCase().includes('duplicate') ||
+                    errorMessage.toLowerCase().includes('registered')) {
+                    errorMessage = t('user-already-registered') || 'This phone number is already registered. Please login instead.';
                 } else if (errorMessage.toLowerCase().includes('invalid')) {
-                    errorMessage = 'Invalid phone number or name. Please check your details.';
+                    errorMessage = t('invalid-phone-or-name') || 'Invalid phone number or name. Please check your details.';
                 } else if (errorMessage.toLowerCase().includes('network')) {
-                    errorMessage = 'Network error. Please check your connection.';
+                    errorMessage = t('network-error') || 'Network error. Please check your connection.';
                 }
 
                 setError(errorMessage);
-                return null;
+                setLoading(false);
+                throw new Error(errorMessage);
             }
 
             if (response.data) {
                 await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(response.data.user));
                 await AsyncStorage.setItem(TOKEN_STORAGE_KEY, response.data.token);
+                setLoading(false);
                 return response.data;
             }
 
+            setLoading(false);
             return null;
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Registration failed';
+            const errorMessage = err instanceof Error ? err.message : (t('registration-failed') || 'Registration failed');
             setError(errorMessage);
-            return null;
-        } finally {
             setLoading(false);
+            throw err;
         }
     };
 
