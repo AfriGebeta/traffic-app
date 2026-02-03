@@ -1,5 +1,5 @@
 import React, { forwardRef, useState, useImperativeHandle, useRef, useEffect } from 'react';
-import { View, StyleSheet, ActivityIndicator, Alert, Text } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Alert, Text, Animated } from 'react-native';
 import MapLibreGL from '@maplibre/maplibre-react-native';
 import { GebetaMapRef, GebetaMapProps } from '@gebeta/tiles-react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -47,6 +47,34 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         const mapViewRef = useRef<any>(null);
         const hasStartedNavigating = useRef(false);
         const lastCameraUpdate = useRef<{ lat: number; lng: number; heading: number } | null>(null);
+        const pulseAnim = useRef(new Animated.Value(1)).current;
+
+        useEffect(() => {
+            if (showUserLocationMarker && !isNavigating) {
+                pulseAnim.setValue(1);
+                const pulse = Animated.loop(
+                    Animated.sequence([
+                        Animated.timing(pulseAnim, {
+                            toValue: 1.15,
+                            duration: 1000,
+                            useNativeDriver: true,
+                        }),
+                        Animated.timing(pulseAnim, {
+                            toValue: 1,
+                            duration: 1000,
+                            useNativeDriver: true,
+                        }),
+                    ])
+                );
+                pulse.start();
+                return () => {
+                    pulse.stop();
+                    pulseAnim.setValue(1);
+                };
+            } else {
+                pulseAnim.setValue(1);
+            }
+        }, [showUserLocationMarker, isNavigating, pulseAnim, mapStyleState]);
 
         const stableUserLocation = useRef<[number, number] | null>(null);
         useEffect(() => {
@@ -86,7 +114,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             addMarker: () => ({}),
             clearMarkers: () => { },
             getMarkers: () => [],
-            
+
             getMapInstance: () => mapViewRef.current,
             startFence: () => { },
             addFencePoint: () => { },
@@ -305,6 +333,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
                     {!isNavigating && showUserLocationMarker && userLocation && (
                         <MapLibreGL.PointAnnotation
+                            key={`user-location-${userLocation.lat}-${userLocation.lng}`}
                             id="user-location-marker-static"
                             coordinate={[userLocation.lng, userLocation.lat]}
                         >
@@ -314,13 +343,14 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                 alignItems: 'center',
                                 justifyContent: 'center',
                             }}>
-                                <View style={{
+                                <Animated.View style={{
                                     position: 'absolute',
                                     width: 40,
                                     height: 40,
                                     borderRadius: 20,
                                     backgroundColor: '#3B82F6',
                                     opacity: 0.2,
+                                    transform: [{ scale: pulseAnim }],
                                 }} />
                                 <View style={{
                                     width: 16,

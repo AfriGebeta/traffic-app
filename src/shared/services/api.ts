@@ -65,8 +65,9 @@ class ApiService {
             const data = await response.json();
 
             if (!response.ok) {
+                const errorMessage = data.message || data.error || `Request failed with status ${response.status}`;
                 return {
-                    error: data.message || data.error || 'an error occurred',
+                    error: errorMessage,
                     message: data.message,
                 };
             }
