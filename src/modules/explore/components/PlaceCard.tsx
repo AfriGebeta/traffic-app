@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../../shared/theme/colors';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
@@ -13,21 +13,29 @@ export const PlaceCard: React.FC<PlaceCardProps> = ({ place, onPress }) => {
     return (
         <TouchableOpacity
             onPress={() => onPress(place)}
-            className="bg-white rounded-xl py-8 px-4 mr-3 border border-gray-200 w-64 min-h-[80px]"
+            className="bg-white rounded-xl mr-3 border border-gray-200 w-52 overflow-hidden"
         >
-            <View className="flex-row items-start">
-                
-                <View className="flex-1">
-                    <Text className="text-base font-semibold text-gray-900 mb-1" numberOfLines={1}>
-                        {place.name}
-                    </Text>
-                    {(place.City || place.Country) && (
-                        <Text className="text-sm text-gray-600" numberOfLines={1}>
-                            {[place.City, place.Country].filter(Boolean).join(', ')}
-                        </Text>
-                    )}
+            {place.image ? (
+                <Image
+                    source={{ uri: place.image }}
+                    className="w-full h-24 bg-gray-200"
+                    resizeMode="cover"
+                />
+            ) : (
+                <View className="w-full h-24 bg-gray-200 items-center justify-center">
+                    <Ionicons name="image-outline" size={32} color="#9CA3AF" />
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+            )}
+
+            <View className="p-3">
+                <Text className="text-sm font-semibold text-gray-900 mb-1" numberOfLines={2}>
+                    {place.name}
+                </Text>
+                {(place.City || place.Country) && (
+                    <Text className="text-xs text-gray-600" numberOfLines={1}>
+                        {[place.City, place.Country].filter(Boolean).join(', ')}
+                    </Text>
+                )}
             </View>
         </TouchableOpacity>
     );

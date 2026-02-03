@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Modal, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../../shared/theme/colors';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 
@@ -17,6 +18,7 @@ export const PlaceDetailsSheet: React.FC<PlaceDetailsSheetProps> = ({
     onNavigate,
 }) => {
     const { t } = useTranslation();
+    const insets = useSafeAreaInsets();
 
     if (!place) return null;
 
@@ -33,6 +35,7 @@ export const PlaceDetailsSheet: React.FC<PlaceDetailsSheetProps> = ({
             >
                 <Pressable
                     className="bg-white rounded-t-3xl p-6"
+                    style={{ paddingBottom: insets.bottom + 24 }}
                     onPress={(e) => e.stopPropagation()}
                 >
                     <View className="w-12 h-1 bg-gray-300 rounded-full self-center mb-4" />
@@ -70,7 +73,7 @@ export const PlaceDetailsSheet: React.FC<PlaceDetailsSheetProps> = ({
                         style={{ backgroundColor: colors.primary.main }}
                         className="rounded-xl py-4 flex-row items-center justify-center"
                     >
-                        <Ionicons name="navigate" size={20} color="white" />
+                        
                         <Text className="text-white font-semibold text-lg ml-2">
                             {t('directions')}
                         </Text>

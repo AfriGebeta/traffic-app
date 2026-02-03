@@ -62,6 +62,7 @@ export const exploreService = {
             type: item.type || type,
             Country: item.Country || '',
             City: item.City || '',
+            image: item.image || item.photo || item.imageUrl || undefined,
         }));
 
         console.log('Transformed places:', places.length, places);

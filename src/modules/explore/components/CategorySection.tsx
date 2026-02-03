@@ -41,11 +41,8 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
         <View className="mb-6">
             <View className="flex-row items-center justify-between mb-3">
                 <View className="flex-row items-center flex-1">
-                    <View className="bg-orange-100 rounded-full p-2 mr-2">
-                        <Ionicons name={CATEGORY_ICONS[categoryId]} size={20} color={colors.primary.main} />
-                    </View>
                     <Text className="text-lg font-bold text-gray-900">
-                        {t(categoryId)}
+                        {t(`${categoryId}-nearby`)}
                     </Text>
                 </View>
                 {places.length > 5 && !isExpanded && (
