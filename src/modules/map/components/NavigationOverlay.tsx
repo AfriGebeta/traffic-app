@@ -10,13 +10,14 @@ interface NavigationOverlayProps {
     isOffRoute?: boolean;
     isRecalculating?: boolean;
     onTestOffRoute?: () => void;
+    onRecalculateRoute?: () => void;
 }
 
-const formatDistance = (km: number): string => {
-    if (km < 1) {
-        return `${Math.round(km * 1000)} m`;
+const formatDistance = (meters: number): string => {
+    if (meters < 1000) {
+        return `${Math.round(meters)} m`;
     }
-    return `${km.toFixed(1)} km`;
+    return `${(meters / 1000).toFixed(1)} km`;
 };
 
 const formatTime = (seconds: number): string => {
@@ -32,6 +33,7 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
     isOffRoute,
     isRecalculating,
     onTestOffRoute,
+    onRecalculateRoute,
 }) => {
     return (
         <View className="absolute bottom-6 left-4 right-4">
@@ -41,10 +43,20 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
             >
                 {/*off-route*/}
                 {(isOffRoute || isRecalculating) && (
-                    <View className="mb-3 bg-orange-500/20 border border-orange-500/50 rounded-xl p-2">
-                        <Text className="text-orange-300 text-sm text-center font-semibold">
-                            {isRecalculating ? ' Recalculating route...' : ' Off route'}
-                        </Text>
+                    <View className="mb-3 bg-orange-500/20 border border-orange-500/50 rounded-xl p-3">
+                        <View className="flex-row items-center justify-between">
+                            <Text className="text-orange-300 text-sm font-semibold flex-1">
+                                {isRecalculating ? ' Recalculating route...' : 'Off route'}
+                            </Text>
+                            {isOffRoute && !isRecalculating && onRecalculateRoute && (
+                                <TouchableOpacity
+                                    onPress={onRecalculateRoute}
+                                    className="bg-orange-500/30 px-3 py-1 rounded-lg ml-2"
+                                >
+                                    <Text className="text-orange-200 text-xs font-semibold">Reroute</Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
                     </View>
                 )}
 
@@ -81,7 +93,7 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                         onPress={onTestOffRoute}
                     >
                         <Text className="text-purple-300 text-xs text-center font-semibold">
-                             Test Off-Route Detection
+                            Test Off-Route Detection
                         </Text>
                     </TouchableOpacity>
                 )}

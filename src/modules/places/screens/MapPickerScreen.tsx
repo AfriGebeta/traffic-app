@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import GebetaMap, { GebetaMapRef } from '../../../lib/gebeta-map/GebetaMap';
+import CustomGebetaMap from '../../../components/GebetaMap';
+import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 import { useLocation } from '../../../shared/contexts/LocationContext';
 import { Button } from '../../../shared/components';
 
@@ -13,22 +14,10 @@ export default function MapPickerScreen() {
     const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
 
     const handleMapClick = (lngLat: [number, number]) => {
-        mapRef.current?.clearMarkers();
+        console.log('🗺️ Map clicked at:', lngLat);
 
         const location = { lng: lngLat[0], lat: lngLat[1] };
         setSelectedLocation(location);
-
-
-        mapRef.current?.addImageMarker(
-            lngLat,
-            '',
-            [40, 40],
-            undefined,
-            10,
-            undefined,
-            '#FFA500',
-            'location'
-        );
     };
 
     const handleConfirm = () => {
@@ -40,13 +29,14 @@ export default function MapPickerScreen() {
 
     return (
         <View className="flex-1">
-            <GebetaMap
+            <CustomGebetaMap
                 ref={mapRef}
                 apiKey={process.env.EXPO_PUBLIC_GEBETA_API_KEY!}
                 mapStyleUrl={`https://tiles.gebeta.app/styles/standard/style.json?apiKey=${process.env.EXPO_PUBLIC_GEBETA_API_KEY}`}
                 center={[38.7463, 9.0223]}
                 zoom={12}
                 onMapClick={handleMapClick}
+                selectedLocation={selectedLocation}
             />
 
             <View className="absolute top-12 left-4 right-4 bg-white rounded-2xl p-4 shadow-lg">

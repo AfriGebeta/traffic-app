@@ -28,11 +28,11 @@ const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: numbe
     return R * c;
 };
 
-const formatDistance = (km: number): string => {
-    if (km < 1) {
-        return `${Math.round(km * 1000)} m`;
+const formatDistance = (meters: number): string => {
+    if (meters < 1000) {
+        return `${Math.round(meters)} m`;
     }
-    return `${km.toFixed(1)} km`;
+    return `${(meters / 1000).toFixed(1)} km`;
 };
 
 const getDirectionIcon = (instruction?: string): keyof typeof Ionicons.glyphMap => {
@@ -103,7 +103,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                     <View className="flex-1">
                         <View className="flex-row items-baseline gap-2 mb-1">
                             <Text className="text-white text-2xl font-bold">
-                                {remainingDistance ? formatDistance(remainingDistance) : formatDistance(distance)}
+                                {remainingDistance !== undefined ? formatDistance(remainingDistance) : formatDistance(distance * 1000)}
                             </Text>
                             {remainingTime !== undefined && (
                                 <Text className="text-gray-300 text-base">

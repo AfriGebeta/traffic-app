@@ -14,11 +14,11 @@ interface RoutePreviewProps {
     onCancel: () => void;
 }
 
-const formatDistance = (km: number): string => {
-    if (km < 1) {
-        return `${Math.round(km * 1000)} m`;
+const formatDistance = (meters: number): string => {
+    if (meters < 1000) {
+        return `${Math.round(meters)} m`;
     }
-    return `${km.toFixed(1)} km`;
+    return `${(meters / 1000).toFixed(1)} km`;
 };
 
 const formatTime = (seconds: number): string => {
@@ -95,7 +95,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                         </View>
                     </View>
 
-                    
+
                     <View className="flex-row items-start">
                         <View className="w-8 items-center pt-1">
                             <Ionicons name="location" size={20} color={colors.primary.main} />
