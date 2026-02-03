@@ -668,5 +668,35 @@
         "key": "already-have-account",
         "EN_US": "Already have an account?",
         "AM": "መለያ አለዎት?"
+    },
+    {
+        "key": "explore-nearby",
+        "EN_US": "Explore Nearby",
+        "AM": "በአቅራቢያ ያስሱ"
+    },
+    {
+        "key": "museum-nearby",
+        "EN_US": "Museums Nearby",
+        "AM": "በአቅራቢያ ያሉ ሙዚየሞች"
+    },
+    {
+        "key": "hotel-nearby",
+        "EN_US": "Hotels Nearby",
+        "AM": "በአቅራቢያ ያሉ ሆቴሎች"
+    },
+    {
+        "key": "park-nearby",
+        "EN_US": "Parks Nearby",
+        "AM": "በአቅራቢያ ያሉ መናፈሻዎች"
+    },
+    {
+        "key": "restaurant-nearby",
+        "EN_US": "Restaurants Nearby",
+        "AM": "በአቅራቢያ ያሉ ሬስቶራንቶች"
+    },
+    {
+        "key": "mall-nearby",
+        "EN_US": "Malls Nearby",
+        "AM": "በአቅራቢያ ያሉ ሞሎች"
     }
 ]
