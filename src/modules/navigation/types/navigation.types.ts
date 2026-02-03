@@ -5,6 +5,7 @@ export interface GeocodingPlace {
     Country: string;
     City: string;
     type: string;
+    image?: string;
 }
 
 export interface GeocodingResponse {

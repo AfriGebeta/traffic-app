@@ -44,38 +44,44 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
     };
 
     return (
-        <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            className="mt-3"
-            contentContainerStyle={{ paddingHorizontal: 4 }}
-        >
-            {categories.map((category) => (
-                <TouchableOpacity
-                    key={category.id}
-                    onPress={() => handleSelect(category.id)}
-                    className={`mr-2 px-4 py-2 rounded-full flex-row items-center ${selectedCategory === category.id
-                        ? 'bg-orange-400 border-2 border-orange-400'
-                        : 'bg-white border-2 border-gray-200'
-                        }`}
-                >
-                    {isLoading && selectedCategory === category.id ? (
-                        <ActivityIndicator size="small" color="#FFFFFF" />
-                    ) : (
-                        <Ionicons
-                            name={category.icon}
-                            size={16}
-                            color={selectedCategory === category.id ? '#FFFFFF' : '#6B7280'}
-                        />
-                    )}
-                    <Text
-                        className={`ml-2 text-sm font-medium ${selectedCategory === category.id ? 'text-white' : 'text-gray-700'
+        <View className="flex-row items-center mt-3">
+            <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingHorizontal: 4 }}
+                className="flex-1"
+            >
+                {categories.map((category) => (
+                    <TouchableOpacity
+                        key={category.id}
+                        onPress={() => handleSelect(category.id)}
+                        className={`mr-2 px-4 py-2 rounded-full flex-row items-center ${selectedCategory === category.id
+                            ? 'bg-orange-400 border-2 border-orange-400'
+                            : 'bg-white border-2 border-gray-200'
                             }`}
                     >
-                        {t(category.nameKey)}
-                    </Text>
+                        {isLoading && selectedCategory === category.id ? (
+                            <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : null}
+                        <Text
+                            className={`text-sm font-medium ${selectedCategory === category.id ? 'text-white' : 'text-gray-700'
+                                }`}
+                        >
+                            {t(category.nameKey)}
+                        </Text>
+                    </TouchableOpacity>
+                ))}
+            </ScrollView>
+
+            {selectedCategory && (
+                <TouchableOpacity
+                    onPress={() => handleSelect(selectedCategory)}
+                    className="ml-2 mr-4 bg-white rounded-full p-2.5 border border-gray-200 shadow-sm"
+                    activeOpacity={0.7}
+                >
+                    <Ionicons name="close" size={18} color="#9CA3AF" />
                 </TouchableOpacity>
-            ))}
-        </ScrollView>
+            )}
+        </View>
     );
 };

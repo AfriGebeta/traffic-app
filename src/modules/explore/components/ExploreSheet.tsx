@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Modal, Pressable, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../../shared/theme/colors';
 import { CategorySection } from './CategorySection';
 import { CategorySkeleton } from './CategorySkeleton';
@@ -23,6 +24,7 @@ export const ExploreSheet: React.FC<ExploreSheetProps> = ({
     onPlaceSelect,
 }) => {
     const { t } = useTranslation();
+    const insets = useSafeAreaInsets();
     const { isLoading, categories, error, fetchCategories, fetchMorePlaces } =
         useExploreCategories(userLocation);
     const [expandedCategory, setExpandedCategory] = useState<ExploreCategoryId | null>(null);
@@ -48,6 +50,7 @@ export const ExploreSheet: React.FC<ExploreSheetProps> = ({
             <Pressable className="flex-1 justify-end bg-black/50" onPress={onClose}>
                 <Pressable
                     className="bg-white rounded-t-3xl max-h-[85%]"
+                    style={{ paddingBottom: insets.bottom }}
                     onPress={(e) => e.stopPropagation()}
                 >
                     <View className="p-6 border-b border-gray-200">
@@ -56,7 +59,7 @@ export const ExploreSheet: React.FC<ExploreSheetProps> = ({
                             <View className="flex-row items-center">
                                 <Ionicons name="compass" size={24} color={colors.primary.main} />
                                 <Text className="text-2xl font-bold text-gray-900 ml-2">
-                                    {t('explore')}
+                                    {t('explore-nearby')}
                                 </Text>
                             </View>
                             <Pressable onPress={onClose} className="p-2">
@@ -65,7 +68,11 @@ export const ExploreSheet: React.FC<ExploreSheetProps> = ({
                         </View>
                     </View>
 
-                    <ScrollView className="px-6 py-4" showsVerticalScrollIndicator={false}>
+                    <ScrollView
+                        className="px-6 py-4"
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={{ paddingBottom: 20 }}
+                    >
                         {isLoading ? (
                             <>
                                 <CategorySkeleton />
