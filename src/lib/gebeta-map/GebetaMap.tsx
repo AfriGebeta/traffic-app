@@ -49,6 +49,13 @@ export type GebetaMapRef = {
     getRouteSummary: () => any;
     updateRouteStyle: GebetaMaps["updateRouteStyle"];
     flyTo: (options: FlyToOptions) => void;
+    startNavigation?: (route: any, options?: any) => void;
+    stopNavigation?: () => void;
+    updateNavigationPosition?: (lngLat: [number, number]) => void;
+    getNavigationState?: () => any;
+    isNavigating?: () => boolean;
+    getNavigationController?: () => any;
+    convertDirectionsToNavigationRoute?: (directionsResponse: any) => any;
 };
 
 export interface GebetaMapProps {

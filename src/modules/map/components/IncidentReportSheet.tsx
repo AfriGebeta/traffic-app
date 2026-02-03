@@ -20,6 +20,41 @@ export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
 }) => {
     const { t } = useTranslation();
     const router = useRouter();
+    const [incidentTypes, setIncidentTypes] = React.useState(INCIDENT_TYPES);
+
+    React.useEffect(() => {
+        const fetchIncidentTypes = async () => {
+            try {
+                const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/incidents/types`);
+                if (response.ok) {
+                    const types = await response.json();
+                    console.log('fetched incident types from backend:', types);
+
+                    const mappedTypes = types.map((type: any) => {
+                        console.log('Mapping type:', type.name);
+                        return {
+                            id: type.id,
+                            name: type.name,
+                            label: type.label,
+                            icon: INCIDENT_TYPES.find(t => t.name === type.name)?.icon || 'alert-circle',
+                            color: INCIDENT_TYPES.find(t => t.name === type.name)?.color || '#F97316',
+                        };
+                    });
+                    const sortedTypes = mappedTypes.sort((a: any, b: any) => {
+                        if (a.name === 'OTHER') return 1;
+                        if (b.name === 'OTHER') return -1;
+                        return 0;
+                    });
+
+                    setIncidentTypes(sortedTypes);
+                }
+            } catch (error) {
+                console.error('Failed to fetch incident types:', error);
+            }
+        };
+
+        fetchIncidentTypes();
+    }, []);
 
     const handleIncidentOptionPress = React.useCallback(
         (typeId: string, typeName: string) => {
@@ -60,7 +95,7 @@ export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
                 {/* Incident Grid */}
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
                     <View className="flex-row flex-wrap gap-3">
-                        {INCIDENT_TYPES.map((incidentType) => {
+                        {incidentTypes.map((incidentType) => {
                             return (
                                 <TouchableOpacity
                                     key={incidentType.name}

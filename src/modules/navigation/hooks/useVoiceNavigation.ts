@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { useVoiceRecording } from './useVoiceRecording';
 import { voiceNavigationService } from '../services/voice-navigation.service';
 import { showToast } from '../../../shared/utils/toast';
-import type { GebetaMapRef } from '../../../lib/gebeta-map/GebetaMap';
+import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 import type { VoiceNavigationData } from '../types/voice-navigation.types';
 import type { GeocodingPlace } from '../types/navigation.types';
 

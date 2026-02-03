@@ -12,7 +12,7 @@ import { BottomNavigation } from './BottomNavigation';
 import { MapThemeSelector } from './MapThemeSelector';
 import { showToast } from '../../../shared/utils/toast';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
-import type { GebetaMapRef } from '../../../lib/gebeta-map/GebetaMap';
+import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 
 interface MapOverlayProps {
     searchQuery: string;

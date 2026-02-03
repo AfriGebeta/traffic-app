@@ -1,15 +1,21 @@
 import { useState, useRef, useEffect } from 'react';
 import * as Location from 'expo-location';
-import { GebetaMapRef } from '../../../lib/gebeta-map/GebetaMap';
-import { navigationService } from '../services/navigation.service';
-import type { GeocodingPlace, Maneuver } from '../types/navigation.types';
+import type { GebetaMapRef } from '@gebeta/tiles-react-native';
+import type { GeocodingPlace } from '../types/navigation.types';
 import { showToast } from '../../../shared/utils/toast';
+import { navigationService } from '../services/navigation.service';
 import { decodePolyline } from '../../../shared/utils/polyline';
+import { useSimulation } from './useSimulation';
+import { useLocationTracking } from './useLocationTracking';
+import { useRouteRecalculation } from './useRouteRecalculation';
+import { calculateBearing, calculateDistance, updateInstructionBasedOnPosition as updateInstruction } from '../utils/navigationUtils';
 
 export const useNavigation = (
     mapRef: React.RefObject<GebetaMapRef | null>,
     userLocation: { lat: number; lng: number } | null,
-    setUserLocation?: (location: { lat: number; lng: number }) => void
+    setUserLocation?: (location: { lat: number; lng: number }) => void,
+    stopBackgroundTracking?: () => void,
+    startBackgroundTracking?: () => Promise<void>
 ) => {
     const [selectedDestination, setSelectedDestination] = useState<GeocodingPlace | null>(null);
     const [isNavigating, setIsNavigating] = useState(false);
@@ -17,440 +23,118 @@ export const useNavigation = (
     const [showRoutePreview, setShowRoutePreview] = useState(false);
     const [currentHeading, setCurrentHeading] = useState(0);
     const [simulateMovement, setSimulateMovement] = useState(false);
-    const [snappedLocation, setSnappedLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [currentInstruction, setCurrentInstruction] = useState<string>('');
     const [remainingDistance, setRemainingDistance] = useState<number>(0);
     const [remainingTime, setRemainingTime] = useState<number>(0);
     const [isOffRoute, setIsOffRoute] = useState(false);
     const [isRecalculating, setIsRecalculating] = useState(false);
+    const [routeGeoJSON, setRouteGeoJSON] = useState<any>(null);
+    const [fullRouteCoordinates, setFullRouteCoordinates] = useState<[number, number][]>([]);
 
-    const locationSubscription = useRef<Location.LocationSubscription | null>(null);
-    const simulationInterval = useRef<ReturnType<typeof setInterval> | null>(null);
-    const instructionHideTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const routeCoordinates = useRef<[number, number][]>([]);
-    const maneuvers = useRef<Maneuver[]>([]);
-    const currentRouteIndex = useRef(0);
+    const isNavigatingRef = useRef(false);
+    const rerouteTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const currentDestination = useRef<GeocodingPlace | null>(null);
+    const routeManeuvers = useRef<any[]>([]);
     const currentManeuverIndex = useRef(0);
-    const maneuverCompleted = useRef(false);
-    const recalculationTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const stopNavigationRef = useRef<(() => void) | null>(null);
+    const totalRouteDistance = useRef<number>(0);
+    const totalRouteDuration = useRef<number>(0);
 
-    const OFF_ROUTE_THRESHOLD = 0.0005;
-    const RECALCULATION_DELAY = 3000;
+    const updateInstructionBasedOnPosition = (currentLat: number, currentLng: number) => {
+        const result = updateInstruction(
+            currentLat,
+            currentLng,
+            routeManeuvers.current,
+            currentManeuverIndex.current,
+            routeCoordinates.current
+        );
+        setCurrentInstruction(result.instruction);
+        currentManeuverIndex.current = result.newManeuverIndex;
+    };
 
-    const findClosestPointOnRoute = (userLat: number, userLng: number): { index: number; snappedLat: number; snappedLng: number; distance: number } => {
-        let closestIndex = currentRouteIndex.current;
-        let minDistance = Infinity;
-        let snappedLat = userLat;
-        let snappedLng = userLng;
-
-        const searchStart = Math.max(0, currentRouteIndex.current - 5);
-        const searchEnd = Math.min(routeCoordinates.current.length - 1, currentRouteIndex.current + 20);
-
-        for (let i = searchStart; i < searchEnd; i++) {
-            const [lat1, lng1] = routeCoordinates.current[i];
-            const [lat2, lng2] = routeCoordinates.current[i + 1];
-
-            const projected = projectPointOnSegment(userLat, userLng, lat1, lng1, lat2, lng2);
-            const distance = Math.sqrt(
-                Math.pow(projected.lat - userLat, 2) + Math.pow(projected.lng - userLng, 2)
-            );
-
-            if (distance < minDistance) {
-                minDistance = distance;
-                closestIndex = i;
-                snappedLat = projected.lat;
-                snappedLng = projected.lng;
+    //simulation hook
+    const { startSimulation, stopSimulation, simulateOffRoute: simulateOffRouteInternal } = useSimulation({
+        routeCoordinates,
+        isNavigatingRef,
+        mapRef,
+        setUserLocation,
+        setCurrentHeading,
+        setRouteGeoJSON,
+        setRemainingDistance,
+        setRemainingTime,
+        updateInstructionBasedOnPosition,
+        onSimulationComplete: () => {
+            if (stopNavigationRef.current) {
+                stopNavigationRef.current();
             }
-        }
+        },
+        totalRouteDistance: totalRouteDistance.current,
+        totalRouteDuration: totalRouteDuration.current,
+    });
 
-        return { index: closestIndex, snappedLat, snappedLng, distance: minDistance };
-    };
+    //location tracking hook
+    const { startLocationTracking, stopLocationTracking, resetClosestIndex } = useLocationTracking({
+        routeCoordinates,
+        isNavigatingRef,
+        mapRef,
+        isOffRoute,
+        setUserLocation,
+        setCurrentHeading,
 
-    const projectPointOnSegment = (
-        pointLat: number,
-        pointLng: number,
-        lat1: number,
-        lng1: number,
-        lat2: number,
-        lng2: number
-    ): { lat: number; lng: number } => {
-        const dx = lng2 - lng1;
-        const dy = lat2 - lat1;
+        setRouteGeoJSON,
+        setRemainingDistance,
+        setRemainingTime,
 
-        if (dx === 0 && dy === 0) {
-            return { lat: lat1, lng: lng1 };
-        }
+        setIsOffRoute,
+        setIsRecalculating,
+        updateInstructionBasedOnPosition,
+        recalculateRoute: (fromLocation?: { lat: number; lng: number }) => recalculateRoute(fromLocation),
+        rerouteTimeout,
+        totalRouteDistance: totalRouteDistance.current,
+        totalRouteDuration: totalRouteDuration.current,
+    });
 
-        const t = Math.max(0, Math.min(1,
-            ((pointLng - lng1) * dx + (pointLat - lat1) * dy) / (dx * dx + dy * dy)
-        ));
+    const { recalculateRoute } = useRouteRecalculation({
+        mapRef,
+        userLocation,
+        currentDestination,
+        routeCoordinates,
+        routeManeuvers,
+        totalRouteDistance,
+        totalRouteDuration,
+        rerouteTimeout,
+        simulateMovement,
 
-        return {
-            lat: lat1 + t * dy,
-            lng: lng1 + t * dx
-        };
-    };
-
-    const calculateRemainingStats = (routeIndex: number) => {
-        if (maneuvers.current.length === 0) return;
-
-        let totalDistance = 0;
-        let totalTime = 0;
-
-        for (let i = currentManeuverIndex.current; i < maneuvers.current.length; i++) {
-            const maneuver = maneuvers.current[i];
-
-            if (i === currentManeuverIndex.current) {
-                const maneuverProgress = (routeIndex - maneuver.begin_shape_index) /
-                    (maneuver.end_shape_index - maneuver.begin_shape_index);
-                const remainingPortion = Math.max(0, 1 - maneuverProgress);
-
-                totalDistance += maneuver.length * remainingPortion;
-                totalTime += maneuver.time * remainingPortion;
-            } else {
-                totalDistance += maneuver.length;
-                totalTime += maneuver.time;
+        setFullRouteCoordinates,
+        setRouteGeoJSON,
+        setIsRecalculating,
+        setIsOffRoute,
+        setIsNavigating,
+        isNavigatingRef,
+        setRemainingDistance,
+        setRemainingTime,
+        
+        setCurrentInstruction,
+        handleStopNavigation: () => {
+            if (stopNavigationRef.current) {
+                stopNavigationRef.current();
             }
-        }
-
-        setRemainingDistance(totalDistance);
-        setRemainingTime(totalTime);
-    };
-
-    const recalculateRoute = async (currentLat: number, currentLng: number) => {
-        if (!selectedDestination || isRecalculating) return;
-
-        setIsRecalculating(true);
-        showToast.info('Recalculating route...');
-
-        try {
-            const navigationData = await navigationService.getNavigation({
-                origin: [currentLat, currentLng],
-                destination: [selectedDestination.latitude, selectedDestination.longitude]
-            });
-
-            if (navigationData?.data?.trip?.legs?.[0]) {
-                const leg = navigationData.data.trip.legs[0];
-                const decodedCoordinates = decodePolyline(leg.shape, 6);
-
-                maneuvers.current = leg.maneuvers;
-                routeCoordinates.current = decodedCoordinates;
-                currentRouteIndex.current = 0;
-                currentManeuverIndex.current = 0;
-                maneuverCompleted.current = false;
-
-                if (leg.maneuvers.length > 0) {
-                    setCurrentInstruction(leg.maneuvers[0].instruction);
-                }
-
-                setRemainingDistance(leg.summary.length);
-                setRemainingTime(leg.summary.time);
-
-                const routeGeoJSON = {
-                    type: 'Feature',
-                    properties: {},
-                    geometry: {
-                        type: 'LineString',
-                        coordinates: decodedCoordinates.map(coord => [coord[1], coord[0]])
-                    }
-                };
-
-                mapRef.current?.displayRoute(routeGeoJSON, {
-                    color: '#3B82F6',
-                    width: 7,
-                    opacity: 0.8
-                });
-
-                setIsOffRoute(false);
-                showToast.success('Route updated');
-            }
-        } catch (error) {
-            console.error('Recalculation error:', error);
-            showToast.error('Could not recalculate route');
-        } finally {
-            setIsRecalculating(false);
-        }
-    };
-
-    const updateCurrentManeuver = (routeIndex: number) => {
-        const currentManeuver = maneuvers.current[currentManeuverIndex.current];
-
-        if (!currentManeuver) return;
-
-        const maneuverProgress = (routeIndex - currentManeuver.begin_shape_index) /
-            (currentManeuver.end_shape_index - currentManeuver.begin_shape_index);
-
-        if (maneuverProgress >= 0.95 && !maneuverCompleted.current) {
-            maneuverCompleted.current = true;
-
-            if (instructionHideTimeout.current) {
-                clearTimeout(instructionHideTimeout.current);
-            }
-
-            instructionHideTimeout.current = setTimeout(() => {
-                setCurrentInstruction('');
-            }, 2000);
-        }
-
-        if (routeIndex >= currentManeuver.end_shape_index &&
-            currentManeuverIndex.current < maneuvers.current.length - 1) {
-            currentManeuverIndex.current++;
-            maneuverCompleted.current = false;
-
-            if (instructionHideTimeout.current) {
-                clearTimeout(instructionHideTimeout.current);
-                instructionHideTimeout.current = null;
-            }
-
-            const nextManeuver = maneuvers.current[currentManeuverIndex.current];
-            setCurrentInstruction(nextManeuver.instruction);
-        } else if (!maneuverCompleted.current) {
-            setCurrentInstruction(currentManeuver.instruction);
-        }
-
-        calculateRemainingStats(routeIndex);
-    };
-
-    const updateRemainingRoute = (snappedLng?: number, snappedLat?: number) => {
-        if (currentRouteIndex.current >= routeCoordinates.current.length - 1) {
-            return;
-        }
-
-        const remainingCoordinates = routeCoordinates.current.slice(currentRouteIndex.current);
-
-        if (snappedLng !== undefined && snappedLat !== undefined) {
-            remainingCoordinates[0] = [snappedLat, snappedLng];
-        }
-
-        if (remainingCoordinates.length > 1) {
-            const routeGeoJSON = {
-                type: 'Feature',
-                properties: {},
-                geometry: {
-                    type: 'LineString',
-                    coordinates: remainingCoordinates.map(coord => [coord[1], coord[0]])
-                }
-            };
-
-            mapRef.current?.displayRoute(routeGeoJSON, {
-                color: '#3B82F6',
-                width: 7,
-                opacity: 0.8
-            });
-        }
-    };
-
-    const startLocationTracking = async () => {
-        try {
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') {
-                showToast.error('Permission Denied', 'Location permission is required for navigation');
-                return;
-            }
-
-            if (locationSubscription.current) {
-                locationSubscription.current.remove();
-            }
-
-            console.log('Starting location tracking for navigation...');
-
-            locationSubscription.current = await Location.watchPositionAsync(
-                {
-                    accuracy: Location.Accuracy.BestForNavigation,
-                    timeInterval: 1000,
-                    distanceInterval: 2,
-                    mayShowUserSettingsDialog: true,
-                },
-                (location) => {
-                    const heading = location.coords.heading !== null && location.coords.heading !== undefined
-                        ? location.coords.heading
-                        : 0;
-
-                    setCurrentHeading(heading);
-
-                    const closest = findClosestPointOnRoute(
-                        location.coords.latitude,
-                        location.coords.longitude
-                    );
-
-                    if (closest.distance > OFF_ROUTE_THRESHOLD) {
-                        if (!isOffRoute) {
-                            setIsOffRoute(true);
-
-                            if (recalculationTimeout.current) {
-                                clearTimeout(recalculationTimeout.current);
-                            }
-
-                            recalculationTimeout.current = setTimeout(() => {
-                                recalculateRoute(location.coords.latitude, location.coords.longitude);
-                            }, RECALCULATION_DELAY);
-                        }
-                        
-                    } else {
-                        if (isOffRoute) {
-                            setIsOffRoute(false);
-                            if (recalculationTimeout.current) {
-                                clearTimeout(recalculationTimeout.current);
-                                recalculationTimeout.current = null;
-                            }
-                        }
-                    }
-
-                    currentRouteIndex.current = closest.index;
-                    updateCurrentManeuver(closest.index);
-
-                    const snapped = {
-                        lat: closest.snappedLat,
-                        lng: closest.snappedLng
-                    };
-
-                    setSnappedLocation(snapped);
-
-                    if (setUserLocation) {
-                        setUserLocation(snapped);
-                    }
-
-                    mapRef.current?.flyTo({
-                        center: [closest.snappedLng, closest.snappedLat],
-                        zoom: 18,
-                        duration: 800,
-                        pitch: 60,
-                        heading: heading,
-                    });
-
-                    updateRemainingRoute(closest.snappedLng, closest.snappedLat);
-                }
-            );
-        } catch (error) {
-            console.error('Error starting location tracking:', error);
-            showToast.error('Location Error', 'Could not start location tracking');
-        }
-    };
-
-    const stopLocationTracking = () => {
-        if (locationSubscription.current) {
-            locationSubscription.current.remove();
-            locationSubscription.current = null;
-        }
-        if (instructionHideTimeout.current) {
-            clearTimeout(instructionHideTimeout.current);
-            instructionHideTimeout.current = null;
-        }
-        if (recalculationTimeout.current) {
-            clearTimeout(recalculationTimeout.current);
-            recalculationTimeout.current = null;
-        }
-    };
-
-    const calculateBearing = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
-        const toRad = (deg: number) => (deg * Math.PI) / 180;
-        const toDeg = (rad: number) => (rad * 180) / Math.PI;
-
-        const dLng = toRad(lng2 - lng1);
-        const y = Math.sin(dLng) * Math.cos(toRad(lat2));
-        const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) -
-            Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLng);
-
-        let bearing = toDeg(Math.atan2(y, x));
-        return (bearing + 360) % 360;
-    };
-
-    const startSimulation = (setUserLocation: (location: { lat: number; lng: number }) => void) => {
-        currentRouteIndex.current = 0;
-        currentManeuverIndex.current = 0;
-        maneuverCompleted.current = false;
-
-        if (maneuvers.current.length > 0) {
-            setCurrentInstruction(maneuvers.current[0].instruction);
-        }
-
-        simulationInterval.current = setInterval(() => {
-            if (currentRouteIndex.current >= routeCoordinates.current.length) {
-                stopSimulation();
-                showToast.success('Arrived', 'You have reached your destination!');
-                handleStopNavigation();
-                return;
-            }
-
-            const [lat, lng] = routeCoordinates.current[currentRouteIndex.current];
-
-            let heading = 0;
-            if (currentRouteIndex.current < routeCoordinates.current.length - 1) {
-                const [nextLat, nextLng] = routeCoordinates.current[currentRouteIndex.current + 1];
-                heading = calculateBearing(lat, lng, nextLat, nextLng);
-            }
-
-            const location = { lat, lng };
-
-            setUserLocation(location);
-            setSnappedLocation(location);
-            setCurrentHeading(heading);
-            updateCurrentManeuver(currentRouteIndex.current);
-
-            mapRef.current?.flyTo({
-                center: [lng, lat],
-                zoom: 18,
-                duration: 800,
-                pitch: 60,
-                heading: heading,
-            });
-
-            updateRemainingRoute(lng, lat);
-            currentRouteIndex.current += 1;
-        }, 1000);
-    };
-
-    const stopSimulation = () => {
-        if (simulationInterval.current) {
-            clearInterval(simulationInterval.current);
-            simulationInterval.current = null;
-        }
-        if (instructionHideTimeout.current) {
-            clearTimeout(instructionHideTimeout.current);
-            instructionHideTimeout.current = null;
-        }
-    };
-
-    const simulateOffRoute = (setUserLocation: (location: { lat: number; lng: number }) => void) => {
-        if (!navigationMode || routeCoordinates.current.length === 0) {
-            showToast.error('Start navigation first');
-            return;
-        }
-
-        const currentIndex = currentRouteIndex.current;
-        if (currentIndex >= routeCoordinates.current.length) return;
-
-        const [currentLat, currentLng] = routeCoordinates.current[currentIndex];
-
-
-        const offsetLat = currentLat + 0.00045;
-        const offsetLng = currentLng + 0.00045;
-
-        const offRouteLocation = { lat: offsetLat, lng: offsetLng };
-
-        setUserLocation(offRouteLocation);
-        showToast.info('Simulating off-route', 'Moved 50m away from route');
-
-        const closest = findClosestPointOnRoute(offsetLat, offsetLng);
-
-        if (closest.distance > OFF_ROUTE_THRESHOLD) {
-            setIsOffRoute(true);
-
-            if (recalculationTimeout.current) {
-                clearTimeout(recalculationTimeout.current);
-            }
-
-            recalculationTimeout.current = setTimeout(() => {
-                recalculateRoute(offsetLat, offsetLng);
-            }, RECALCULATION_DELAY);
-        }
-    };
+        },
+        startSimulation,
+        resetClosestIndex,
+    });
 
     const handleNavigate = async (setUserLocation?: (location: { lat: number; lng: number }) => void, destination?: GeocodingPlace) => {
         const targetDestination = destination || selectedDestination;
 
         if (!userLocation || !targetDestination) {
             showToast.error('Navigation Error', 'User location or destination not available');
+            return;
+        }
+
+        if (!mapRef.current) {
+            showToast.error('Map Error', 'Map reference is not available');
             return;
         }
 
@@ -461,86 +145,90 @@ export const useNavigation = (
                 destination: [targetDestination.latitude, targetDestination.longitude]
             });
 
-            if (navigationData?.data?.trip?.legs?.[0]) {
-                const leg = navigationData.data.trip.legs[0];
+            if (!navigationData?.data?.trip?.legs?.[0]) {
+                showToast.error('Navigation Error', 'Could not calculate route');
+                setIsNavigating(false);
+                return;
+            }
 
-                const decodedCoordinates = decodePolyline(leg.shape, 6);
+            const leg = navigationData.data.trip.legs[0];
 
-                maneuvers.current = leg.maneuvers;
-                routeCoordinates.current = decodedCoordinates;
-                currentManeuverIndex.current = 0;
-                maneuverCompleted.current = false;
+            const decodedCoordinates = decodePolyline(leg.shape, 6);
 
-                if (leg.maneuvers.length > 0) {
-                    setCurrentInstruction(leg.maneuvers[0].instruction);
+            routeManeuvers.current = leg.maneuvers;
+
+            const route = {
+                coordinates: decodedCoordinates.map(coord => [coord[1], coord[0]]) as [number, number][],
+                distance: leg.summary.length * 1000,
+                duration: leg.summary.time,
+                instructions: leg.maneuvers.map((maneuver: any) => ({
+                    type: 'turn' as const,
+                    distance: maneuver.length * 1000,
+                    text: maneuver.instruction,
+                    coordinate: [0, 0] as [number, number],
+                })),
+            };
+
+            routeCoordinates.current = route.coordinates;
+            setFullRouteCoordinates(route.coordinates);
+
+            totalRouteDistance.current = route.distance;
+            totalRouteDuration.current = route.duration;
+
+            setRemainingDistance(route.distance || 0);
+            setRemainingTime(route.duration || 0);
+            const geoJSON = {
+                type: 'Feature',
+                properties: {
+                    distance: route.distance,
+                    duration: route.duration,
+                },
+                geometry: {
+                    type: 'LineString',
+                    coordinates: route.coordinates,
                 }
+            };
 
-                setRemainingDistance(leg.summary.length);
-                setRemainingTime(leg.summary.time);
+            setRouteGeoJSON(geoJSON);
 
-                const routeGeoJSON = {
-                    type: 'Feature',
-                    properties: {
-                        distance: leg.summary.length,
-                        duration: leg.summary.time,
-                        maneuvers: leg.maneuvers
-                    },
-                    geometry: {
-                        type: 'LineString',
-                        coordinates: decodedCoordinates.map(coord => [coord[1], coord[0]])
-                    }
-                };
+            setShowRoutePreview(true);
+            setIsNavigating(false);
 
-                mapRef.current?.displayRoute(routeGeoJSON, {
-                    color: '#3B82F6',
-                    width: 5,
-                    opacity: 0.8
+            if (route.coordinates.length > 0) {
+                const bounds = route.coordinates.reduce((acc: { minLng: number; maxLng: number; minLat: number; maxLat: number }, [lng, lat]: [number, number]) => {
+                    return {
+                        minLng: Math.min(acc.minLng, lng),
+                        maxLng: Math.max(acc.maxLng, lng),
+                        minLat: Math.min(acc.minLat, lat),
+                        maxLat: Math.max(acc.maxLat, lat),
+                    };
+                }, {
+                    minLng: route.coordinates[0][0],
+                    maxLng: route.coordinates[0][0],
+                    minLat: route.coordinates[0][1],
+                    maxLat: route.coordinates[0][1],
                 });
 
-                setShowRoutePreview(true);
-                setIsNavigating(false);
-                console.log('Route preview should show now');
+                const centerLng = (bounds.minLng + bounds.maxLng) / 2;
+                const centerLat = (bounds.minLat + bounds.maxLat) / 2;
 
-                if (decodedCoordinates.length > 0) {
+                const latDiff = bounds.maxLat - bounds.minLat;
+                const lngDiff = bounds.maxLng - bounds.minLng;
+                const maxDiff = Math.max(latDiff, lngDiff);
 
-                    let minLat = decodedCoordinates[0][0];
-                    let maxLat = decodedCoordinates[0][0];
-                    let minLng = decodedCoordinates[0][1];
-                    let maxLng = decodedCoordinates[0][1];
+                let zoom = 13;
+                if (maxDiff > 0.1) zoom = 11;
+                else if (maxDiff > 0.05) zoom = 12;
+                else if (maxDiff > 0.02) zoom = 13;
+                else if (maxDiff > 0.01) zoom = 14;
+                else zoom = 15;
 
-                    decodedCoordinates.forEach(([lat, lng]) => {
-                        minLat = Math.min(minLat, lat);
-                        maxLat = Math.max(maxLat, lat);
-                        minLng = Math.min(minLng, lng);
-                        maxLng = Math.max(maxLng, lng);
-                    });
-
-
-                    const centerLat = (minLat + maxLat) / 2;
-                    const centerLng = (minLng + maxLng) / 2;
-
-                    const latDiff = maxLat - minLat;
-                    const lngDiff = maxLng - minLng;
-                    const maxDiff = Math.max(latDiff, lngDiff);
-
-                    let zoom = 13;
-                    if (maxDiff > 0.1) zoom = 11;
-                    else if (maxDiff > 0.05) zoom = 12;
-                    else if (maxDiff > 0.02) zoom = 13;
-                    else if (maxDiff > 0.01) zoom = 14;
-                    else zoom = 15;
-
-                    mapRef.current?.flyTo({
-                        center: [centerLng, centerLat],
-                        zoom: zoom,
-                        duration: 1500,
-                        pitch: 0,
-                        heading: 0,
-                    });
-                }
-            } else {
-                showToast.error('Navigation Error', 'No route data received');
-                setIsNavigating(false);
+                mapRef.current.flyTo({
+                    center: [centerLng, centerLat],
+                    zoom: zoom,
+                    duration: 1500,
+                    pitch: 0,
+                });
             }
         } catch (error) {
             console.error('Navigation error:', error);
@@ -549,38 +237,200 @@ export const useNavigation = (
         }
     };
 
-    const handleStartNavigation = (setUserLocation?: (location: { lat: number; lng: number }) => void) => {
-        setShowRoutePreview(false);
-        setNavigationMode(true);
-
-        if (userLocation) {
-            mapRef.current?.flyTo({
-                center: [userLocation.lng, userLocation.lat],
-                zoom: 18,
-                duration: 1500,
-                pitch: 60,
-                heading: currentHeading,
-            });
+    const handleStartNavigation = async (setUserLocation?: (location: { lat: number; lng: number }) => void) => {
+        if (!mapRef.current) {
+            showToast.error('Error', 'Map reference is not available');
+            return;
         }
 
-        if (simulateMovement && setUserLocation) {
-            startSimulation(setUserLocation);
-        } else {
-            startLocationTracking();
+        if (!userLocation) {
+            showToast.error('Error', 'Current location not available');
+            return;
+        }
+
+        if (!selectedDestination) {
+            showToast.error('Error', 'Please select a destination first');
+            return;
+        }
+
+        try {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                showToast.error('Permission Required', 'Location permission is required for navigation');
+                return;
+            }
+
+            const navigationData = await navigationService.getNavigation({
+                origin: [userLocation.lat, userLocation.lng],
+                destination: [selectedDestination.latitude, selectedDestination.longitude]
+            });
+
+            if (!navigationData?.data?.trip?.legs?.[0]) {
+                showToast.error('Error', 'Could not calculate route');
+                return;
+            }
+
+            const leg = navigationData.data.trip.legs[0];
+            const decodedCoordinates = decodePolyline(leg.shape, 6);
+            const route = {
+                coordinates: decodedCoordinates.map(coord => [coord[1], coord[0]]) as [number, number][],
+                distance: leg.summary.length * 1000,
+                duration: leg.summary.time,
+                instructions: leg.maneuvers.map((maneuver: any) => ({
+                    type: 'turn' as const,
+                    distance: maneuver.length * 1000,
+                    text: maneuver.instruction,
+                    coordinate: [0, 0] as [number, number],
+                })),
+            };
+
+            routeCoordinates.current = route.coordinates;
+            setFullRouteCoordinates(route.coordinates);
+
+            totalRouteDistance.current = route.distance;
+            totalRouteDuration.current = route.duration;
+
+            currentDestination.current = selectedDestination;
+            setShowRoutePreview(false);
+
+            const initialGeoJSON = {
+                type: 'Feature',
+                properties: {},
+                geometry: {
+                    type: 'LineString',
+                    coordinates: route.coordinates,
+                }
+            };
+            setRouteGeoJSON(initialGeoJSON);
+
+            mapRef.current.startNavigation(route, {
+                followUserLocation: true,
+                cameraPitch: 60,
+                cameraZoom: 18,
+                updateInterval: 1000,
+                offRouteThreshold: 30,
+                onNavigationUpdate: (state: any) => {
+                    setIsNavigating(state.isNavigating);
+                    isNavigatingRef.current = state.isNavigating;
+
+                    setRemainingDistance(state.distanceRemaining);
+                    setRemainingTime(state.durationRemaining);
+
+                    if (state.nextInstruction) {
+                        const instructionText = state.nextInstruction.instruction || state.nextInstruction.text || '';
+                        setCurrentInstruction(instructionText);
+                    } else {
+                        setCurrentInstruction('Continue ahead');
+                    }
+                },
+                onOffRoute: (distanceFromRoute: number) => {
+                    setIsOffRoute(true);
+                    showToast.info('Off Route', `You are ${distanceFromRoute.toFixed(0)}m off the planned route`);
+
+                    if (rerouteTimeout.current) {
+                        clearTimeout(rerouteTimeout.current);
+                    }
+                    rerouteTimeout.current = setTimeout(() => {
+                        recalculateRoute();
+                    }, 3000);
+                },
+                onBackOnRoute: () => {
+                    setIsOffRoute(false);
+                    setIsRecalculating(false);
+
+                    if (rerouteTimeout.current) {
+                        clearTimeout(rerouteTimeout.current);
+                        rerouteTimeout.current = null;
+                    }
+
+                    showToast.success('Back on Route', 'You are back on the planned route');
+                },
+                onNavigationComplete: () => {
+                    showToast.success('Navigation Complete', 'You have arrived at your destination!');
+                    handleStopNavigation();
+                },
+            } as any);
+
+            setNavigationMode(true);
+            setIsNavigating(true);
+            isNavigatingRef.current = true;
+            currentManeuverIndex.current = 0;
+
+            if (stopBackgroundTracking) {
+                stopBackgroundTracking();
+            }
+
+            if (routeManeuvers.current.length > 0) {
+                const firstManeuver = routeManeuvers.current[0];
+                if (firstManeuver.type === 2 && routeManeuvers.current.length > 1) {
+                    setCurrentInstruction(routeManeuvers.current[1].instruction);
+                    currentManeuverIndex.current = 1;
+                } else {
+                    setCurrentInstruction(firstManeuver.instruction);
+                }
+            }
+            const navController = (mapRef.current as any).getNavigationController?.();
+            if (navController) {
+                navController.on('stepchange', (data: any) => {
+                    if (data.step) {
+                        const instructionText = data.step.instruction || data.step.text || 'Continue ahead';
+                        setCurrentInstruction(instructionText);
+                    }
+                });
+
+                navController.on('progress', (data: any) => {
+                    if (data.currentStep) {
+                        const instructionText = data.currentStep.instruction || data.currentStep.text || 'Continue ahead';
+                        setCurrentInstruction(instructionText);
+                    }
+                });
+            }
+            if (simulateMovement) {
+                startSimulation();
+                showToast.info('Navigation Started', 'GPS simulation is running for testing');
+            } else {
+                startLocationTracking();
+            }
+
+        } catch (error: any) {
+            console.error('Navigation start error:', error);
+            showToast.error('Navigation Failed', error.message || 'Could not start navigation');
+            setIsNavigating(false);
+            isNavigatingRef.current = false;
+            setNavigationMode(false);
         }
     };
 
     const handleStopNavigation = () => {
+        if (mapRef.current) {
+            mapRef.current.stopNavigation();
+        }
+
         setNavigationMode(false);
+        setIsNavigating(false);
+        isNavigatingRef.current = false;
+
         stopLocationTracking();
         stopSimulation();
-        mapRef.current?.clearRoute();
+
+        // Clear reroute timeout
+        if (rerouteTimeout.current) {
+            clearTimeout(rerouteTimeout.current);
+            rerouteTimeout.current = null;
+        }
+
+        setRouteGeoJSON(null);
         setSelectedDestination(null);
+        currentDestination.current = null;
         setCurrentInstruction('');
         setRemainingDistance(0);
         setRemainingTime(0);
-        currentManeuverIndex.current = 0;
-        maneuverCompleted.current = false;
+        setIsOffRoute(false);
+        setIsRecalculating(false);
+
+        if (startBackgroundTracking) {
+            startBackgroundTracking();
+        }
 
         if (userLocation) {
             mapRef.current?.flyTo({
@@ -588,25 +438,40 @@ export const useNavigation = (
                 zoom: 15,
                 duration: 1000,
                 pitch: 0,
-                heading: 0,
             });
         }
     };
+    stopNavigationRef.current = handleStopNavigation;
 
     const handleClearRoute = () => {
-        mapRef.current?.clearRoute();
+        setRouteGeoJSON(null);
         setSelectedDestination(null);
         setCurrentInstruction('');
         setRemainingDistance(0);
         setRemainingTime(0);
+        setShowRoutePreview(false);
+    };
+    const simulateOffRoute = (setUserLocation: (location: { lat: number; lng: number }) => void) => {
+        simulateOffRouteInternal(
+            setUserLocation,
+            navigationMode,
+            simulateMovement,
+            recalculateRoute,
+            setIsOffRoute,
+            rerouteTimeout
+        );
     };
 
     useEffect(() => {
         return () => {
             stopLocationTracking();
             stopSimulation();
+
+            if (rerouteTimeout.current) {
+                clearTimeout(rerouteTimeout.current);
+            }
         };
-    }, []);
+    }, [stopLocationTracking, stopSimulation]);
 
     return {
         selectedDestination,
@@ -618,17 +483,18 @@ export const useNavigation = (
         currentHeading,
         simulateMovement,
         setSimulateMovement,
-        snappedLocation,
         currentInstruction,
         remainingDistance,
         remainingTime,
         isOffRoute,
         isRecalculating,
         routeCoordinates: routeCoordinates.current,
+        routeGeoJSON,
         handleNavigate,
         handleStartNavigation,
         handleStopNavigation,
         handleClearRoute,
         simulateOffRoute,
+        recalculateRoute,
     };
 };

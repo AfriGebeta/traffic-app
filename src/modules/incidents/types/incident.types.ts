@@ -38,7 +38,7 @@ export const INCIDENT_TYPES = [
     { id: 'cmk4it3070000d8w0cmsdnke', name: 'SPEED_BUMP', label: 'Speed Bump', icon: 'triangle' as const, color: '#F59E0B' },
     { id: 'cmk4it3070000d8wqmkwlnmlxw', name: 'POT_HOLE', label: 'Pot Hole', icon: 'alert-circle' as const, color: '#EF4444' },
     { id: 'cmk4it3070000d8wfwkelmf3', name: 'FLOODING', label: 'Flooding', icon: 'water' as const, color: '#3B82F6' },
-    { id: 'cmk4it3070000d8wqmkwlnmlxw', name: 'GATED_COMMUNITY', label: 'Gated Community', icon: 'home' as const, color: '#10B981' },
+    { id: 'cmk4it3070000d8wgatedcomm', name: 'GATED_COMMUNITY', label: 'Gated Community', icon: 'home' as const, color: '#10B981' },
     { id: 'cmk4it3070qpleowcmildqweioiomo', name: 'OTHER', label: 'Other', icon: 'apps-outline' as const, color: '#F97316' },
 ] as const;
 

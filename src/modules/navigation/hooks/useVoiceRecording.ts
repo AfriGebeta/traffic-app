@@ -52,7 +52,6 @@ export const useVoiceRecording = () => {
 
             recordingRef.current = recording;
             setIsRecording(true);
-            console.log('Recording started with custom settings');
             return true;
         } catch (error) {
             console.error('Failed to start recording:', error);
@@ -72,8 +71,6 @@ export const useVoiceRecording = () => {
             const status = await recordingRef.current.getStatusAsync();
             const durationMillis = status.durationMillis || 0;
 
-            console.log('Recording duration:', durationMillis, 'ms');
-
             if (durationMillis < 500) {
                 showToast.error('Recording Too Short', 'Please speak for at least 1 second');
                 await recordingRef.current.stopAndUnloadAsync();
@@ -92,7 +89,6 @@ export const useVoiceRecording = () => {
             const uri = recordingRef.current.getURI();
             recordingRef.current = null;
 
-            console.log('Recording saved:', uri);
             return uri;
         } catch (error) {
             console.error('Failed to stop recording:', error);
