@@ -78,21 +78,31 @@ export interface RouteTrip {
     language: string;
 }
 
+export interface NavigationOption {
+    id: number;
+    name: string;
+    lat: number;
+    lng: number;
+}
+
 export interface VoiceNavigationData {
-    origin: NavigationLocation;
-    destination: NavigationDestination;
+    origin: NavigationLocation | null;
+    destination: NavigationDestination | null;
     route: {
         trip: RouteTrip;
-    };
+    } | null;
+    message?: string;
+    requiresConfirmation?: boolean;
+    options?: NavigationOption[];
 }
 
 export interface VoiceNavigationResponse {
     success: boolean;
     transcription: string;
-    entities: VoiceNavigationEntity;
+    entities?: VoiceNavigationEntity;
     navigationData: VoiceNavigationData;
-    message: string | null;
-    metadata: {
+    message?: string | null;
+    metadata?: {
         tokens_charged: number;
         remaining_tokens: number;
         charge_message: string;

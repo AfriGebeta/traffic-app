@@ -738,5 +738,30 @@
         "key": "redirecting-to-registration",
         "EN_US": "Redirecting to registration...",
         "AM": "ወደ ምዝገባ በማዞር ላይ..."
+    },
+    {
+        "key": "choose-destination",
+        "EN_US": "Choose Destination",
+        "AM": "መድረሻ ይምረጡ"
+    },
+    {
+        "key": "you-said",
+        "EN_US": "You said:",
+        "AM": "ያሉት፡"
+    },
+    {
+        "key": "voice-navigation",
+        "EN_US": "Voice Navigation",
+        "AM": "የድምፅ አሰሳ"
+    },
+    {
+        "key": "push-to-talk",
+        "EN_US": "Push to Talk",
+        "AM": "ተጭነው ይናገሩ"
+    },
+    {
+        "key": "hold-to-speak-instruction",
+        "EN_US": "Press and hold the microphone button to speak your destination",
+        "AM": "መድረሻዎን ለመናገር ማይክሮፎኑን ተጭነው ይያዙ"
     }
 ]

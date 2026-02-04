@@ -8,10 +8,11 @@ import { NavigationOverlay } from './NavigationOverlay';
 import { IncidentAlert } from './IncidentAlert';
 import { MapOverlay } from './MapOverlay';
 import { IncidentReportSheet } from './IncidentReportSheet';
-import { VoiceRecordingOverlay } from './VoiceRecordingOverlay';
 import { PlaceDetailsSheet } from './PlaceDetailsSheet';
 import { ExploreSheet } from '../../explore/components/ExploreSheet';
 import { RoutePreview } from '../../navigation/components/RoutePreview';
+import { NavigationOptionsModal } from '../../navigation/components/NavigationOptionsModal';
+import { VoiceNavigationModal } from '../../navigation/components/VoiceNavigationModal';
 import { useIncidents } from '../../incidents/hooks/useIncidents';
 import { useUserLocation } from '../hooks/useUserLocation';
 import { useSearch } from '../hooks/useSearch';
@@ -116,8 +117,16 @@ export default function TrafficMap() {
         isRecording,
         isProcessingVoice,
         navigationData: voiceNavigationData,
+        options: voiceOptions,
+        showOptions: showVoiceOptions,
+        showVoiceModal,
+        transcription: voiceTranscription,
+        handleVoicePress,
         handleVoiceStart,
         handleVoiceStop,
+        handleCloseVoiceModal,
+        handleOptionSelect,
+        clearVoiceNavigation,
     } = useVoiceNavigation({
         mapRef,
         userLocation,
@@ -260,11 +269,6 @@ export default function TrafficMap() {
                 />
             )}
 
-            <VoiceRecordingOverlay
-                isRecording={isRecording}
-                isProcessing={isProcessingVoice}
-            />
-
             {navigationMode && selectedDestination && (
                 <>
                     <NavigationBar
@@ -318,7 +322,7 @@ export default function TrafficMap() {
                     onAddPlacePress={() => router.push('/places/contribute')}
                     onExplorePress={() => setShowExploreSheet(true)}
                     onLocationPress={handleLocationPress}
-                    onVoicePress={handleVoiceStart}
+                    onVoicePress={handleVoicePress}
                     onVoiceRelease={handleVoiceStop}
                     isRecording={isRecording}
                     isProcessingVoice={isProcessingVoice}
@@ -361,6 +365,23 @@ export default function TrafficMap() {
                 onClose={() => setShowExploreSheet(false)}
                 userLocation={userLocation}
                 onPlaceSelect={handleSelectPlace}
+            />
+
+            <NavigationOptionsModal
+                visible={showVoiceOptions}
+                options={voiceOptions}
+                transcription={voiceTranscription}
+                onSelectOption={handleOptionSelect}
+                onClose={clearVoiceNavigation}
+            />
+
+            <VoiceNavigationModal
+                visible={showVoiceModal}
+                isRecording={isRecording}
+                isProcessing={isProcessingVoice}
+                onClose={handleCloseVoiceModal}
+                onPressIn={handleVoiceStart}
+                onPressOut={handleVoiceStop}
             />
         </View>
     );

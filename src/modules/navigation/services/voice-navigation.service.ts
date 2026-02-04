@@ -6,6 +6,7 @@ export const voiceNavigationService = {
     async processVoiceNavigation(
         audioUri: string,
         language: string,
+        sessionId: string,
         originLat?: number,
         originLng?: number
     ): Promise<VoiceNavigationResponse | null> {
@@ -13,6 +14,7 @@ export const voiceNavigationService = {
             console.log('Voice Navigation Request:', {
                 audioUri,
                 language,
+                sessionId,
                 originLat,
                 originLng,
                 endpoint: `${API_URL}/api/asr/process-voice-navigation`
@@ -49,6 +51,7 @@ export const voiceNavigationService = {
                 body: formData,
                 headers: {
                     'Accept': 'application/json',
+                    'x-session-id': sessionId,
                 },
             });
 
