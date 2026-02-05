@@ -18,6 +18,8 @@ import { useUserLocation } from '../hooks/useUserLocation';
 import { useSearch } from '../hooks/useSearch';
 import { useNavigation } from '../../navigation/hooks/useNavigation';
 import { useVoiceNavigation } from '../../navigation/hooks/useVoiceNavigation';
+import { useNavigationTracking } from '../../navigation/hooks/useNavigationTracking';
+import { useBackgroundSync } from '../../navigation/hooks/useBackgroundSync';
 import { useIncidentAlerts } from '../hooks/useIncidentAlerts';
 import { useMapMarkers } from '../hooks/useMapMarkers';
 import { useMapTheme } from '../context/MapThemeContext';
@@ -85,6 +87,15 @@ export default function TrafficMap() {
 
     const activeIncidentAlert = useIncidentAlerts(userLocation, incidents, navigationMode, routeCoordinates);
     const { addIncidentMarkers } = useMapMarkers(mapRef, incidents);
+
+    // Track navigation for training
+    useNavigationTracking({
+        isNavigating: navigationMode,
+        userLocation,
+    });
+
+    // Register background sync (runs every 24h even when app is closed)
+    useBackgroundSync();
 
     const handleSelectPlace = (place: GeocodingPlace) => {
         if (searchMarkerRef.current) {
