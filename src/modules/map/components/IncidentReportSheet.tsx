@@ -92,7 +92,6 @@ export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
                     </View>
                 </View>
 
-                {/* Incident Grid */}
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
                     <View className="flex-row flex-wrap gap-3">
                         {incidentTypes.map((incidentType) => {
