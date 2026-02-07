@@ -10,7 +10,7 @@ export const ttsService = {
     async synthesizeSpeech(
         text: string,
         language: string,
-        speaker_name: string = 'yared'
+        speaker_name: string = 'selam'
     ): Promise<string | null> {
         try {
             console.log('TTS Request:', {

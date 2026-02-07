@@ -57,9 +57,8 @@ export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
     }, []);
 
     const handleIncidentOptionPress = React.useCallback(
-        (typeId: string, typeName: string) => {
+        (typeName: string) => {
             const params = new URLSearchParams({
-                typeId: typeId,
                 typeName: typeName,
                 lat: userLocation?.lat.toString() || '',
                 lng: userLocation?.lng.toString() || '',
@@ -99,7 +98,7 @@ export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
                                 <TouchableOpacity
                                     key={incidentType.name}
                                     className="bg-white rounded-2xl p-4 items-center border-2 border-gray-100 active:border-orange-200 active:bg-orange-50"
-                                    onPress={() => handleIncidentOptionPress(incidentType.id, incidentType.name)}
+                                    onPress={() => handleIncidentOptionPress(incidentType.name)}
                                     activeOpacity={0.7}
                                     style={{
                                         width: '48%',

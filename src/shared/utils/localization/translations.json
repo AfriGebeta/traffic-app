@@ -40,16 +40,6 @@
         "AM": "የሚያዩትን ይንገሩን"
     },
     {
-        "key": "traffic-police",
-        "EN_US": "Traffic Police",
-        "AM": "ትራፊክ ፖሊስ"
-    },
-    {
-        "key": "traffic",
-        "EN_US": "Traffic",
-        "AM": "መዘጋጋት"
-    },
-    {
         "key": "crash",
         "EN_US": "Crash",
         "AM": "ግጭት"
@@ -78,6 +68,16 @@
         "key": "broken-road",
         "EN_US": "Broken Road",
         "AM": "የተሰባበረ መንገድ"
+    },
+    {
+        "key": "gated-community",
+        "EN_US": "Gated Community",
+        "AM": "መንገዱ ታጥሯል"
+    },
+    {
+        "key": "traffic-jam",
+        "EN_US": "Traffic Jam",
+        "AM": "መዘጋጋት"
     },
     {
         "key": "other",
@@ -358,31 +358,6 @@
         "key": "location",
         "EN_US": "Location",
         "AM": "አድራሻ"
-    },
-    {
-        "key": "speed-bump",
-        "EN_US": "Speed Bump",
-        "AM": "ፍጥነት መገደቢያ"
-    },
-    {
-        "key": "flooding",
-        "EN_US": "Flooding",
-        "AM": "ጎርፍ አለ"
-    },
-    {
-        "key": "pot-hole",
-        "EN_US": "Pot Hole",
-        "AM": "ጉድጏድ አለ"
-    },
-    {
-        "key": "gated-community",
-        "EN_US": "Gated Community",
-        "AM": "መንገዱ ታጥሯል"
-    },
-    {
-        "key": "traffic-jam",
-        "EN_US": "Traffic Jam",
-        "AM": "መዘጋጋት"
     },
     {
         "key": "phone-number",
