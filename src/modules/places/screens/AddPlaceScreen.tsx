@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Input, Button } from '../../../shared/components';
 import { PLACE_TYPES, PlaceType } from '../types/place.types';
-import { uploadToCloudinary } from '../../../shared/utils/cloudinary';
+import { uploadToMinio } from '../../../shared/utils/minio';
 import { placeService } from '../services/place.service';
 import { showToast } from '../../../shared/utils/toast';
 import { useLocation } from '../../../shared/contexts/LocationContext';
@@ -78,7 +78,7 @@ export default function AddPlaceScreen() {
     const uploadImage = async (uri: string) => {
         setUploading(true);
         try {
-            const url = await uploadToCloudinary(uri);
+            const url = await uploadToMinio(uri, 'places');
             setImages((prev) => [...prev, url]);
             showToast.success('Image uploaded', 'Photo added successfully');
         } catch (error) {
