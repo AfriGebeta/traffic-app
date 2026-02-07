@@ -155,12 +155,18 @@ export const useVoiceNavigation = ({
 
                 showToast.success('Understood', userTranscription);
 
-                if (response.navigationData?.requiresConfirmation && response.navigationData?.options) {
+                if (response.navigationData?.options && response.navigationData.options.length > 1) {
                     setOptions(response.navigationData.options);
                     setShowOptions(true);
 
-                    if (response.navigationData.message) {
-                        await playTTS(response.navigationData.message);
+                    let ttsMessage = response.navigationData.message;
+                    if (!ttsMessage && response.navigationData.options.length > 0) {
+                        const firstPlace = response.navigationData.options[0].name;
+                        ttsMessage = `Found ${response.navigationData.options.length} places. First one is ${firstPlace}. Please select from the list.`;
+                    }
+
+                    if (ttsMessage) {
+                        await playTTS(ttsMessage);
                     }
 
                     setShowVoiceModal(false);

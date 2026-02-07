@@ -36,10 +36,11 @@ export const useIncidentReport = () => {
     };
 
     const reportIncident = async (
-        typeId: string,
+        typeName: string,
         description: string,
         coords?: { lat: number; lng: number },
-        direction?: string
+        direction?: string,
+        images?: string[]
     ): Promise<Incident | null> => {
         setLoading(true);
         setError(null);
@@ -55,9 +56,10 @@ export const useIncidentReport = () => {
             const response = await incidentService.report({
                 lat: locationToUse.lat,
                 lng: locationToUse.lng,
-                typeId,
+                type: typeName,
                 description,
                 direction,
+                ...(images && images.length > 0 && { image: images }),
             });
 
             if (response.error) {

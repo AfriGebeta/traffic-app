@@ -39,7 +39,12 @@ class ApiService {
             const url = `${this.baseUrl}${endpoint}`;
             console.log('API Request:', options.method || 'GET', url);
 
+            if (options.body) {
+                console.log('req body:', options.body);
+            }
+
             const authHeaders = await this.getAuthHeaders();
+            console.log('auth headers:', authHeaders);
 
             const config: RequestInit = {
                 ...options,
@@ -50,13 +55,15 @@ class ApiService {
                 },
             };
 
+            console.log('all headers:', config.headers);
+
             const response = await fetch(url, config);
             console.log('API Response status:', response.status);
 
             const contentType = response.headers.get('content-type');
             if (!contentType || !contentType.includes('application/json')) {
                 const text = await response.text();
-                console.error('Non-JSON response:', text.substring(0, 200));
+                console.error('non-json response:', text.substring(0, 500));
                 return {
                     error: `Server returned non-JSON response (${response.status})`,
                 };
@@ -65,6 +72,7 @@ class ApiService {
             const data = await response.json();
 
             if (!response.ok) {
+                console.error('api error:', data);
                 const errorMessage = data.message || data.error || `Request failed with status ${response.status}`;
                 return {
                     error: errorMessage,
