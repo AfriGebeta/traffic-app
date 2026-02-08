@@ -19,6 +19,8 @@ export interface Incident {
     direction?: string;
     confirmed: boolean;
     createdAt: string;
+    upvotes: number;
+    downvotes: number;
 }
 
 export interface IncidentReportRequest {

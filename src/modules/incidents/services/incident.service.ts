@@ -13,4 +13,12 @@ export const incidentService = {
     async getIncidents() {
         return apiService.get<Incident[]>('/api/incidents');
     },
+
+    async upvote(incidentId: string) {
+        return apiService.post<void>(`/api/incidents/${incidentId}/upvote`);
+    },
+
+    async downvote(incidentId: string) {
+        return apiService.post<void>(`/api/incidents/${incidentId}/downvote`);
+    },
 };

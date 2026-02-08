@@ -274,8 +274,10 @@ export default function TrafficMap() {
 
             {activeIncidentAlert && (
                 <IncidentAlert
+                    incidentId={activeIncidentAlert.incidentId}
                     incidentName={activeIncidentAlert.incidentName}
                     distance={activeIncidentAlert.distance}
+                    distanceKm={activeIncidentAlert.distanceKm}
                     incidentType={activeIncidentAlert.incidentType}
                 />
             )}
