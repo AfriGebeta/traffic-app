@@ -19,6 +19,13 @@ const STORAGE_KEY = '@map_theme';
 
 export const MAP_THEMES: MapTheme[] = [
     {
+        id: 'standard',
+        name: 'Classic',
+        nameAmharic: 'ክላሲክ',
+        icon: 'map-outline',
+        styleUrl: `https://tiles.gebeta.app/styles/standard/style.json`,
+    },
+    {
         id: 'custom3',
         name: 'Standard',
         nameAmharic: 'መደበኛ',
@@ -39,13 +46,6 @@ export const MAP_THEMES: MapTheme[] = [
             }
             return theme as Record<string, unknown>;
         })(),
-    },
-    {
-        id: 'standard',
-        name: 'Classic',
-        nameAmharic: 'ክላሲክ',
-        icon: 'map-outline',
-        styleUrl: `https://tiles.gebeta.app/styles/standard/style.json`,
     },
     {
         id: 'dark',

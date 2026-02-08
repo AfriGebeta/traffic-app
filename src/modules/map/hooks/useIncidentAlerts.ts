@@ -80,6 +80,7 @@ interface ActiveAlert {
     incidentId: string;
     incidentName: string;
     distance: string;
+    distanceKm: number;
     incidentType: Incident['type'];
 }
 
@@ -176,6 +177,7 @@ export const useIncidentAlerts = (
                     incidentId,
                     incidentName,
                     distance: distanceText,
+                    distanceKm: closestDistance,
                     incidentType: closestIncident.type,
                 });
 

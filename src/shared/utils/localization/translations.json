@@ -738,5 +738,30 @@
         "key": "hold-to-speak-instruction",
         "EN_US": "Press and hold the microphone button to speak your destination",
         "AM": "መድረሻዎን ለመናገር ማይክሮፎኑን ተጭነው ይያዙ"
+    },
+    {
+        "key": "still-there",
+        "EN_US": "Still there?",
+        "AM": "አሁንም አለ?"
+    },
+    {
+        "key": "not-there",
+        "EN_US": "Not there",
+        "AM": "የለም"
+    },
+    {
+        "key": "thanks",
+        "EN_US": "Thanks!",
+        "AM": "እናመሰግናለን!"
+    },
+    {
+        "key": "feedback-helps-others",
+        "EN_US": "Your feedback helps others",
+        "AM": "አስተያየትዎ ሌሎችን ያግዛል"
+    },
+    {
+        "key": "failed-to-vote",
+        "EN_US": "Failed to vote",
+        "AM": "ድምፅ መስጠት አልተሳካም"
     }
 ]

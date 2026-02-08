@@ -87,15 +87,24 @@ class NavigationTrackingService {
                 })),
             };
 
+            const token = await AsyncStorage.getItem('@traffic_app_token');
+            const headers: HeadersInit = {
+                'Content-Type': 'application/json',
+            };
+
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
             const response = await fetch(`${API_URL}/api/navigation/track-navigation-history`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers,
                 body: JSON.stringify(payload),
             });
 
             if (!response.ok) {
+                const errorText = await response.text();
+                console.error('tracking: Sync failed with status:', response.status, 'body:', errorText);
                 throw new Error(`Sync failed: ${response.status}`);
             }
 
