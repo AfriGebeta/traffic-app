@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from '../../../shared/hooks/useTranslation';
 
 interface NavigationOverlayProps {
     remainingTime?: number;
@@ -35,6 +36,8 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
     onTestOffRoute,
     onRecalculateRoute,
 }) => {
+    const { t } = useTranslation();
+
     return (
         <View className="absolute bottom-6 left-4 right-4">
             <View
@@ -67,24 +70,14 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                     </Text>
                 </View>
 
-                <View className="flex-row gap-2">
-                    <TouchableOpacity
-                        className="flex-1 border border-white/10 rounded-2xl py-3 flex-row items-center justify-center"
-                        style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
-                        onPress={onReportPress}
-                    >
-                        <Ionicons name="warning-outline" size={18} color="#FFA500" />
-                        <Text className="text-gray-200 text-sm font-medium ml-2">Share What You See</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        className="border border-white/10 rounded-2xl p-3"
-                        style={{ backgroundColor: 'rgba(255, 165, 0, 0.15)' }}
-                        onPress={onVoiceReportPress}
-                    >
-                        <Ionicons name="mic" size={20} color="#FFA500" />
-                    </TouchableOpacity>
-                </View>
+                <TouchableOpacity
+                    className="border border-white/10 rounded-2xl py-3 flex-row items-center justify-center"
+                    style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
+                    onPress={onReportPress}
+                >
+                    <Ionicons name="warning-outline" size={18} color="#FFA500" />
+                    <Text className="text-gray-200 text-sm font-medium ml-2">{t('share-what-you-see')}</Text>
+                </TouchableOpacity>
 
                 {/*test button REMOVE IT LATER*/}
                 {__DEV__ && onTestOffRoute && (

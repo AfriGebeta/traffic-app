@@ -66,23 +66,25 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                 </View>
             </View>
 
-            <View className="px-6 py-3 border-b border-gray-100">
-                <TouchableOpacity
-                    onPress={onSimulateToggle}
-                    className="flex-row items-center justify-between"
-                >
-                    <View className="flex-row items-center">
-                        <Ionicons
-                            name={simulateMovement ? "checkmark-circle" : "ellipse-outline"}
-                            size={24}
-                            color={simulateMovement ? colors.primary.main : "#9CA3AF"}
-                        />
-                        <Text className="text-gray-700 font-medium ml-3">
-                            Simulate Movement (testing)
-                        </Text>
-                    </View>
-                </TouchableOpacity>
-            </View>
+            {__DEV__ && (
+                <View className="px-6 py-3 border-b border-gray-100">
+                    <TouchableOpacity
+                        onPress={onSimulateToggle}
+                        className="flex-row items-center justify-between"
+                    >
+                        <View className="flex-row items-center">
+                            <Ionicons
+                                name={simulateMovement ? "checkmark-circle" : "ellipse-outline"}
+                                size={24}
+                                color={simulateMovement ? colors.primary.main : "#9CA3AF"}
+                            />
+                            <Text className="text-gray-700 font-medium ml-3">
+                                Simulate Movement (testing)
+                            </Text>
+                        </View>
+                    </TouchableOpacity>
+                </View>
+            )}
             <ScrollView className="max-h-48">
                 <View className="px-6 py-4">
                     <View className="flex-row items-start mb-4">
