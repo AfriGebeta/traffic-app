@@ -60,7 +60,9 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         const lastCameraUpdate = useRef<{ lat: number; lng: number; heading: number } | null>(null);
         const pulseAnim = useRef(new Animated.Value(1)).current;
         const [imagesLoaded, setImagesLoaded] = useState(false);
+        const [renderKey, setRenderKey] = useState(0);
 
+        // Preload images on mount
         useEffect(() => {
             const preloadImages = async () => {
                 try {
@@ -71,14 +73,22 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             Image.prefetch(Image.resolveAssetSource(img).uri)
                         ),
                     ]);
+                    await new Promise(resolve => setTimeout(resolve, 100));
                     setImagesLoaded(true);
+                    setTimeout(() => setRenderKey(prev => prev + 1), 50);
                 } catch (error) {
                     console.warn('Failed to preload some images:', error);
-                    setImagesLoaded(true); 
+                    setImagesLoaded(true);
                 }
             };
             preloadImages();
         }, []);
+
+        useEffect(() => {
+            if (imagesLoaded && (showUserLocationMarker || isNavigating)) {
+                setRenderKey(prev => prev + 1);
+            }
+        }, [imagesLoaded, showUserLocationMarker, isNavigating]);
 
         useEffect(() => {
             if (showUserLocationMarker && !isNavigating) {
@@ -312,7 +322,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
                     {isNavigating && userLocation && imagesLoaded && (
                         <MapLibreGL.PointAnnotation
-                            key={`nav-marker-${userLocation.lat}-${userLocation.lng}`}
+                            key={`nav-marker-${renderKey}`}
                             id="user-location-marker-nav"
                             coordinate={[userLocation.lng, userLocation.lat]}
                         >
@@ -342,7 +352,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
                     {!isNavigating && showUserLocationMarker && userLocation && imagesLoaded && (
                         <MapLibreGL.PointAnnotation
-                            key={`user-location-${userLocation.lat}-${userLocation.lng}-${imagesLoaded}`}
+                            key={`user-location-${renderKey}`}
                             id="user-location-marker-static"
                             coordinate={[userLocation.lng, userLocation.lat]}
                         >
@@ -446,7 +456,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
                         return (
                             <MapLibreGL.PointAnnotation
-                                key={`explore-${index}-${place.latitude}-${place.longitude}-${imagesLoaded}`}
+                                key={`explore-${exploreCategory}-${index}-${renderKey}`}
                                 id={`explore-place-${index}`}
                                 coordinate={[place.longitude, place.latitude]}
                                 onSelected={() => onExplorePlacePress?.(place)}
