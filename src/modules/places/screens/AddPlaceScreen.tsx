@@ -146,11 +146,30 @@ export default function AddPlaceScreen() {
             </View>
 
             <View className="bg-white mx-6 mt-6 mb-4 rounded-2xl p-4 flex-row items-center border border-gray-100">
-                <View
-                    className="w-14 h-14 rounded-2xl items-center justify-center mr-4"
-                    style={{ backgroundColor: `${placeInfo?.color}15` }}
-                >
-                    <Text className="text-3xl">{placeInfo?.emoji}</Text>
+                <View className="w-14 h-14 items-center justify-center mr-4">
+                    {(() => {
+                        const placeImageMap: Record<string, any> = {
+                            'gas_station': require('../../../../assets/images/gas-station-place.png'),
+                            'taxi_station': require('../../../../assets/images/taxi-station-place.png'),
+                            'repair_shop': require('../../../../assets/images/repair-shop-place.png'),
+                            'restaurant': require('../../../../assets/images/restaurant-place.png'),
+                            'parking': require('../../../../assets/images/parking-place.png'),
+                            'hospital': require('../../../../assets/images/hospital-place.png'),
+                            'other': require('../../../../assets/images/other-place.png'),
+                        };
+
+                        const imageSource = placeImageMap[placeType];
+
+                        return imageSource ? (
+                            <Image
+                                source={imageSource}
+                                style={{ width: 48, height: 48 }}
+                                resizeMode="contain"
+                            />
+                        ) : (
+                            <Text className="text-3xl">{placeInfo?.emoji}</Text>
+                        );
+                    })()}
                 </View>
                 <View className="flex-1">
                     <Text className="text-lg font-bold text-gray-900">

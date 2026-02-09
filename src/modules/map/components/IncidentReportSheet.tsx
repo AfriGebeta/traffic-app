@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
@@ -94,6 +94,20 @@ export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
                     <View className="flex-row flex-wrap gap-3">
                         {incidentTypes.map((incidentType) => {
+                            const incidentImageMap: Record<string, any> = {
+                                'ROAD_CLOSURE': require('../../../../assets/images/closure.png'),
+                                'ACCIDENT': require('../../../../assets/images/accident.png'),
+                                'TRAFFIC_JAM': require('../../../../assets/images/traffic-jam.png'),
+                                'BAD_WEATHER': require('../../../../assets/images/bad-weather.png'),
+                                'HAZARD': require('../../../../assets/images/hazard.png'),
+                                'CRASH': require('../../../../assets/images/crash.png'),
+                                'GATED_COMMUNITY': require('../../../../assets/images/gated-community.png'),
+                                'BROKEN_ROAD': require('../../../../assets/images/broken-road.png'),
+                                'OTHER': require('../../../../assets/images/other.png'),
+                            };
+
+                            const imageSource = incidentImageMap[incidentType.name];
+
                             return (
                                 <TouchableOpacity
                                     key={incidentType.name}
@@ -111,10 +125,20 @@ export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
                                     }}
                                 >
                                     <View
-                                        className="w-16 h-16 rounded-2xl items-center justify-center mb-3"
-                                        style={{ backgroundColor: incidentType.color + '15' }}
+                                        className="w-16 h-16 items-center justify-center mb-3"
                                     >
-                                        <Ionicons name={incidentType.icon} size={28} color={incidentType.color} />
+                                        {imageSource ? (
+                                            <Image
+                                                source={imageSource}
+                                                style={{
+                                                    width: 48,
+                                                    height: 48,
+                                                }}
+                                                resizeMode="contain"
+                                            />
+                                        ) : (
+                                            <Ionicons name={incidentType.icon} size={28} color={incidentType.color} />
+                                        )}
                                     </View>
                                     <View style={{ width: '100%', paddingHorizontal: 4 }}>
                                         <Text
