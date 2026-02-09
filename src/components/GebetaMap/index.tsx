@@ -316,28 +316,19 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             coordinate={[userLocation.lng, userLocation.lat]}
                         >
                             <View style={{
-                                width: 40,
-                                height: 40,
+                                width: 50,
+                                height: 50,
                                 alignItems: 'center',
                                 justifyContent: 'center',
                             }}>
-                                <Animated.View style={{
-                                    position: 'absolute',
-                                    width: 40,
-                                    height: 40,
-                                    borderRadius: 20,
-                                    backgroundColor: '#3B82F6',
-                                    opacity: 0.2,
-                                    transform: [{ scale: pulseAnim }],
-                                }} />
-                                <View style={{
-                                    width: 16,
-                                    height: 16,
-                                    borderRadius: 8,
-                                    backgroundColor: '#3B82F6',
-                                    borderWidth: 3,
-                                    borderColor: '#FFFFFF',
-                                }} />
+                                <Image
+                                    source={require('../../../assets/images/pin-normal.png')}
+                                    style={{
+                                        width: 40,
+                                        height: 40,
+                                    }}
+                                    resizeMode="contain"
+                                />
                             </View>
                         </MapLibreGL.PointAnnotation>
                     )}
