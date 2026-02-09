@@ -160,26 +160,40 @@ export const ProfileScreen = () => {
                     </View>
                     <View className="flex-row mb-6 gap-3">
                         <View className="flex-1 bg-gray-50 rounded-2xl p-4">
-                            <Ionicons name="star" size={24} color="#f97316" />
+                            <Image
+                                source={require('../../../../assets/images/star.png')}
+                                style={{ width: 24, height: 24 }}
+                                resizeMode="contain"
+                            />
                             <Text className="text-2xl font-bold text-gray-900 mt-2">{points}</Text>
                             <Text className="text-gray-500 text-xs">{t('your-points')}</Text>
                         </View>
                         <View className="flex-1 bg-gray-50 rounded-2xl p-4">
-                            <Ionicons name="flag" size={24} color="#6b7280" />
+                            <Image
+                                source={require('../../../../assets/images/flag.png')}
+                                style={{ width: 24, height: 24 }}
+                                resizeMode="contain"
+                            />
                             <Text className="text-2xl font-bold text-gray-900 mt-2">{reportsCount}</Text>
                             <Text className="text-gray-500 text-xs">{t('reports')}</Text>
                         </View>
                         <View className="flex-1 bg-gray-50 rounded-2xl p-4">
-                            <Ionicons name="trophy" size={24} color="#f59e0b" />
+                            <Image
+                                source={require('../../../../assets/images/trophy.png')}
+                                style={{ width: 24, height: 24 }}
+                                resizeMode="contain"
+                            />
                             <Text className="text-2xl font-bold text-gray-900 mt-2">#{rank}</Text>
                             <Text className="text-gray-500 text-xs">{t('rank')}</Text>
                         </View>
                     </View>
                     <View className="bg-orange-50 rounded-2xl p-5 mb-6 border border-orange-200">
                         <View className="flex-row items-center">
-                            <View className="bg-orange-500 rounded-full p-2 mr-3">
-                                <Ionicons name="ribbon" size={20} color="#fff" />
-                            </View>
+                            <Image
+                                source={require('../../../../assets/images/rank.png')}
+                                style={{ width: 32, height: 32, marginRight: 12 }}
+                                resizeMode="contain"
+                            />
                             <View>
                                 <Text className="text-gray-500 text-xs">{t('current-level')}</Text>
                                 <Text className="text-gray-900 font-bold text-lg">{level}</Text>
@@ -192,7 +206,11 @@ export const ProfileScreen = () => {
                         onPress={() => router.push('/leaderboard')}
                     >
                         <View className="flex-row items-center flex-1 mr-2">
-                            <Ionicons name="podium" size={24} color="#6b7280" />
+                            <Image
+                                source={require('../../../../assets/images/leaderboard.png')}
+                                style={{ width: 24, height: 24 }}
+                                resizeMode="contain"
+                            />
                             <Text
                                 className="text-gray-900 font-semibold ml-3"
                                 numberOfLines={2}
