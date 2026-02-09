@@ -71,10 +71,9 @@ export const PlaceDetailsSheet: React.FC<PlaceDetailsSheetProps> = ({
                             onClose();
                         }}
                         style={{ backgroundColor: colors.primary.main }}
-                        className="rounded-xl py-4 flex-row items-center justify-center"
+                        className="rounded-xl py-4 px-4 flex-row items-center justify-center"
                     >
-                        
-                        <Text className="text-white font-semibold text-lg ml-2">
+                        <Text className="text-white font-semibold text-base" numberOfLines={1}>
                             {t('directions')}
                         </Text>
                     </TouchableOpacity>

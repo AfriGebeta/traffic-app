@@ -8,6 +8,7 @@ import { User } from '../../register/types/user.types';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { LanguageSwitcher } from '../../../shared/components/LanguageSwitcher';
 import { leaderboardService } from '../../leaderboard/services/leaderboard.service';
+import { colors } from '../../../shared/theme/colors';
 
 export const ProfileScreen = () => {
     const router = useRouter();
@@ -116,7 +117,7 @@ export const ProfileScreen = () => {
                 </View>
 
                 <View className="flex-1 items-center justify-center px-8 -mt-20">
-                    <View className="bg-orange-500 rounded-full w-24 h-24 items-center justify-center mb-6">
+                    <View className="rounded-full w-24 h-24 items-center justify-center mb-6" style={{ backgroundColor: colors.primary.main }}>
                         <Ionicons name="person-outline" size={48} color="#fff" />
                     </View>
                     <Text className="text-2xl font-bold text-gray-900 mb-3">
@@ -127,9 +128,10 @@ export const ProfileScreen = () => {
                     </Text>
                     <TouchableOpacity
                         onPress={() => router.push('/register')}
-                        className="bg-orange-500 px-8 py-3 rounded-full"
+                        className="px-12 py-4 rounded-full"
+                        style={{ minWidth: 160, backgroundColor: colors.primary.main }}
                     >
-                        <Text className="text-white font-semibold">{t('register')}</Text>
+                        <Text className="text-white font-semibold text-base text-center">{t('register')}</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -148,7 +150,7 @@ export const ProfileScreen = () => {
             <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
                 <View className="px-6">
                     <View className="items-center mb-8 mt-4">
-                        <View className="bg-orange-500 rounded-full w-20 h-20 items-center justify-center mb-4">
+                        <View className="rounded-full w-20 h-20 items-center justify-center mb-4" style={{ backgroundColor: colors.primary.main }}>
                             <Text className="text-white text-3xl font-bold">
                                 {getInitial(user.name)}
                             </Text>
