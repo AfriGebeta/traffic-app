@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Image, BackHandler } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
@@ -21,6 +21,17 @@ export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
     const { t } = useTranslation();
     const router = useRouter();
     const [incidentTypes, setIncidentTypes] = React.useState(INCIDENT_TYPES);
+
+    React.useEffect(() => {
+        if (!isVisible) return;
+
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+            onClose();
+            return true; 
+        });
+
+        return () => backHandler.remove();
+    }, [isVisible, onClose]);
 
     React.useEffect(() => {
         const fetchIncidentTypes = async () => {

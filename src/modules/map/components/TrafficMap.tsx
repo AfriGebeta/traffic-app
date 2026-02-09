@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, LogBox } from 'react-native';
+import { View, LogBox, BackHandler } from 'react-native';
 import { useLocalSearchParams, useFocusEffect, useRouter } from 'expo-router';
 import CustomGebetaMap from '../../../components/GebetaMap';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
@@ -78,6 +78,7 @@ export default function TrafficMap() {
         routeCoordinates,
         routeGeoJSON,
         handleNavigate,
+
         handleStartNavigation,
         handleStopNavigation,
         handleClearRoute,
@@ -88,14 +89,24 @@ export default function TrafficMap() {
     const activeIncidentAlert = useIncidentAlerts(userLocation, incidents, navigationMode, routeCoordinates);
     const { addIncidentMarkers } = useMapMarkers(mapRef, incidents);
 
-    // Track navigation for training
     useNavigationTracking({
         isNavigating: navigationMode,
         userLocation,
     });
 
-    // Register background sync (runs every 24h even when app is closed)
+
     useBackgroundSync();
+
+    useEffect(() => {
+        if (!navigationMode) return;
+
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+            handleStopNavigation();
+            return true; 
+        });
+
+        return () => backHandler.remove();
+    }, [navigationMode, handleStopNavigation]);
 
     const handleSelectPlace = (place: GeocodingPlace) => {
         if (searchMarkerRef.current) {
@@ -131,6 +142,7 @@ export default function TrafficMap() {
         options: voiceOptions,
         showOptions: showVoiceOptions,
         showVoiceModal,
+
         transcription: voiceTranscription,
         handleVoicePress,
         handleVoiceStart,
@@ -251,6 +263,7 @@ export default function TrafficMap() {
                 ref={mapRef}
                 apiKey={process.env.EXPO_PUBLIC_GEBETA_API_KEY!}
                 mapStyleUrl={currentTheme.styleUrl ? `${currentTheme.styleUrl}?apiKey=${process.env.EXPO_PUBLIC_GEBETA_API_KEY}` : undefined}
+
                 mapStyleJson={currentTheme.styleJson}
                 center={initialCenter}
                 zoom={initialZoom}
@@ -264,6 +277,7 @@ export default function TrafficMap() {
                 }}
                 isNavigating={navigationMode}
                 userLocation={userLocation}
+
                 userHeading={currentHeading}
                 showUserLocationMarker={showUserLocationMarker}
                 incidents={incidents}
@@ -312,6 +326,7 @@ export default function TrafficMap() {
                     searchQuery={searchQuery}
                     onSearchChange={setSearchQuery}
                     onSearchClear={clearSearch}
+
                     searchResults={searchResults}
                     isSearching={isSearching}
                     showSearchContainer={showSearchContainer}
@@ -323,6 +338,7 @@ export default function TrafficMap() {
                         setSelectedExploreCategory(null);
                         clearExploreResults();
                     }}
+
                     selectedDestination={selectedDestination}
                     isNavigating={isNavigating}
                     simulateMovement={simulateMovement}
@@ -336,6 +352,7 @@ export default function TrafficMap() {
                     onExplorePress={() => setShowExploreSheet(true)}
                     onLocationPress={handleLocationPress}
                     onVoicePress={handleVoicePress}
+                    
                     onVoiceRelease={handleVoiceStop}
                     isRecording={isRecording}
                     isProcessingVoice={isProcessingVoice}

@@ -54,7 +54,7 @@ src/
 │   ├── explore/      # Explore & discovery
 │   ├── incidents/    # Incident reporting
 │   ├── leaderboard/  # User rankings & gamification
-│   ├── navigation/   # Navigation & tracking
+│   ├── navigation/   # Navigation
 │   ├── map/          # Map components
 │   ├── places/       # Places management
 │   ├── profile/      # User profile
