@@ -1,5 +1,5 @@
 import React, { forwardRef, useState, useImperativeHandle, useRef, useEffect } from 'react';
-import { View, StyleSheet, ActivityIndicator, Alert, Text, Animated } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Alert, Text, Animated, Image } from 'react-native';
 import MapLibreGL from '@maplibre/maplibre-react-native';
 import { GebetaMapRef, GebetaMapProps } from '@gebeta/tiles-react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -123,6 +123,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             clearAllFences: () => { },
             getFences: () => [],
             getFencePoints: () => [],
+
             isDrawingFence: () => false,
             addPath: () => { },
             clearPaths: () => { },
@@ -285,47 +286,24 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             coordinate={[userLocation.lng, userLocation.lat]}
                         >
                             <View style={{
-                                width: 50,
-                                height: 50,
+                                width: 60,
+                                height: 60,
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                transform: [{ rotate: `${userHeading || 0}deg` }]
                             }}>
                                 <View style={{
-                                    position: 'absolute',
-                                    width: 50,
-                                    height: 50,
-                                    borderRadius: 25,
-                                    backgroundColor: '#3B82F6',
-                                    opacity: 0.2,
-                                }} />
-                                <View style={{
-                                    width: 0,
-                                    height: 0,
-                                    backgroundColor: 'transparent',
-                                    borderStyle: 'solid',
-                                    borderLeftWidth: 16,
-                                    borderRightWidth: 16,
-                                    borderBottomWidth: 40,
-                                    borderLeftColor: 'transparent',
-                                    borderRightColor: 'transparent',
-                                    borderBottomColor: '#3B82F6',
+                                    transform: [{ rotate: `${userHeading || 0}deg` }],
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
                                 }}>
-                                    <View style={{
-                                        position: 'absolute',
-                                        top: 2,
-                                        left: -14,
-                                        width: 0,
-                                        height: 0,
-                                        backgroundColor: 'transparent',
-                                        borderStyle: 'solid',
-                                        borderLeftWidth: 14,
-                                        borderRightWidth: 14,
-                                        borderBottomWidth: 36,
-                                        borderLeftColor: 'transparent',
-                                        borderRightColor: 'transparent',
-                                        borderBottomColor: '#FFFFFF',
-                                    }} />
+                                    <Image
+                                        source={require('../../../assets/images/Mappin.png')}
+                                        style={{
+                                            width: 50,
+                                            height: 50,
+                                        }}
+                                        resizeMode="contain"
+                                    />
                                 </View>
                             </View>
                         </MapLibreGL.PointAnnotation>
