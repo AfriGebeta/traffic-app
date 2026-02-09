@@ -5,6 +5,17 @@ import { GebetaMapRef, GebetaMapProps } from '@gebeta/tiles-react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../shared/theme/colors';
 
+const MAPPIN_IMAGE = require('../../../assets/images/Mappin.png');
+const PIN_NORMAL_IMAGE = require('../../../assets/images/pin-normal.png');
+
+const EXPLORE_IMAGES = {
+    restaurants: require('../../../assets/images/restaurant.png'),
+    gas: require('../../../assets/images/gas-station.png'),
+    parking: require('../../../assets/images/parking.png'),
+    hospital: require('../../../assets/images/hospital.png'),
+    repair: require('../../../assets/images/repair-shop.png'),
+};
+
 interface ExtendedGebetaMapProps extends GebetaMapProps {
     routeGeoJSON?: any;
     routeStyle?: {
@@ -48,6 +59,26 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         const hasStartedNavigating = useRef(false);
         const lastCameraUpdate = useRef<{ lat: number; lng: number; heading: number } | null>(null);
         const pulseAnim = useRef(new Animated.Value(1)).current;
+        const [imagesLoaded, setImagesLoaded] = useState(false);
+
+        useEffect(() => {
+            const preloadImages = async () => {
+                try {
+                    await Promise.all([
+                        Image.prefetch(Image.resolveAssetSource(MAPPIN_IMAGE).uri),
+                        Image.prefetch(Image.resolveAssetSource(PIN_NORMAL_IMAGE).uri),
+                        ...Object.values(EXPLORE_IMAGES).map(img =>
+                            Image.prefetch(Image.resolveAssetSource(img).uri)
+                        ),
+                    ]);
+                    setImagesLoaded(true);
+                } catch (error) {
+                    console.warn('Failed to preload some images:', error);
+                    setImagesLoaded(true); 
+                }
+            };
+            preloadImages();
+        }, []);
 
         useEffect(() => {
             if (showUserLocationMarker && !isNavigating) {
@@ -279,9 +310,9 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         </MapLibreGL.ShapeSource>
                     )}
 
-                    {isNavigating && userLocation && (
+                    {isNavigating && userLocation && imagesLoaded && (
                         <MapLibreGL.PointAnnotation
-                            key="nav-marker"
+                            key={`nav-marker-${userLocation.lat}-${userLocation.lng}`}
                             id="user-location-marker-nav"
                             coordinate={[userLocation.lng, userLocation.lat]}
                         >
@@ -297,7 +328,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                     justifyContent: 'center',
                                 }}>
                                     <Image
-                                        source={require('../../../assets/images/Mappin.png')}
+                                        source={MAPPIN_IMAGE}
                                         style={{
                                             width: 50,
                                             height: 50,
@@ -309,9 +340,9 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         </MapLibreGL.PointAnnotation>
                     )}
 
-                    {!isNavigating && showUserLocationMarker && userLocation && (
+                    {!isNavigating && showUserLocationMarker && userLocation && imagesLoaded && (
                         <MapLibreGL.PointAnnotation
-                            key={`user-location-${userLocation.lat}-${userLocation.lng}`}
+                            key={`user-location-${userLocation.lat}-${userLocation.lng}-${imagesLoaded}`}
                             id="user-location-marker-static"
                             coordinate={[userLocation.lng, userLocation.lat]}
                         >
@@ -322,7 +353,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                 justifyContent: 'center',
                             }}>
                                 <Image
-                                    source={require('../../../assets/images/pin-normal.png')}
+                                    source={PIN_NORMAL_IMAGE}
                                     style={{
                                         width: 40,
                                         height: 40,
@@ -410,20 +441,12 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         </MapLibreGL.PointAnnotation>
                     )}
 
-                    {explorePlaces && explorePlaces.map((place, index) => {
-                        const categoryImageMap: Record<string, any> = {
-                            'restaurants': require('../../../assets/images/restaurant.png'),
-                            'gas': require('../../../assets/images/gas-station.png'),
-                            'parking': require('../../../assets/images/parking.png'),
-                            'hospital': require('../../../assets/images/hospital.png'),
-                            'repair': require('../../../assets/images/repair-shop.png'),
-                        };
-
-                        const imageSource = categoryImageMap[exploreCategory || ''];
+                    {explorePlaces && imagesLoaded && explorePlaces.map((place, index) => {
+                        const imageSource = EXPLORE_IMAGES[exploreCategory as keyof typeof EXPLORE_IMAGES];
 
                         return (
                             <MapLibreGL.PointAnnotation
-                                key={`explore-${index}-${place.latitude}-${place.longitude}`}
+                                key={`explore-${index}-${place.latitude}-${place.longitude}-${imagesLoaded}`}
                                 id={`explore-place-${index}`}
                                 coordinate={[place.longitude, place.latitude]}
                                 onSelected={() => onExplorePlacePress?.(place)}
