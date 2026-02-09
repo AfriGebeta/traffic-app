@@ -411,16 +411,15 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                     )}
 
                     {explorePlaces && explorePlaces.map((place, index) => {
-                        const categoryIconMap: Record<string, keyof typeof Ionicons.glyphMap> = {
-                            'restaurants': 'restaurant',
-                            'gas': 'water',
-                            'parking': 'car',
-                            'hospital': 'medical',
-                            'repair': 'construct',
+                        const categoryImageMap: Record<string, any> = {
+                            'restaurants': require('../../../assets/images/restaurant.png'),
+                            'gas': require('../../../assets/images/gas-station.png'),
+                            'parking': require('../../../assets/images/parking.png'),
+                            'hospital': require('../../../assets/images/hospital.png'),
+                            'repair': require('../../../assets/images/repair-shop.png'),
                         };
 
-                        const iconName = categoryIconMap[exploreCategory || ''] || 'location';
-                        const iconColor = colors.primary.main;
+                        const imageSource = categoryImageMap[exploreCategory || ''];
 
                         return (
                             <MapLibreGL.PointAnnotation
@@ -430,10 +429,23 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                 onSelected={() => onExplorePlacePress?.(place)}
                             >
                                 <View style={{
+                                    width: 40,
+                                    height: 40,
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                 }}>
-                                    <Ionicons name={iconName} size={28} color={iconColor} />
+                                    {imageSource ? (
+                                        <Image
+                                            source={imageSource}
+                                            style={{
+                                                width: 36,
+                                                height: 36,
+                                            }}
+                                            resizeMode="contain"
+                                        />
+                                    ) : (
+                                        <Ionicons name="location" size={28} color={colors.primary.main} />
+                                    )}
                                 </View>
                             </MapLibreGL.PointAnnotation>
                         );
