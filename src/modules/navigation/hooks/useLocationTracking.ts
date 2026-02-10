@@ -43,6 +43,9 @@ export const useLocationTracking = ({
 }: UseLocationTrackingProps) => {
     const locationSubscription = useRef<Location.LocationSubscription | null>(null);
     const lastClosestIndex = useRef<number>(0);
+    const isOffRouteRef = useRef<boolean>(false);
+    const offRouteStartTime = useRef<number | null>(null);
+    const lastOffRoutePosition = useRef<{ lat: number; lng: number } | null>(null);
 
     const stopLocationTracking = useCallback(() => {
         if (locationSubscription.current) {
@@ -50,6 +53,9 @@ export const useLocationTracking = ({
             locationSubscription.current = null;
         }
         lastClosestIndex.current = 0;
+        isOffRouteRef.current = false;
+        offRouteStartTime.current = null;
+        lastOffRoutePosition.current = null;
     }, []);
 
     const startLocationTracking = useCallback(async () => {
@@ -169,32 +175,55 @@ export const useLocationTracking = ({
                         displayLng = snappedLng;
 
                         const OFF_ROUTE_THRESHOLD = 50;
+                        const OFF_ROUTE_DELAY = 3000; 
 
-                        if (distanceFromRoute > OFF_ROUTE_THRESHOLD && !isOffRoute) {
+                        if (distanceFromRoute > OFF_ROUTE_THRESHOLD) {
+                            lastOffRoutePosition.current = { lat: latitude, lng: longitude };
 
-                            setIsOffRoute(true);
-                            showToast.info('Off Route', `You are ${distanceFromRoute.toFixed(0)}m off the planned route`);
+                            if (!isOffRouteRef.current) {
+    
+                                isOffRouteRef.current = true;
+                                offRouteStartTime.current = Date.now();
+                                setIsOffRoute(true);
+                                showToast.info('Off Route', `You are ${distanceFromRoute.toFixed(0)}m off the planned route`);
 
-                            //capturing current position for reroute
-                            const offRoutePosition = { lat: latitude, lng: longitude };
 
-                            if (rerouteTimeout.current) {
-                                clearTimeout(rerouteTimeout.current);
+                                if (rerouteTimeout.current) {
+                                    clearTimeout(rerouteTimeout.current);
+                                }
+                            } else {
+
+                                const timeOffRoute = Date.now() - (offRouteStartTime.current || 0);
+
+                                if (timeOffRoute >= OFF_ROUTE_DELAY && !rerouteTimeout.current) {
+
+                                    console.log('triggering recalculation - offroute for', timeOffRoute, 'ms');
+                                    setIsRecalculating(true);
+
+                                    rerouteTimeout.current = setTimeout(() => {
+                                        if (isNavigatingRef.current && lastOffRoutePosition.current) {
+                                            recalculateRoute(lastOffRoutePosition.current);
+                                        }
+                                        rerouteTimeout.current = null;
+                                    }, 100);
+                                }
                             }
-                            rerouteTimeout.current = setTimeout(() => {
-                                recalculateRoute(offRoutePosition);
-                            }, 3000);
-                        } else if (distanceFromRoute <= OFF_ROUTE_THRESHOLD && isOffRoute) {
+                        } else {
+                            if (isOffRouteRef.current) {
 
-                            setIsOffRoute(false);
-                            setIsRecalculating(false);
+                                isOffRouteRef.current = false;
+                                offRouteStartTime.current = null;
+                                lastOffRoutePosition.current = null;
+                                setIsOffRoute(false);
+                                setIsRecalculating(false);
 
-                            if (rerouteTimeout.current) {
-                                clearTimeout(rerouteTimeout.current);
-                                rerouteTimeout.current = null;
+                                if (rerouteTimeout.current) {
+                                    clearTimeout(rerouteTimeout.current);
+                                    rerouteTimeout.current = null;
+                                }
+
+                                showToast.success('back on Route', 'you are back on the planned route');
                             }
-
-                            showToast.success('Back on Route', 'You are back on the planned route');
                         }
 
                         if (closestIndex < routeCoordinates.current.length - 1) {

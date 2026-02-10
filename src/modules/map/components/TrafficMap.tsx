@@ -102,7 +102,7 @@ export default function TrafficMap() {
 
         const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
             handleStopNavigation();
-            return true; 
+            return true;
         });
 
         return () => backHandler.remove();
@@ -316,7 +316,6 @@ export default function TrafficMap() {
                         isOffRoute={isOffRoute}
                         isRecalculating={isRecalculating}
                         onTestOffRoute={() => simulateOffRoute(setUserLocation)}
-                        onRecalculateRoute={recalculateRoute}
                     />
                 </>
             )}
@@ -352,7 +351,7 @@ export default function TrafficMap() {
                     onExplorePress={() => setShowExploreSheet(true)}
                     onLocationPress={handleLocationPress}
                     onVoicePress={handleVoicePress}
-                    
+
                     onVoiceRelease={handleVoiceStop}
                     isRecording={isRecording}
                     isProcessingVoice={isProcessingVoice}

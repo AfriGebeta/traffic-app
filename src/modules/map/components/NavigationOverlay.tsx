@@ -11,7 +11,6 @@ interface NavigationOverlayProps {
     isOffRoute?: boolean;
     isRecalculating?: boolean;
     onTestOffRoute?: () => void;
-    onRecalculateRoute?: () => void;
 }
 
 const formatDistance = (meters: number): string => {
@@ -34,7 +33,6 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
     isOffRoute,
     isRecalculating,
     onTestOffRoute,
-    onRecalculateRoute,
 }) => {
     const { t } = useTranslation();
 
@@ -45,20 +43,12 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                 style={{ backgroundColor: 'rgba(55, 65, 81, 0.75)' }}
             >
                 {/*off-route*/}
-                {(isOffRoute || isRecalculating) && (
+                {isRecalculating && (
                     <View className="mb-3 bg-orange-500/20 border border-orange-500/50 rounded-xl p-3">
                         <View className="flex-row items-center justify-between">
                             <Text className="text-orange-300 text-sm font-semibold flex-1">
-                                {isRecalculating ? ' Recalculating route...' : 'Off route'}
+                                Recalculating route...
                             </Text>
-                            {isOffRoute && !isRecalculating && onRecalculateRoute && (
-                                <TouchableOpacity
-                                    onPress={onRecalculateRoute}
-                                    className="bg-orange-500/30 px-3 py-1 rounded-lg ml-2"
-                                >
-                                    <Text className="text-orange-200 text-xs font-semibold">Reroute</Text>
-                                </TouchableOpacity>
-                            )}
                         </View>
                     </View>
                 )}

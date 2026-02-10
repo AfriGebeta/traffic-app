@@ -59,15 +59,20 @@ export const useRouteRecalculation = ({
             const locationToUse = fromLocation || userLocation;
 
             if (!locationToUse || !currentDestination.current) {
+                console.log('Recalculate skipped: missing location or destination');
                 return;
             }
 
             const now = Date.now();
             const timeSinceLastReroute = now - lastRerouteTime.current;
 
-            if (timeSinceLastReroute < 10000) {
+
+            if (timeSinceLastReroute < 5000) {
+                console.log(`recalculate skipped:  (${timeSinceLastReroute}ms since last reroute)`);
                 return;
             }
+
+            console.log('starting route recalculation...');
 
             if (rerouteTimeout.current) {
                 clearTimeout(rerouteTimeout.current);
@@ -171,7 +176,9 @@ export const useRouteRecalculation = ({
 
                 const newGeoJSON = {
                     type: 'Feature',
-                    properties: {},
+                    properties: {
+                        timestamp: Date.now(), 
+                    },
                     geometry: {
                         type: 'LineString',
                         coordinates: newRoute.coordinates,
@@ -184,7 +191,10 @@ export const useRouteRecalculation = ({
                     newGeoJSON.geometry.coordinates = routeWithCurrentStart;
                 }
 
-                setRouteGeoJSON(newGeoJSON);
+                setRouteGeoJSON(null); 
+                setTimeout(() => {
+                    setRouteGeoJSON(newGeoJSON); 
+                }, 50);
 
                 if (mapRef.current) {
                     mapRef.current.stopNavigation();
@@ -240,14 +250,15 @@ export const useRouteRecalculation = ({
                 setIsRecalculating(false);
                 setIsOffRoute(false);
 
+
                 showToast.success('Route Recalculated', 'Following new route');
 
                 if (simulateMovement) {
                     startSimulation();
                 }
             } catch (error: any) {
-                console.error('reroute failed');
-                console.error('Error:', error);
+                console.error('reroute failed:', error);
+                console.error('Error details:', error.message);
                 showToast.error('Reroute Failed', error.message || 'Could not calculate new route');
                 setIsRecalculating(false);
             }

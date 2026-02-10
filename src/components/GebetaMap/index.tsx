@@ -87,8 +87,26 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         useEffect(() => {
             if (imagesLoaded && (showUserLocationMarker || isNavigating)) {
                 setRenderKey(prev => prev + 1);
+                setTimeout(() => setRenderKey(prev => prev + 1), 100);
             }
         }, [imagesLoaded, showUserLocationMarker, isNavigating]);
+
+        useEffect(() => {
+            if (imagesLoaded && mapStyleState) {
+                setRenderKey(prev => prev + 1);
+                setTimeout(() => setRenderKey(prev => prev + 1), 100);
+                setTimeout(() => setRenderKey(prev => prev + 1), 300);
+            }
+        }, [mapStyleState, imagesLoaded]);
+
+
+        useEffect(() => {
+            if (imagesLoaded && explorePlaces && explorePlaces.length > 0) {
+                setRenderKey(prev => prev + 1);
+                setTimeout(() => setRenderKey(prev => prev + 1), 100);
+                setTimeout(() => setRenderKey(prev => prev + 1), 200);
+            }
+        }, [explorePlaces, exploreCategory, imagesLoaded]);
 
         useEffect(() => {
             if (showUserLocationMarker && !isNavigating) {
@@ -303,7 +321,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
                     {routeGeoJSON && (
                         <MapLibreGL.ShapeSource
-                            key={`route-${JSON.stringify(routeGeoJSON.geometry.coordinates[0])}`}
+                            key={`route-${routeGeoJSON.properties?.timestamp || Date.now()}-${JSON.stringify(routeGeoJSON.geometry.coordinates[0])}`}
                             id="route-preview-source"
                             shape={routeGeoJSON}
                         >
