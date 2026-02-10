@@ -13,7 +13,7 @@ export const useUserLocation = () => {
                 return;
             }
 
-            
+
             const initialLocation = await Location.getCurrentPositionAsync({
                 accuracy: Location.Accuracy.High,
             });
