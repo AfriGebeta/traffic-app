@@ -37,14 +37,8 @@ class ApiService {
     ): Promise<ApiResponse<T>> {
         try {
             const url = `${this.baseUrl}${endpoint}`;
-            console.log('API Request:', options.method || 'GET', url);
-
-            if (options.body) {
-                console.log('req body:', options.body);
-            }
 
             const authHeaders = await this.getAuthHeaders();
-            console.log('auth headers:', authHeaders);
 
             const config: RequestInit = {
                 ...options,
@@ -55,10 +49,7 @@ class ApiService {
                 },
             };
 
-            console.log('all headers:', config.headers);
-
             const response = await fetch(url, config);
-            console.log('API Response status:', response.status);
 
             const contentType = response.headers.get('content-type');
             if (!contentType || !contentType.includes('application/json')) {
