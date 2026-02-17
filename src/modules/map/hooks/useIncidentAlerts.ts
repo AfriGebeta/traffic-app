@@ -42,7 +42,6 @@ const isIncidentOnRouteAhead = (
 ): boolean => {
     //no route , fallback
     if (!routeCoordinates || routeCoordinates.length === 0) {
-        console.log('No route coordinates, showing all incidents');
         return true;
     }
 
@@ -98,14 +97,6 @@ export const useIncidentAlerts = (
     const previousLocation = useRef<{ lat: number; lng: number } | null>(null);
 
     useEffect(() => {
-        console.log('useIncidentAlerts:', {
-            navigationMode,
-            hasUserLocation: !!userLocation,
-            incidentsCount: incidents.length,
-            hasRouteCoordinates: !!routeCoordinates,
-            routeCoordinatesLength: routeCoordinates?.length || 0
-        });
-
         if (!navigationMode || !userLocation || incidents.length === 0) {
             setActiveAlert(null);
             return;
@@ -134,12 +125,6 @@ export const useIncidentAlerts = (
                 routeCoordinates
             );
 
-            console.log(`incident ${incident.type.name}:`, {
-                distance: distance.toFixed(3),
-                onRouteAhead,
-                withinAlertDistance: distance <= ALERT_DISTANCE_KM
-            });
-
             if (onRouteAhead && distance <= ALERT_DISTANCE_KM && distance < closestDistance) {
                 closestIncident = incident;
                 closestDistance = distance;
@@ -147,8 +132,6 @@ export const useIncidentAlerts = (
         }
 
         if (closestIncident && closestDistance < Infinity) {
-            console.log('found closest incident:', { type: closestIncident.type.name, distance: closestDistance.toFixed(3) });
-
             const incidentId = closestIncident.id;
             const previousDistance = previousDistances.current.get(incidentId);
 

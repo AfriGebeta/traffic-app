@@ -51,7 +51,6 @@ export const exploreService = {
         }
 
         const data = await response.json();
-        console.log('Explore API response:', JSON.stringify(data, null, 2));
 
         const rawResults = data.response || data.results || data.data || [];
 

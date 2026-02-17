@@ -13,10 +13,6 @@ export const useMapMarkers = (
     };
 
     useEffect(() => {
-        console.log('useMapMarkers effect triggered:', {
-            incidentCount: incidents.length,
-            hasMapRef: !!mapRef.current
-        });
     }, [incidents]);
 
     return { addIncidentMarkers };

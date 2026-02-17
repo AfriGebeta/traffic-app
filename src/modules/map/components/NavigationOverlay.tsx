@@ -53,23 +53,16 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                     </View>
                 )}
 
-                <View className="mb-3">
-                    <Text className="text-gray-300 text-sm text-center">
-                        {remainingTime ? formatTime(remainingTime) : '10 min'} •{' '}
-                        {remainingDistance ? formatDistance(remainingDistance) : '2 km'}
-                    </Text>
-                </View>
-
                 <TouchableOpacity
                     className="border border-white/10 rounded-2xl py-3 flex-row items-center justify-center"
                     style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
                     onPress={onReportPress}
                 >
                     <Ionicons name="warning-outline" size={18} color="#FFA500" />
-                    <Text className="text-gray-200 text-sm font-medium ml-2">{t('share-what-you-see')}</Text>
+                    <Text className="text-gray-200 text-sm font-bold ml-2">{t('share-what-you-see')}</Text>
                 </TouchableOpacity>
 
-                {/*test button REMOVE IT LATER*/}
+                {/*test button remove later*/}
                 {__DEV__ && onTestOffRoute && (
                     <TouchableOpacity
                         className="mt-3 bg-purple-500/20 border border-purple-500/50 rounded-xl py-2"

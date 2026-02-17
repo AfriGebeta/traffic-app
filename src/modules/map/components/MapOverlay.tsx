@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { SearchBar } from './SearchBar';
 import { QuickActions } from './QuickActions';
@@ -77,6 +77,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
 }) => {
     const { t } = useTranslation();
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const [showThemeSelector, setShowThemeSelector] = useState(false);
 
     const handleProfilePress = () => {
@@ -85,7 +86,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
 
     return (
         <>
-            <View className="absolute top-8 left-4 right-4">
+            <View className="absolute left-4 right-4" style={{ top: insets.top + 10 }}>
                 <SearchBar
                     value={searchQuery}
                     onChangeText={onSearchChange}

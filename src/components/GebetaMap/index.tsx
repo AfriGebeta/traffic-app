@@ -168,7 +168,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
         const defaultRouteStyle = {
             color: routeStyle?.color || '#3B82F6',
-            width: routeStyle?.width || 5,
+            width:  8,
             opacity: routeStyle?.opacity || 0.8,
         };
 
@@ -277,8 +277,16 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                     Math.abs(lastCameraUpdate.current.heading - (userHeading || 0)) > 1;
 
                 if (hasChanged) {
+
+                    const offsetDistance = 0.0007; //distance in deg.
+                    const headingRad = ((userHeading || 0) * Math.PI) / 180;
+
+                    // down the screen
+                    const latOffset = offsetDistance * Math.cos(headingRad);
+                    const lngOffset = offsetDistance * Math.sin(headingRad);
+
                     cameraRef.current.setCamera({
-                        centerCoordinate: [userLocation.lng, userLocation.lat],
+                        centerCoordinate: [userLocation.lng + lngOffset, userLocation.lat + latOffset],
                         zoomLevel: 18,
                         animationDuration: 300,
                         pitch: 60,
