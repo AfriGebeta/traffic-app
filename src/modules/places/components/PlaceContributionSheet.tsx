@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -50,32 +50,50 @@ export const PlaceContributionSheet: React.FC<PlaceContributionSheetProps> = ({
 
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
                     <View className="flex-row flex-wrap gap-3">
-                        {PLACE_TYPES.map((placeType) => (
-                            <TouchableOpacity
-                                key={placeType.id}
-                                className="bg-white rounded-2xl p-4 items-center border-2 border-gray-100 active:border-orange-200 active:bg-orange-50"
-                                onPress={() => handlePlaceTypeSelect(placeType.id)}
-                                activeOpacity={0.7}
-                                style={{
-                                    width: '48%',
-                                    shadowColor: '#000',
-                                    shadowOffset: { width: 0, height: 2 },
-                                    shadowOpacity: 0.05,
-                                    shadowRadius: 8,
-                                    elevation: 2,
-                                }}
-                            >
-                                <View
-                                    className="w-16 h-16 rounded-2xl items-center justify-center mb-3"
-                                    style={{ backgroundColor: placeType.color + '15' }}
+                        {PLACE_TYPES.map((placeType) => {
+                            const placeImageMap: Record<string, any> = {
+                                'gas_station': require('../../../../assets/images/gas-station-place.png'),
+                                'taxi_station': require('../../../../assets/images/taxi-station-place.png'),
+                                'repair_shop': require('../../../../assets/images/repair-shop-place.png'),
+                                'restaurant': require('../../../../assets/images/restaurant-place.png'),
+                                'parking': require('../../../../assets/images/parking-place.png'),
+                                'hospital': require('../../../../assets/images/hospital-place.png'),
+                                'other': require('../../../../assets/images/other-place.png'),
+                            };
+
+                            const imageSource = placeImageMap[placeType.id];
+
+                            return (
+                                <TouchableOpacity
+                                    key={placeType.id}
+                                    className="bg-white rounded-2xl p-4 items-center border-2 border-gray-100 active:border-orange-200 active:bg-orange-50"
+                                    onPress={() => handlePlaceTypeSelect(placeType.id)}
+                                    activeOpacity={0.7}
+                                    style={{
+                                        width: '48%',
+                                        shadowColor: '#000',
+                                        shadowOffset: { width: 0, height: 2 },
+                                        shadowOpacity: 0.05,
+                                        shadowRadius: 8,
+                                        elevation: 2,
+                                    }}
                                 >
-                                    <Text className="text-4xl">{placeType.emoji}</Text>
-                                </View>
-                                <Text className="text-base font-semibold text-gray-900 text-center">
-                                    {t(getPlaceTranslationKey(placeType.id as PlaceType))}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
+                                    <View
+                                        className="w-16 h-16 rounded-2xl items-center justify-center mb-3"
+                                        style={{ backgroundColor: placeType.color + '15' }}
+                                    >
+                                        <Image
+                                            source={imageSource}
+                                            style={{ width: 48, height: 48 }}
+                                            resizeMode="contain"
+                                        />
+                                    </View>
+                                    <Text className="text-base font-semibold text-gray-900 text-center">
+                                        {t(getPlaceTranslationKey(placeType.id as PlaceType))}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
                     </View>
                 </ScrollView>
             </View>

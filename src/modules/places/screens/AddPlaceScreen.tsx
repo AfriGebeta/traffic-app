@@ -160,14 +160,12 @@ export default function AddPlaceScreen() {
 
                         const imageSource = placeImageMap[placeType];
 
-                        return imageSource ? (
+                        return (
                             <Image
                                 source={imageSource}
                                 style={{ width: 48, height: 48 }}
                                 resizeMode="contain"
                             />
-                        ) : (
-                            <Text className="text-3xl">{placeInfo?.emoji}</Text>
                         );
                     })()}
                 </View>

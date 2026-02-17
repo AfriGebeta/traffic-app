@@ -16,6 +16,18 @@ const EXPLORE_IMAGES = {
     repair: require('../../../assets/images/repair-shop.png'),
 };
 
+const INCIDENT_IMAGES = {
+    ROAD_CLOSURE: require('../../../assets/images/closure.png'),
+    ACCIDENT: require('../../../assets/images/accident.png'),
+    TRAFFIC_JAM: require('../../../assets/images/traffic-jam.png'),
+    BAD_WEATHER: require('../../../assets/images/bad-weather.png'),
+    HAZARD: require('../../../assets/images/hazard.png'),
+    CRASH: require('../../../assets/images/crash.png'),
+    GATED_COMMUNITY: require('../../../assets/images/gated-community.png'),
+    BROKEN_ROAD: require('../../../assets/images/broken-road.png'),
+    OTHER: require('../../../assets/images/other.png'),
+};
+
 interface ExtendedGebetaMapProps extends GebetaMapProps {
     routeGeoJSON?: any;
     routeStyle?: {
@@ -70,6 +82,9 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         Image.prefetch(Image.resolveAssetSource(MAPPIN_IMAGE).uri),
                         Image.prefetch(Image.resolveAssetSource(PIN_NORMAL_IMAGE).uri),
                         ...Object.values(EXPLORE_IMAGES).map(img =>
+                            Image.prefetch(Image.resolveAssetSource(img).uri)
+                        ),
+                        ...Object.values(INCIDENT_IMAGES).map(img =>
                             Image.prefetch(Image.resolveAssetSource(img).uri)
                         ),
                     ]);
@@ -392,47 +407,33 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         </MapLibreGL.PointAnnotation>
                     )}
 
-                    {incidents && incidents.map((incident) => {
-                        const iconMap: Record<string, keyof typeof Ionicons.glyphMap> = {
-                            'TRAFFIC_POLICE': 'shield-checkmark',
-                            'TRAFFIC_JAM': 'car',
-                            'CRASH': 'warning',
-                            'ACCIDENT': 'nuclear',
-                            'ROAD_CLOSURE': 'close-circle',
-                            'SPEED_BUMP': 'triangle',
-                            'POT_HOLE': 'alert-circle',
-                            'FLOODING': 'water',
-                            'GATED_COMMUNITY': 'home',
-                            'OTHER': 'apps-outline',
-                        };
-
-                        const colorMap: Record<string, string> = {
-                            'TRAFFIC_POLICE': '#3B82F6',
-                            'TRAFFIC_JAM': '#EF4444',
-                            'CRASH': '#F59E0B',
-                            'ACCIDENT': '#F59E0B',
-                            'ROAD_CLOSURE': '#8B5CF6',
-                            'SPEED_BUMP': '#F59E0B',
-                            'POT_HOLE': '#EF4444',
-                            'FLOODING': '#3B82F6',
-                            'GATED_COMMUNITY': '#10B981',
-                            'OTHER': '#F97316',
-                        };
-
-                        const iconName = iconMap[incident.type.name] || 'alert-circle';
-                        const iconColor = colorMap[incident.type.name] || '#F97316';
+                    {incidents && imagesLoaded && incidents.map((incident) => {
+                        const imageSource = INCIDENT_IMAGES[incident.type.name as keyof typeof INCIDENT_IMAGES];
 
                         return (
                             <MapLibreGL.PointAnnotation
-                                key={incident.id}
+                                key={`incident-${incident.id}-${renderKey}`}
                                 id={`incident-${incident.id}`}
                                 coordinate={[incident.lng, incident.lat]}
                             >
                                 <View style={{
+                                    width: 40,
+                                    height: 40,
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                 }}>
-                                    <Ionicons name={iconName} size={32} color={iconColor} />
+                                    {imageSource ? (
+                                        <Image
+                                            source={imageSource}
+                                            style={{
+                                                width: 36,
+                                                height: 36,
+                                            }}
+                                            resizeMode="contain"
+                                        />
+                                    ) : (
+                                        <Ionicons name="alert-circle" size={32} color="#F97316" />
+                                    )}
                                 </View>
                             </MapLibreGL.PointAnnotation>
                         );

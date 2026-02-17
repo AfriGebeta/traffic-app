@@ -123,6 +123,7 @@ export const useNavigation = (
         },
         startSimulation,
         resetClosestIndex,
+        setUserLocation,
     });
 
     const handleNavigate = async (setUserLocation?: (location: { lat: number; lng: number }) => void, destination?: GeocodingPlace) => {
