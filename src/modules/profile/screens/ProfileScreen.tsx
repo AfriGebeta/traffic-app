@@ -239,6 +239,22 @@ export const ProfileScreen = () => {
                             </Text>
                         </View>
                     </TouchableOpacity>
+
+                    <View className="items-center mb-6">
+                        <View className="flex-row items-center">
+                            <TouchableOpacity onPress={() => router.push('/privacy-policy')}>
+                                <Text className="text-xs text-gray-600">
+                                    Privacy Policy
+                                </Text>
+                            </TouchableOpacity>
+                            <Text className="text-gray-400 text-xs mx-2">•</Text>
+                            <TouchableOpacity onPress={() => router.push('/terms-conditions')}>
+                                <Text className="text-xs text-gray-600">
+                                    Terms & Conditions
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
                 </View>
             </ScrollView>
 

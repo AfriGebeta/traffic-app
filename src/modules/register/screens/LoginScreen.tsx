@@ -175,6 +175,25 @@ export default function LoginScreen() {
                                 {t('continue-as-guest') || 'Continue as Guest'}
                             </Text>
                         </TouchableOpacity>
+
+                        <View className="mt-6 items-center">
+                            <Text className="text-gray-500 text-xs text-center mb-2">
+                                {t('by-continuing-you-agree') || 'By continuing, you agree to our'}
+                            </Text>
+                            <View className="flex-row items-center">
+                                <TouchableOpacity onPress={() => router.push('/privacy-policy' as any)}>
+                                    <Text className="text-xs font-semibold" style={{ color: colors.primary.main }}>
+                                        {t('privacy-policy') || 'Privacy Policy'}
+                                    </Text>
+                                </TouchableOpacity>
+                                <Text className="text-gray-500 text-xs mx-1">{t('and') || 'and'}</Text>
+                                <TouchableOpacity onPress={() => router.push('/terms-conditions' as any)}>
+                                    <Text className="text-xs font-semibold" style={{ color: colors.primary.main }}>
+                                        {t('terms-conditions') || 'Terms & Conditions'}
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
                     </View>
                 </View>
             </ScrollView>
