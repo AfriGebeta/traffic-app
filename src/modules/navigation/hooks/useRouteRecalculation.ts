@@ -27,6 +27,7 @@ interface UseRouteRecalculationProps {
     handleStopNavigation: () => void;
     startSimulation: () => void;
     resetClosestIndex: () => void;
+    setUserLocation?: (location: { lat: number; lng: number }) => void;
 }
 
 export const useRouteRecalculation = ({
@@ -51,6 +52,7 @@ export const useRouteRecalculation = ({
     handleStopNavigation,
     startSimulation,
     resetClosestIndex,
+    setUserLocation,
 }: UseRouteRecalculationProps) => {
     const lastRerouteTime = useRef<number>(0);
 
@@ -177,7 +179,7 @@ export const useRouteRecalculation = ({
                 const newGeoJSON = {
                     type: 'Feature',
                     properties: {
-                        timestamp: Date.now(), 
+                        timestamp: Date.now(),
                     },
                     geometry: {
                         type: 'LineString',
@@ -191,9 +193,13 @@ export const useRouteRecalculation = ({
                     newGeoJSON.geometry.coordinates = routeWithCurrentStart;
                 }
 
-                setRouteGeoJSON(null); 
+                if (setUserLocation && locationToUse) {
+                    setUserLocation({ lat: locationToUse.lat, lng: locationToUse.lng });
+                }
+
+                setRouteGeoJSON(null);
                 setTimeout(() => {
-                    setRouteGeoJSON(newGeoJSON); 
+                    setRouteGeoJSON(newGeoJSON);
                 }, 50);
 
                 if (mapRef.current) {
@@ -285,6 +291,7 @@ export const useRouteRecalculation = ({
             startSimulation,
             mapRef,
             resetClosestIndex,
+            setUserLocation,
         ]
     );
 

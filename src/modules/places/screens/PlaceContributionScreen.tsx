@@ -55,15 +55,11 @@ export default function PlaceContributionScreen() {
                                 onPress={() => handlePlaceTypeSelect(placeType.id)}
                             >
                                 <View className="w-16 h-16 items-center justify-center mr-4">
-                                    {imageSource ? (
-                                        <Image
-                                            source={imageSource}
-                                            style={{ width: 48, height: 48 }}
-                                            resizeMode="contain"
-                                        />
-                                    ) : (
-                                        <Text className="text-3xl">{placeType.emoji}</Text>
-                                    )}
+                                    <Image
+                                        source={imageSource}
+                                        style={{ width: 48, height: 48 }}
+                                        resizeMode="contain"
+                                    />
                                 </View>
                                 <View className="flex-1">
                                     <Text className="text-lg font-semibold text-gray-900">
