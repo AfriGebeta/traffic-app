@@ -102,16 +102,16 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                 <View className="flex-row items-center justify-between">
                     <View className="flex-1">
                         <View className="flex-row items-baseline gap-2 mb-1">
-                            <Text className="text-white text-2xl font-bold">
+                            <Text className="text-white text-2xl font-extrabold">
                                 {remainingDistance !== undefined ? formatDistance(remainingDistance) : formatDistance(distance * 1000)}
                             </Text>
                             {remainingTime !== undefined && (
-                                <Text className="text-gray-300 text-base">
+                                <Text className="text-gray-300 text-base font-bold">
                                     • {formatTime(remainingTime)}
                                 </Text>
                             )}
                         </View>
-                        <Text className="text-gray-300 text-sm" numberOfLines={1}>
+                        <Text className="text-gray-300 text-sm font-semibold" numberOfLines={1}>
                             {destination.name}
                         </Text>
                         {simulateMovement && (
@@ -142,7 +142,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                             }}
                         >
                             <Ionicons name={directionIcon} size={18} color="#FFA500" />
-                            <Text className="text-white text-xs font-medium" numberOfLines={1} style={{ maxWidth: 150 }}>
+                            <Text className="text-white text-xs font-bold" numberOfLines={1} style={{ maxWidth: 150 }}>
                                 {currentInstruction}
                             </Text>
                         </View>

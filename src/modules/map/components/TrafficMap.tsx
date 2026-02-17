@@ -236,8 +236,6 @@ export default function TrafficMap() {
     };
 
     const handleLocationPress = () => {
-        console.log('Location button pressed, userLocation:', userLocation);
-
         if (!userLocation) {
             showToast.error('Location not available', 'Please wait for location to load');
             return;

@@ -22,6 +22,7 @@ export const useNavigation = (
     const [navigationMode, setNavigationMode] = useState(false);
     const [showRoutePreview, setShowRoutePreview] = useState(false);
     const [currentHeading, setCurrentHeading] = useState(0);
+    
     const [simulateMovement, setSimulateMovement] = useState(false);
     const [currentInstruction, setCurrentInstruction] = useState<string>('');
     const [remainingDistance, setRemainingDistance] = useState<number>(0);
@@ -477,6 +478,7 @@ export const useNavigation = (
     return {
         selectedDestination,
         setSelectedDestination,
+
         isNavigating,
         navigationMode,
         showRoutePreview,
@@ -489,6 +491,7 @@ export const useNavigation = (
         remainingTime,
         isOffRoute,
         isRecalculating,
+
         routeCoordinates: routeCoordinates.current,
         routeGeoJSON,
         handleNavigate,
