@@ -44,7 +44,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
     };
 
     return (
-        <View className="flex-row items-center mt-3">
+        <View className="flex-row items-center mt-1.5">
             <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}

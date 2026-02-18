@@ -7,6 +7,7 @@ import { colors } from '../../shared/theme/colors';
 
 const MAPPIN_IMAGE = require('../../../assets/images/Mappin.png');
 const PIN_NORMAL_IMAGE = require('../../../assets/images/pin-normal.png');
+const RED_PIN_IMAGE = require('../../../assets/images/red-pin.png');
 
 const EXPLORE_IMAGES = {
     restaurants: require('../../../assets/images/restaurant.png'),
@@ -51,6 +52,7 @@ interface ExtendedGebetaMapProps extends GebetaMapProps {
         description: string;
     }>;
     selectedLocation?: { lat: number; lng: number } | null;
+    clickedLocation?: { lat: number; lng: number } | null;
     explorePlaces?: Array<{
         name: string;
         latitude: number;
@@ -63,7 +65,7 @@ interface ExtendedGebetaMapProps extends GebetaMapProps {
 
 
 const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
-    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, incidents, selectedLocation, explorePlaces, exploreCategory, onExplorePlacePress }, ref) => {
+    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, incidents, selectedLocation, clickedLocation, explorePlaces, exploreCategory, onExplorePlacePress }, ref) => {
         const [mapStyleState, setMapStyleState] = useState<Record<string, unknown> | null>(null);
         const [loading, setLoading] = useState(true);
         const cameraRef = useRef<any>(null);
@@ -81,6 +83,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                     await Promise.all([
                         Image.prefetch(Image.resolveAssetSource(MAPPIN_IMAGE).uri),
                         Image.prefetch(Image.resolveAssetSource(PIN_NORMAL_IMAGE).uri),
+                        Image.prefetch(Image.resolveAssetSource(RED_PIN_IMAGE).uri),
                         ...Object.values(EXPLORE_IMAGES).map(img =>
                             Image.prefetch(Image.resolveAssetSource(img).uri)
                         ),
@@ -168,7 +171,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
         const defaultRouteStyle = {
             color: routeStyle?.color || '#3B82F6',
-            width:  8,
+            width: 8,
             opacity: routeStyle?.opacity || 0.8,
         };
 
@@ -478,6 +481,33 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         </MapLibreGL.PointAnnotation>
                     )}
 
+                    {clickedLocation && imagesLoaded && (
+                        <MapLibreGL.PointAnnotation
+                            key={`clicked-location-${renderKey}`}
+                            id="clicked-location-marker"
+                            coordinate={[clickedLocation.lng, clickedLocation.lat]}
+                            anchor={{ x: 0.5, y: 1 }}
+                        >
+                            <View
+                                style={{
+                                    width: 28,
+                                    height: 28,
+                                    alignItems: 'center',
+                                    justifyContent: 'flex-end',
+                                }}
+                            >
+                                <Image
+                                    source={RED_PIN_IMAGE}
+                                    style={{
+                                        width: 28,
+                                        height: 28,
+                                    }}
+                                    resizeMode="contain"
+                                />
+                            </View>
+                        </MapLibreGL.PointAnnotation>
+                    )}
+
                     {explorePlaces && imagesLoaded && explorePlaces.map((place, index) => {
                         const imageSource = EXPLORE_IMAGES[exploreCategory as keyof typeof EXPLORE_IMAGES];
 
@@ -515,7 +545,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 <View style={styles.attributionContainer}>
                     <Text style={styles.attributionText}>© Gebeta Maps</Text>
                 </View>
-            </View>
+            </View >
         );
     }
 );
