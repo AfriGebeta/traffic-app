@@ -69,6 +69,58 @@ export const exploreService = {
         return places;
     },
 
+    async reverseGeocode(lat: number, lng: number): Promise<GeocodingPlace | null> {
+        const response = await fetch(`${API_URL}/api/navigation/request-revgeocoding`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                coordinate: { lat, lng },
+                cursor: 0,
+                limit: 10,
+            }),
+        });
+
+        if (!response.ok) {
+            return null;
+        }
+
+        const data = await response.json();
+        const results = data.response || data.results || data.data || [];
+
+        if (results.length > 0) {
+            let closestPlace = results[0];
+            let minDistance = Number.MAX_VALUE;
+
+            for (const place of results) {
+                if (place.name && place.latitude && place.longitude) {
+                    const distance = Math.sqrt(
+                        Math.pow(place.latitude - lat, 2) + Math.pow(place.longitude - lng, 2)
+                    );
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestPlace = place;
+                    }
+                }
+            }
+
+            if (closestPlace.name) {
+                return {
+                    name: closestPlace.name,
+                    latitude: closestPlace.latitude || lat,
+                    longitude: closestPlace.longitude || lng,
+                    type: closestPlace.type || 'place',
+                    Country: closestPlace.Country || '',
+                    City: closestPlace.City || '',
+                    image: closestPlace.image || closestPlace.photo || closestPlace.imageUrl || undefined,
+                };
+            }
+        }
+
+        return null;
+    },
+
     getCategoryType(categoryId: string): string | undefined {
         return CATEGORY_TYPE_MAP[categoryId];
     },

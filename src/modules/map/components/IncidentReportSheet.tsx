@@ -39,10 +39,8 @@ export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
                 const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/incidents/types`);
                 if (response.ok) {
                     const types = await response.json();
-                    console.log('fetched incident types from backend:', types);
 
                     const mappedTypes = types.map((type: any) => {
-                        console.log('Mapping type:', type.name);
                         return {
                             id: type.id,
                             name: type.name,

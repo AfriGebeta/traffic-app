@@ -1,11 +1,11 @@
 {
   "expo": {
     "name": "Gebeta Maps",
-    "slug": "gebeta-maps",
+    "slug": "traffic-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
-    "scheme": "trafficapp",
+    "scheme": "gebetamapsapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -24,12 +24,15 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.anonymous.trafficapp",
+      "versionCode": 1,
       "permissions": [
-        "RECORD_AUDIO"
+        "RECORD_AUDIO",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
       ],
       "splash": {
-        "image": "./assets/images/gebetamaps.png",
-        "resizeMode": "contain",
+        "image": "./assets/images/logo.png",
+        "resizeMode": "native",
         "backgroundColor": "#ffffff"
       }
     },
@@ -44,9 +47,9 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/gebetamaps.png",
-          "imageWidth": 250,
-          "resizeMode": "contain",
+          "image": "./assets/images/logo.png",
+          "imageWidth": 240,
+          "resizeMode": "native",
           "backgroundColor": "#ffffff",
           "dark": {
             "backgroundColor": "#ffffff"

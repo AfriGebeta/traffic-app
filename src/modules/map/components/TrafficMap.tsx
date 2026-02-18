@@ -24,6 +24,7 @@ import { useIncidentAlerts } from '../hooks/useIncidentAlerts';
 import { useMapMarkers } from '../hooks/useMapMarkers';
 import { useMapTheme } from '../context/MapThemeContext';
 import { useExplore } from '../hooks/useExplore';
+import { useMapClick } from '../hooks/useMapClick';
 import { showToast } from '../../../shared/utils/toast';
 import { useTranslation } from 'react-i18next';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
@@ -40,6 +41,7 @@ export default function TrafficMap() {
     const [selectedExploreCategory, setSelectedExploreCategory] = useState<string | null>(null);
     const [selectedExplorePlace, setSelectedExplorePlace] = useState<GeocodingPlace | null>(null);
     const [showUserLocationMarker, setShowUserLocationMarker] = useState(false);
+    const [clickedLocation, setClickedLocation] = useState<{ lat: number; lng: number } | null>(null);
 
     const { t } = useTranslation();
     const params = useLocalSearchParams();
@@ -89,25 +91,6 @@ export default function TrafficMap() {
     const activeIncidentAlert = useIncidentAlerts(userLocation, incidents, navigationMode, routeCoordinates);
     const { addIncidentMarkers } = useMapMarkers(mapRef, incidents);
 
-    useNavigationTracking({
-        isNavigating: navigationMode,
-        userLocation,
-    });
-
-
-    useBackgroundSync();
-
-    useEffect(() => {
-        if (!navigationMode) return;
-
-        const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-            handleStopNavigation();
-            return true;
-        });
-
-        return () => backHandler.remove();
-    }, [navigationMode, handleStopNavigation]);
-
     const handleSelectPlace = (place: GeocodingPlace) => {
         if (searchMarkerRef.current) {
             mapRef.current?.clearMarkers();
@@ -134,6 +117,15 @@ export default function TrafficMap() {
             handleNavigate(setUserLocation, place);
         }, 300);
     };
+
+    const { handleMapClick } = useMapClick({
+        navigationMode,
+        onSelectPlace: handleSelectPlace,
+        setSelectedDestination,
+        setSearchQuery,
+        skipSearchRef,
+        setClickedLocation,
+    });
 
     const {
         isRecording,
@@ -255,6 +247,24 @@ export default function TrafficMap() {
         });
     };
 
+    useNavigationTracking({
+        isNavigating: navigationMode,
+        userLocation,
+    });
+
+    useBackgroundSync();
+
+    useEffect(() => {
+        if (!navigationMode) return;
+
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+            handleStopNavigation();
+            return true;
+        });
+
+        return () => backHandler.remove();
+    }, [navigationMode, handleStopNavigation]);
+
     return (
         <View className="flex-1">
             <CustomGebetaMap
@@ -265,7 +275,7 @@ export default function TrafficMap() {
                 mapStyleJson={currentTheme.styleJson}
                 center={initialCenter}
                 zoom={initialZoom}
-                onMapClick={() => { }}
+                onMapClick={handleMapClick}
                 onMapLoaded={handleMapLoaded}
                 routeGeoJSON={routeGeoJSON}
                 routeStyle={{
@@ -279,6 +289,7 @@ export default function TrafficMap() {
                 userHeading={currentHeading}
                 showUserLocationMarker={showUserLocationMarker}
                 incidents={incidents}
+                clickedLocation={clickedLocation}
                 explorePlaces={exploreResults}
                 exploreCategory={selectedExploreCategory}
                 onExplorePlacePress={(place) => setSelectedExplorePlace(place)}
@@ -334,6 +345,7 @@ export default function TrafficMap() {
                         setShowSearchContainer(false);
                         setSelectedExploreCategory(null);
                         clearExploreResults();
+                        setClickedLocation(null);
                     }}
 
                     selectedDestination={selectedDestination}
@@ -341,7 +353,10 @@ export default function TrafficMap() {
                     simulateMovement={simulateMovement}
                     onSimulateToggle={() => setSimulateMovement(!simulateMovement)}
                     onNavigate={() => handleNavigate(setUserLocation)}
-                    onClearRoute={handleClearRoute}
+                    onClearRoute={() => {
+                        handleClearRoute();
+                        setClickedLocation(null);
+                    }}
                     userLocation={userLocation}
                     mapRef={mapRef}
                     onReportPress={() => setShowReportOptions(true)}
@@ -371,6 +386,7 @@ export default function TrafficMap() {
                     onCancel={() => {
                         setShowRoutePreview(false);
                         handleClearRoute();
+                        setClickedLocation(null);
                     }}
                 />
             )}
