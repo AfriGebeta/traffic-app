@@ -17,6 +17,7 @@ interface UseLocationTrackingProps {
     setIsOffRoute: (value: boolean) => void;
     setIsRecalculating: (value: boolean) => void;
     updateInstructionBasedOnPosition: (lat: number, lng: number) => void;
+
     recalculateRoute: (fromLocation?: { lat: number; lng: number }) => Promise<void>;
     rerouteTimeout: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
     totalRouteDistance: number; //meters
@@ -33,11 +34,13 @@ export const useLocationTracking = ({
     setRouteGeoJSON,
     setRemainingDistance,
     setRemainingTime,
+
     setIsOffRoute,
     setIsRecalculating,
     updateInstructionBasedOnPosition,
     recalculateRoute,
     rerouteTimeout,
+    
     totalRouteDistance,
     totalRouteDuration,
 }: UseLocationTrackingProps) => {
@@ -299,6 +302,7 @@ export const useLocationTracking = ({
         setIsRecalculating,
         updateInstructionBasedOnPosition,
         recalculateRoute,
+
         totalRouteDistance,
         totalRouteDuration,
     ]);

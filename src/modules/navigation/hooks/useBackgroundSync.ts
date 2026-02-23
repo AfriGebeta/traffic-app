@@ -9,16 +9,16 @@ export const useBackgroundSync = () => {
 
                 await backgroundSyncService.register();
 
-                const status = await backgroundSyncService.getStatus();
-                const isRegistered = await backgroundSyncService.isRegistered();
+                // const status = await backgroundSyncService.getStatus();
+                // const isRegistered = await backgroundSyncService.isRegistered();
 
-                console.log('[Bg] Sync status:', {
-                    registered: isRegistered,
-                    status: getStatusName(status),
-                });
+                // console.log('[Bg] Sync status:', {
+                //     registered: isRegistered,
+                //     status: getStatusName(status),
+                // });
             } catch (error) {
-                console.log('[bg] bg sync not available');
-                console.log('[bg] error:', error);
+                // console.log('[bg] bg sync not available');
+                // console.log('[bg] error:', error);
             }
         };
 

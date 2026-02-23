@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 
 interface NavigationOverlayProps {
@@ -35,9 +36,10 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
     onTestOffRoute,
 }) => {
     const { t } = useTranslation();
+    const insets = useSafeAreaInsets();
 
     return (
-        <View className="absolute bottom-6 left-4 right-4">
+        <View className="absolute left-4 right-4" style={{ bottom: insets.bottom + 24 }}>
             <View
                 className="rounded-3xl p-4 border border-white/10"
                 style={{ backgroundColor: 'rgba(55, 65, 81, 0.75)' }}
