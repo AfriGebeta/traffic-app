@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 
 interface NavigationBarProps {
@@ -59,6 +60,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
     hasIncidentAlert = false,
 }) => {
     const [distance, setDistance] = useState<number>(0);
+    const insets = useSafeAreaInsets();
 
     useEffect(() => {
         if (userLocation) {
@@ -84,10 +86,8 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
 
     const directionIcon = getDirectionIcon(currentInstruction);
 
-    const topPosition = hasIncidentAlert ? 'top-40' : 'top-8';
-
     return (
-        <View className={`absolute ${topPosition} left-4 right-4`}>
+        <View className="absolute left-4 right-4" style={{ top: insets.top + (hasIncidentAlert ? 112 : 18) }}>
             <View
                 className="border border-white/10"
                 style={{

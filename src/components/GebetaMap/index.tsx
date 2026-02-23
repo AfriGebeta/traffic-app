@@ -171,7 +171,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
         const defaultRouteStyle = {
             color: routeStyle?.color || '#3B82F6',
-            width: 8,
+            width: 9,
             opacity: routeStyle?.opacity || 0.8,
         };
 

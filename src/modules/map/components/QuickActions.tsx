@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+// import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
@@ -52,35 +53,60 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
                 className="flex-1"
             >
                 {categories.map((category) => (
-                    <TouchableOpacity
+                    <View
                         key={category.id}
-                        onPress={() => handleSelect(category.id)}
-                        className={`mr-2 px-4 py-2 rounded-full flex-row items-center ${selectedCategory === category.id
-                            ? 'bg-orange-400 border-2 border-orange-400'
-                            : 'bg-white border-2 border-gray-200'
-                            }`}
+                        className="mr-2"
                     >
-                        {isLoading && selectedCategory === category.id ? (
-                            <ActivityIndicator size="small" color="#FFFFFF" />
-                        ) : null}
-                        <Text
-                            className={`text-sm font-medium ${selectedCategory === category.id ? 'text-white' : 'text-gray-700'
-                                }`}
+                        <TouchableOpacity
+                            onPress={() => handleSelect(category.id)}
+                            activeOpacity={0.8}
                         >
-                            {t(category.nameKey)}
-                        </Text>
-                    </TouchableOpacity>
+                            <View
+                                className={`px-4 py-2 flex-row items-center rounded-full  ${selectedCategory === category.id
+                                    ? 'bg-orange-500'
+                                    : 'bg-white/90'
+                                    }`}
+                                style={{
+                                    borderWidth: 0.5,
+                                    borderColor: selectedCategory === category.id
+                                        ? 'rgba(59, 130, 246, 0.3)'
+                                        : 'rgba(156, 163, 175, 0.3)',
+                                    borderRadius: 9999,
+                                }}
+                            >
+                                {isLoading && selectedCategory === category.id ? (
+                                    <ActivityIndicator size="small" color="#FFFFFF" />
+                                ) : null}
+                                <Text
+                                    className={`text-sm font-medium ${selectedCategory === category.id ? 'text-white' : 'text-gray-800'
+                                        }`}
+                                >
+                                    {t(category.nameKey)}
+                                </Text>
+                            </View>
+                        </TouchableOpacity>
+                    </View>
                 ))}
             </ScrollView>
 
             {selectedCategory && (
-                <TouchableOpacity
-                    onPress={() => handleSelect(selectedCategory)}
-                    className="ml-2 mr-4 bg-white rounded-full p-2.5 border border-gray-200 shadow-sm"
-                    activeOpacity={0.7}
-                >
-                    <Ionicons name="close" size={18} color="#9CA3AF" />
-                </TouchableOpacity>
+                <View className="ml-2 mr-4">
+                    <TouchableOpacity
+                        onPress={() => handleSelect(selectedCategory)}
+                        activeOpacity={0.7}
+                    >
+                        <View
+                            className="bg-white/90 p-2.5 rounded-full"
+                            style={{
+                                borderWidth: 1.5,
+                                borderColor: 'rgba(156, 163, 175, 0.3)',
+                                borderRadius: 9999,
+                            }}
+                        >
+                            <Ionicons name="close" size={18} color="#6B7280" />
+                        </View>
+                    </TouchableOpacity>
+                </View>
             )}
         </View>
     );

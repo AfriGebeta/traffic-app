@@ -33,7 +33,7 @@ export const ExploreSheet: React.FC<ExploreSheetProps> = ({
         if (visible && userLocation) {
             fetchCategories();
         }
-    }, [visible, userLocation]);
+    }, [visible]);
 
     const handleSeeMore = async (categoryId: ExploreCategoryId) => {
         setExpandedCategory(categoryId);
