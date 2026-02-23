@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeOutUp } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getIncidentColor } from '../../incidents/utils/incidentIcons';
 import { IncidentTypeFromAPI } from '../../incidents/types/incident.types';
 import { incidentService } from '../../incidents/services/incident.service';
@@ -26,6 +27,7 @@ export const IncidentAlert: React.FC<IncidentAlertProps> = ({
     incidentType
 }) => {
     const { t } = useTranslation();
+    const insets = useSafeAreaInsets();
     const color = getIncidentColor(incidentType);
     const [isVoting, setIsVoting] = useState(false);
     const [hasVoted, setHasVoted] = useState(false);
@@ -75,7 +77,7 @@ export const IncidentAlert: React.FC<IncidentAlertProps> = ({
             exiting={FadeOutUp.duration(300)}
             style={{
                 position: 'absolute',
-                top: 48,
+                top: insets.top + 16,
                 left: 16,
                 right: 16,
                 zIndex: 10000,
