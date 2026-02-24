@@ -322,6 +322,9 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                     mapStyle={mapStyleState}
                     attributionEnabled={false}
                     logoEnabled={false}
+                    compassEnabled={!isNavigating}
+                    compassViewPosition={1}
+                    compassViewMargins={{ x: 16, y: 120 }}
                     onPress={(e) => {
                         const coords = (e.geometry as any)?.coordinates;
                         if (coords && onMapClick) {

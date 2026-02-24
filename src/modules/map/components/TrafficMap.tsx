@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, LogBox, BackHandler } from 'react-native';
+import { View, LogBox, BackHandler, StatusBar } from 'react-native';
 import { useLocalSearchParams, useFocusEffect, useRouter } from 'expo-router';
 import CustomGebetaMap from '../../../components/GebetaMap';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
@@ -267,6 +267,7 @@ export default function TrafficMap() {
 
     return (
         <View className="flex-1">
+            <StatusBar barStyle="dark-content" backgroundColor="#ffffff" translucent={false} />
             <CustomGebetaMap
                 ref={mapRef}
                 apiKey={process.env.EXPO_PUBLIC_GEBETA_API_KEY!}
