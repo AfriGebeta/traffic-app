@@ -18,7 +18,7 @@ export default function RegistrationScreen() {
     const { register, loading, error } = useUserRegistration();
 
     const navigateToLogin = () => {
-        router.push('/login' as any);
+        router.replace('/login' as any);
     };
 
     const handleRegister = async () => {
