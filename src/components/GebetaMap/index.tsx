@@ -544,10 +544,6 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         );
                     })}
                 </MapLibreGL.MapView>
-
-                <View style={styles.attributionContainer}>
-                    <Text style={styles.attributionText}>© Gebeta Maps</Text>
-                </View>
             </View >
         );
     }
@@ -563,20 +559,6 @@ const styles = StyleSheet.create({
     },
     map: {
         flex: 1,
-    },
-    attributionContainer: {
-        position: 'absolute',
-        bottom: 8,
-        right: 8,
-        backgroundColor: 'rgba(255, 255, 255, 0.8)',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 4,
-    },
-    attributionText: {
-        fontSize: 12,
-        color: '#333',
-        fontWeight: '500',
     },
 });
 

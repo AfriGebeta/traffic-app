@@ -32,6 +32,7 @@ import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 export default function TrafficMap() {
     const mapRef = useRef<GebetaMapRef>(null);
     const searchMarkerRef = useRef<any>(null);
+    const hasZoomedToUserLocation = useRef(false);
     const router = useRouter();
 
     const [initialCenter] = useState<[number, number]>([38.7463, 9.0223]);
@@ -253,6 +254,18 @@ export default function TrafficMap() {
     });
 
     useBackgroundSync();
+
+    useEffect(() => {
+        if (userLocation && mapRef.current && !navigationMode && !hasZoomedToUserLocation.current) {
+            hasZoomedToUserLocation.current = true;
+            setShowUserLocationMarker(true);
+            mapRef.current.flyTo({
+                center: [userLocation.lng, userLocation.lat],
+                zoom: 15,
+                duration: 1500,
+            });
+        }
+    }, [userLocation?.lat, userLocation?.lng, navigationMode]);
 
     useEffect(() => {
         if (!navigationMode) return;
