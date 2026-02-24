@@ -21,8 +21,11 @@
         "backgroundColor": "#ffffff",
         "foregroundImage": "./assets/images/logo.png"
       },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
+      "statusBar": {
+        "barStyle": "dark-content",
+        "backgroundColor": "#ffffff"
+      },
       "package": "com.anonymous.trafficapp",
       "versionCode": 1,
       "permissions": [
@@ -57,7 +60,8 @@
         }
       ],
       "@maplibre/maplibre-react-native",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-navigation-bar"
     ],
     "experiments": {
       "typedRoutes": true,
