@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, StatusBar } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useUserRegistration } from '../hooks/useUserRegistration';
 import { showToast } from '../../../shared/utils/toast';
@@ -69,6 +69,7 @@ export default function RegistrationScreen() {
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             keyboardVerticalOffset={0}
         >
+            <StatusBar barStyle="dark-content" backgroundColor="#ffffff" translucent={false} />
             <View className="absolute top-12 right-6 z-50">
                 <LanguageSwitcher />
             </View>
