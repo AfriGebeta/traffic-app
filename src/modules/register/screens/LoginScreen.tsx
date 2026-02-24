@@ -55,7 +55,7 @@ export default function LoginScreen() {
     };
 
     const navigateToRegister = () => {
-        router.push('/register' as any);
+        router.replace('/register' as any);
     };
 
     return (
