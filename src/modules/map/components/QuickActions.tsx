@@ -45,17 +45,17 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
     };
 
     return (
-        <View className="flex-row items-center mt-1.5">
+        <View className="flex-row items-center mt-1.5 -mx-4">
             <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 4 }}
+                contentContainerStyle={{ paddingLeft: 14, paddingRight: 14 }}
                 className="flex-1"
             >
-                {categories.map((category) => (
+                {categories.map((category, index) => (
                     <View
                         key={category.id}
-                        className="mr-2"
+                        className={index === categories.length - 1 ? "" : "mr-2"}
                     >
                         <TouchableOpacity
                             onPress={() => handleSelect(category.id)}
@@ -74,9 +74,6 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
                                     borderRadius: 9999,
                                 }}
                             >
-                                {isLoading && selectedCategory === category.id ? (
-                                    <ActivityIndicator size="small" color="#FFFFFF" />
-                                ) : null}
                                 <Text
                                     className={`text-sm font-medium ${selectedCategory === category.id ? 'text-white' : 'text-gray-800'
                                         }`}

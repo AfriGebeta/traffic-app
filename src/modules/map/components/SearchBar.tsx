@@ -1,5 +1,5 @@
 ﻿import React from 'react';
-import { View, TextInput, TouchableOpacity } from 'react-native';
+import { View, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface SearchBarProps {
@@ -8,6 +8,7 @@ interface SearchBarProps {
     onClear: () => void;
     placeholder?: string;
     onProfilePress?: () => void;
+    isLoading?: boolean;
 }
 
 export const SearchBar: React.FC<SearchBarProps> = ({
@@ -16,6 +17,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     onClear,
     placeholder = 'Search Location...',
     onProfilePress,
+    isLoading = false,
 }) => {
     return (
         <View className="flex-row items-center gap-3">
@@ -37,7 +39,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                     onChangeText={onChangeText}
                     style={{ paddingVertical: 8 }}
                 />
-                {value.length > 0 && (
+                {isLoading && (
+                    <ActivityIndicator size="small" color="#FFA500" style={{ marginRight: 8 }} />
+                )}
+                {value.length > 0 && !isLoading && (
                     <TouchableOpacity onPress={onClear} className="mr-2">
                         <Ionicons name="close-circle" size={16} color="#9CA3AF" />
                     </TouchableOpacity>
