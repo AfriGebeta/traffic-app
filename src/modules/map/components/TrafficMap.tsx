@@ -299,6 +299,7 @@ export default function TrafficMap() {
                 }}
                 isNavigating={navigationMode}
                 userLocation={userLocation}
+                selectedDestination={selectedDestination}
 
                 userHeading={currentHeading}
                 showUserLocationMarker={showUserLocationMarker}
