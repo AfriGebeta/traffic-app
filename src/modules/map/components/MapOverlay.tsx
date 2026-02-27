@@ -11,6 +11,7 @@ import { FloatingActions } from './FloatingActions';
 import { BottomNavigation } from './BottomNavigation';
 import { MapThemeSelector } from './MapThemeSelector';
 import { showToast } from '../../../shared/utils/toast';
+import { colors } from '../../../shared/theme/colors';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 
@@ -43,6 +44,9 @@ interface MapOverlayProps {
     onExploreCategory?: (categoryId: string) => void;
     isExploring?: boolean;
     selectedExploreCategory?: string | null;
+    isNavigationMinimized?: boolean;
+    onRestoreNavigation?: () => void;
+    navigationDestination?: GeocodingPlace | null;
 }
 
 export const MapOverlay: React.FC<MapOverlayProps> = ({
@@ -74,6 +78,9 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
     onExploreCategory,
     isExploring = false,
     selectedExploreCategory = null,
+    isNavigationMinimized = false,
+    onRestoreNavigation,
+    navigationDestination,
 }) => {
     const { t } = useTranslation();
     const router = useRouter();
@@ -119,6 +126,33 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                 isRecording={isRecording}
                 isProcessingVoice={isProcessingVoice}
             />
+
+            {isNavigationMinimized && navigationDestination && onRestoreNavigation && (
+                <View className="absolute left-4 right-4" style={{ bottom: Math.max(insets.bottom + 120, 148) }}>
+                    <TouchableOpacity
+                        onPress={onRestoreNavigation}
+                        className="rounded-2xl p-4 flex-row items-center justify-between shadow-lg"
+                        style={{
+                            backgroundColor: colors.primary.main,
+                            shadowColor: colors.primary.main,
+                            shadowOffset: { width: 0, height: 4 },
+                            shadowOpacity: 0.3,
+                            shadowRadius: 8,
+                            elevation: 8,
+                        }}
+                    >
+                        <View className="flex-1">
+                            <Text className="text-white text-sm font-semibold">{t('navigation-active') || 'Navigation Active'}</Text>
+                            <Text className="text-white/80 text-xs" numberOfLines={1}>
+                                {navigationDestination.name}
+                            </Text>
+                        </View>
+                        <View className="bg-white/20 rounded-full px-3 py-1.5">
+                            <Text className="text-white text-xs font-bold">{t('tap-to-return') || 'Tap to return'}</Text>
+                        </View>
+                    </TouchableOpacity>
+                </View>
+            )}
 
             <BottomNavigation
                 onTabPress={(tabId) => {

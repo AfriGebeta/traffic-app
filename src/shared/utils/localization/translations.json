@@ -15,6 +15,21 @@
         "AM": "ይቀጥሉ"
     },
     {
+        "key": "minimize",
+        "EN_US": "Minimize",
+        "AM": "ያሳንሱ"
+    },
+    {
+        "key": "tap-to-return",
+        "EN_US": "Tap to return",
+        "AM": "ይመለሱ"
+    },
+    {
+        "key": "navigation-active",
+        "EN_US": "Navigation Active",
+        "AM": "በመሄድ ላይ"
+    },
+    {
         "key": "where-to-go",
         "EN_US": "Where to go?",
         "AM": "ወዴት እንሂድ?"
