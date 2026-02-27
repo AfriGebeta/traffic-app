@@ -40,6 +40,11 @@
         "AM": "በመንገድዎ ያዩትን ያጋሩ"
     },
     {
+        "key": "recenter",
+        "EN_US": "Re-center",
+        "AM": "መልሰው ያተኩሩ"
+    },
+    {
         "key": "select-the-type-of-incident-to-other-drivers",
         "EN_US": "Select the type of incident you saw",
         "AM": "ያዩትን ከተዘረዘሩት ውስጥ ይምረጡ"
