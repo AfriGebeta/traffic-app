@@ -43,6 +43,7 @@ export default function TrafficMap() {
     const [selectedExplorePlace, setSelectedExplorePlace] = useState<GeocodingPlace | null>(null);
     const [showUserLocationMarker, setShowUserLocationMarker] = useState(false);
     const [clickedLocation, setClickedLocation] = useState<{ lat: number; lng: number } | null>(null);
+    const [isNavigationMinimized, setIsNavigationMinimized] = useState(false);
 
     const { t } = useTranslation();
     const params = useLocalSearchParams();
@@ -291,14 +292,15 @@ export default function TrafficMap() {
                 zoom={initialZoom}
                 onMapClick={handleMapClick}
                 onMapLoaded={handleMapLoaded}
-                routeGeoJSON={routeGeoJSON}
+                routeGeoJSON={isNavigationMinimized ? undefined : routeGeoJSON}
                 routeStyle={{
                     color: '#3B82F6',
                     width: 5,
                     opacity: 0.8
                 }}
-                isNavigating={navigationMode}
+                isNavigating={navigationMode && !isNavigationMinimized}
                 userLocation={userLocation}
+                selectedDestination={isNavigationMinimized ? null : selectedDestination}
 
                 userHeading={currentHeading}
                 showUserLocationMarker={showUserLocationMarker}
@@ -319,11 +321,12 @@ export default function TrafficMap() {
                 />
             )}
 
-            {navigationMode && selectedDestination && (
+            {navigationMode && selectedDestination && !isNavigationMinimized && (
                 <>
                     <NavigationBar
                         destination={selectedDestination}
                         onStop={handleStopNavigation}
+                        onMinimize={() => setIsNavigationMinimized(true)}
                         simulateMovement={simulateMovement}
                         userLocation={userLocation}
                         currentInstruction={currentInstruction}
@@ -343,7 +346,7 @@ export default function TrafficMap() {
                 </>
             )}
 
-            {!navigationMode && (
+            {(!navigationMode || isNavigationMinimized) && (
                 <MapOverlay
                     searchQuery={searchQuery}
                     onSearchChange={setSearchQuery}
@@ -386,6 +389,9 @@ export default function TrafficMap() {
                     onExploreCategory={handleExploreCategory}
                     isExploring={isExploring}
                     selectedExploreCategory={selectedExploreCategory}
+                    isNavigationMinimized={isNavigationMinimized}
+                    onRestoreNavigation={() => setIsNavigationMinimized(false)}
+                    navigationDestination={navigationMode ? selectedDestination : null}
                 />
             )}
 

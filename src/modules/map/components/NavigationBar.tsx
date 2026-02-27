@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors } from '../../../shared/theme/colors';
+import { useTranslation } from 'react-i18next';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 
 interface NavigationBarProps {
     destination: GeocodingPlace;
     onStop: () => void;
+    onMinimize?: () => void;
     simulateMovement?: boolean;
     userLocation?: { lat: number; lng: number } | null;
     currentInstruction?: string;
@@ -52,6 +55,7 @@ const getDirectionIcon = (instruction?: string): keyof typeof Ionicons.glyphMap 
 export const NavigationBar: React.FC<NavigationBarProps> = ({
     destination,
     onStop,
+    onMinimize,
     simulateMovement,
     userLocation,
     currentInstruction,
@@ -61,6 +65,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
 }) => {
     const [distance, setDistance] = useState<number>(0);
     const insets = useSafeAreaInsets();
+    const { t } = useTranslation();
 
     useEffect(() => {
         if (userLocation) {
@@ -99,7 +104,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                     padding: 16,
                 }}
             >
-                <View className="flex-row items-center justify-between">
+                <View className="flex-row items-start justify-between">
                     <View className="flex-1">
                         <View className="flex-row items-baseline gap-2 mb-1">
                             <Text className="text-white text-2xl font-extrabold">
@@ -111,9 +116,24 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                                 </Text>
                             )}
                         </View>
-                        <Text className="text-gray-300 text-sm font-semibold" numberOfLines={1}>
+                        <Text className="text-gray-300 text-sm font-semibold mb-2" numberOfLines={1}>
                             {destination.name}
                         </Text>
+                        {onMinimize && (
+                            <TouchableOpacity
+                                onPress={onMinimize}
+                                className="self-start mt-1 px-3 py-1.5 rounded-lg"
+                                style={{
+                                    backgroundColor: 'transparent',
+                                    borderWidth: 1.5,
+                                    borderColor: colors.primary.main
+                                }}
+                            >
+                                <Text className="text-sm font-bold" style={{ color: colors.primary.main }}>
+                                    {t('minimize') || 'Minimize'}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
                         {simulateMovement && (
                             <View className="bg-orange-500/20 rounded-lg px-2 py-1 mt-2 self-start">
                                 <Text className="text-orange-400 text-xs font-semibold">Simulation Mode</Text>
@@ -121,7 +141,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                         )}
                     </View>
                     <TouchableOpacity
-                        className="bg-white/10 rounded-full p-3 ml-3"
+                        className="bg-white/10 rounded-full p-3"
                         onPress={onStop}
                         style={{ borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.15)' }}
                     >

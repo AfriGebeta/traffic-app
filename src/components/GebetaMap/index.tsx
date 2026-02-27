@@ -53,6 +53,7 @@ interface ExtendedGebetaMapProps extends GebetaMapProps {
     }>;
     selectedLocation?: { lat: number; lng: number } | null;
     clickedLocation?: { lat: number; lng: number } | null;
+    selectedDestination?: { latitude: number; longitude: number; name: string } | null;
     explorePlaces?: Array<{
         name: string;
         latitude: number;
@@ -65,7 +66,7 @@ interface ExtendedGebetaMapProps extends GebetaMapProps {
 
 
 const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
-    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, incidents, selectedLocation, clickedLocation, explorePlaces, exploreCategory, onExplorePlacePress }, ref) => {
+    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, incidents, selectedLocation, clickedLocation, selectedDestination, explorePlaces, exploreCategory, onExplorePlacePress }, ref) => {
         const [mapStyleState, setMapStyleState] = useState<Record<string, unknown> | null>(null);
         const [loading, setLoading] = useState(true);
         const cameraRef = useRef<any>(null);
@@ -504,6 +505,33 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                     style={{
                                         width: 28,
                                         height: 28,
+                                    }}
+                                    resizeMode="contain"
+                                />
+                            </View>
+                        </MapLibreGL.PointAnnotation>
+                    )}
+
+                    {selectedDestination && imagesLoaded && !clickedLocation && (
+                        <MapLibreGL.PointAnnotation
+                            key={`destination-${renderKey}`}
+                            id="destination-marker"
+                            coordinate={[selectedDestination.longitude, selectedDestination.latitude]}
+                            anchor={{ x: 0.5, y: 1 }}
+                        >
+                            <View
+                                style={{
+                                    width: 32,
+                                    height: 32,
+                                    alignItems: 'center',
+                                    justifyContent: 'flex-end',
+                                }}
+                            >
+                                <Image
+                                    source={RED_PIN_IMAGE}
+                                    style={{
+                                        width: 32,
+                                        height: 32,
                                     }}
                                     resizeMode="contain"
                                 />
