@@ -53,7 +53,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
     const { t } = useTranslation();
 
     return (
-        <View className="absolute bottom-0 pb-8 left-0 right-0 bg-white rounded-t-3xl shadow-2xl">
+        <View className="absolute bottom-0 pb-11 left-0 right-0 bg-white rounded-t-3xl shadow-2xl">
             <View className="px-6 pt-4  border-b border-gray-100">
                 <View className="flex-row items-center justify-between mb-2">
                     <Text className="text-2xl font-bold text-gray-900">{t('directions')}</Text>
