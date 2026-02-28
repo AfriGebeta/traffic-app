@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import customMapTheme3 from '../../../../assets/map-styles/custom-map-theme (9).json';
-import DarkTheme from '../../../../assets/map-styles/dark-custom.json';
-import RasterTheme from '../../../../assets/map-styles/raster.json';
+import DarkTheme from '../../../../assets/map-styles/Untitled-1.json';
 
 export type MapThemeId = 'standard' | 'custom3' | 'dark' | 'raster';
 
@@ -54,6 +53,17 @@ export const MAP_THEMES: MapTheme[] = [
         icon: 'moon-outline',
         styleJson: (() => {
             const theme = JSON.parse(JSON.stringify(DarkTheme));
+   
+            theme.glyphs = 'https://tiles.gebeta.app/fonts/{fontstack}/{range}.pbf';
+
+            if (theme.layers && Array.isArray(theme.layers)) {
+                theme.layers.forEach((layer: any) => {
+                    if (layer.layout && layer.layout['text-font']) {
+                        layer.layout['text-font'] = ['Noto Serif Ethiopic'];
+                    }
+                });
+            }
+
             if (theme.sources) {
                 Object.keys(theme.sources).forEach(sourceKey => {
                     const source = theme.sources[sourceKey];

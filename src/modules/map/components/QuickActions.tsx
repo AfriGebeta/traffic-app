@@ -85,26 +85,6 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
                     </View>
                 ))}
             </ScrollView>
-
-            {selectedCategory && (
-                <View className="ml-2 mr-4">
-                    <TouchableOpacity
-                        onPress={() => handleSelect(selectedCategory)}
-                        activeOpacity={0.7}
-                    >
-                        <View
-                            className="bg-white/90 p-2.5 rounded-full"
-                            style={{
-                                borderWidth: 1.5,
-                                borderColor: 'rgba(156, 163, 175, 0.3)',
-                                borderRadius: 9999,
-                            }}
-                        >
-                            <Ionicons name="close" size={18} color="#6B7280" />
-                        </View>
-                    </TouchableOpacity>
-                </View>
-            )}
         </View>
     );
 };

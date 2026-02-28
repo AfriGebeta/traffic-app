@@ -30,7 +30,7 @@ Thanks for your interest in contributing! This document provides guidelines for 
    ```
    EXPO_PUBLIC_GEBETA_API_KEY=your_gebeta_api_key_here - you can get it by registering to https://gebeta.app
 
-   EXPO_PUBLIC_API_URL=your_backend_api_url_here
+   EXPO_PUBLIC_API_URL=your backend url
    ```
 
 5. Start the development server:
