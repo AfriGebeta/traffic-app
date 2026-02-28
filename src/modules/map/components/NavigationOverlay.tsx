@@ -12,6 +12,8 @@ interface NavigationOverlayProps {
     isOffRoute?: boolean;
     isRecalculating?: boolean;
     onTestOffRoute?: () => void;
+    showRecenterButton?: boolean;
+    onRecenter?: () => void;
 }
 
 const formatDistance = (meters: number): string => {
@@ -34,6 +36,8 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
     isOffRoute,
     isRecalculating,
     onTestOffRoute,
+    showRecenterButton,
+    onRecenter,
 }) => {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
@@ -53,6 +57,17 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                             </Text>
                         </View>
                     </View>
+                )}
+
+                {showRecenterButton && onRecenter && (
+                    <TouchableOpacity
+                        className="mb-3 border rounded-2xl py-3 flex-row items-center justify-center"
+                        style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', borderColor: '#FFA500' }}
+                        onPress={onRecenter}
+                    >
+
+                        <Text className="text-gray-200 text-sm font-bold ml-2">{t('recenter') || 'Re-center'}</Text>
+                    </TouchableOpacity>
                 )}
 
                 <TouchableOpacity

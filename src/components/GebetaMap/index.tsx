@@ -40,6 +40,7 @@ interface ExtendedGebetaMapProps extends GebetaMapProps {
     userLocation?: { lat: number; lng: number } | null;
     userHeading?: number;
     showUserLocationMarker?: boolean;
+    onUserInteraction?: () => void;
     incidents?: Array<{
         id: string;
         lat: number;
@@ -66,13 +67,15 @@ interface ExtendedGebetaMapProps extends GebetaMapProps {
 
 
 const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
-    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, incidents, selectedLocation, clickedLocation, selectedDestination, explorePlaces, exploreCategory, onExplorePlacePress }, ref) => {
+    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserInteraction, incidents, selectedLocation, clickedLocation, selectedDestination, explorePlaces, exploreCategory, onExplorePlacePress }, ref) => {
         const [mapStyleState, setMapStyleState] = useState<Record<string, unknown> | null>(null);
         const [loading, setLoading] = useState(true);
         const cameraRef = useRef<any>(null);
         const mapViewRef = useRef<any>(null);
         const hasStartedNavigating = useRef(false);
         const lastCameraUpdate = useRef<{ lat: number; lng: number; heading: number } | null>(null);
+        const userHasZoomedOut = useRef(false);
+        const lastSetZoom = useRef<number>(18);
         const pulseAnim = useRef(new Animated.Value(1)).current;
         const [imagesLoaded, setImagesLoaded] = useState(false);
         const [renderKey, setRenderKey] = useState(0);
@@ -164,11 +167,29 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         useEffect(() => {
             if (isNavigating && !hasStartedNavigating.current) {
                 hasStartedNavigating.current = true;
+                userHasZoomedOut.current = false;
+                //initial nav zoom
+                if (cameraRef.current && userLocation) {
+                    const offsetDistance = 0.0007;
+                    const headingRad = ((userHeading || 0) * Math.PI) / 180;
+                    const latOffset = offsetDistance * Math.cos(headingRad);
+                    const lngOffset = offsetDistance * Math.sin(headingRad);
+
+                    cameraRef.current.setCamera({
+                        centerCoordinate: [userLocation.lng + lngOffset, userLocation.lat + latOffset],
+                        zoomLevel: 18,
+                        animationDuration: 500,
+                        pitch: 60,
+                        heading: userHeading || 0,
+                        animationMode: 'flyTo',
+                    });
+                }
             } else if (!isNavigating && hasStartedNavigating.current) {
                 hasStartedNavigating.current = false;
                 lastCameraUpdate.current = null;
+                userHasZoomedOut.current = false;
             }
-        }, [isNavigating]);
+        }, [isNavigating, userLocation, userHeading]);
 
         const defaultRouteStyle = {
             color: routeStyle?.color || '#3B82F6',
@@ -289,14 +310,22 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                     const latOffset = offsetDistance * Math.cos(headingRad);
                     const lngOffset = offsetDistance * Math.sin(headingRad);
 
-                    cameraRef.current.setCamera({
+                    const cameraConfig: any = {
                         centerCoordinate: [userLocation.lng + lngOffset, userLocation.lat + latOffset],
-                        zoomLevel: 18,
                         animationDuration: 300,
                         pitch: 60,
                         heading: userHeading || 0,
                         animationMode: 'easeTo',
-                    });
+                    };
+
+                    //only set zoom if user didnt zoom out
+                    if (!userHasZoomedOut.current) {
+                        cameraConfig.zoomLevel = 18;
+                        lastSetZoom.current = 18;
+                    }
+
+                    console.log('Setting camera, userHasZoomedOut:', userHasZoomedOut.current, 'config:', cameraConfig);
+                    cameraRef.current.setCamera(cameraConfig);
 
                     lastCameraUpdate.current = {
                         lat: userLocation.lat,
@@ -317,119 +346,173 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
         return (
             <View style={styles.container}>
-                <MapLibreGL.MapView
-                    ref={mapViewRef}
+                <View
                     style={styles.map}
-                    mapStyle={mapStyleState}
-                    attributionEnabled={false}
-                    logoEnabled={false}
-                    compassEnabled={!isNavigating}
-                    compassViewPosition={1}
-                    compassViewMargins={{ x: 16, y: 120 }}
-                    onPress={(e) => {
-                        const coords = (e.geometry as any)?.coordinates;
-                        if (coords && onMapClick) {
-                            onMapClick([coords[0], coords[1]], e);
+                    onTouchStart={() => {
+                        if (isNavigating) {
+                            setTimeout(() => {
+                                userHasZoomedOut.current = true;
+                                if (onUserInteraction) {
+                                    onUserInteraction();
+                                }
+                            }, 500);
                         }
                     }}
-                    onDidFinishLoadingMap={handleMapLoad}
                 >
-                    <MapLibreGL.Camera
-                        ref={cameraRef}
-                        centerCoordinate={center}
-                        zoomLevel={zoom}
-                        pitch={0}
-                        heading={0}
-                        animationMode="flyTo"
-                        animationDuration={800}
-                        maxBounds={undefined}
-                        defaultSettings={{
-                            centerCoordinate: center,
-                            zoomLevel: zoom,
+                    <MapLibreGL.MapView
+                        ref={mapViewRef}
+                        style={styles.map}
+                        mapStyle={mapStyleState}
+                        attributionEnabled={false}
+                        logoEnabled={false}
+                        compassEnabled={!isNavigating}
+                        compassViewPosition={1}
+                        compassViewMargins={{ x: 16, y: 120 }}
+                        onPress={(e) => {
+                            const coords = (e.geometry as any)?.coordinates;
+                            if (coords && onMapClick) {
+                                onMapClick([coords[0], coords[1]], e);
+                            }
                         }}
-                    />
+                        onRegionIsChanging={(e: any) => {
+                            if (isNavigating && e.properties?.zoom !== undefined) {
+                                const currentZoom = e.properties.zoom;
+                                if (Math.abs(currentZoom - lastSetZoom.current) > 0.5) {
+                                    if (!userHasZoomedOut.current) {
+                                        userHasZoomedOut.current = true;
+                                        if (onUserInteraction) {
+                                            onUserInteraction();
+                                        }
+                                    }
+                                }
+                            }
+                        }}
+                        onDidFinishLoadingMap={handleMapLoad}
+                    >
+                        <MapLibreGL.Camera
+                            ref={cameraRef}
+                            centerCoordinate={center}
+                            zoomLevel={zoom}
+                            pitch={0}
+                            heading={0}
+                            animationMode="flyTo"
+                            animationDuration={800}
+                            maxBounds={undefined}
+                            defaultSettings={{
+                                centerCoordinate: center,
+                                zoomLevel: zoom,
+                            }}
+                        />
 
-                    {routeGeoJSON && (
-                        <MapLibreGL.ShapeSource
-                            key={`route-${routeGeoJSON.properties?.timestamp || Date.now()}-${JSON.stringify(routeGeoJSON.geometry.coordinates[0])}`}
-                            id="route-preview-source"
-                            shape={routeGeoJSON}
-                        >
-                            <MapLibreGL.LineLayer
-                                id="route-preview-layer"
-                                style={{
-                                    lineColor: defaultRouteStyle.color,
-                                    lineWidth: defaultRouteStyle.width,
-                                    lineOpacity: isNavigating ? 0.6 : defaultRouteStyle.opacity,
-                                    lineCap: 'round',
-                                    lineJoin: 'round',
-                                }}
-                            />
-                        </MapLibreGL.ShapeSource>
-                    )}
+                        {routeGeoJSON && (
+                            <MapLibreGL.ShapeSource
+                                key={`route-${routeGeoJSON.properties?.timestamp || Date.now()}-${JSON.stringify(routeGeoJSON.geometry.coordinates[0])}`}
+                                id="route-preview-source"
+                                shape={routeGeoJSON}
+                            >
+                                <MapLibreGL.LineLayer
+                                    id="route-preview-layer"
+                                    style={{
+                                        lineColor: defaultRouteStyle.color,
+                                        lineWidth: defaultRouteStyle.width,
+                                        lineOpacity: isNavigating ? 0.6 : defaultRouteStyle.opacity,
+                                        lineCap: 'round',
+                                        lineJoin: 'round',
+                                    }}
+                                />
+                            </MapLibreGL.ShapeSource>
+                        )}
 
-                    {isNavigating && userLocation && imagesLoaded && (
-                        <MapLibreGL.PointAnnotation
-                            key={`nav-marker-${renderKey}`}
-                            id="user-location-marker-nav"
-                            coordinate={[userLocation.lng, userLocation.lat]}
-                        >
-                            <View style={{
-                                width: 60,
-                                height: 60,
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}>
+                        {isNavigating && userLocation && imagesLoaded && (
+                            <MapLibreGL.PointAnnotation
+                                key={`nav-marker-${renderKey}`}
+                                id="user-location-marker-nav"
+                                coordinate={[userLocation.lng, userLocation.lat]}
+                            >
                                 <View style={{
-                                    transform: [{ rotate: `${userHeading || 0}deg` }],
+                                    width: 60,
+                                    height: 60,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}>
+                                    <View style={{
+                                        transform: [{ rotate: `${userHeading || 0}deg` }],
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}>
+                                        <Image
+                                            source={MAPPIN_IMAGE}
+                                            style={{
+                                                width: 50,
+                                                height: 50,
+                                            }}
+                                            resizeMode="contain"
+                                        />
+                                    </View>
+                                </View>
+                            </MapLibreGL.PointAnnotation>
+                        )}
+
+                        {!isNavigating && showUserLocationMarker && userLocation && imagesLoaded && (
+                            <MapLibreGL.PointAnnotation
+                                key={`user-location-${renderKey}`}
+                                id="user-location-marker-static"
+                                coordinate={[userLocation.lng, userLocation.lat]}
+                            >
+                                <View style={{
+                                    width: 50,
+                                    height: 50,
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                 }}>
                                     <Image
-                                        source={MAPPIN_IMAGE}
+                                        source={PIN_NORMAL_IMAGE}
                                         style={{
-                                            width: 50,
-                                            height: 50,
+                                            width: 40,
+                                            height: 40,
                                         }}
                                         resizeMode="contain"
                                     />
                                 </View>
-                            </View>
-                        </MapLibreGL.PointAnnotation>
-                    )}
+                            </MapLibreGL.PointAnnotation>
+                        )}
 
-                    {!isNavigating && showUserLocationMarker && userLocation && imagesLoaded && (
-                        <MapLibreGL.PointAnnotation
-                            key={`user-location-${renderKey}`}
-                            id="user-location-marker-static"
-                            coordinate={[userLocation.lng, userLocation.lat]}
-                        >
-                            <View style={{
-                                width: 50,
-                                height: 50,
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}>
-                                <Image
-                                    source={PIN_NORMAL_IMAGE}
-                                    style={{
+                        {incidents && imagesLoaded && incidents.map((incident) => {
+                            const imageSource = INCIDENT_IMAGES[incident.type.name as keyof typeof INCIDENT_IMAGES];
+
+                            return (
+                                <MapLibreGL.PointAnnotation
+                                    key={`incident-${incident.id}-${renderKey}`}
+                                    id={`incident-${incident.id}`}
+                                    coordinate={[incident.lng, incident.lat]}
+                                >
+                                    <View style={{
                                         width: 40,
                                         height: 40,
-                                    }}
-                                    resizeMode="contain"
-                                />
-                            </View>
-                        </MapLibreGL.PointAnnotation>
-                    )}
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}>
+                                        {imageSource ? (
+                                            <Image
+                                                source={imageSource}
+                                                style={{
+                                                    width: 36,
+                                                    height: 36,
+                                                }}
+                                                resizeMode="contain"
+                                            />
+                                        ) : (
+                                            <Ionicons name="alert-circle" size={32} color="#F97316" />
+                                        )}
+                                    </View>
+                                </MapLibreGL.PointAnnotation>
+                            );
+                        })}
 
-                    {incidents && imagesLoaded && incidents.map((incident) => {
-                        const imageSource = INCIDENT_IMAGES[incident.type.name as keyof typeof INCIDENT_IMAGES];
-
-                        return (
+                        {selectedLocation && (
                             <MapLibreGL.PointAnnotation
-                                key={`incident-${incident.id}-${renderKey}`}
-                                id={`incident-${incident.id}`}
-                                coordinate={[incident.lng, incident.lat]}
+                                id="selected-location-marker"
+                                coordinate={[selectedLocation.lng, selectedLocation.lat]}
                             >
                                 <View style={{
                                     width: 40,
@@ -437,141 +520,114 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                 }}>
-                                    {imageSource ? (
-                                        <Image
-                                            source={imageSource}
-                                            style={{
-                                                width: 36,
-                                                height: 36,
-                                            }}
-                                            resizeMode="contain"
-                                        />
-                                    ) : (
-                                        <Ionicons name="alert-circle" size={32} color="#F97316" />
-                                    )}
+                                    <View style={{
+                                        position: 'absolute',
+                                        width: 40,
+                                        height: 40,
+                                        borderRadius: 20,
+                                        backgroundColor: '#EF4444',
+                                        opacity: 0.3,
+                                    }} />
+                                    <View style={{
+                                        width: 20,
+                                        height: 20,
+                                        borderRadius: 10,
+                                        backgroundColor: '#EF4444',
+                                        borderWidth: 3,
+                                        borderColor: '#FFFFFF',
+                                    }} />
                                 </View>
                             </MapLibreGL.PointAnnotation>
-                        );
-                    })}
+                        )}
 
-                    {selectedLocation && (
-                        <MapLibreGL.PointAnnotation
-                            id="selected-location-marker"
-                            coordinate={[selectedLocation.lng, selectedLocation.lat]}
-                        >
-                            <View style={{
-                                width: 40,
-                                height: 40,
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}>
-                                <View style={{
-                                    position: 'absolute',
-                                    width: 40,
-                                    height: 40,
-                                    borderRadius: 20,
-                                    backgroundColor: '#EF4444',
-                                    opacity: 0.3,
-                                }} />
-                                <View style={{
-                                    width: 20,
-                                    height: 20,
-                                    borderRadius: 10,
-                                    backgroundColor: '#EF4444',
-                                    borderWidth: 3,
-                                    borderColor: '#FFFFFF',
-                                }} />
-                            </View>
-                        </MapLibreGL.PointAnnotation>
-                    )}
-
-                    {clickedLocation && imagesLoaded && (
-                        <MapLibreGL.PointAnnotation
-                            key={`clicked-location-${renderKey}`}
-                            id="clicked-location-marker"
-                            coordinate={[clickedLocation.lng, clickedLocation.lat]}
-                            anchor={{ x: 0.5, y: 1 }}
-                        >
-                            <View
-                                style={{
-                                    width: 28,
-                                    height: 28,
-                                    alignItems: 'center',
-                                    justifyContent: 'flex-end',
-                                }}
+                        {clickedLocation && imagesLoaded && (
+                            <MapLibreGL.PointAnnotation
+                                key={`clicked-location-${renderKey}`}
+                                id="clicked-location-marker"
+                                coordinate={[clickedLocation.lng, clickedLocation.lat]}
+                                anchor={{ x: 0.5, y: 1 }}
                             >
-                                <Image
-                                    source={RED_PIN_IMAGE}
+                                <View
                                     style={{
                                         width: 28,
                                         height: 28,
+                                        alignItems: 'center',
+                                        justifyContent: 'flex-end',
                                     }}
-                                    resizeMode="contain"
-                                />
-                            </View>
-                        </MapLibreGL.PointAnnotation>
-                    )}
+                                >
+                                    <Image
+                                        source={RED_PIN_IMAGE}
+                                        style={{
+                                            width: 28,
+                                            height: 28,
+                                        }}
+                                        resizeMode="contain"
+                                    />
+                                </View>
+                            </MapLibreGL.PointAnnotation>
+                        )}
 
-                    {selectedDestination && imagesLoaded && !clickedLocation && (
-                        <MapLibreGL.PointAnnotation
-                            key={`destination-${renderKey}`}
-                            id="destination-marker"
-                            coordinate={[selectedDestination.longitude, selectedDestination.latitude]}
-                            anchor={{ x: 0.5, y: 1 }}
-                        >
-                            <View
-                                style={{
-                                    width: 32,
-                                    height: 32,
-                                    alignItems: 'center',
-                                    justifyContent: 'flex-end',
-                                }}
+                        {selectedDestination && imagesLoaded && !clickedLocation && (
+                            <MapLibreGL.PointAnnotation
+                                key={`destination-${renderKey}`}
+                                id="destination-marker"
+                                coordinate={[selectedDestination.longitude, selectedDestination.latitude]}
+                                anchor={{ x: 0.5, y: 1 }}
                             >
-                                <Image
-                                    source={RED_PIN_IMAGE}
+                                <View
                                     style={{
                                         width: 32,
                                         height: 32,
+                                        alignItems: 'center',
+                                        justifyContent: 'flex-end',
                                     }}
-                                    resizeMode="contain"
-                                />
-                            </View>
-                        </MapLibreGL.PointAnnotation>
-                    )}
-
-                    {explorePlaces && imagesLoaded && explorePlaces.map((place, index) => {
-                        const imageSource = EXPLORE_IMAGES[exploreCategory as keyof typeof EXPLORE_IMAGES];
-
-                        return (
-                            <MapLibreGL.PointAnnotation
-                                key={`explore-${exploreCategory}-${index}-${renderKey}`}
-                                id={`explore-place-${index}`}
-                                coordinate={[place.longitude, place.latitude]}
-                                onSelected={() => onExplorePlacePress?.(place)}
-                            >
-                                <View style={{
-                                    width: 40,
-                                    height: 40,
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                }}>
-                                    {imageSource ? (
-                                        <Image
-                                            source={imageSource}
-                                            style={{
-                                                width: 36,
-                                                height: 36,
-                                            }}
-                                            resizeMode="contain"
-                                        />
-                                    ) : (
-                                        <Ionicons name="location" size={28} color={colors.primary.main} />
-                                    )}
+                                >
+                                    <Image
+                                        source={RED_PIN_IMAGE}
+                                        style={{
+                                            width: 32,
+                                            height: 32,
+                                        }}
+                                        resizeMode="contain"
+                                    />
                                 </View>
                             </MapLibreGL.PointAnnotation>
-                        );
-                    })}
-                </MapLibreGL.MapView>
+                        )}
+
+                        {explorePlaces && imagesLoaded && explorePlaces.map((place, index) => {
+                            const imageSource = EXPLORE_IMAGES[exploreCategory as keyof typeof EXPLORE_IMAGES];
+
+                            return (
+                                <MapLibreGL.PointAnnotation
+                                    key={`explore-${exploreCategory}-${index}-${renderKey}`}
+                                    id={`explore-place-${index}`}
+                                    coordinate={[place.longitude, place.latitude]}
+                                    onSelected={() => onExplorePlacePress?.(place)}
+                                >
+                                    <View style={{
+                                        width: 40,
+                                        height: 40,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}>
+                                        {imageSource ? (
+                                            <Image
+                                                source={imageSource}
+                                                style={{
+                                                    width: 36,
+                                                    height: 36,
+                                                }}
+                                                resizeMode="contain"
+                                            />
+                                        ) : (
+                                            <Ionicons name="location" size={28} color={colors.primary.main} />
+                                        )}
+                                    </View>
+                                </MapLibreGL.PointAnnotation>
+                            );
+                        })}
+                    </MapLibreGL.MapView>
+                </View>
             </View >
         );
     }

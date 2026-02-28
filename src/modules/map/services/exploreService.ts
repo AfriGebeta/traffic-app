@@ -64,8 +64,6 @@ export const exploreService = {
             image: item.image || item.photo || item.imageUrl || undefined,
         }));
 
-        console.log('Transformed places:', places.length, places);
-
         return places;
     },
 
