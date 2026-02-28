@@ -44,6 +44,7 @@ export default function TrafficMap() {
     const [showUserLocationMarker, setShowUserLocationMarker] = useState(false);
     const [clickedLocation, setClickedLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [isNavigationMinimized, setIsNavigationMinimized] = useState(false);
+    const [hasUserZoomedOut, setHasUserZoomedOut] = useState(false);
 
     const { t } = useTranslation();
     const params = useLocalSearchParams();
@@ -249,6 +250,25 @@ export default function TrafficMap() {
         });
     };
 
+    const handleRecenter = () => {
+        if (!userLocation || !mapRef.current) return;
+
+        const offsetDistance = 0.0007;
+        const headingRad = ((currentHeading || 0) * Math.PI) / 180;
+        const latOffset = offsetDistance * Math.cos(headingRad);
+        const lngOffset = offsetDistance * Math.sin(headingRad);
+
+        mapRef.current.flyTo({
+            center: [userLocation.lng + lngOffset, userLocation.lat + latOffset],
+            zoom: 18,
+            duration: 500,
+            pitch: 60,
+        });
+
+        //reset the flag
+        setHasUserZoomedOut(false);
+    };
+
     useNavigationTracking({
         isNavigating: navigationMode,
         userLocation,
@@ -301,6 +321,7 @@ export default function TrafficMap() {
                 isNavigating={navigationMode && !isNavigationMinimized}
                 userLocation={userLocation}
                 selectedDestination={isNavigationMinimized ? null : selectedDestination}
+                onUserInteraction={() => setHasUserZoomedOut(true)}
 
                 userHeading={currentHeading}
                 showUserLocationMarker={showUserLocationMarker}
@@ -342,6 +363,8 @@ export default function TrafficMap() {
                         isOffRoute={isOffRoute}
                         isRecalculating={isRecalculating}
                         onTestOffRoute={() => simulateOffRoute(setUserLocation)}
+                        showRecenterButton={hasUserZoomedOut}
+                        onRecenter={handleRecenter}
                     />
                 </>
             )}

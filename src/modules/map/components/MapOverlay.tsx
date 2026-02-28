@@ -100,6 +100,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                     onClear={onSearchClear}
                     placeholder={t('where-to-go')}
                     onProfilePress={handleProfilePress}
+                    isLoading={isExploring}
                 />
 
                 <QuickActions

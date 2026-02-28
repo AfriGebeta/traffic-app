@@ -31,13 +31,18 @@
     },
     {
         "key": "where-to-go",
-        "EN_US": "Where to go?",
+        "EN_US": "Where to?",
         "AM": "ወዴት እንሂድ?"
     },
     {
         "key": "share-what-you-see",
         "EN_US": "Share what you see",
         "AM": "በመንገድዎ ያዩትን ያጋሩ"
+    },
+    {
+        "key": "recenter",
+        "EN_US": "Re-center",
+        "AM": "መልሰው ያተኩሩ"
     },
     {
         "key": "select-the-type-of-incident-to-other-drivers",
