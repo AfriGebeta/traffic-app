@@ -783,5 +783,15 @@
         "key": "failed-to-vote",
         "EN_US": "Failed to vote",
         "AM": "ድምፅ መስጠት አልተሳካም"
+    },
+    {
+        "key": "password",
+        "EN_US": "Password",
+        "AM": "ይለፍ ቃል"
+    },
+    {
+        "key": "enter-your-password",
+        "EN_US": "Enter your password",
+        "AM": "የይለፍ ቃል ያስገቡ"
     }
 ]
