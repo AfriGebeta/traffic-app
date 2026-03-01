@@ -4,6 +4,7 @@ import type { GeocodingPlace } from '../types/navigation.types';
 import { showToast } from '../../../shared/utils/toast';
 import { navigationService } from '../services/navigation.service';
 import { decodePolyline } from '../../../shared/utils/polyline';
+import { useTranslation } from '../../../shared/hooks/useTranslation';
 
 interface UseRouteRecalculationProps {
     mapRef: React.RefObject<GebetaMapRef | null>;
@@ -54,6 +55,7 @@ export const useRouteRecalculation = ({
     resetClosestIndex,
     setUserLocation,
 }: UseRouteRecalculationProps) => {
+    const { t } = useTranslation();
     const lastRerouteTime = useRef<number>(0);
 
     const recalculateRoute = useCallback(
@@ -91,7 +93,10 @@ export const useRouteRecalculation = ({
                 });
 
                 if (!navigationData?.data?.trip?.legs?.[0]) {
-                    showToast.error('Reroute Failed', 'Could not calculate new route');
+                    showToast.error(
+                        t('reroute-failed') || 'Reroute Failed',
+                        t('could-not-calculate-new-route') || 'Could not calculate new route'
+                    );
                     setIsRecalculating(false);
                     return;
                 }
@@ -219,6 +224,30 @@ export const useRouteRecalculation = ({
                             setRemainingDistance(state.distanceRemaining);
                             setRemainingTime(state.durationRemaining);
 
+                            //destination arrival
+                            if (userLocation && currentDestination.current) {
+                                const R = 6371000;
+                                const dLat = (currentDestination.current.latitude - userLocation.lat) * Math.PI / 180;
+                                const dLng = (currentDestination.current.longitude - userLocation.lng) * Math.PI / 180;
+                                const a =
+                                    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                                    Math.cos(userLocation.lat * Math.PI / 180) *
+                                    Math.cos(currentDestination.current.latitude * Math.PI / 180) *
+                                    Math.sin(dLng / 2) *
+                                    Math.sin(dLng / 2);
+                                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                                const distanceToDestination = R * c;
+
+                                if (distanceToDestination <= 10) {
+                                    showToast.success(
+                                        t('navigation-complete') || 'Navigation Complete',
+                                        t('arrived-at-destination') || 'You have arrived at your destination!'
+                                    );
+                                    handleStopNavigation();
+                                    return;
+                                }
+                            }
+
                             if (state.nextInstruction) {
                                 const instructionText = state.nextInstruction.instruction || state.nextInstruction.text || '';
                                 setCurrentInstruction(instructionText);
@@ -244,10 +273,16 @@ export const useRouteRecalculation = ({
                                 rerouteTimeout.current = null;
                             }
 
-                            showToast.success('Back on Route', 'You are back on the planned route');
+                            showToast.success(
+                                t('back-on-route') || 'Back on Route',
+                                t('back-on-planned-route') || 'You are back on the planned route'
+                            );
                         },
                         onNavigationComplete: () => {
-                            showToast.success('Navigation Complete', 'You have arrived at your destination!');
+                            showToast.success(
+                                t('navigation-complete') || 'Navigation Complete',
+                                t('arrived-at-destination') || 'You have arrived at your destination!'
+                            );
                             handleStopNavigation();
                         },
                     } as any);
@@ -257,7 +292,10 @@ export const useRouteRecalculation = ({
                 setIsOffRoute(false);
 
 
-                showToast.success('Route Recalculated', 'Following new route');
+                showToast.success(
+                    t('route-recalculated') || 'Route Recalculated',
+                    t('following-new-route') || 'Following new route'
+                );
 
                 if (simulateMovement) {
                     startSimulation();
@@ -265,7 +303,10 @@ export const useRouteRecalculation = ({
             } catch (error: any) {
                 console.error('reroute failed:', error);
                 console.error('Error details:', error.message);
-                showToast.error('Reroute Failed', error.message || 'Could not calculate new route');
+                showToast.error(
+                    t('reroute-failed') || 'Reroute Failed',
+                    error.message || t('could-not-calculate-new-route') || 'Could not calculate new route'
+                );
                 setIsRecalculating(false);
             }
         },
