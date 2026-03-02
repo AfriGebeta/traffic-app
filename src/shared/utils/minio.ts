@@ -14,8 +14,6 @@ export const uploadToMinio = async (imageUri: string, prefix: string = 'incident
     try {
         const filename = imageUri.split('/').pop() || 'photo.jpg';
 
-        console.log('requesting presigned url:', { apiUrl, prefix, filename });
-
         const presignedResponse = await fetch(`${apiUrl}/api/uploads/presigned`, {
             method: 'POST',
             headers: {
@@ -27,22 +25,14 @@ export const uploadToMinio = async (imageUri: string, prefix: string = 'incident
             }),
         });
 
-        console.log('presigned status:', presignedResponse.status);
-
         if (!presignedResponse.ok) {
-            const errorText = await presignedResponse.text();
-            console.error('presigned url err:', errorText);
-
-            throw new Error(`Failed to get presigned URL: ${presignedResponse.status} - ${errorText}`);
+            throw new Error(`Failed to get presigned URL: ${presignedResponse.status}`);
         }
 
         const presignedData: PresignedUrlResponse = await presignedResponse.json();
-        console.log('presigned data received:', presignedData);
 
-        console.log('fetching image from URI:', imageUri);
         const imageResponse = await fetch(imageUri);
         const imageBlob = await imageResponse.blob();
-        console.log('img blob size:', imageBlob.size);
 
         const extension = filename.toLowerCase().split('.').pop();
         let contentType = 'image/jpeg'; // def
@@ -59,9 +49,6 @@ export const uploadToMinio = async (imageUri: string, prefix: string = 'incident
             contentType = imageBlob.type;
         }
 
-        console.log('uploading to minio url:', presignedData.url);
-        console.log('Content-Type:', contentType);
-
         const uploadResponse = await fetch(presignedData.url, {
             method: 'PUT',
             body: imageBlob,
@@ -70,19 +57,12 @@ export const uploadToMinio = async (imageUri: string, prefix: string = 'incident
             },
         });
 
-        console.log('upload response status:', uploadResponse.status);
-
         if (!uploadResponse.ok) {
-            const errorText = await uploadResponse.text();
-            console.error('minio upload error:', errorText);
-            throw new Error(`failed to upload image to MinIO: ${uploadResponse.status} - ${errorText}`);
+            throw new Error(`failed to upload image : ${uploadResponse.status}`);
         }
 
-        const urlWithoutParams = presignedData.url.split('?')[0];
-        console.log('upload successful, returning object name:', presignedData.objectName);
         return presignedData.objectName;
     } catch (error) {
-        console.error('MinIO upload error:', error);
         throw error;
     }
 };

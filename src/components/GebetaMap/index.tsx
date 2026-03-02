@@ -324,7 +324,6 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         lastSetZoom.current = 18;
                     }
 
-                    console.log('Setting camera, userHasZoomedOut:', userHasZoomedOut.current, 'config:', cameraConfig);
                     cameraRef.current.setCamera(cameraConfig);
 
                     lastCameraUpdate.current = {

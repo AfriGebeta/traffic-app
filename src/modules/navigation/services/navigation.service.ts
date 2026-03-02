@@ -12,7 +12,6 @@ export const navigationService = {
         });
 
         if (response.error || !response.data) {
-            console.error('Geocoding error:', response.error);
             return [];
         }
 
@@ -20,11 +19,55 @@ export const navigationService = {
         return results;
     },
 
+    async reverseGeocode(lat: number, lng: number): Promise<GeocodingPlace> {
+        try {
+            const response = await apiService.post<{ response: any[] }>('/api/navigation/request-revgeocoding', {
+                coordinate: { lat, lng },
+                cursor: 0,
+                limit: 10
+            });
+
+            const results = response.data?.response || [];
+
+            // look for landmark
+            const LANDMARK_THRESHOLD = 0.0005;
+
+            for (const place of results) {
+                if (place.name && place.latitude && place.longitude) {
+                    const distance = Math.sqrt(
+                        Math.pow(place.latitude - lat, 2) + Math.pow(place.longitude - lng, 2)
+                    );
+
+                    if (distance < LANDMARK_THRESHOLD) {
+                        return {
+                            name: place.name,
+                            latitude: lat,
+                            longitude: lng,
+                            Country: place.Country || '',
+                            City: place.City || '',
+                            type: place.type || 'location'
+                        };
+                    }
+                }
+            }
+        } catch (error) {
+            
+        }
+
+        return {
+            name: `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+            latitude: lat,
+            longitude: lng,
+            Country: '',
+            City: '',
+            type: 'coordinates'
+        };
+    },
+
     async getNavigation(request: NavigationRequest): Promise<NavigationResponse | null> {
         const response = await apiService.post<NavigationResponse>('/api/navigation/request-navigation', request);
 
         if (response.error || !response.data) {
-            console.error('Navigation error:', response.error);
             return null;
         }
 

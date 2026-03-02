@@ -63,7 +63,6 @@ export const useRouteRecalculation = ({
             const locationToUse = fromLocation || userLocation;
 
             if (!locationToUse || !currentDestination.current) {
-                console.log('Recalculate skipped: missing location or destination');
                 return;
             }
 
@@ -72,11 +71,8 @@ export const useRouteRecalculation = ({
 
 
             if (timeSinceLastReroute < 5000) {
-                console.log(`recalculate skipped:  (${timeSinceLastReroute}ms since last reroute)`);
                 return;
             }
-
-            console.log('starting route recalculation...');
 
             if (rerouteTimeout.current) {
                 clearTimeout(rerouteTimeout.current);
@@ -301,8 +297,6 @@ export const useRouteRecalculation = ({
                     startSimulation();
                 }
             } catch (error: any) {
-                console.error('reroute failed:', error);
-                console.error('Error details:', error.message);
                 showToast.error(
                     t('reroute-failed') || 'Reroute Failed',
                     error.message || t('could-not-calculate-new-route') || 'Could not calculate new route'
