@@ -39,7 +39,9 @@ export const useUserRegistration = () => {
             }
 
             if (response.data) {
-                await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(response.data.user));
+
+                const { password, ...userWithoutPassword } = response.data.user;
+                await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userWithoutPassword));
                 await AsyncStorage.setItem(TOKEN_STORAGE_KEY, response.data.token);
                 setLoading(false);
                 return response.data;

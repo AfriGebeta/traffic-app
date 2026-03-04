@@ -14,7 +14,6 @@ class ApiService {
 
     constructor() {
         this.baseUrl = API_URL;
-        console.log('API Base URL:', this.baseUrl);
     }
 
     private async getAuthHeaders(): Promise<HeadersInit> {
@@ -26,7 +25,7 @@ class ApiService {
                 };
             }
         } catch (error) {
-            console.error('Error getting auth token:', error);
+          
         }
         return {};
     }
@@ -53,8 +52,6 @@ class ApiService {
 
             const contentType = response.headers.get('content-type');
             if (!contentType || !contentType.includes('application/json')) {
-                const text = await response.text();
-                console.error('non-json response:', text.substring(0, 500));
                 return {
                     error: `Server returned non-JSON response (${response.status})`,
                 };
@@ -63,7 +60,6 @@ class ApiService {
             const data = await response.json();
 
             if (!response.ok) {
-                console.error('api error:', data);
                 const errorMessage = data.message || data.error || `Request failed with status ${response.status}`;
                 return {
                     error: errorMessage,
@@ -75,7 +71,6 @@ class ApiService {
                 data: data as T,
             };
         } catch (error) {
-            console.error('API Error:', error);
             return {
                 error: error instanceof Error ? error.message : 'network error occurred',
             };

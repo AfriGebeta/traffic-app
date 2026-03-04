@@ -9,6 +9,7 @@ import { useSimulation } from './useSimulation';
 import { useLocationTracking } from './useLocationTracking';
 import { useRouteRecalculation } from './useRouteRecalculation';
 import { calculateBearing, calculateDistance, updateInstructionBasedOnPosition as updateInstruction } from '../utils/navigationUtils';
+import { useTranslation } from '../../../shared/hooks/useTranslation';
 
 export const useNavigation = (
     mapRef: React.RefObject<GebetaMapRef | null>,
@@ -17,12 +18,12 @@ export const useNavigation = (
     stopBackgroundTracking?: () => void,
     startBackgroundTracking?: () => Promise<void>
 ) => {
+    const { t } = useTranslation();
     const [selectedDestination, setSelectedDestination] = useState<GeocodingPlace | null>(null);
     const [isNavigating, setIsNavigating] = useState(false);
     const [navigationMode, setNavigationMode] = useState(false);
     const [showRoutePreview, setShowRoutePreview] = useState(false);
     const [currentHeading, setCurrentHeading] = useState(0);
-    
     const [simulateMovement, setSimulateMovement] = useState(false);
     const [currentInstruction, setCurrentInstruction] = useState<string>('');
     const [remainingDistance, setRemainingDistance] = useState<number>(0);
@@ -115,7 +116,6 @@ export const useNavigation = (
         isNavigatingRef,
         setRemainingDistance,
         setRemainingTime,
-        
         setCurrentInstruction,
         handleStopNavigation: () => {
             if (stopNavigationRef.current) {
@@ -318,6 +318,30 @@ export const useNavigation = (
                     setRemainingDistance(state.distanceRemaining);
                     setRemainingTime(state.durationRemaining);
 
+                    //destination arrival
+                    if (userLocation && selectedDestination) {
+                        const R = 6371000; // earth rad
+                        const dLat = (selectedDestination.latitude - userLocation.lat) * Math.PI / 180;
+                        const dLng = (selectedDestination.longitude - userLocation.lng) * Math.PI / 180;
+                        const a =
+                            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                            Math.cos(userLocation.lat * Math.PI / 180) *
+                            Math.cos(selectedDestination.latitude * Math.PI / 180) *
+                            Math.sin(dLng / 2) *
+                            Math.sin(dLng / 2);
+                        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                        const distanceToDestination = R * c;
+
+                        if (distanceToDestination <= 10) {
+                            showToast.success(
+                                t('navigation-complete') || 'Navigation Complete',
+                                t('arrived-at-destination') || 'You have arrived at your destination!'
+                            );
+                            handleStopNavigation();
+                            return;
+                        }
+                    }
+
                     if (state.nextInstruction) {
                         const instructionText = state.nextInstruction.instruction || state.nextInstruction.text || '';
                         setCurrentInstruction(instructionText);
@@ -327,7 +351,10 @@ export const useNavigation = (
                 },
                 onOffRoute: (distanceFromRoute: number) => {
                     setIsOffRoute(true);
-                    showToast.info('Off Route', `You are ${distanceFromRoute.toFixed(0)}m off the planned route`);
+                    showToast.info(
+                        t('off-route') || 'Off Route',
+                        `${t('you-are') || 'You are'} ${distanceFromRoute.toFixed(0)}m ${t('off-the-planned-route') || 'off the planned route'}`
+                    );
 
                     if (rerouteTimeout.current) {
                         clearTimeout(rerouteTimeout.current);
@@ -345,10 +372,16 @@ export const useNavigation = (
                         rerouteTimeout.current = null;
                     }
 
-                    showToast.success('Back on Route', 'You are back on the planned route');
+                    showToast.success(
+                        t('back-on-route') || 'Back on Route',
+                        t('back-on-planned-route') || 'You are back on the planned route'
+                    );
                 },
                 onNavigationComplete: () => {
-                    showToast.success('Navigation Complete', 'You have arrived at your destination!');
+                    showToast.success(
+                        t('navigation-complete') || 'Navigation Complete',
+                        t('arrived-at-destination') || 'You have arrived at your destination!'
+                    );
                     handleStopNavigation();
                 },
             } as any);

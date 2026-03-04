@@ -15,6 +15,7 @@ export default function RegistrationScreen() {
     const router = useRouter();
     const [phoneNumber, setPhoneNumber] = useState('');
     const [name, setName] = useState('');
+    const [password, setPassword] = useState('');
     const { register, loading, error } = useUserRegistration();
 
     const navigateToLogin = () => {
@@ -32,10 +33,24 @@ export default function RegistrationScreen() {
             return;
         }
 
+        if (!password.trim()) {
+            showToast.error(t('password-required') || 'Password is required');
+            return;
+        }
+
+        if (password.length < 6) {
+            showToast.error(t('password-too-short') || 'Password must be at least 6 characters');
+            return;
+        }
+
         const fullPhoneNumber = `+251${phoneNumber.trim()}`;
 
         try {
-            const result = await register({ phoneNumber: fullPhoneNumber, name: name.trim() });
+            const result = await register({
+                phoneNumber: fullPhoneNumber,
+                name: name.trim(),
+                password: password.trim()
+            });
 
             if (result) {
                 showToast.success(t('registration-successful') || 'Registration successful');
@@ -80,17 +95,17 @@ export default function RegistrationScreen() {
                 showsVerticalScrollIndicator={false}
             >
                 <View className="px-6 py-8">
-                    <View className="items-center mb-8">
+                    <View className="items-center mb-8 mt-4">
                         <Image
                             source={require('../../../../assets/images/favicon.png')}
-                            className="w-28 h-28"
+                            className="w-24 h-24"
                             resizeMode="contain"
                         />
                     </View>
 
                     <View className="mb-8">
                         <Text className="text-3xl font-bold text-gray-900 mb-2 text-center">
-                            {t('welcome') || 'Welcome'}
+                            {t('welcome')}
                         </Text>
                         <Text className="text-base text-gray-600 text-center">
                             {t('register-to-continue') || 'Register to continue'}
@@ -100,7 +115,7 @@ export default function RegistrationScreen() {
                     <View className="mb-6">
                         <View className="mb-4">
                             <Text className="text-sm font-bold text-gray-900 mb-2">
-                                {t('name') || 'Name'}
+                                {t('name')}
                             </Text>
                             <TextInput
                                 className="bg-gray-50 border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900 font-semibold"
@@ -113,9 +128,9 @@ export default function RegistrationScreen() {
                             />
                         </View>
 
-                        <View className="mb-6">
+                        <View className="mb-5">
                             <Text className="text-sm font-bold text-gray-900 mb-2">
-                                {t('phone-number') || 'Phone Number'}
+                                {t('phone-number')}
                             </Text>
                             <View className="flex-row items-center bg-gray-50 border border-gray-300 rounded-xl">
                                 <Text className="text-base font-semibold text-gray-900 pl-4">+251</Text>
@@ -133,6 +148,22 @@ export default function RegistrationScreen() {
                             </View>
                         </View>
 
+                        <View className="mb-6">
+                            <Text className="text-sm font-bold text-gray-900 mb-2">
+                                {t('password') }
+                            </Text>
+                            <TextInput
+                                className="bg-gray-50 border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900 font-semibold"
+                                placeholder={t('enter-your-password') || 'Enter your password'}
+                                placeholderTextColor="#9CA3AF"
+                                value={password}
+                                onChangeText={setPassword}
+                                secureTextEntry
+                                autoCapitalize="none"
+                                editable={!loading}
+                            />
+                        </View>
+
                         <TouchableOpacity
                             className="rounded-xl py-4 items-center mb-3"
                             style={{ backgroundColor: loading ? colors.primary.light : colors.primary.main }}
@@ -148,7 +179,7 @@ export default function RegistrationScreen() {
                                     numberOfLines={2}
                                     style={{ minWidth: 80 }}
                                 >
-                                    {t('register') || 'Register'}
+                                    {t('register') }
                                 </Text>
                             )}
                         </TouchableOpacity>
@@ -162,7 +193,7 @@ export default function RegistrationScreen() {
                             <Text className="text-gray-600 text-sm">
                                 {t('already-have-account') || 'Already have an account?'}{' '}
                                 <Text className="font-bold" style={{ color: colors.primary.main }}>
-                                    {t('login') || 'Login'}
+                                    {t('login')}
                                 </Text>
                             </Text>
                         </TouchableOpacity>
@@ -178,13 +209,13 @@ export default function RegistrationScreen() {
                             activeOpacity={0.8}
                         >
                             <Text className="text-gray-700 text-base font-semibold">
-                                {t('continue-as-guest') || 'Continue as Guest'}
+                                {t('continue-as-guest') }
                             </Text>
                         </TouchableOpacity>
 
                         <View className="mt-6 items-center">
                             <Text className="text-gray-500 text-xs text-center mb-2">
-                                {t('by-continuing-you-agree') || 'By continuing, you agree to our'}
+                                {t('by-continuing-you-agree') }
                             </Text>
                             <View className="flex-row items-center">
                                 <TouchableOpacity onPress={() => router.push('/privacy-policy' as any)}>
