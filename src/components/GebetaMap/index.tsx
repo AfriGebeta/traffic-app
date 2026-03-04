@@ -26,6 +26,7 @@ const INCIDENT_IMAGES = {
     CRASH: require('../../../assets/images/crash.png'),
     GATED_COMMUNITY: require('../../../assets/images/gated-community.png'),
     BROKEN_ROAD: require('../../../assets/images/broken-road.png'),
+    RADAR: require('../../../assets/images/radar.png'),
     OTHER: require('../../../assets/images/other.png'),
 };
 
