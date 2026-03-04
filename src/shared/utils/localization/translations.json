@@ -95,6 +95,11 @@
         "AM": "መንገዱ ታጥሯል"
     },
     {
+        "key": "radar",
+        "EN_US": "Radar",
+        "AM": "ራዳር"
+    },
+    {
         "key": "traffic-jam",
         "EN_US": "Traffic Jam",
         "AM": "መዘጋጋት"
@@ -783,5 +788,75 @@
         "key": "failed-to-vote",
         "EN_US": "Failed to vote",
         "AM": "ድምፅ መስጠት አልተሳካም"
+    },
+    {
+        "key": "password",
+        "EN_US": "Password",
+        "AM": "ይለፍ ቃል"
+    },
+    {
+        "key": "enter-your-password",
+        "EN_US": "Enter your password",
+        "AM": "የይለፍ ቃል ያስገቡ"
+    },
+    {
+        "key": "password-required",
+        "EN_US": "Password is required",
+        "AM": "የይለፍ ቃል ያስፈልጋል"
+    },
+    {
+        "key": "password-too-short",
+        "EN_US": "Password must be at least 6 characters",
+        "AM": "የይለፍ ቃል ቢያንስ 6 ቁምፊዎች መሆን አለበት"
+    },
+    {
+        "key": "navigation-complete",
+        "EN_US": "Navigation Complete",
+        "AM": "አሰሳ ተጠናቋል"
+    },
+    {
+        "key": "arrived-at-destination",
+        "EN_US": "You have arrived at your destination!",
+        "AM": "መድረሻዎ ላይ ደርሰዋል!"
+    },
+    {
+        "key": "off-route",
+        "EN_US": "Off Route",
+        "AM": "ከመንገድ ወጥተዋል"
+    },
+    {
+        "key": "meters-off-route",
+        "EN_US": "You are {distance}m off the planned route",
+        "AM": "ከታቀደው መንገድ {distance}ሜ ርቀው ነዎት"
+    },
+    {
+        "key": "back-on-route",
+        "EN_US": "Back on Route",
+        "AM": "ወደ መንገድ ተመልሰዋል"
+    },
+    {
+        "key": "back-on-planned-route",
+        "EN_US": "You are back on the planned route",
+        "AM": "ወደ ታቀደው መንገድ ተመልሰዋል"
+    },
+    {
+        "key": "route-recalculated",
+        "EN_US": "Route Recalculated",
+        "AM": "መንገድ እንደገና ተሰልቷል"
+    },
+    {
+        "key": "following-new-route",
+        "EN_US": "Following new route",
+        "AM": "አዲስ መንገድ በመከተል ላይ"
+    },
+    {
+        "key": "reroute-failed",
+        "EN_US": "Reroute Failed",
+        "AM": "እንደገና ማስላት አልተሳካም"
+    },
+    {
+        "key": "could-not-calculate-new-route",
+        "EN_US": "Could not calculate new route",
+        "AM": "አዲስ መንገድ ማስላት አልተቻለም"
     }
 ]

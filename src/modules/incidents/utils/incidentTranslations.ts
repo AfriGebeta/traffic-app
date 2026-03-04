@@ -26,6 +26,8 @@ export const getIncidentTranslationKey = (type: IncidentTypeFromAPI | string): s
         'BROKEN_ROAD': 'broken-road',
         'broken-road': 'broken-road',
         'broken_road': 'broken-road',
+        'RADAR': 'radar',
+        'radar': 'radar',
         'OTHER': 'other',
         'other': 'other',
     };

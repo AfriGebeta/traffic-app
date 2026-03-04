@@ -14,7 +14,7 @@ export default function LoginScreen() {
     const { t } = useTranslation();
     const router = useRouter();
     const [phoneNumber, setPhoneNumber] = useState('');
-    const [name, setName] = useState('');
+    const [password, setPassword] = useState('');
     const { login, loading, error } = useUserLogin();
 
     const handleLogin = async () => {
@@ -23,13 +23,13 @@ export default function LoginScreen() {
             return;
         }
 
-        if (!name.trim()) {
-            showToast.error(t('name-required') || 'Name is required');
+        if (!password.trim()) {
+            showToast.error(t('password-required') || 'Password is required');
             return;
         }
 
         const fullPhoneNumber = `+251${phoneNumber.trim()}`;
-        const result = await login({ phoneNumber: fullPhoneNumber, name: name.trim() });
+        const result = await login({ phoneNumber: fullPhoneNumber, password: password.trim() });
 
         if (result) {
             showToast.success(t('login-successful') || 'Login successful');
@@ -78,39 +78,24 @@ export default function LoginScreen() {
                     <View className="items-center mb-8">
                         <Image
                             source={require('../../../../assets/images/favicon.png')}
-                            className="w-28 h-28"
+                            className="w-24 h-24"
                             resizeMode="contain"
                         />
                     </View>
 
                     <View className="mb-8">
                         <Text className="text-3xl font-bold text-gray-900 mb-2 text-center">
-                            {t('welcome-back') || 'Welcome Back'}
+                            {t('welcome-back') }
                         </Text>
                         <Text className="text-base text-gray-600 text-center">
-                            {t('login-to-continue') || 'Login to continue'}
+                            {t('login-to-continue') }
                         </Text>
                     </View>
 
                     <View className="mb-6">
                         <View className="mb-4">
                             <Text className="text-sm font-bold text-gray-900 mb-2">
-                                {t('name') || 'Name'}
-                            </Text>
-                            <TextInput
-                                className="bg-gray-50 border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900 font-semibold"
-                                placeholder={t('enter-your-name') || 'Enter your name'}
-                                placeholderTextColor="#9CA3AF"
-                                value={name}
-                                onChangeText={setName}
-                                autoCapitalize="words"
-                                editable={!loading}
-                            />
-                        </View>
-
-                        <View className="mb-6">
-                            <Text className="text-sm font-bold text-gray-900 mb-2">
-                                {t('phone-number') || 'Phone Number'}
+                                {t('phone-number') }
                             </Text>
                             <View className="flex-row items-center bg-gray-50 border border-gray-300 rounded-xl">
                                 <Text className="text-base font-semibold text-gray-900 pl-4">+251</Text>
@@ -128,6 +113,22 @@ export default function LoginScreen() {
                             </View>
                         </View>
 
+                        <View className="mb-6">
+                            <Text className="text-sm font-bold text-gray-900 mb-2">
+                                {t('password') }
+                            </Text>
+                            <TextInput
+                                className="bg-gray-50 border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900 font-semibold"
+                                placeholder={t('enter-your-password') }
+                                placeholderTextColor="#9CA3AF"
+                                value={password}
+                                onChangeText={setPassword}
+                                secureTextEntry
+                                autoCapitalize="none"
+                                editable={!loading}
+                            />
+                        </View>
+
                         <TouchableOpacity
                             className="rounded-xl py-4 items-center mb-3"
                             style={{ backgroundColor: loading ? colors.primary.light : colors.primary.main }}
@@ -143,7 +144,7 @@ export default function LoginScreen() {
                                     numberOfLines={2}
                                     style={{ minWidth: 80 }}
                                 >
-                                    {t('login') || 'Login'}
+                                    {t('login') }
                                 </Text>
                             )}
                         </TouchableOpacity>
@@ -157,7 +158,7 @@ export default function LoginScreen() {
                             <Text className="text-gray-600 text-sm">
                                 {t('dont-have-account') || "Don't have an account?"}{' '}
                                 <Text className="font-bold" style={{ color: colors.primary.main }}>
-                                    {t('register') || 'Register'}
+                                    {t('register') }
                                 </Text>
                             </Text>
                         </TouchableOpacity>
@@ -173,24 +174,24 @@ export default function LoginScreen() {
                             activeOpacity={0.8}
                         >
                             <Text className="text-gray-700 text-base font-semibold">
-                                {t('continue-as-guest') || 'Continue as Guest'}
+                                {t('continue-as-guest')}
                             </Text>
                         </TouchableOpacity>
 
                         <View className="mt-6 items-center">
                             <Text className="text-gray-500 text-xs text-center mb-2">
-                                {t('by-continuing-you-agree') || 'By continuing, you agree to our'}
+                                {t('by-continuing-you-agree') }
                             </Text>
                             <View className="flex-row items-center">
                                 <TouchableOpacity onPress={() => router.push('/privacy-policy' as any)}>
                                     <Text className="text-xs font-semibold" style={{ color: colors.primary.main }}>
-                                        {t('privacy-policy') || 'Privacy Policy'}
+                                        {t('privacy-policy') }
                                     </Text>
                                 </TouchableOpacity>
                                 <Text className="text-gray-500 text-xs mx-1">{t('and') || 'and'}</Text>
                                 <TouchableOpacity onPress={() => router.push('/terms-conditions' as any)}>
                                     <Text className="text-xs font-semibold" style={{ color: colors.primary.main }}>
-                                        {t('terms-conditions') || 'Terms & Conditions'}
+                                        {t('terms-conditions') }
                                     </Text>
                                 </TouchableOpacity>
                             </View>

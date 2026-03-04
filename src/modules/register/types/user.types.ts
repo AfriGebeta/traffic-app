@@ -2,6 +2,7 @@ export interface User {
     id: string;
     phoneNumber: string;
     name: string;
+    password?: string;
     points: number;
     createdAt: string;
     updatedAt: string;
@@ -14,10 +15,11 @@ export interface AuthResponse {
 
 export interface UserRegistrationRequest {
     phoneNumber: string;
+    password: string;
     name: string;
 }
 
 export interface UserLoginRequest {
     phoneNumber: string;
-    name: string;
+    password: string;
 }

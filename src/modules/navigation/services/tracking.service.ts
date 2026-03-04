@@ -11,7 +11,6 @@ class NavigationTrackingService {
             const data = await AsyncStorage.getItem(STORAGE_KEY);
             return data ? JSON.parse(data) : [];
         } catch (error) {
-            console.error('error reading stored navigations:', error);
             return [];
         }
     }
@@ -20,7 +19,7 @@ class NavigationTrackingService {
         try {
             await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(navigations));
         } catch (error) {
-            console.error('error saving navigations:', error);
+           
         }
     }
 
@@ -51,7 +50,6 @@ class NavigationTrackingService {
         try {
             const lastSync = await AsyncStorage.getItem(LAST_SYNC_KEY);
             if (!lastSync) {
-                console.log('tracking: No previous sync found - will sync');
                 return true;
             }
 
@@ -59,12 +57,8 @@ class NavigationTrackingService {
             const now = Date.now();
             const hoursSinceSync = (now - lastSyncTime) / (1000 * 60 * 60);
 
-            const shouldSync = hoursSinceSync >= 24;
-            console.log(`for tracking: Hours since last sync: ${hoursSinceSync.toFixed(1)}h - ${shouldSync ? 'will sync' : 'will not sync'}`);
-
-            return shouldSync;
+            return hoursSinceSync >= 24;
         } catch (error) {
-            console.error('error checking sync time:', error);
             return false;
         }
     }
@@ -74,11 +68,8 @@ class NavigationTrackingService {
             const navigations = await this.getStoredNavigations();
 
             if (navigations.length === 0) {
-                console.log('tacking: No navigation data to sync');
                 return true;
             }
-
-            console.log(`[tracking: Syncing ${navigations.length} navigation(s) to ${API_URL}`);
 
             const payload: RequestNavigationHistory = {
                 navigations: navigations.map(({ navigationId, points }) => ({
@@ -103,30 +94,22 @@ class NavigationTrackingService {
             });
 
             if (!response.ok) {
-                const errorText = await response.text();
-                console.error('tracking: Sync failed with status:', response.status, 'body:', errorText);
                 throw new Error(`Sync failed: ${response.status}`);
             }
 
             await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([]));
             await AsyncStorage.setItem(LAST_SYNC_KEY, Date.now().toString());
 
-            console.log(`tracking: Successfully synced ${navigations.length} navigation(s)`);
             return true;
         } catch (error) {
-            console.error('tracking: Error syncing navigation history:', error);
             return false;
         }
     }
 
     async checkAndSync(): Promise<void> {
-        console.log('tracking: Checking if sync needed...');
         const shouldSync = await this.shouldSync();
         if (shouldSync) {
-            console.log('tracking: Starting auto-sync...');
             await this.syncNavigationHistory();
-        } else {
-            console.log('tracking: No sync needed yet');
         }
     }
 }
