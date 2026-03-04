@@ -886,8 +886,8 @@
     },
     {
         "key": "report-traffic-rule-violations",
-        "EN_US": "Help others by reporting traffic rule violations",
-        "AM": "የትራፊክ ደንብ ጥሰቶችን በመዘገብ ሌሎችን ያግዙ"
+        "EN_US": "Help others by reporting traffic rules",
+        "AM": "የትራፊክ ደንቦችን በመጠቆም ሌሎችን ያግዙ"
     },
     {
         "key": "punishment",
