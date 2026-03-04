@@ -95,6 +95,11 @@
         "AM": "መንገዱ ታጥሯል"
     },
     {
+        "key": "radar",
+        "EN_US": "Radar",
+        "AM": "ራዳር"
+    },
+    {
         "key": "traffic-jam",
         "EN_US": "Traffic Jam",
         "AM": "መዘጋጋት"
