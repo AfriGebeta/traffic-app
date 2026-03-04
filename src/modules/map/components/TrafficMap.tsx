@@ -70,6 +70,7 @@ export default function TrafficMap() {
         setSelectedDestination,
         isNavigating,
         navigationMode,
+
         showRoutePreview,
         setShowRoutePreview,
         currentHeading,
@@ -379,6 +380,7 @@ export default function TrafficMap() {
                     isSearching={isSearching}
                     showSearchContainer={showSearchContainer}
                     onSelectPlace={handleSelectPlace}
+
                     onCloseSearch={() => {
                         setSearchResults([]);
                         setSearchQuery('');
@@ -393,14 +395,16 @@ export default function TrafficMap() {
                     simulateMovement={simulateMovement}
                     onSimulateToggle={() => setSimulateMovement(!simulateMovement)}
                     onNavigate={() => handleNavigate(setUserLocation)}
+                    
                     onClearRoute={() => {
                         handleClearRoute();
                         setClickedLocation(null);
                     }}
+
                     userLocation={userLocation}
                     mapRef={mapRef}
                     onReportPress={() => setShowReportOptions(true)}
-                    onAddPlacePress={() => router.push('/places/contribute')}
+                    onAddPlacePress={() => router.push('/contribution')}
                     onExplorePress={() => setShowExploreSheet(true)}
                     onLocationPress={handleLocationPress}
                     onVoicePress={handleVoicePress}

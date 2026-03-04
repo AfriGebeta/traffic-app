@@ -112,7 +112,7 @@
     {
         "key": "contribute",
         "EN_US": "Contribute",
-        "AM": "ቦታ ይጠቁሙ "
+        "AM": "ይጠቁሙ "
     },
     {
         "key": "ahead",
@@ -858,5 +858,150 @@
         "key": "could-not-calculate-new-route",
         "EN_US": "Could not calculate new route",
         "AM": "አዲስ መንገድ ማስላት አልተቻለም"
+    },
+    {
+        "key": "choose-what-to-contribute",
+        "EN_US": "Choose what you'd like to contribute",
+        "AM": "ምን መጠቆም እንደሚፈልጉ ይምረጡ"
+    },
+    {
+        "key": "contribute-place",
+        "EN_US": "Contribute a Place",
+        "AM": "ቦታ ይጠቁሙ"
+    },
+    {
+        "key": "contribute-place-description",
+        "EN_US": "Add useful locations like gas stations, restaurants, and more",
+        "AM": "እንደ ነዳጅ ማደያ፣ ሬስቶራንት እና ሌሎችም ጠቃሚ ቦታዎችን ይጠቁሙ"
+    },
+    {
+        "key": "report-traffic-rule",
+        "EN_US": "Report Traffic Rule",
+        "AM": "የትራፊክ ደንብ ይጠቁሙ"
+    },
+    {
+        "key": "report-traffic-rule-description",
+        "EN_US": "Report traffic rule violations to help keep roads safe",
+        "AM": "መንገዶችን ደህንነታቸው እንዲጠበቅ ለማድረግ የትራፊክ ደንብ ጥሰቶችን ይጠቁሙ"
+    },
+    {
+        "key": "report-traffic-rule-violations",
+        "EN_US": "Help others by reporting traffic rule violations",
+        "AM": "የትራፊክ ደንብ ጥሰቶችን በመዘገብ ሌሎችን ያግዙ"
+    },
+    {
+        "key": "punishment",
+        "EN_US": "Punishment",
+        "AM": "ቅጣት"
+    },
+    {
+        "key": "punishment-placeholder",
+        "EN_US": "e.g., Fine of up to 1,000 ETB and possible suspension",
+        "AM": "ለምሳሌ፣ እስከ 1,000 ብር ቅጣት እና የመንጃ ፈቃድ እገዳ"
+    },
+    {
+        "key": "punishment-description",
+        "EN_US": "Describe the penalty or punishment for this violation",
+        "AM": "ለዚህ ጥሰት ቅጣት ወይም ቅጣቱን ይግለጹ"
+    },
+    {
+        "key": "punishment-required",
+        "EN_US": "Punishment required",
+        "AM": "ቅጣት ያስፈልጋል"
+    },
+    {
+        "key": "enter-punishment-details",
+        "EN_US": "Please enter the punishment details",
+        "AM": "እባክዎ የቅጣቱን ዝርዝር ያስገቡ"
+    },
+    {
+        "key": "location-required",
+        "EN_US": "Location required",
+        "AM": "አድራሻ ያስፈልጋል"
+    },
+    {
+        "key": "pick-location",
+        "EN_US": "Please pick a location on the map",
+        "AM": "እባክዎ በካርታ ላይ አድራሻ ይምረጡ"
+    },
+    {
+        "key": "location-selected",
+        "EN_US": "Location Selected",
+        "AM": "አድራሻ ተመርጧል"
+    },
+    {
+        "key": "submit-report",
+        "EN_US": "Submit Report",
+        "AM": "ሪፖርት ያስገቡ"
+    },
+    {
+        "key": "traffic-rule-report-submitted",
+        "EN_US": "Traffic rule report submitted",
+        "AM": "የትራፊክ ደንብ ሪፖርት ገብቷል"
+    },
+    {
+        "key": "add-rule-report",
+        "EN_US": "Add Rule Report",
+        "AM": "የደንብ ሪፖርት ያክሉ"
+    },
+    {
+        "key": "rule-stop",
+        "EN_US": "Stop",
+        "AM": "ይቁሙ"
+    },
+    {
+        "key": "rule-stop-description",
+        "EN_US": "Come to a complete stop before proceeding.",
+        "AM": "ከመቀጠልዎ በፊት ሙሉ በሙሉ ይቁሙ።"
+    },
+    {
+        "key": "rule-give-way",
+        "EN_US": "Give Way",
+        "AM": "መንገድ ይልቀቁ"
+    },
+    {
+        "key": "rule-give-way-description",
+        "EN_US": "Slow down and give priority to other vehicles or pedestrians.",
+        "AM": "ፍጥነትዎን ይቀንሱ እና ለሌሎች ተሽከርካሪዎች ወይም እግረኞች ቅድሚያ ይስጡ።"
+    },
+    {
+        "key": "rule-no-left-turn",
+        "EN_US": "No Left Turn",
+        "AM": "ወደ ግራ መዞር አይቻልም"
+    },
+    {
+        "key": "rule-no-left-turn-description",
+        "EN_US": "Left turn is not allowed.",
+        "AM": "ወደ ግራ መዞር አይፈቀድም።"
+    },
+    {
+        "key": "rule-no-right-turn",
+        "EN_US": "No Right Turn",
+        "AM": "ወደ ቀኝ መዞር አይቻልም"
+    },
+    {
+        "key": "rule-no-right-turn-description",
+        "EN_US": "Right turn is not allowed.",
+        "AM": "ወደ ቀኝ መዞር አይፈቀድም።"
+    },
+    {
+        "key": "rule-no-u-turn",
+        "EN_US": "No U-Turn",
+        "AM": "መዞር አይቻልም"
+    },
+    {
+        "key": "rule-no-u-turn-description",
+        "EN_US": "U-turn is not allowed.",
+        "AM": "ዩ-ተርን አይፈቀድም።"
+    },
+    {
+        "key": "rule-no-parking",
+        "EN_US": "No Parking",
+        "AM": "ማቆም አይፈቀድም"
+    },
+    {
+        "key": "rule-no-parking-description",
+        "EN_US": "Parking is prohibited.",
+        "AM": "ማቆም የተከለከለ ነው።"
     }
 ]
