@@ -14,8 +14,6 @@ export default function MapPickerScreen() {
     const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
 
     const handleMapClick = (lngLat: [number, number]) => {
-        console.log('🗺️ Map clicked at:', lngLat);
-
         const location = { lng: lngLat[0], lat: lngLat[1] };
         setSelectedLocation(location);
     };

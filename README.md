@@ -6,6 +6,7 @@ This app is built intended for a community-driven traffic reporting app for Ethi
 
 - Real-time navigation
 - Live traffic incident reporting and alerts
+- Rules contribution and alerts
 - Explore nearby places 
 - Bilingual support (English & Amharic)
 - Voice-powered navigation in collaboration with Hasab AI
@@ -49,12 +50,7 @@ This app is built intended for a community-driven traffic reporting app for Ethi
    npx expo start
    ```
 
-5. Start the development server:
-   ```bash
-   npx expo start
-   ```
-
-6. Run on Android device (via USB cable):
+5. Run on Android device:
    ```bash
    npx expo run:android
    ```
