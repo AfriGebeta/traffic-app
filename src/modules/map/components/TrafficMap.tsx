@@ -136,9 +136,7 @@ export default function TrafficMap() {
 
         setSearchResults([]);
         setSelectedDestination(place);
-
-        skipSearchRef.current = true;
-        setSearchQuery(place.name);
+        setSearchQuery(''); 
 
         setTimeout(() => {
             handleNavigate(setUserLocation, place);
