@@ -47,6 +47,7 @@ export default function TrafficMap() {
     const [clickedLocation, setClickedLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [isNavigationMinimized, setIsNavigationMinimized] = useState(false);
     const [hasUserZoomedOut, setHasUserZoomedOut] = useState(false);
+    const [isOnIncidentReportScreen, setIsOnIncidentReportScreen] = useState(false);
 
     const { t } = useTranslation();
     const params = useLocalSearchParams();
@@ -235,7 +236,7 @@ export default function TrafficMap() {
         LogBox.ignoreLogs(['MapLibre error', 'Failed to load sprite']);
     }, []);
 
-    
+
     useEffect(() => {
         if (params.refresh === 'true') {
             refetch();
@@ -245,6 +246,7 @@ export default function TrafficMap() {
     useFocusEffect(
         React.useCallback(() => {
             refetch();
+            setIsOnIncidentReportScreen(false);
         }, [])
     );
 
@@ -316,12 +318,15 @@ export default function TrafficMap() {
         if (!navigationMode) return;
 
         const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+            if (showReportOptions || isOnIncidentReportScreen) {
+                return false;
+            }
             handleStopNavigation();
             return true;
         });
 
         return () => backHandler.remove();
-    }, [navigationMode, handleStopNavigation]);
+    }, [navigationMode, handleStopNavigation, showReportOptions, isOnIncidentReportScreen]);
 
     return (
         <View className="flex-1">
@@ -476,6 +481,8 @@ export default function TrafficMap() {
                 isVisible={showReportOptions}
                 onClose={() => setShowReportOptions(false)}
                 userLocation={userLocation}
+                isNavigating={navigationMode}
+                onNavigateToReport={() => setIsOnIncidentReportScreen(true)}
             />
 
             <PlaceDetailsSheet
