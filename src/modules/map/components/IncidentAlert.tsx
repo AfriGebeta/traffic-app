@@ -15,6 +15,7 @@ interface IncidentAlertProps {
     distance: string;
     distanceKm: number;
     incidentType: IncidentTypeFromAPI;
+    onDismiss?: () => void;
 }
 
 const VOTE_DISTANCE_KM = 0.15;
@@ -24,7 +25,8 @@ export const IncidentAlert: React.FC<IncidentAlertProps> = ({
     incidentName,
     distance,
     distanceKm,
-    incidentType
+    incidentType,
+    onDismiss,
 }) => {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
@@ -116,6 +118,22 @@ export const IncidentAlert: React.FC<IncidentAlertProps> = ({
                             {distance}
                         </Text>
                     </View>
+                    {onDismiss && (
+                        <TouchableOpacity
+                            onPress={onDismiss}
+                            style={{
+                                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                                borderRadius: 16,
+                                width: 32,
+                                height: 32,
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                            }}
+                            activeOpacity={0.7}
+                        >
+                            <Ionicons name="close" size={18} color="white" />
+                        </TouchableOpacity>
+                    )}
                 </View>
 
                 {showVoteButtons && (

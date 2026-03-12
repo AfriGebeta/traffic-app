@@ -6,6 +6,7 @@ import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 import { NavigationBar } from './NavigationBar';
 import { NavigationOverlay } from './NavigationOverlay';
 import { IncidentAlert } from './IncidentAlert';
+import { RuleAlert } from './RuleAlert';
 import { MapOverlay } from './MapOverlay';
 import { IncidentReportSheet } from './IncidentReportSheet';
 import { PlaceDetailsSheet } from './PlaceDetailsSheet';
@@ -21,6 +22,7 @@ import { useVoiceNavigation } from '../../navigation/hooks/useVoiceNavigation';
 import { useNavigationTracking } from '../../navigation/hooks/useNavigationTracking';
 import { useBackgroundSync } from '../../navigation/hooks/useBackgroundSync';
 import { useIncidentAlerts } from '../hooks/useIncidentAlerts';
+import { useRuleAlerts } from '../hooks/useRuleAlerts';
 import { useMapMarkers } from '../hooks/useMapMarkers';
 import { useMapTheme } from '../context/MapThemeContext';
 import { useExplore } from '../hooks/useExplore';
@@ -82,6 +84,7 @@ export default function TrafficMap() {
         isOffRoute,
         isRecalculating,
         routeCoordinates,
+
         routeGeoJSON,
         handleNavigate,
 
@@ -92,7 +95,26 @@ export default function TrafficMap() {
         recalculateRoute,
     } = useNavigation(mapRef, userLocation, setUserLocation, stopBackgroundTracking, startBackgroundTracking);
 
-    const activeIncidentAlert = useIncidentAlerts(userLocation, incidents, navigationMode, routeCoordinates);
+    const [nearbyRules, setNearbyRules] = useState<any[]>([]);
+    useEffect(() => {
+        if (navigationMode && userLocation) {
+            const fetchNearbyRules = async () => {
+                try {
+                    const { ruleService } = await import('../../rules/services/rule.service');
+                    const rules = await ruleService.getNearbyReports(userLocation.lat, userLocation.lng, 500);
+                    setNearbyRules(rules);
+                } catch (error) {
+                    console.error('Failed to fetch nearby rules:', error);
+                }
+            };
+            fetchNearbyRules();
+        } else {
+            setNearbyRules([]);
+        }
+    }, [navigationMode, userLocation?.lat, userLocation?.lng]);
+
+    const { activeAlert: activeIncidentAlert, dismissAlert: dismissIncidentAlert } = useIncidentAlerts(userLocation, incidents, navigationMode, routeCoordinates);
+    const activeRuleAlert = useRuleAlerts(userLocation, nearbyRules, navigationMode, routeCoordinates);
     const { addIncidentMarkers } = useMapMarkers(mapRef, incidents);
 
     const handleSelectPlace = (place: GeocodingPlace) => {
@@ -213,6 +235,7 @@ export default function TrafficMap() {
         LogBox.ignoreLogs(['MapLibre error', 'Failed to load sprite']);
     }, []);
 
+    
     useEffect(() => {
         if (params.refresh === 'true') {
             refetch();
@@ -340,6 +363,17 @@ export default function TrafficMap() {
                     distance={activeIncidentAlert.distance}
                     distanceKm={activeIncidentAlert.distanceKm}
                     incidentType={activeIncidentAlert.incidentType}
+                    onDismiss={dismissIncidentAlert}
+                />
+            )}
+
+            {activeRuleAlert && (
+                <RuleAlert
+                    ruleId={activeRuleAlert.ruleId}
+                    ruleName={activeRuleAlert.ruleName}
+                    ruleImg={activeRuleAlert.ruleImg}
+                    distance={activeRuleAlert.distance}
+                    hasIncidentAlert={!!activeIncidentAlert}
                 />
             )}
 
@@ -395,7 +429,7 @@ export default function TrafficMap() {
                     simulateMovement={simulateMovement}
                     onSimulateToggle={() => setSimulateMovement(!simulateMovement)}
                     onNavigate={() => handleNavigate(setUserLocation)}
-                    
+
                     onClearRoute={() => {
                         handleClearRoute();
                         setClickedLocation(null);

@@ -10,8 +10,13 @@ export const incidentService = {
         return apiService.post<Incident>('/api/incidents/report', data);
     },
 
-    async getIncidents() {
-        return apiService.get<Incident[]>('/api/incidents');
+    async getIncidents(filters?: string[]) {
+        let url = '/api/incidents';
+        if (filters && filters.length > 0) {
+            const filterParams = filters.map(f => `filter=${f}`).join('&');
+            url = `${url}?${filterParams}`;
+        }
+        return apiService.get<Incident[]>(url);
     },
 
     async upvote(incidentId: string) {

@@ -1003,5 +1003,15 @@
         "key": "rule-no-parking-description",
         "EN_US": "Parking is prohibited.",
         "AM": "ማቆም የተከለከለ ነው።"
+    },
+    {
+        "key": "incident-filters",
+        "EN_US": "Incident Filters",
+        "AM": "የማስጠንቀቂያ ማጣሪያዎች"
+    },
+    {
+        "key": "select-incidents-to-see",
+        "EN_US": "Select which incident types you want to see",
+        "AM": "ማየት የሚፈልጓቸውን የማስጠንቀቂያ ዓይነቶች ይምረጡ"
     }
 ]

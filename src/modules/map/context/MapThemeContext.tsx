@@ -1,7 +1,5 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import customMapTheme3 from '../../../../assets/map-styles/custom-map-theme (9).json';
-import DarkTheme from '../../../../assets/map-styles/Untitled-1.json';
 
 export type MapThemeId = 'standard' | 'custom3' | 'dark' | 'raster';
 
@@ -16,7 +14,44 @@ export interface MapTheme {
 
 const STORAGE_KEY = '@map_theme';
 
-export const MAP_THEMES: MapTheme[] = [
+const processRemoteStyle = async (url: string): Promise<Record<string, unknown>> => {
+    try {
+        const response = await fetch(url);
+        const style = await response.json();
+
+        if (style.sources) {
+            Object.keys(style.sources).forEach(sourceKey => {
+                const source = style.sources[sourceKey];
+                if (source.tiles && Array.isArray(source.tiles)) {
+                    source.tiles = source.tiles.map((tile: string) => {
+                        const processedTile = tile.replace('~~TILE_ENDPOINT~~', 'https://tiles.gebeta.app/tiles');
+                        const separator = processedTile.includes('?') ? '&' : '?';
+                        return `${processedTile}${separator}apiKey=${process.env.EXPO_PUBLIC_GEBETA_API_KEY}`;
+                    });
+                }
+            });
+        }
+
+        if (style.layers && Array.isArray(style.layers)) {
+            style.layers.forEach((layer: any) => {
+                if (layer.layout && layer.layout['text-font']) {
+                    layer.layout['text-font'] = ['Noto Serif Ethiopic'];
+                }
+            });
+        }
+
+        if (style.glyphs) {
+            style.glyphs = 'https://tiles.gebeta.app/fonts/{fontstack}/{range}.pbf';
+        }
+
+        return style as Record<string, unknown>;
+    } catch (error) {
+        console.error('Failed to fetch and process style:', error);
+        return {};
+    }
+};
+
+const BASE_THEMES: (Omit<MapTheme, 'styleJson'> & { styleJson?: Record<string, unknown> })[] = [
     {
         id: 'standard',
         name: 'Classic',
@@ -29,55 +64,12 @@ export const MAP_THEMES: MapTheme[] = [
         name: 'Standard',
         nameAmharic: 'መደበኛ',
         icon: 'color-palette-outline',
-        styleJson: (() => {
-            const theme = JSON.parse(JSON.stringify(customMapTheme3));
-            if (theme.sources) {
-                Object.keys(theme.sources).forEach(sourceKey => {
-                    const source = theme.sources[sourceKey];
-                    if (source.tiles && Array.isArray(source.tiles)) {
-                        source.tiles = source.tiles.map((tile: string) => {
-                            const processedTile = tile.replace('~~TILE_ENDPOINT~~', 'https://tiles.gebeta.app/tiles');
-                            const separator = processedTile.includes('?') ? '&' : '?';
-                            return `${processedTile}${separator}apiKey=${process.env.EXPO_PUBLIC_GEBETA_API_KEY}`;
-                        });
-                    }
-                });
-            }
-            return theme as Record<string, unknown>;
-        })(),
     },
     {
         id: 'dark',
         name: 'Dark',
         nameAmharic: 'ጨለማ',
         icon: 'moon-outline',
-        styleJson: (() => {
-            const theme = JSON.parse(JSON.stringify(DarkTheme));
-   
-            theme.glyphs = 'https://tiles.gebeta.app/fonts/{fontstack}/{range}.pbf';
-
-            if (theme.layers && Array.isArray(theme.layers)) {
-                theme.layers.forEach((layer: any) => {
-                    if (layer.layout && layer.layout['text-font']) {
-                        layer.layout['text-font'] = ['Noto Serif Ethiopic'];
-                    }
-                });
-            }
-
-            if (theme.sources) {
-                Object.keys(theme.sources).forEach(sourceKey => {
-                    const source = theme.sources[sourceKey];
-                    if (source.tiles && Array.isArray(source.tiles)) {
-                        source.tiles = source.tiles.map((tile: string) => {
-                            const processedTile = tile.replace('~~TILE_ENDPOINT~~', 'https://tiles.gebeta.app/tiles');
-                            const separator = processedTile.includes('?') ? '&' : '?';
-                            return `${processedTile}${separator}apiKey=${process.env.EXPO_PUBLIC_GEBETA_API_KEY}`;
-                        });
-                    }
-                });
-            }
-            return theme as Record<string, unknown>;
-        })(),
     },
     {
         id: 'raster',
@@ -117,30 +109,49 @@ interface MapThemeContextType {
 const MapThemeContext = createContext<MapThemeContextType | undefined>(undefined);
 
 export const MapThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [currentTheme, setCurrentTheme] = useState<MapTheme>(MAP_THEMES[0]);
+    const [currentTheme, setCurrentTheme] = useState<MapTheme>(BASE_THEMES[0] as MapTheme);
+    const [themes, setThemes] = useState<MapTheme[]>(BASE_THEMES as MapTheme[]);
     const [isLoading, setIsLoading] = useState(true);
 
-    React.useEffect(() => {
-        const loadSavedTheme = async () => {
+    useEffect(() => {
+        const loadThemes = async () => {
             try {
+                const [lightStyle, darkStyle] = await Promise.all([
+                    processRemoteStyle('https://tiles.gebeta.app/styles/standard/light.json'),
+                    processRemoteStyle('https://tiles.gebeta.app/styles/standard/dark.json'),
+                ]);
+
+                const loadedThemes: MapTheme[] = [
+                    BASE_THEMES[0],
+                    { ...BASE_THEMES[1], styleJson: lightStyle },
+                    { ...BASE_THEMES[2], styleJson: darkStyle },
+                    BASE_THEMES[3],
+                ];
+
+                setThemes(loadedThemes);
+
+                //load saved 
                 const savedThemeId = await AsyncStorage.getItem(STORAGE_KEY);
                 if (savedThemeId) {
-                    const theme = MAP_THEMES.find(t => t.id === savedThemeId);
+                    const theme = loadedThemes.find(t => t.id === savedThemeId);
                     if (theme) {
                         setCurrentTheme(theme);
                     }
+                } else {
+                    setCurrentTheme(loadedThemes[0]);
                 }
             } catch (error) {
-                console.error('Failed to load saved theme:', error);
+                console.error('Failed to load themes:', error);
             } finally {
                 setIsLoading(false);
             }
         };
-        loadSavedTheme();
+
+        loadThemes();
     }, []);
 
     const setTheme = useCallback(async (themeId: MapThemeId) => {
-        const theme = MAP_THEMES.find(t => t.id === themeId);
+        const theme = themes.find(t => t.id === themeId);
         if (theme) {
             setCurrentTheme(theme);
             try {
@@ -149,13 +160,13 @@ export const MapThemeProvider: React.FC<{ children: ReactNode }> = ({ children }
                 console.error('Failed to save theme:', error);
             }
         }
-    }, []);
+    }, [themes]);
 
     return (
         <MapThemeContext.Provider value={{
             currentTheme,
             setTheme,
-            themes: MAP_THEMES,
+            themes,
             isLoading,
         }}>
             {children}
