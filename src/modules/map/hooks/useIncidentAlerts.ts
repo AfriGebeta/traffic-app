@@ -93,8 +93,16 @@ export const useIncidentAlerts = (
     const [activeAlert, setActiveAlert] = useState<ActiveAlert | null>(null);
     const alertedIncidents = useRef<Set<string>>(new Set());
     const passedIncidents = useRef<Set<string>>(new Set());
+    const dismissedIncidents = useRef<Set<string>>(new Set());
     const previousDistances = useRef<Map<string, number>>(new Map());
     const previousLocation = useRef<{ lat: number; lng: number } | null>(null);
+
+    const dismissAlert = () => {
+        if (activeAlert) {
+            dismissedIncidents.current.add(activeAlert.incidentId);
+            setActiveAlert(null);
+        }
+    };
 
     useEffect(() => {
         if (!navigationMode || !userLocation || incidents.length === 0) {
@@ -106,7 +114,7 @@ export const useIncidentAlerts = (
         let closestDistance = Infinity;
 
         for (const incident of incidents) {
-            if (passedIncidents.current.has(incident.id)) {
+            if (passedIncidents.current.has(incident.id) || dismissedIncidents.current.has(incident.id)) {
                 continue;
             }
 
@@ -180,10 +188,11 @@ export const useIncidentAlerts = (
             setActiveAlert(null);
             alertedIncidents.current.clear();
             passedIncidents.current.clear();
+            dismissedIncidents.current.clear();
             previousDistances.current.clear();
             previousLocation.current = null;
         }
     }, [navigationMode]);
 
-    return activeAlert;
+    return { activeAlert, dismissAlert };
 };

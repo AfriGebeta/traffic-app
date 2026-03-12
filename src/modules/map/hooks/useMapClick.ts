@@ -26,8 +26,6 @@ export const useMapClick = ({
 
             const [lng, lat] = lngLat;
 
-            console.log('🗺️ Map clicked at:', { lat, lng });
-
             let clickedFeature = null;
             if (event?.features && event.features.length > 0) {
                 clickedFeature = event.features.find(

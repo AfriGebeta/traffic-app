@@ -9,6 +9,7 @@ import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { LanguageSwitcher } from '../../../shared/components/LanguageSwitcher';
 import { leaderboardService } from '../../leaderboard/services/leaderboard.service';
 import { colors } from '../../../shared/theme/colors';
+import { IncidentFiltersModal } from '../../incidents/components/IncidentFiltersModal';
 
 export const ProfileScreen = () => {
     const router = useRouter();
@@ -17,6 +18,7 @@ export const ProfileScreen = () => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const insets = useSafeAreaInsets();
+    const [showFiltersModal, setShowFiltersModal] = useState(false);
 
     const [level, setLevel] = useState('');
     const [rank, setRank] = useState(0);
@@ -225,6 +227,24 @@ export const ProfileScreen = () => {
                     </TouchableOpacity>
 
                     <TouchableOpacity
+                        className="bg-gray-50 rounded-2xl p-5 mb-6 flex-row items-center justify-between"
+                        onPress={() => setShowFiltersModal(true)}
+                    >
+                        <View className="flex-row items-center flex-1 mr-2">
+                            <Ionicons name="filter" size={24} color="#1f2937" />
+                            <View className="ml-3 flex-1">
+                                <Text className="text-gray-900 font-semibold" numberOfLines={1}>
+                                    {t('incident-filters') || 'Incident Filters'}
+                                </Text>
+                                <Text className="text-gray-500 text-xs mt-0.5" numberOfLines={1}>
+                                    {t('select-incidents-to-see') || 'Customize what you see'}
+                                </Text>
+                            </View>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
                         className="bg-white rounded-2xl p-3 mb-6 flex-row items-center justify-between border border-red-200"
                         onPress={handleLogout}
                     >
@@ -272,6 +292,12 @@ export const ProfileScreen = () => {
                 </View>
                 <Text className="text-gray-400 text-xs">{t('powered-by-community')}</Text>
             </View>
+
+            {/* Incident Filters Modal */}
+            <IncidentFiltersModal
+                visible={showFiltersModal}
+                onClose={() => setShowFiltersModal(false)}
+            />
         </View>
     );
 };
