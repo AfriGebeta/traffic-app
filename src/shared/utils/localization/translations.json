@@ -1013,5 +1013,30 @@
         "key": "select-incidents-to-see",
         "EN_US": "Select which incident types you want to see",
         "AM": "ማየት የሚፈልጓቸውን የማስጠንቀቂያ ዓይነቶች ይምረጡ"
+    },
+    {
+        "key": "show-rules-on-map",
+        "EN_US": "Show Rules on Map",
+        "AM": "ደንቦችን በማፕ ላይ አሳይ"
+    },
+    {
+        "key": "display-traffic-rules-on-map",
+        "EN_US": "Display traffic rule signs on the map",
+        "AM": "የትራፊክ ደንብ ምልክቶችን በማፕ ላይ አሳይ"
+    },
+    {
+        "key": "rules-shown-on-map",
+        "EN_US": "Rules will be shown on map",
+        "AM": "ደንቦች በማፕ ላይ ይታያሉ"
+    },
+    {
+        "key": "rules-hidden-on-map",
+        "EN_US": "Rules will be hidden on map",
+        "AM": "ደንቦች በማፕ ላይ ይደበቃሉ"
+    },
+    {
+        "key": "failed-to-update-settings",
+        "EN_US": "Failed to update settings",
+        "AM": "ቅንብሮችን ማዘመን አልተሳካም"
     }
 ]

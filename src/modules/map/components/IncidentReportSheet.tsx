@@ -11,12 +11,16 @@ interface IncidentReportSheetProps {
     isVisible: boolean;
     onClose: () => void;
     userLocation: { lat: number; lng: number } | null;
+    isNavigating?: boolean;
+    onNavigateToReport?: () => void;
 }
 
 export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
     isVisible,
     onClose,
     userLocation,
+    isNavigating = false,
+    onNavigateToReport,
 }) => {
     const { t } = useTranslation();
     const router = useRouter();
@@ -72,11 +76,13 @@ export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
                 lat: userLocation?.lat.toString() || '',
                 lng: userLocation?.lng.toString() || '',
                 refresh: 'true',
+                isNavigating: isNavigating.toString(),
             });
+            onNavigateToReport?.();
             router.push(`/incident-report?${params.toString()}`);
             onClose();
         },
-        [userLocation, router, onClose]
+        [userLocation, router, onClose, isNavigating, onNavigateToReport]
     );
 
     if (!isVisible) return null;

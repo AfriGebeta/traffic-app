@@ -12,6 +12,7 @@ import { IncidentReportSheet } from './IncidentReportSheet';
 import { PlaceDetailsSheet } from './PlaceDetailsSheet';
 import { ExploreSheet } from '../../explore/components/ExploreSheet';
 import { RoutePreview } from '../../navigation/components/RoutePreview';
+
 import { NavigationOptionsModal } from '../../navigation/components/NavigationOptionsModal';
 import { VoiceNavigationModal } from '../../navigation/components/VoiceNavigationModal';
 import { useIncidents } from '../../incidents/hooks/useIncidents';
@@ -29,7 +30,9 @@ import { useExplore } from '../hooks/useExplore';
 import { useMapClick } from '../hooks/useMapClick';
 import { showToast } from '../../../shared/utils/toast';
 import { useTranslation } from 'react-i18next';
+
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
+import { useRulePreferences } from '../../rules/hooks/useRulePreferences';
 
 export default function TrafficMap() {
     const mapRef = useRef<GebetaMapRef>(null);
@@ -47,6 +50,7 @@ export default function TrafficMap() {
     const [clickedLocation, setClickedLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [isNavigationMinimized, setIsNavigationMinimized] = useState(false);
     const [hasUserZoomedOut, setHasUserZoomedOut] = useState(false);
+    const [isOnIncidentReportScreen, setIsOnIncidentReportScreen] = useState(false);
 
     const { t } = useTranslation();
     const params = useLocalSearchParams();
@@ -54,6 +58,7 @@ export default function TrafficMap() {
     const { userLocation, setUserLocation, stopLocationTracking: stopBackgroundTracking, startLocationTracking: startBackgroundTracking } = useUserLocation();
     const { currentTheme } = useMapTheme();
     const { isLoading: isExploring, results: exploreResults, searchNearby, clearResults: clearExploreResults } = useExplore();
+    const { refetch: refetchRulePreferences } = useRulePreferences();
 
     const {
         searchQuery,
@@ -96,22 +101,35 @@ export default function TrafficMap() {
     } = useNavigation(mapRef, userLocation, setUserLocation, stopBackgroundTracking, startBackgroundTracking);
 
     const [nearbyRules, setNearbyRules] = useState<any[]>([]);
-    useEffect(() => {
-        if (navigationMode && userLocation) {
-            const fetchNearbyRules = async () => {
-                try {
-                    const { ruleService } = await import('../../rules/services/rule.service');
-                    const rules = await ruleService.getNearbyReports(userLocation.lat, userLocation.lng, 500);
-                    setNearbyRules(rules);
-                } catch (error) {
-                    console.error('Failed to fetch nearby rules:', error);
-                }
-            };
-            fetchNearbyRules();
-        } else {
-            setNearbyRules([]);
+
+    const fetchRules = React.useCallback(async () => {
+        try {
+            console.log('[Rules] fetchRules called');
+            const { ruleService } = await import('../../rules/services/rule.service');
+            const rules = await ruleService.getAllReports();
+            console.log('[Rules] fetched count:', rules.length);
+            setNearbyRules(rules);
+        } catch (error) {
+            console.log('[Rules] fetchRules error:', error);
         }
-    }, [navigationMode, userLocation?.lat, userLocation?.lng]);
+    }, []);
+
+    // Read directly from storage — never rely on hook's async initial state
+    useEffect(() => {
+        let cancelled = false;
+        import('../../rules/services/preferences.service').then(({ rulePreferencesService }) => {
+            rulePreferencesService.getPreferences().then((prefs) => {
+                if (cancelled) return;
+                console.log('[Rules] storage read on mount — showOnMap:', prefs.showOnMap, 'navigationMode:', navigationMode);
+                if (prefs.showOnMap || navigationMode) {
+                    fetchRules();
+                } else {
+                    setNearbyRules([]);
+                }
+            });
+        });
+        return () => { cancelled = true; };
+    }, [navigationMode, fetchRules]);
 
     const { activeAlert: activeIncidentAlert, dismissAlert: dismissIncidentAlert } = useIncidentAlerts(userLocation, incidents, navigationMode, routeCoordinates);
     const activeRuleAlert = useRuleAlerts(userLocation, nearbyRules, navigationMode, routeCoordinates);
@@ -135,9 +153,9 @@ export default function TrafficMap() {
 
         setSearchResults([]);
         setSelectedDestination(place);
+        setSearchQuery('');
 
-        skipSearchRef.current = true;
-        setSearchQuery(place.name);
+        setClickedLocation(null);
 
         setTimeout(() => {
             handleNavigate(setUserLocation, place);
@@ -235,7 +253,7 @@ export default function TrafficMap() {
         LogBox.ignoreLogs(['MapLibre error', 'Failed to load sprite']);
     }, []);
 
-    
+
     useEffect(() => {
         if (params.refresh === 'true') {
             refetch();
@@ -244,8 +262,20 @@ export default function TrafficMap() {
 
     useFocusEffect(
         React.useCallback(() => {
+            console.log('[Rules] useFocusEffect fired');
             refetch();
-        }, [])
+            import('../../rules/services/preferences.service').then(({ rulePreferencesService }) => {
+                rulePreferencesService.getPreferences().then((prefs) => {
+                    console.log('[Rules] useFocusEffect direct storage read — showOnMap:', prefs.showOnMap);
+                    if (prefs.showOnMap || navigationMode) {
+                        fetchRules();
+                    } else {
+                        setNearbyRules([]);
+                    }
+                });
+            });
+            setIsOnIncidentReportScreen(false);
+        }, [navigationMode, fetchRules])
     );
 
     const handleMapLoaded = () => {
@@ -316,12 +346,15 @@ export default function TrafficMap() {
         if (!navigationMode) return;
 
         const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+            if (showReportOptions || isOnIncidentReportScreen) {
+                return false;
+            }
             handleStopNavigation();
             return true;
         });
 
         return () => backHandler.remove();
-    }, [navigationMode, handleStopNavigation]);
+    }, [navigationMode, handleStopNavigation, showReportOptions, isOnIncidentReportScreen]);
 
     return (
         <View className="flex-1">
@@ -344,12 +377,13 @@ export default function TrafficMap() {
                 }}
                 isNavigating={navigationMode && !isNavigationMinimized}
                 userLocation={userLocation}
-                selectedDestination={isNavigationMinimized ? null : selectedDestination}
+                selectedDestination={selectedDestination}
                 onUserInteraction={() => setHasUserZoomedOut(true)}
 
                 userHeading={currentHeading}
                 showUserLocationMarker={showUserLocationMarker}
                 incidents={incidents}
+                rules={nearbyRules}
                 clickedLocation={clickedLocation}
                 explorePlaces={exploreResults}
                 exploreCategory={selectedExploreCategory}
@@ -373,6 +407,7 @@ export default function TrafficMap() {
                     ruleName={activeRuleAlert.ruleName}
                     ruleImg={activeRuleAlert.ruleImg}
                     distance={activeRuleAlert.distance}
+                    punishment={activeRuleAlert.punishment}
                     hasIncidentAlert={!!activeIncidentAlert}
                 />
             )}
@@ -476,6 +511,8 @@ export default function TrafficMap() {
                 isVisible={showReportOptions}
                 onClose={() => setShowReportOptions(false)}
                 userLocation={userLocation}
+                isNavigating={navigationMode}
+                onNavigateToReport={() => setIsOnIncidentReportScreen(true)}
             />
 
             <PlaceDetailsSheet

@@ -62,6 +62,7 @@ interface ActiveRuleAlert {
     ruleName: string;
     ruleImg: string;
     distance: string;
+    punishment: string;
 }
 
 export const useRuleAlerts = (
@@ -135,6 +136,7 @@ export const useRuleAlerts = (
                     ruleName,
                     ruleImg: closestRule.type.img,
                     distance: distanceText,
+                    punishment: closestRule.punishment,
                 });
 
                 previousDistances.current.set(ruleId, closestDistance);
