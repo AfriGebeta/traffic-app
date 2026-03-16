@@ -19,7 +19,7 @@ interface NavigationBarProps {
 }
 
 const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
-    const R = 6371; // Earth's radius in km
+    const R = 6371; // earth's radius in km
     const dLat = ((lat2 - lat1) * Math.PI) / 180;
     const dLng = ((lng2 - lng1) * Math.PI) / 180;
     const a =
@@ -133,11 +133,6 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                                     {t('minimize') || 'Minimize'}
                                 </Text>
                             </TouchableOpacity>
-                        )}
-                        {simulateMovement && (
-                            <View className="bg-orange-500/20 rounded-lg px-2 py-1 mt-2 self-start">
-                                <Text className="text-orange-400 text-xs font-semibold">Simulation Mode</Text>
-                            </View>
                         )}
                     </View>
                     <TouchableOpacity

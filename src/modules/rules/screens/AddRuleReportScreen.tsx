@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Input, Button } from '../../../shared/components';
 import { ruleService } from '../services/rule.service';
 import { showToast } from '../../../shared/utils/toast';
@@ -15,6 +16,7 @@ export default function AddRuleReportScreen() {
     const { typeId, typeName, typeDescription, typeImg } = params;
     const { selectedLocation } = useLocation();
 
+    const insets = useSafeAreaInsets();
     const [punishment, setPunishment] = useState('');
     const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
     const [submitting, setSubmitting] = useState(false);
@@ -158,7 +160,7 @@ export default function AddRuleReportScreen() {
                 </View>
             </ScrollView>
 
-            <View className="bg-white px-6 py-4 border-t border-gray-100">
+            <View className="bg-white px-6 pt-4 border-t border-gray-100" style={{ paddingBottom: insets.bottom + 16 }}>
                 <Button
                     title={submitting ? t('submitting') : t('submit-report')}
                     onPress={handleSubmit}

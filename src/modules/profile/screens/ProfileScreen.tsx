@@ -10,6 +10,8 @@ import { LanguageSwitcher } from '../../../shared/components/LanguageSwitcher';
 import { leaderboardService } from '../../leaderboard/services/leaderboard.service';
 import { colors } from '../../../shared/theme/colors';
 import { IncidentFiltersModal } from '../../incidents/components/IncidentFiltersModal';
+import { useRulePreferences } from '../../rules/hooks/useRulePreferences';
+import { showToast } from '../../../shared/utils/toast';
 
 export const ProfileScreen = () => {
     const router = useRouter();
@@ -24,6 +26,8 @@ export const ProfileScreen = () => {
     const [rank, setRank] = useState(0);
     const [reportsCount, setReportsCount] = useState(0);
     const [points, setPoints] = useState(0);
+
+    const { preferences: rulePreferences, toggleShowOnMap } = useRulePreferences();
 
     useEffect(() => {
         loadUser();
@@ -242,6 +246,38 @@ export const ProfileScreen = () => {
                             </View>
                         </View>
                         <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        className="bg-gray-50 rounded-2xl p-5 mb-6 flex-row items-center justify-between"
+                        onPress={async () => {
+                            try {
+                                const newValue = await toggleShowOnMap();
+                                showToast.success(
+                                    newValue
+                                        ? t('rules-shown-on-map')
+                                        : t('rules-hidden-on-map')
+                                );
+                            } catch (error) {
+                                showToast.error(t('error'), t('failed-to-update-settings'));
+                            }
+                        }}
+                    >
+                        <View className="flex-row items-center flex-1 mr-2">
+                            <Ionicons name="warning" size={24} color="#1f2937" />
+                            <View className="ml-3 flex-1">
+                                <Text className="text-gray-900 font-semibold" numberOfLines={1}>
+                                    {t('show-rules-on-map')}
+                                </Text>
+                                <Text className="text-gray-500 text-xs mt-0.5" numberOfLines={1}>
+                                    {t('display-traffic-rules-on-map')}
+                                </Text>
+                            </View>
+                        </View>
+                        <View className={`w-12 h-7 rounded-full justify-center ${rulePreferences.showOnMap ? '' : 'bg-gray-300'}`}
+                            style={rulePreferences.showOnMap ? { backgroundColor: colors.primary.main } : undefined}>
+                            <View className={`w-5 h-5 rounded-full bg-white ${rulePreferences.showOnMap ? 'ml-6' : 'ml-1'}`} />
+                        </View>
                     </TouchableOpacity>
 
                     <TouchableOpacity

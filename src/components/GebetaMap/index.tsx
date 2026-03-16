@@ -53,6 +53,15 @@ interface ExtendedGebetaMapProps extends GebetaMapProps {
         };
         description: string;
     }>;
+    rules?: Array<{
+        id: string;
+        lat: number;
+        lng: number;
+        type: {
+            img: string;
+            name: string;
+        };
+    }>;
     selectedLocation?: { lat: number; lng: number } | null;
     clickedLocation?: { lat: number; lng: number } | null;
     selectedDestination?: { latitude: number; longitude: number; name: string } | null;
@@ -68,7 +77,7 @@ interface ExtendedGebetaMapProps extends GebetaMapProps {
 
 
 const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
-    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserInteraction, incidents, selectedLocation, clickedLocation, selectedDestination, explorePlaces, exploreCategory, onExplorePlacePress }, ref) => {
+    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, explorePlaces, exploreCategory, onExplorePlacePress }, ref) => {
         const [mapStyleState, setMapStyleState] = useState<Record<string, unknown> | null>(null);
         const [loading, setLoading] = useState(true);
         const cameraRef = useRef<any>(null);
@@ -104,7 +113,16 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                     setImagesLoaded(true);
                 }
             };
+
+            const fallbackTimeout = setTimeout(() => {
+                if (!imagesLoaded) {
+                    setImagesLoaded(true);
+                }
+            }, 1000);
+
             preloadImages();
+
+            return () => clearTimeout(fallbackTimeout);
         }, []);
 
         useEffect(() => {
@@ -130,6 +148,28 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 setTimeout(() => setRenderKey(prev => prev + 1), 200);
             }
         }, [explorePlaces, exploreCategory, imagesLoaded]);
+
+        useEffect(() => {
+            console.log('[GebetaMap] rules changed — count:', rules?.length, 'imagesLoaded:', imagesLoaded, 'isNavigating:', isNavigating, 'mapStyleReady:', !!mapStyleState);
+            if (!imagesLoaded || !mapStyleState) return;
+            const timer = setTimeout(() => setRenderKey(prev => prev + 1), 200);
+            return () => clearTimeout(timer);
+        }, [rules, imagesLoaded, mapStyleState]);
+
+        useEffect(() => {
+            if (imagesLoaded && selectedLocation) {
+                setRenderKey(prev => prev + 1);
+                setTimeout(() => setRenderKey(prev => prev + 1), 100);
+            }
+        }, [selectedLocation, imagesLoaded]);
+
+        useEffect(() => {
+            if (selectedDestination) {
+                const timer = setTimeout(() => setRenderKey(prev => prev + 1), 150);
+                return () => clearTimeout(timer);
+            }
+        }, [selectedDestination]);
+
 
         useEffect(() => {
             if (showUserLocationMarker && !isNavigating) {
@@ -509,8 +549,39 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             );
                         })}
 
-                        {selectedLocation && (
+                        {rules && imagesLoaded && mapStyleState && !isNavigating && rules.map((rule, index) => {
+                            return (
+                                <MapLibreGL.PointAnnotation
+                                    key={`rule-${rule.id}-${renderKey}`}
+                                    id={`rule-${rule.id}`}
+                                    coordinate={[rule.lng, rule.lat]}
+                                >
+                                    <View style={{
+                                        width: 40,
+                                        height: 40,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}>
+                                        {rule.type.img ? (
+                                            <Image
+                                                source={{ uri: rule.type.img }}
+                                                style={{
+                                                    width: 36,
+                                                    height: 36,
+                                                }}
+                                                resizeMode="contain"
+                                            />
+                                        ) : (
+                                            <Ionicons name="warning" size={32} color="#EF4444" />
+                                        )}
+                                    </View>
+                                </MapLibreGL.PointAnnotation>
+                            );
+                        })}
+
+                        {selectedLocation && imagesLoaded && (
                             <MapLibreGL.PointAnnotation
+                                key={`selected-location-${renderKey}`}
                                 id="selected-location-marker"
                                 coordinate={[selectedLocation.lng, selectedLocation.lat]}
                             >
@@ -567,9 +638,9 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             </MapLibreGL.PointAnnotation>
                         )}
 
-                        {selectedDestination && imagesLoaded && !clickedLocation && (
+                        {selectedDestination && (
                             <MapLibreGL.PointAnnotation
-                                key={`destination-${renderKey}`}
+                                key={`destination-${selectedDestination.latitude}-${selectedDestination.longitude}-${renderKey}`}
                                 id="destination-marker"
                                 coordinate={[selectedDestination.longitude, selectedDestination.latitude]}
                                 anchor={{ x: 0.5, y: 1 }}
@@ -582,14 +653,18 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                         justifyContent: 'flex-end',
                                     }}
                                 >
-                                    <Image
-                                        source={RED_PIN_IMAGE}
-                                        style={{
-                                            width: 32,
-                                            height: 32,
-                                        }}
-                                        resizeMode="contain"
-                                    />
+                                    {imagesLoaded ? (
+                                        <Image
+                                            source={RED_PIN_IMAGE}
+                                            style={{
+                                                width: 32,
+                                                height: 32,
+                                            }}
+                                            resizeMode="contain"
+                                        />
+                                    ) : (
+                                        <Ionicons name="location" size={32} color="#EF4444" />
+                                    )}
                                 </View>
                             </MapLibreGL.PointAnnotation>
                         )}
