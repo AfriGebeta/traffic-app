@@ -11,10 +11,12 @@ import { showToast } from '../../../shared/utils/toast';
 import { useLocation } from '../../../shared/contexts/LocationContext';
 import { useTranslation } from 'react-i18next';
 import { getPlaceTranslationKey } from '../utils/placeTranslations';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function AddPlaceScreen() {
     const { t } = useTranslation();
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
     const placeType = params.type as PlaceType;
     const { selectedLocation } = useLocation();
@@ -293,7 +295,7 @@ export default function AddPlaceScreen() {
                 </View>
             </ScrollView>
 
-            <View className="bg-white px-6 py-4 border-t border-gray-100">
+            <View className="bg-white px-6 pt-4 border-t border-gray-100" style={{ paddingBottom: insets.bottom + 16 }}>
                 <Button
                     title={submitting ? t('submitting') : t('submit-contribution')}
                     onPress={handleSubmit}

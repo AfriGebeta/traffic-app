@@ -3,10 +3,12 @@ import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ContributionScreen() {
     const router = useRouter();
     const { t } = useTranslation();
+    const insets = useSafeAreaInsets();
 
     const contributionOptions = [
         {
@@ -26,7 +28,7 @@ export default function ContributionScreen() {
     ];
 
     return (
-        <View className="flex-1 bg-gray-50 mt-8">
+        <View className="flex-1 bg-gray-50" style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
             <View className="px-4 py-6 border-b border-gray-50">
                 <View className="flex-row items-center mb-2">
                     <TouchableOpacity

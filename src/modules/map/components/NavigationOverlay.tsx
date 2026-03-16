@@ -80,7 +80,7 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                 </TouchableOpacity>
 
                 {/*test button remove later*/}
-                {__DEV__ && onTestOffRoute && (
+                {/* {__DEV__ && onTestOffRoute && (
                     <TouchableOpacity
                         className="mt-3 bg-purple-500/20 border border-purple-500/50 rounded-xl py-2"
                         onPress={onTestOffRoute}
@@ -89,7 +89,7 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                             Test Off-Route Detection
                         </Text>
                     </TouchableOpacity>
-                )}
+                )} */}
             </View>
         </View>
     );

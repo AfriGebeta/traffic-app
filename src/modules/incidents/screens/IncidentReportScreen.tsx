@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, Image, ActivityIndicator, BackHandler } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -19,11 +19,21 @@ export default function IncidentReportScreen() {
     const passedLat = params.lat ? parseFloat(params.lat as string) : null;
     const passedLng = params.lng ? parseFloat(params.lng as string) : null;
 
+
     const [description, setDescription] = useState('');
     const [direction, setDirection] = useState('');
     const [images, setImages] = useState<string[]>([]);
     const [uploading, setUploading] = useState(false);
     const { reportIncident, loading, error } = useIncidentReport();
+
+    useEffect(() => {
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+            router.back();
+            return true;
+        });
+
+        return () => backHandler.remove();
+    }, [router]);
 
     const location = passedLat && passedLng ? { lat: passedLat, lng: passedLng } : null;
 
