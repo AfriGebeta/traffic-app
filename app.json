@@ -1,19 +1,18 @@
 {
   "expo": {
     "name": "Gebeta Maps",
-    "slug": "traffic-app",
+    "slug": "gebeta-maps",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
-    "scheme": "gebetamapsapp",
+    "scheme": "trafficapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.anonymous.trafficapp",
       "infoPlist": {
-        "UIBackgroundModes": [
-          "fetch"
-        ]
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -21,21 +20,15 @@
         "backgroundColor": "#ffffff",
         "foregroundImage": "./assets/images/logo.png"
       },
+      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "statusBar": {
-        "barStyle": "dark-content",
-        "backgroundColor": "#ffffff"
-      },
       "package": "com.anonymous.trafficapp",
-      "versionCode": 1,
       "permissions": [
-        "RECORD_AUDIO",
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
+        "RECORD_AUDIO"
       ],
       "splash": {
-        "image": "./assets/images/logo.png",
-        "resizeMode": "native",
+        "image": "./assets/images/gebetamaps.png",
+        "resizeMode": "contain",
         "backgroundColor": "#ffffff"
       }
     },
@@ -50,9 +43,9 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/logo.png",
-          "imageWidth": 240,
-          "resizeMode": "native",
+          "image": "./assets/images/gebetamaps.png",
+          "imageWidth": 250,
+          "resizeMode": "contain",
           "backgroundColor": "#ffffff",
           "dark": {
             "backgroundColor": "#ffffff"
@@ -60,8 +53,7 @@
         }
       ],
       "@maplibre/maplibre-react-native",
-      "expo-secure-store",
-      "expo-navigation-bar"
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -70,8 +62,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "a3c33f34-936e-445b-a89e-3ca3b6000974"
+        "projectId": "d0a676b9-12b7-468e-9057-83e7f9cbcc51"
       }
-    }
+    },
+    "owner": "gebeta-maps"
   }
 }
