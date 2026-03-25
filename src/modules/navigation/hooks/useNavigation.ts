@@ -4,10 +4,12 @@ import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 import type { GeocodingPlace } from '../types/navigation.types';
 import { showToast } from '../../../shared/utils/toast';
 import { navigationService } from '../services/navigation.service';
+import { voiceNavigationService } from '../services/voice-navigation.service';
 import { decodePolyline } from '../../../shared/utils/polyline';
 import { useSimulation } from './useSimulation';
 import { useLocationTracking } from './useLocationTracking';
 import { useRouteRecalculation } from './useRouteRecalculation';
+import { useVoiceInstructions } from './useVoiceInstructions';
 import { calculateBearing, calculateDistance, updateInstructionBasedOnPosition as updateInstruction } from '../utils/navigationUtils';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 
@@ -42,6 +44,12 @@ export const useNavigation = (
     const stopNavigationRef = useRef<(() => void) | null>(null);
     const totalRouteDistance = useRef<number>(0);
     const totalRouteDuration = useRef<number>(0);
+
+    useVoiceInstructions({
+        currentInstruction,
+        isNavigating: navigationMode,
+        enabled: true, 
+    });
 
     const updateInstructionBasedOnPosition = (currentLat: number, currentLng: number) => {
         const result = updateInstruction(
@@ -159,6 +167,18 @@ export const useNavigation = (
 
             routeManeuvers.current = leg.maneuvers;
 
+            //pre fetch audio
+            const instructionTexts = leg.maneuvers
+                .map((m: any) => m.instruction)
+                .filter((text: string) => text && text.trim().length > 0);
+
+            if (instructionTexts.length > 0) {
+                console.log('prefetching audio for', instructionTexts.length, 'instructions');
+                voiceNavigationService.prefetchRouteInstructions(instructionTexts).catch(err => {
+                    
+                });
+            }
+
             const route = {
                 coordinates: decodedCoordinates.map(coord => [coord[1], coord[0]]) as [number, number][],
                 distance: leg.summary.length * 1000,
@@ -273,6 +293,18 @@ export const useNavigation = (
             }
 
             const leg = navigationData.data.trip.legs[0];
+
+            const instructionTexts = leg.maneuvers
+                .map((m: any) => m.instruction)
+                .filter((text: string) => text && text.trim().length > 0);
+
+            if (instructionTexts.length > 0) {
+                console.log('prefetching audio for', instructionTexts.length, 'instructions');
+                voiceNavigationService.prefetchRouteInstructions(instructionTexts).catch(err => {
+                    
+                });
+            }
+
             const decodedCoordinates = decodePolyline(leg.shape, 6);
             const route = {
                 coordinates: decodedCoordinates.map(coord => [coord[1], coord[0]]) as [number, number][],
@@ -444,6 +476,8 @@ export const useNavigation = (
         setNavigationMode(false);
         setIsNavigating(false);
         isNavigatingRef.current = false;
+
+        voiceNavigationService.clearCache();
 
         stopLocationTracking();
         stopSimulation();
