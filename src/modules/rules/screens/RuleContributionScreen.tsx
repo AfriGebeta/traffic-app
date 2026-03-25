@@ -61,7 +61,7 @@ export default function RuleContributionScreen() {
                     <Text className="text-gray-600 mt-2">{t('report-traffic-rule-violations')}</Text>
                 </View>
 
-                <ScrollView className="flex-1 p-4">
+                <ScrollView className="flex-1 p-4" contentContainerStyle={{ paddingBottom: 100 }}>
                     <View className="gap-3">
                         {[1, 2, 3, 4, 5, 6].map((index) => (
                             <View
@@ -98,7 +98,7 @@ export default function RuleContributionScreen() {
                 <Text className="text-gray-600 mt-2">{t('report-traffic-rule-violations')}</Text>
             </View>
 
-            <ScrollView className="flex-1 p-4">
+            <ScrollView className="flex-1 p-4" contentContainerStyle={{ paddingBottom: 100 }}>
                 <View className="gap-3">
                     {ruleTypes.map((ruleType) => {
                         const translationKeys = RULE_TRANSLATION_MAP[ruleType.name];
