@@ -300,6 +300,31 @@
         "AM": "ጋራዥ"
     },
     {
+        "key": "building",
+        "EN_US": "Building",
+        "AM": "ህንፃ"
+    },
+    {
+        "key": "company",
+        "EN_US": "Company",
+        "AM": "ኩባንያ"
+    },
+    {
+        "key": "government-office",
+        "EN_US": "Government Office",
+        "AM": "የመንግስት ቢሮ"
+    },
+    {
+        "key": "mall",
+        "EN_US": "Mall",
+        "AM": "ሞል"
+    },
+    {
+        "key": "shop",
+        "EN_US": "Shop",
+        "AM": "ሱቅ"
+    },
+    {
         "key": "coming-soon",
         "EN_US": "soon",
         "AM": "በቅርቡ"
@@ -608,6 +633,26 @@
         "key": "please-try-again",
         "EN_US": "Please try again",
         "AM": "እባክዎ እንደገና ይሞክሩ"
+    },
+    {
+        "key": "map-not-ready",
+        "EN_US": "Map not ready",
+        "AM": "ካርታው ዝግጁ አይደለም"
+    },
+    {
+        "key": "tap-on-map-to-select-location",
+        "EN_US": "Tap on the map to select location",
+        "AM": "አካባቢ ለመምረጥ ካርታውን ይንኩ"
+    },
+    {
+        "key": "selected-location",
+        "EN_US": "Selected Location",
+        "AM": "የተመረጠ አካባቢ"
+    },
+    {
+        "key": "confirm-location",
+        "EN_US": "Confirm Location",
+        "AM": "አካባቢውን ያረጋግጡ"
     },
     {
         "key": "museum",

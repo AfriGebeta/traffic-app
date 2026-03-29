@@ -27,7 +27,7 @@ export const ExploreSheet: React.FC<ExploreSheetProps> = ({
     const insets = useSafeAreaInsets();
     const { isLoading, categories, error, fetchCategories, fetchMorePlaces } =
         useExploreCategories(userLocation);
-    const [expandedCategory, setExpandedCategory] = useState<ExploreCategoryId | null>(null);
+    const [expandedCategories, setExpandedCategories] = useState<Set<ExploreCategoryId>>(new Set());
 
     useEffect(() => {
         if (visible && userLocation) {
@@ -36,8 +36,16 @@ export const ExploreSheet: React.FC<ExploreSheetProps> = ({
     }, [visible]);
 
     const handleSeeMore = async (categoryId: ExploreCategoryId) => {
-        setExpandedCategory(categoryId);
+        setExpandedCategories(prev => new Set(prev).add(categoryId));
         await fetchMorePlaces(categoryId);
+    };
+
+    const handleSeeLess = (categoryId: ExploreCategoryId) => {
+        setExpandedCategories(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(categoryId);
+            return newSet;
+        });
     };
 
     const handlePlaceSelect = (place: GeocodingPlace) => {
@@ -93,35 +101,40 @@ export const ExploreSheet: React.FC<ExploreSheetProps> = ({
                                     places={categories.museum}
                                     onPlacePress={handlePlaceSelect}
                                     onSeeMore={handleSeeMore}
-                                    isExpanded={expandedCategory === 'museum'}
+                                    onSeeLess={handleSeeLess}
+                                    isExpanded={expandedCategories.has('museum')}
                                 />
                                 <CategorySection
                                     categoryId="hotel"
                                     places={categories.hotel}
                                     onPlacePress={handlePlaceSelect}
                                     onSeeMore={handleSeeMore}
-                                    isExpanded={expandedCategory === 'hotel'}
+                                    onSeeLess={handleSeeLess}
+                                    isExpanded={expandedCategories.has('hotel')}
                                 />
                                 <CategorySection
                                     categoryId="park"
                                     places={categories.park}
                                     onPlacePress={handlePlaceSelect}
                                     onSeeMore={handleSeeMore}
-                                    isExpanded={expandedCategory === 'park'}
+                                    onSeeLess={handleSeeLess}
+                                    isExpanded={expandedCategories.has('park')}
                                 />
                                 <CategorySection
                                     categoryId="restaurant"
                                     places={categories.restaurant}
                                     onPlacePress={handlePlaceSelect}
                                     onSeeMore={handleSeeMore}
-                                    isExpanded={expandedCategory === 'restaurant'}
+                                    onSeeLess={handleSeeLess}
+                                    isExpanded={expandedCategories.has('restaurant')}
                                 />
                                 <CategorySection
                                     categoryId="mall"
                                     places={categories.mall}
                                     onPlacePress={handlePlaceSelect}
                                     onSeeMore={handleSeeMore}
-                                    isExpanded={expandedCategory === 'mall'}
+                                    onSeeLess={handleSeeLess}
+                                    isExpanded={expandedCategories.has('mall')}
                                 />
                             </>
                         )}
