@@ -1,16 +1,23 @@
 import React, { useState, useRef } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import CustomGebetaMap from '../../../components/GebetaMap';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 import { useLocation } from '../../../shared/contexts/LocationContext';
 import { Button } from '../../../shared/components';
+import { useUserLocation } from '../../map/hooks/useUserLocation';
+import { showToast } from '../../../shared/utils/toast';
+import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function MapPickerScreen() {
     const router = useRouter();
+    const { t } = useTranslation();
+    const insets = useSafeAreaInsets();
     const mapRef = useRef<GebetaMapRef>(null);
     const { setSelectedLocation: setGlobalLocation } = useLocation();
+    const { userLocation } = useUserLocation();
     const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
 
     const handleMapClick = (lngLat: [number, number]) => {
@@ -23,6 +30,24 @@ export default function MapPickerScreen() {
             setGlobalLocation(selectedLocation);
             router.back();
         }
+    };
+
+    const handleLocationPress = () => {
+        if (!userLocation) {
+            showToast.error(t('location-unavailable'), t('please-wait-for-location'));
+            return;
+        }
+
+        if (!mapRef.current) {
+            showToast.error(t('map-not-ready'), t('please-try-again'));
+            return;
+        }
+
+        mapRef.current.flyTo({
+            center: [userLocation.lng, userLocation.lat],
+            zoom: 15,
+            duration: 1000,
+        });
     };
 
     return (
@@ -41,21 +66,29 @@ export default function MapPickerScreen() {
                 <View className="flex-row items-center">
                     <Ionicons name="information-circle" size={24} color="#3B82F6" />
                     <Text className="text-sm text-gray-700 ml-2 flex-1">
-                        Tap on the map to select location
+                        {t('tap-on-map-to-select-location')}
                     </Text>
                 </View>
             </View>
 
+            <TouchableOpacity
+                className="absolute top-32 right-4 bg-white rounded-full w-12 h-12 items-center justify-center shadow-lg"
+                onPress={handleLocationPress}
+                activeOpacity={0.7}
+            >
+                <Ionicons name="locate" size={24} color="#FFA500" />
+            </TouchableOpacity>
+
             {selectedLocation && (
-                <View className="absolute bottom-8 left-4 right-4">
+                <View className="absolute left-4 right-4" style={{ bottom: insets.bottom + 32 }}>
                     <View className="bg-white rounded-2xl p-4 shadow-lg mb-3">
-                        <Text className="text-sm font-medium text-gray-700">Selected Location</Text>
+                        <Text className="text-sm font-medium text-gray-700">{t('selected-location')}</Text>
                         <Text className="text-gray-600 mt-1">
                             {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
                         </Text>
                     </View>
 
-                    <Button title="Confirm Location" onPress={handleConfirm} />
+                    <Button title={t('confirm-location')} onPress={handleConfirm} />
                 </View>
             )}
         </View>

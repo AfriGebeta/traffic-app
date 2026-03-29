@@ -12,6 +12,7 @@ interface CategorySectionProps {
     places: GeocodingPlace[];
     onPlacePress: (place: GeocodingPlace) => void;
     onSeeMore: (categoryId: ExploreCategoryId) => void;
+    onSeeLess: (categoryId: ExploreCategoryId) => void;
     isExpanded?: boolean;
 }
 
@@ -28,6 +29,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
     places,
     onPlacePress,
     onSeeMore,
+    onSeeLess,
     isExpanded = false,
 }) => {
     const { t } = useTranslation();
@@ -45,15 +47,19 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                         {t(`${categoryId}-nearby`)}
                     </Text>
                 </View>
-                {places.length > 5 && !isExpanded && (
+                {places.length > 5 && (
                     <TouchableOpacity
-                        onPress={() => onSeeMore(categoryId)}
+                        onPress={() => isExpanded ? onSeeLess(categoryId) : onSeeMore(categoryId)}
                         className="flex-row items-center"
                     >
                         <Text style={{ color: colors.primary.main }} className="font-semibold text-sm mr-1">
-                            {t('see-more')}
+                            {isExpanded ? t('see-less') : t('see-more')}
                         </Text>
-                        <Ionicons name="chevron-forward" size={16} color={colors.primary.main} />
+                        <Ionicons
+                            name={isExpanded ? "chevron-back" : "chevron-forward"}
+                            size={16}
+                            color={colors.primary.main}
+                        />
                     </TouchableOpacity>
                 )}
             </View>
