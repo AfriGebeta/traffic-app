@@ -5,10 +5,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { PLACE_TYPES } from '../types/place.types';
 import { useTranslation } from 'react-i18next';
 import { getPlaceTranslationKey } from '../utils/placeTranslations';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function PlaceContributionScreen() {
     const router = useRouter();
     const { t } = useTranslation();
+    const insets = useSafeAreaInsets();
 
     const handlePlaceTypeSelect = (placeType: string) => {
         router.push({
@@ -33,7 +35,7 @@ export default function PlaceContributionScreen() {
                 <Text className="text-gray-600 mt-2">{t('help-others-by-adding-useful-locations')}</Text>
             </View>
 
-            <ScrollView className="flex-1 p-4">
+            <ScrollView className="flex-1 p-4" contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}>
                 <View className="gap-3">
                     {PLACE_TYPES.map((placeType) => {
                         const placeImageMap: Record<string, any> = {
@@ -43,6 +45,11 @@ export default function PlaceContributionScreen() {
                             'restaurant': require('../../../../assets/images/restaurant-place.png'),
                             'parking': require('../../../../assets/images/parking-place.png'),
                             'hospital': require('../../../../assets/images/hospital-place.png'),
+                            'building': require('../../../../assets/images/building.png'),
+                            'company': require('../../../../assets/images/company.png'),
+                            'government': require('../../../../assets/images/government.png'),
+                            'mall': require('../../../../assets/images/mall.png'),
+                            'shop': require('../../../../assets/images/shop.png'),
                             'other': require('../../../../assets/images/other-place.png'),
                         };
 

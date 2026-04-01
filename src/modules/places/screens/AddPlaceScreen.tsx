@@ -157,6 +157,11 @@ export default function AddPlaceScreen() {
                             'restaurant': require('../../../../assets/images/restaurant-place.png'),
                             'parking': require('../../../../assets/images/parking-place.png'),
                             'hospital': require('../../../../assets/images/hospital-place.png'),
+                            'building': require('../../../../assets/images/building.png'),
+                            'company': require('../../../../assets/images/company.png'),
+                            'government': require('../../../../assets/images/government.png'),
+                            'mall': require('../../../../assets/images/mall.png'),
+                            'shop': require('../../../../assets/images/shop.png'),
                             'other': require('../../../../assets/images/other-place.png'),
                         };
 

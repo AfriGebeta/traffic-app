@@ -1,8 +1,23 @@
+import { Audio } from 'expo-av';
 import type { VoiceNavigationResponse } from '../types/voice-navigation.types';
+import { ttsCacheService } from './tts-cache.service';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL!;
 
 export const voiceNavigationService = {
+
+    async prefetchRouteInstructions(instructions: string[]): Promise<void> {
+        return ttsCacheService.prefetchInstructions(instructions);
+    },
+
+    async speakInstruction(text: string): Promise<boolean> {
+        return ttsCacheService.playInstruction(text);
+    },
+
+    clearCache(): void {
+        ttsCacheService.clearCache();
+    },
+
     async processVoiceNavigation(
         audioUri: string,
         language: string,
