@@ -38,13 +38,6 @@ export const useVoiceRecording = () => {
                     sampleRate: 44100,
                     numberOfChannels: 1,
                     bitRate: 128000,
-                    linearPCMBitDepth: 16,
-                    linearPCMIsBigEndian: false,
-                    linearPCMIsFloat: false,
-                },
-                web: {
-                    mimeType: 'audio/webm',
-                    bitsPerSecond: 128000,
                 },
             };
 
