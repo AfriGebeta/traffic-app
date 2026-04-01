@@ -39,6 +39,10 @@ export const useVoiceRecording = () => {
                     numberOfChannels: 1,
                     bitRate: 128000,
                 },
+                web: {
+                    mimeType: 'audio/webm',
+                    bitsPerSecond: 128000,
+                },
             };
 
             const { recording } = await Audio.Recording.createAsync(recordingOptions);
