@@ -49,11 +49,28 @@ export function generateLocationUrl(location: SharedLocation): string {
     return `${baseUrl}?${params.toString()}`;
 }
 
+export function generateCustomSchemeUrl(location: SharedLocation): string {
+    const baseUrl = 'trafficapp://';
+    const params = new URLSearchParams();
+
+    params.append('lat', location.lat.toString());
+    params.append('lng', location.lng.toString());
+
+    if (location.name) params.append('name', location.name);
+    if (location.city) params.append('city', location.city);
+    if (location.country) params.append('country', location.country);
+    if (location.type) params.append('type', location.type);
+
+    return `${baseUrl}?${params.toString()}`;
+}
+
 export function isGebetaMapsUrl(url: string): boolean {
     try {
         const urlObj = new URL(url);
         return (
-            (urlObj.hostname === 'maps.gebeta.app' || urlObj.hostname === 'www.maps.gebeta.app') &&
+            (urlObj.protocol === 'trafficapp:' ||
+                urlObj.hostname === 'maps.gebeta.app' ||
+                urlObj.hostname === 'www.maps.gebeta.app') &&
             urlObj.searchParams.has('lat') &&
             urlObj.searchParams.has('lng')
         );
