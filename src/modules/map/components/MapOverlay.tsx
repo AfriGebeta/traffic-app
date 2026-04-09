@@ -126,6 +126,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                 onVoicePressOut={onVoiceRelease}
                 isRecording={isRecording}
                 isProcessingVoice={isProcessingVoice}
+                userLocation={userLocation}
             />
 
             {isNavigationMinimized && navigationDestination && onRestoreNavigation && (

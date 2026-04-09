@@ -33,8 +33,13 @@ import { useTranslation } from 'react-i18next';
 
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 import { useRulePreferences } from '../../rules/hooks/useRulePreferences';
+import type { SharedLocation } from '../../../shared/utils/deepLinking';
 
-export default function TrafficMap() {
+interface TrafficMapProps {
+    sharedLocation?: SharedLocation | null;
+}
+
+export default function TrafficMap({ sharedLocation }: TrafficMapProps) {
     const mapRef = useRef<GebetaMapRef>(null);
     const searchMarkerRef = useRef<any>(null);
     const hasZoomedToUserLocation = useRef(false);
@@ -343,6 +348,49 @@ export default function TrafficMap() {
     }, [userLocation?.lat, userLocation?.lng, navigationMode]);
 
     useEffect(() => {
+        if (sharedLocation && mapRef.current) {
+            const place: GeocodingPlace = {
+                name: sharedLocation.name || 'Shared Location',
+                latitude: sharedLocation.lat,
+                longitude: sharedLocation.lng,
+                type: sharedLocation.type || 'location',
+                City: sharedLocation.city || '',
+                Country: sharedLocation.country || '',
+            };
+
+            if (searchMarkerRef.current) {
+                mapRef.current.clearMarkers();
+                addIncidentMarkers();
+            }
+
+            const marker = mapRef.current.addImageMarker(
+                [place.longitude, place.latitude],
+                '',
+                [40, 40],
+                () => showToast.info(place.name, place.type),
+                10,
+                undefined
+            );
+            searchMarkerRef.current = marker;
+
+            mapRef.current.flyTo({
+                center: [place.longitude, place.latitude],
+                zoom: 15,
+                duration: 1500,
+            });
+
+            setSelectedDestination(place);
+
+
+            if (userLocation) {
+                setTimeout(() => {
+                    handleNavigate(setUserLocation, place);
+                }, 500);
+            }
+        }
+    }, [sharedLocation]);
+
+    useEffect(() => {
         if (!navigationMode) return;
 
         const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -504,6 +552,7 @@ export default function TrafficMap() {
                         handleClearRoute();
                         setClickedLocation(null);
                     }}
+                    destination={selectedDestination}
                 />
             )}
 
