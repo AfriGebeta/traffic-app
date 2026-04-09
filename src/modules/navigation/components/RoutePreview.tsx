@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { colors } from '../../../shared/theme/colors';
+import { ShareLocationButton } from '../../../shared/components/ShareLocationButton';
+import type { GeocodingPlace } from '../types/navigation.types';
 
 interface RoutePreviewProps {
     distance: number;
@@ -12,6 +14,7 @@ interface RoutePreviewProps {
     onSimulateToggle: () => void;
     onStartNavigation: () => void;
     onCancel: () => void;
+    destination?: GeocodingPlace | null;
 }
 
 const formatDistance = (meters: number): string => {
@@ -49,6 +52,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
     onSimulateToggle,
     onStartNavigation,
     onCancel,
+    destination,
 }) => {
     const { t } = useTranslation();
 
@@ -110,8 +114,8 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
             </ScrollView>
 
             <View className="px-6 py-4 border-t border-gray-100">
-                <View className="flex-row items-center justify-between">
-                    <View className="flex-1">
+                <View className="flex-row items-start justify-between mb-3">
+                    <View className="flex-1 mr-4">
                         <Text className="text-3xl font-bold text-gray-900">
                             {formatTime(duration)}
                         </Text>
@@ -120,20 +124,39 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                         </Text>
                         <Text className="text-gray-900 font-medium mt-1">{destinationName}</Text>
                     </View>
-                    <TouchableOpacity
-                        onPress={onStartNavigation}
-                        className="rounded-2xl px-8 py-4 shadow-lg"
-                        style={{
-                            backgroundColor: colors.primary.main,
-                            shadowColor: colors.primary.main,
-                            shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: 0.3,
-                            shadowRadius: 8,
-                            elevation: 8,
-                        }}
-                    >
-                        <Text className="text-white text-xl font-bold">{t('go')}</Text>
-                    </TouchableOpacity>
+
+                    <View className="flex-row gap-2">
+                        {destination && (
+                            <TouchableOpacity
+                                onPress={async () => {
+                                    const { Share } = await import('react-native');
+                                    const url = `https://maps.gebeta.app/?lat=${destination.latitude}&lng=${destination.longitude}&name=${encodeURIComponent(destination.name)}`;
+                                    Share.share({
+                                        message: `Check out ${destination.name} on Gebeta Maps: ${url}`,
+                                        url: url,
+                                    });
+                                }}
+                                className="rounded-2xl px-4 py-4"
+                            >
+                                <Ionicons name="share-social" size={24} color={colors.primary.main} />
+                            </TouchableOpacity>
+                        )}
+
+                        <TouchableOpacity
+                            onPress={onStartNavigation}
+                            className="rounded-2xl px-8 py-4 shadow-lg"
+                            style={{
+                                backgroundColor: colors.primary.main,
+                                shadowColor: colors.primary.main,
+                                shadowOffset: { width: 0, height: 4 },
+                                shadowOpacity: 0.3,
+                                shadowRadius: 8,
+                                elevation: 8,
+                            }}
+                        >
+                            <Text className="text-white text-xl font-bold">{t('go')}</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </View>
         </View>

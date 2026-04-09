@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../../shared/theme/colors';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
+import { ShareLocationButton } from '../../../shared/components/ShareLocationButton';
 
 interface PlaceDetailsSheetProps {
     place: GeocodingPlace | null;
@@ -21,6 +22,12 @@ export const PlaceDetailsSheet: React.FC<PlaceDetailsSheetProps> = ({
     const insets = useSafeAreaInsets();
 
     if (!place) return null;
+
+    console.log('PlaceDetailsSheet - place data:', {
+        lat: place.latitude,
+        lng: place.longitude,
+        name: place.name,
+    });
 
     return (
         <Modal
@@ -77,6 +84,21 @@ export const PlaceDetailsSheet: React.FC<PlaceDetailsSheetProps> = ({
                             {t('directions')}
                         </Text>
                     </TouchableOpacity>
+
+                    <View className="mt-3">
+                        <ShareLocationButton
+                            location={{
+                                lat: place.latitude,
+                                lng: place.longitude,
+                                name: place.name,
+                                city: place.City,
+                                country: place.Country,
+                                type: place.type,
+                            }}
+                            variant="secondary"
+                            size="medium"
+                        />
+                    </View>
                 </Pressable>
             </Pressable>
         </Modal>
