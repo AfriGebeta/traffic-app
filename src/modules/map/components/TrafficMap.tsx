@@ -363,7 +363,7 @@ export default function TrafficMap({ sharedLocation }: TrafficMapProps) {
     useBackgroundSync();
 
     useEffect(() => {
-        if (userLocation && mapRef.current && !navigationMode && !hasZoomedToUserLocation.current) {
+        if (userLocation && mapRef.current && !navigationMode && !hasZoomedToUserLocation.current && !sharedLocation && !selectedDestination) {
             hasZoomedToUserLocation.current = true;
             setShowUserLocationMarker(true);
             mapRef.current.flyTo({
@@ -372,7 +372,7 @@ export default function TrafficMap({ sharedLocation }: TrafficMapProps) {
                 duration: 1500,
             });
         }
-    }, [userLocation?.lat, userLocation?.lng, navigationMode]);
+    }, [userLocation?.lat, userLocation?.lng, navigationMode, sharedLocation, selectedDestination]);
 
     useEffect(() => {
         if (sharedLocation && mapRef.current && isMapLoaded && !hasProcessedSharedLocation.current) {
@@ -389,7 +389,7 @@ export default function TrafficMap({ sharedLocation }: TrafficMapProps) {
 
             setSearchResults([place]);
             setShowSearchContainer(true);
-            setSelectedDestination(place); 
+            setSelectedDestination(place);
 
             setTimeout(() => {
                 mapRef.current?.flyTo({

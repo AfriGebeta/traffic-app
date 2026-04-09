@@ -232,6 +232,24 @@ export const ProfileScreen = () => {
 
                     <TouchableOpacity
                         className="bg-gray-50 rounded-2xl p-5 mb-6 flex-row items-center justify-between"
+                        onPress={() => router.push('/saved-places')}
+                    >
+                        <View className="flex-row items-center flex-1 mr-2">
+                            <Ionicons name="bookmark" size={24} color="#1f2937" />
+                            <View className="ml-3 flex-1">
+                                <Text className="text-gray-900 font-semibold" numberOfLines={1}>
+                                    {t('saved-places') || 'Saved Places'}
+                                </Text>
+                                <Text className="text-gray-500 text-xs mt-0.5" numberOfLines={1}>
+                                    {t('your-favorite-locations') || 'Your favorite locations'}
+                                </Text>
+                            </View>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        className="bg-gray-50 rounded-2xl p-5 mb-6 flex-row items-center justify-between"
                         onPress={() => setShowFiltersModal(true)}
                     >
                         <View className="flex-row items-center flex-1 mr-2">
