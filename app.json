@@ -7,6 +7,9 @@
     "icon": "./assets/images/logo.png",
     "scheme": "trafficapp",
     "userInterfaceStyle": "automatic",
+    "associatedDomains": [
+      "applinks:maps.gebeta.app"
+    ],
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
@@ -30,7 +33,26 @@
         "image": "./assets/images/gebetamaps.png",
         "resizeMode": "contain",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "maps.gebeta.app"
+            },
+            {
+              "scheme": "trafficapp"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -44,7 +66,7 @@
         "expo-splash-screen",
         {
           "image": "./assets/images/gebetamaps.png",
-          "imageWidth": 250,
+          "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
           "dark": {

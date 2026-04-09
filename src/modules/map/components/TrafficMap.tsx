@@ -33,11 +33,17 @@ import { useTranslation } from 'react-i18next';
 
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 import { useRulePreferences } from '../../rules/hooks/useRulePreferences';
+import type { SharedLocation } from '../../../shared/utils/deepLinking';
 
-export default function TrafficMap() {
+interface TrafficMapProps {
+    sharedLocation?: SharedLocation | null;
+}
+
+export default function TrafficMap({ sharedLocation }: TrafficMapProps) {
     const mapRef = useRef<GebetaMapRef>(null);
     const searchMarkerRef = useRef<any>(null);
     const hasZoomedToUserLocation = useRef(false);
+    const hasProcessedSharedLocation = useRef(false);
     const router = useRouter();
 
     const [initialCenter] = useState<[number, number]>([38.7463, 9.0223]);
@@ -51,6 +57,7 @@ export default function TrafficMap() {
     const [isNavigationMinimized, setIsNavigationMinimized] = useState(false);
     const [hasUserZoomedOut, setHasUserZoomedOut] = useState(false);
     const [isOnIncidentReportScreen, setIsOnIncidentReportScreen] = useState(false);
+    const [isMapLoaded, setIsMapLoaded] = useState(false);
 
     const { t } = useTranslation();
     const params = useLocalSearchParams();
@@ -135,7 +142,7 @@ export default function TrafficMap() {
     const activeRuleAlert = useRuleAlerts(userLocation, nearbyRules, navigationMode, routeCoordinates);
     const { addIncidentMarkers } = useMapMarkers(mapRef, incidents);
 
-    const handleSelectPlace = (place: GeocodingPlace) => {
+    const handleSelectPlace = (place: GeocodingPlace, autoNavigate: boolean = true) => {
         if (searchMarkerRef.current) {
             mapRef.current?.clearMarkers();
             addIncidentMarkers();
@@ -151,17 +158,41 @@ export default function TrafficMap() {
         );
         searchMarkerRef.current = marker;
 
+        // clear search result
         setSearchResults([]);
+        setShowSearchContainer(false);
         setSelectedDestination(place);
         setSearchQuery('');
 
         setClickedLocation(null);
 
-        setTimeout(() => {
-            handleNavigate(setUserLocation, place);
-        }, 300);
+        if (autoNavigate) {
+            setTimeout(() => {
+                handleNavigate(setUserLocation, place);
+            }, 300);
+        }
     };
 
+    const handleSelectSharedPlace = (place: GeocodingPlace) => {
+        if (searchMarkerRef.current) {
+            mapRef.current?.clearMarkers();
+            addIncidentMarkers();
+        }
+
+        const marker = mapRef.current?.addImageMarker(
+            [place.longitude, place.latitude],
+            '',
+            [40, 40],
+            () => showToast.info(place.name, place.type),
+            10,
+            undefined
+        );
+        searchMarkerRef.current = marker;
+
+        setSelectedDestination(place);
+        setClickedLocation(null);
+
+    };
     const { handleMapClick } = useMapClick({
         navigationMode,
         onSelectPlace: handleSelectPlace,
@@ -279,6 +310,7 @@ export default function TrafficMap() {
     );
 
     const handleMapLoaded = () => {
+        setIsMapLoaded(true);
         setTimeout(() => {
             addIncidentMarkers();
         }, 1000);
@@ -341,6 +373,33 @@ export default function TrafficMap() {
             });
         }
     }, [userLocation?.lat, userLocation?.lng, navigationMode]);
+
+    useEffect(() => {
+        if (sharedLocation && mapRef.current && isMapLoaded && !hasProcessedSharedLocation.current) {
+            hasProcessedSharedLocation.current = true;
+
+            const place: GeocodingPlace = {
+                name: sharedLocation.name || 'Shared Location',
+                latitude: sharedLocation.lat,
+                longitude: sharedLocation.lng,
+                type: sharedLocation.type || 'location',
+                City: sharedLocation.city || '',
+                Country: sharedLocation.country || '',
+            };
+
+            setSearchResults([place]);
+            setShowSearchContainer(true);
+            setSelectedDestination(place); 
+
+            setTimeout(() => {
+                mapRef.current?.flyTo({
+                    center: [place.longitude, place.latitude],
+                    zoom: 15,
+                    duration: 1500,
+                });
+            }, 100);
+        }
+    }, [sharedLocation, isMapLoaded]);
 
     useEffect(() => {
         if (!navigationMode) return;
@@ -504,6 +563,7 @@ export default function TrafficMap() {
                         handleClearRoute();
                         setClickedLocation(null);
                     }}
+                    destination={selectedDestination}
                 />
             )}
 

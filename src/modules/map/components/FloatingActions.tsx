@@ -2,6 +2,7 @@ import React from 'react';
 import { View, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../../shared/theme/colors';
+import { ShareLocationButton } from '../../../shared/components/ShareLocationButton';
 
 interface FloatingActionsProps {
     onLocationPress?: () => void;
@@ -10,6 +11,7 @@ interface FloatingActionsProps {
     onVoicePressOut?: () => void;
     isRecording?: boolean;
     isProcessingVoice?: boolean;
+    userLocation?: { lat: number; lng: number } | null;
 }
 
 export const FloatingActions: React.FC<FloatingActionsProps> = ({
@@ -19,6 +21,7 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
     onVoicePressOut,
     isRecording = false,
     isProcessingVoice = false,
+    userLocation,
 }) => {
     return (
         <View className="absolute right-4 bottom-52 gap-3">
@@ -28,6 +31,18 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
             >
                 <Ionicons name="locate" size={24} color="#F59E0B" />
             </TouchableOpacity>
+
+            {userLocation && (
+                <ShareLocationButton
+                    location={{
+                        lat: userLocation.lat,
+                        lng: userLocation.lng,
+                        name: 'My Current Location',
+                    }}
+                    variant="icon"
+                    size="medium"
+                />
+            )}
 
             <TouchableOpacity
                 onPress={onThemePress}
