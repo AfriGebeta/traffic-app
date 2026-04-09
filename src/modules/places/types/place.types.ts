@@ -22,6 +22,27 @@ export interface PlaceContributionRequest {
     images: string[];
 }
 
+export type SavedPlaceType = 'HOME' | 'WORK' | 'FAVORITE';
+
+export interface SavedPlace {
+    id: string;
+    type: SavedPlaceType;
+    lat: number;
+    lng: number;
+    isPrivate: boolean;
+    label: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface SavePlaceRequest {
+    type: SavedPlaceType;
+    lat: number;
+    lng: number;
+    isPrivate: boolean;
+    label: string;
+}
+
 export const PLACE_TYPES = [
     { id: 'gas_station', label: 'Gas Station', icon: 'water' as const, color: '#EF4444' },
     { id: 'taxi_station', label: 'Taxi Station', icon: 'car' as const, color: '#3B82F6' },

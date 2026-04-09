@@ -1083,5 +1083,120 @@
         "key": "failed-to-update-settings",
         "EN_US": "Failed to update settings",
         "AM": "ቅንብሮችን ማዘመን አልተሳካም"
+    },
+    {
+        "key": "saved-places",
+        "EN_US": "Saved Places",
+        "AM": "የተቀመጡ ቦታዎች"
+    },
+    {
+        "key": "your-favorite-locations",
+        "EN_US": "Your favorite locations",
+        "AM": "የእርስዎ ተመራጭ ቦታዎች"
+    },
+    {
+        "key": "no-saved-places",
+        "EN_US": "No Saved Places",
+        "AM": "የተቀመጡ ቦታዎች የሉም"
+    },
+    {
+        "key": "save-favorite-locations",
+        "EN_US": "Save your favorite locations for quick access",
+        "AM": "ለፈጣን ተመራጭ ቦታዎችዎን ያስቀምጡ"
+    },
+    {
+        "key": "all",
+        "EN_US": "All",
+        "AM": "ሁሉም"
+    },
+    {
+        "key": "home",
+        "EN_US": "Home",
+        "AM": "ቤት"
+    },
+    {
+        "key": "work",
+        "EN_US": "Work",
+        "AM": "ስራ"
+    },
+    {
+        "key": "favorites",
+        "EN_US": "Favorites",
+        "AM": "ተመራጮች"
+    },
+    {
+        "key": "private",
+        "EN_US": "Private",
+        "AM": "የግል"
+    },
+    {
+        "key": "delete-place",
+        "EN_US": "Delete Place",
+        "AM": "ቦታውን ሰርዝ"
+    },
+    {
+        "key": "delete-place-confirm",
+        "EN_US": "Are you sure you want to delete",
+        "AM": "መሰረዝ እርግጠኛ ነዎት"
+    },
+    {
+        "key": "place-deleted",
+        "EN_US": "Place deleted",
+        "AM": "ቦታው ተሰርዟል"
+    },
+    {
+        "key": "failed-to-delete-place",
+        "EN_US": "Failed to delete place",
+        "AM": "ቦታውን መሰረዝ አልተሳካም"
+    },
+    {
+        "key": "place-saved-successfully",
+        "EN_US": "Place saved successfully",
+        "AM": "ቦታው በተሳካ ሁኔታ ተቀምጧል"
+    },
+    {
+        "key": "failed-to-save-place",
+        "EN_US": "Failed to save place",
+        "AM": "ቦታውን ማስቀመጥ አልተሳካም"
+    },
+    {
+        "key": "place-removed",
+        "EN_US": "Place removed from saved",
+        "AM": "ቦታው ከተቀመጡት ተወግዷል"
+    },
+    {
+        "key": "failed-to-remove-place",
+        "EN_US": "Failed to remove place",
+        "AM": "ቦታውን ማስወገድ አልተሳካም"
+    },
+    {
+        "key": "save-place",
+        "EN_US": "Save Place",
+        "AM": "ቦታውን ያስቀምጡ"
+    },
+    {
+        "key": "place-type",
+        "EN_US": "Place Type",
+        "AM": "የቦታው አይነት"
+    },
+    {
+        "key": "label",
+        "EN_US": "Label",
+        "AM": "የቦታው መለያ"
+    },
+    {
+        "key": "enter-place-name",
+        "EN_US": "Enter place name",
+        "AM": "የቦታ ስም ያስገቡ"
+    },
+    {
+        "key": "private-place",
+        "EN_US": "Private Place",
+        "AM": "የግል ቦታ"
+    },
+    {
+        "key": "only-you-can-see",
+        "EN_US": "Only you can see this place",
+        "AM": "ይህን ቦታ ማየት የሚችሉት እርስዎ ብቻ ነዎት"
     }
 ]

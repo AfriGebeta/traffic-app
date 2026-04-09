@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Modal, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -6,6 +6,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../../shared/theme/colors';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 import { ShareLocationButton } from '../../../shared/components/ShareLocationButton';
+import { SavePlaceModal } from '../../places/components/SavePlaceModal';
+import { placeService } from '../../places/services/place.service';
+import { showToast } from '../../../shared/utils/toast';
+import type { SavedPlaceType, SavedPlace } from '../../places/types/place.types';
 
 interface PlaceDetailsSheetProps {
     place: GeocodingPlace | null;
@@ -20,6 +24,18 @@ export const PlaceDetailsSheet: React.FC<PlaceDetailsSheetProps> = ({
 }) => {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
+    const [showSaveModal, setShowSaveModal] = useState(false);
+    const [savedPlace, setSavedPlace] = useState<SavedPlace | null>(null);
+
+    useEffect(() => {
+        checkIfSaved();
+    }, [place]);
+
+    const checkIfSaved = async () => {
+        if (!place) return;
+        const saved = await placeService.isPlaceSaved(place.latitude, place.longitude);
+        setSavedPlace(saved);
+    };
 
     if (!place) return null;
 
@@ -28,6 +44,36 @@ export const PlaceDetailsSheet: React.FC<PlaceDetailsSheetProps> = ({
         lng: place.longitude,
         name: place.name,
     });
+
+    const handleSavePlace = async (type: SavedPlaceType, label: string, isPrivate: boolean) => {
+        try {
+            const saved = await placeService.savePlace({
+                type,
+                lat: place.latitude,
+                lng: place.longitude,
+                label,
+                isPrivate,
+            });
+            setSavedPlace(saved);
+            showToast.success(t('place-saved-successfully'));
+        } catch (error) {
+            showToast.error(t('failed-to-save-place'));
+            console.error('Error saving place:', error);
+        }
+    };
+
+    const handleUnsavePlace = async () => {
+        if (!savedPlace) return;
+
+        try {
+            await placeService.deleteSavedPlace(savedPlace.id);
+            setSavedPlace(null);
+            showToast.success(t('place-removed'));
+        } catch (error) {
+            showToast.error(t('failed-to-remove-place'));
+            console.error('Error removing place:', error);
+        }
+    };
 
     return (
         <Modal
@@ -85,22 +131,42 @@ export const PlaceDetailsSheet: React.FC<PlaceDetailsSheetProps> = ({
                         </Text>
                     </TouchableOpacity>
 
-                    <View className="mt-3">
-                        <ShareLocationButton
-                            location={{
-                                lat: place.latitude,
-                                lng: place.longitude,
-                                name: place.name,
-                                city: place.City,
-                                country: place.Country,
-                                type: place.type,
-                            }}
-                            variant="secondary"
-                            size="medium"
-                        />
+                    <View className="flex-row gap-3 mt-3">
+                        <View className="flex-1">
+                            <ShareLocationButton
+                                location={{
+                                    lat: place.latitude,
+                                    lng: place.longitude,
+                                    name: place.name,
+                                    city: place.City,
+                                    country: place.Country,
+                                    type: place.type,
+                                }}
+                                variant="secondary"
+                                size="medium"
+                            />
+                        </View>
+                        <TouchableOpacity
+                            onPress={savedPlace ? handleUnsavePlace : () => setShowSaveModal(true)}
+                            className="bg-gray-100 rounded-xl py-4 px-4 flex-row items-center justify-center"
+                            style={{ minWidth: 60 }}
+                        >
+                            <Ionicons
+                                name={savedPlace ? "bookmark" : "bookmark-outline"}
+                                size={20}
+                                color="#1F2937"
+                            />
+                        </TouchableOpacity>
                     </View>
                 </Pressable>
             </Pressable>
+
+            <SavePlaceModal
+                visible={showSaveModal}
+                onClose={() => setShowSaveModal(false)}
+                onSave={handleSavePlace}
+                placeName={place.name}
+            />
         </Modal>
     );
 };

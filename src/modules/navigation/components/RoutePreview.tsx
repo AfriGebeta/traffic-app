@@ -1,10 +1,14 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { colors } from '../../../shared/theme/colors';
 import { ShareLocationButton } from '../../../shared/components/ShareLocationButton';
 import type { GeocodingPlace } from '../types/navigation.types';
+import { SavePlaceModal } from '../../places/components/SavePlaceModal';
+import { placeService } from '../../places/services/place.service';
+import { showToast } from '../../../shared/utils/toast';
+import type { SavedPlaceType, SavedPlace } from '../../places/types/place.types';
 
 interface RoutePreviewProps {
     distance: number;
@@ -55,6 +59,50 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
     destination,
 }) => {
     const { t } = useTranslation();
+    const [showSaveModal, setShowSaveModal] = useState(false);
+    const [savedPlace, setSavedPlace] = useState<SavedPlace | null>(null);
+
+    useEffect(() => {
+        checkIfSaved();
+    }, [destination]);
+
+    const checkIfSaved = async () => {
+        if (!destination) return;
+        const saved = await placeService.isPlaceSaved(destination.latitude, destination.longitude);
+        setSavedPlace(saved);
+    };
+
+    const handleSavePlace = async (type: SavedPlaceType, label: string, isPrivate: boolean) => {
+        if (!destination) return;
+
+        try {
+            const saved = await placeService.savePlace({
+                type,
+                lat: destination.latitude,
+                lng: destination.longitude,
+                label,
+                isPrivate,
+            });
+            setSavedPlace(saved);
+            showToast.success(t('place-saved-successfully'));
+        } catch (error) {
+            showToast.error(t('failed-to-save-place'));
+            console.error('Error saving place:', error);
+        }
+    };
+
+    const handleUnsavePlace = async () => {
+        if (!savedPlace) return;
+
+        try {
+            await placeService.deleteSavedPlace(savedPlace.id);
+            setSavedPlace(null);
+            showToast.success(t('place-removed'));
+        } catch (error) {
+            showToast.error(t('failed-to-remove-place'));
+            console.error('Error removing place:', error);
+        }
+    };
 
     return (
         <View className="absolute bottom-0 pb-11 left-0 right-0 bg-white rounded-t-3xl shadow-2xl">
@@ -127,19 +175,31 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
 
                     <View className="flex-row gap-2">
                         {destination && (
-                            <TouchableOpacity
-                                onPress={async () => {
-                                    const { Share } = await import('react-native');
-                                    const url = `https://maps.gebeta.app/?lat=${destination.latitude}&lng=${destination.longitude}&name=${encodeURIComponent(destination.name)}`;
-                                    Share.share({
-                                        message: `Check out ${destination.name} on Gebeta Maps: ${url}`,
-                                        url: url,
-                                    });
-                                }}
-                                className="rounded-2xl px-4 py-4"
-                            >
-                                <Ionicons name="share-social" size={24} color={colors.primary.main} />
-                            </TouchableOpacity>
+                            <>
+                                <TouchableOpacity
+                                    onPress={savedPlace ? handleUnsavePlace : () => setShowSaveModal(true)}
+                                    className="rounded-2xl px-4 py-4"
+                                >
+                                    <Ionicons
+                                        name={savedPlace ? "bookmark" : "bookmark-outline"}
+                                        size={24}
+                                        color={colors.primary.main}
+                                    />
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={async () => {
+                                        const { Share } = await import('react-native');
+                                        const url = `https://maps.gebeta.app/?lat=${destination.latitude}&lng=${destination.longitude}&name=${encodeURIComponent(destination.name)}`;
+                                        Share.share({
+                                            message: `Check out ${destination.name} on Gebeta Maps: ${url}`,
+                                            url: url,
+                                        });
+                                    }}
+                                    className="rounded-2xl px-4 py-4"
+                                >
+                                    <Ionicons name="share-social" size={24} color={colors.primary.main} />
+                                </TouchableOpacity>
+                            </>
                         )}
 
                         <TouchableOpacity
@@ -159,6 +219,15 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                     </View>
                 </View>
             </View>
+
+            {destination && (
+                <SavePlaceModal
+                    visible={showSaveModal}
+                    onClose={() => setShowSaveModal(false)}
+                    onSave={handleSavePlace}
+                    placeName={destination.name}
+                />
+            )}
         </View>
     );
 };
