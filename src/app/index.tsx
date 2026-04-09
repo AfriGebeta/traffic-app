@@ -20,18 +20,21 @@ export default function Index() {
   }, []);
 
   useEffect(() => {
-    if (params.sharedLat && params.sharedLng) {
+    const lat = params.lat || params.sharedLat;
+    const lng = params.lng || params.sharedLng;
+
+    if (lat && lng) {
       const location: SharedLocation = {
-        lat: parseFloat(params.sharedLat as string),
-        lng: parseFloat(params.sharedLng as string),
-        name: params.sharedName as string || undefined,
-        city: params.sharedCity as string || undefined,
-        country: params.sharedCountry as string || undefined,
-        type: params.sharedType as string || undefined,
+        lat: parseFloat(lat as string),
+        lng: parseFloat(lng as string),
+        name: (params.name || params.sharedName) as string || undefined,
+        city: (params.city || params.sharedCity) as string || undefined,
+        country: (params.country || params.sharedCountry) as string || undefined,
+        type: (params.type || params.sharedType) as string || undefined,
       };
       setSharedLocation(location);
     }
-  }, [params]);
+  }, [params.lat, params.lng, params.sharedLat, params.sharedLng, params.name, params.sharedName]);
 
   const checkRegistration = async () => {
     const user = await getStoredUser();
