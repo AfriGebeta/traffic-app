@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BlurView } from 'expo-blur';
 import { colors } from '../../../shared/theme/colors';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 
@@ -46,35 +47,39 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
             className="absolute left-4 right-4"
             style={{ bottom: Math.max(insets.bottom + 8, 36) }}
         >
-
-            <View className="bg-white rounded-3xl p-3 border border-gray-200" style={{
+            <View className="rounded-3xl overflow-hidden" style={{
                 shadowColor: '#000',
                 shadowOffset: { width: 0, height: -2 },
                 shadowOpacity: 0.1,
                 shadowRadius: 8,
                 elevation: 8,
             }}>
-                <View className="flex-row items-center justify-between gap-2">
-                    {tabs.map((tab) => {
-                        return (
-                            <TouchableOpacity
-                                key={tab.id}
-                                onPress={() => handleTabPress(tab.id)}
-                                className="flex-1 bg-gray-50 rounded-2xl items-center py-5"
-                                activeOpacity={0.7}
-                            >
-                                <Ionicons
-                                    name={tab.icon}
-                                    size={28}
-                                    color={colors.primary.main}
-                                />
-                                <Text className="text-gray-800 text-sm font-medium mt-2">
-                                    {t(tab.translationKey)}
-                                </Text>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </View>
+                <BlurView intensity={100} tint="light" style={{ borderRadius: 24 }}>
+                    <View className="p-3" style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)' }}>
+                        <View className="flex-row items-center justify-between gap-2">
+                            {tabs.map((tab) => {
+                                return (
+                                    <TouchableOpacity
+                                        key={tab.id}
+                                        onPress={() => handleTabPress(tab.id)}
+                                        className="flex-1 rounded-2xl items-center py-5"
+                                        style={{ backgroundColor: 'rgba(229, 231, 235, 0.9)' }}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Ionicons
+                                            name={tab.icon}
+                                            size={28}
+                                            color={colors.primary.main}
+                                        />
+                                        <Text className="text-gray-800 text-sm font-medium mt-2">
+                                            {t(tab.translationKey)}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    </View>
+                </BlurView>
             </View>
         </View>
     );
