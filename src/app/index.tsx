@@ -37,6 +37,13 @@ export default function Index() {
   }, [params.lat, params.lng, params.sharedLat, params.sharedLng, params.name, params.sharedName]);
 
   const checkRegistration = async () => {
+    const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
+
+    if (!hasSeenOnboarding) {
+      router.replace('/onboarding');
+      return;
+    }
+
     const user = await getStoredUser();
     const guestMode = await AsyncStorage.getItem(GUEST_MODE_KEY);
 
