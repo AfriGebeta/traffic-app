@@ -18,6 +18,7 @@ import { VoiceNavigationModal } from '../../navigation/components/VoiceNavigatio
 import { useIncidents } from '../../incidents/hooks/useIncidents';
 import { useUserLocation } from '../hooks/useUserLocation';
 import { useSearch } from '../hooks/useSearch';
+import { colors } from '../../../shared/theme/colors';
 import { useNavigation } from '../../navigation/hooks/useNavigation';
 import { useVoiceNavigation } from '../../navigation/hooks/useVoiceNavigation';
 import { useNavigationTracking } from '../../navigation/hooks/useNavigationTracking';
@@ -430,7 +431,7 @@ export default function TrafficMap({ sharedLocation }: TrafficMapProps) {
                 onMapLoaded={handleMapLoaded}
                 routeGeoJSON={isNavigationMinimized ? undefined : routeGeoJSON}
                 routeStyle={{
-                    color: '#3B82F6',
+                    color: navigationMode ? '#3B82F6' : colors.primary.main,
                     width: 5,
                     opacity: 0.8
                 }}
