@@ -15,6 +15,8 @@ const EXPLORE_IMAGES = {
     parking: require('../../../assets/images/parking.png'),
     hospital: require('../../../assets/images/hospital.png'),
     repair: require('../../../assets/images/repair-shop.png'),
+    bank: require('../../../assets/images/bank.png'),
+    atm: require('../../../assets/images/atm.png'),
 };
 
 const INCIDENT_IMAGES = {
