@@ -1,7 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image, StatusBar } from 'react-native';
+import { View, Text, TouchableOpacity, Image, StatusBar, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
 import { colors } from '../../../shared/theme/colors';
 import { useTranslation } from 'react-i18next';
 import { LanguageSwitcher } from '../../../shared/components/LanguageSwitcher';
@@ -19,7 +18,8 @@ export default function TelegramLoginChoiceScreen() {
         }
 
         try {
-            await WebBrowser.openBrowserAsync(TELEGRAM_LOGIN_URL);
+          
+            await Linking.openURL(TELEGRAM_LOGIN_URL);
         } catch (error) {
             console.error('Error opening Telegram login:', error);
         }
