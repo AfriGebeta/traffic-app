@@ -1198,5 +1198,35 @@
         "key": "only-you-can-see",
         "EN_US": "Only you can see this place",
         "AM": "ይህን ቦታ ማየት የሚችሉት እርስዎ ብቻ ነዎት"
+    },
+    {
+        "key": "continue-with-telegram",
+        "EN_US": "Continue with Telegram",
+        "AM": "በቴሌግራም ይቀጥሉ"
+    },
+    {
+        "key": "i-dont-have-telegram",
+        "EN_US": "I don't have Telegram",
+        "AM": "ቴሌግራም የለኝም"
+    },
+    {
+        "key": "by-continuing-you-agree",
+        "EN_US": "By continuing, you agree to our",
+        "AM": "በመቀጠል፣ የእኛን ተቀብለዋል"
+    },
+    {
+        "key": "privacy-policy",
+        "EN_US": "Privacy Policy",
+        "AM": "የግላዊነት ፖሊሲ"
+    },
+    {
+        "key": "terms-conditions",
+        "EN_US": "Terms & Conditions",
+        "AM": "ውሎች እና ሁኔታዎች"
+    },
+    {
+        "key": "and",
+        "EN_US": "and",
+        "AM": "እና"
     }
 ]
