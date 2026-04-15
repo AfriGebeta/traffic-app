@@ -16,6 +16,8 @@ const categories: Category[] = [
     { id: 'parking', nameKey: 'parking', icon: 'car' },
     { id: 'hospital', nameKey: 'hospital', icon: 'medical' },
     { id: 'repair', nameKey: 'repair-shop', icon: 'construct' },
+    { id: 'bank', nameKey: 'bank', icon: 'business' },
+    { id: 'atm', nameKey: 'atm', icon: 'cash' },
 ];
 
 interface QuickActionsProps {

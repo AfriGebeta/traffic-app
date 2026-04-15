@@ -8,6 +8,8 @@ const CATEGORY_TYPE_MAP: Record<string, string> = {
     parking: 'parking',
     hospital: 'hospital',
     repair: 'car repair',
+    bank: 'bank',
+    atm: 'atm',
 };
 
 interface ExploreParams {

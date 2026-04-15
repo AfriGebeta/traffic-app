@@ -1228,5 +1228,15 @@
         "key": "and",
         "EN_US": "and",
         "AM": "እና"
+    },
+    {
+        "key": "bank",
+        "EN_US": "Bank",
+        "AM": "ባንክ"
+    },
+    {
+        "key": "atm",
+        "EN_US": "ATM",
+        "AM": "ኤቲኤም"
     }
 ]
