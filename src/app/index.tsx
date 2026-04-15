@@ -48,7 +48,7 @@ export default function Index() {
     const guestMode = await AsyncStorage.getItem(GUEST_MODE_KEY);
 
     if (!user && !guestMode) {
-      router.replace('/register');
+      router.replace('/telegram-login');
       return;
     }
 

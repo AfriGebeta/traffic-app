@@ -178,23 +178,27 @@ export default function LoginScreen() {
                             </Text>
                         </TouchableOpacity>
 
-                        <View className="mt-6 items-center">
+                        <View className="mt-6 items-center px-4">
                             <Text className="text-gray-500 text-xs text-center mb-2">
                                 {t('by-continuing-you-agree') }
                             </Text>
-                            <View className="flex-row items-center">
-                                <TouchableOpacity onPress={() => router.push('/privacy-policy' as any)}>
-                                    <Text className="text-xs font-semibold" style={{ color: colors.primary.main }}>
-                                        {t('privacy-policy') }
-                                    </Text>
-                                </TouchableOpacity>
-                                <Text className="text-gray-500 text-xs mx-1">{t('and') || 'and'}</Text>
-                                <TouchableOpacity onPress={() => router.push('/terms-conditions' as any)}>
-                                    <Text className="text-xs font-semibold" style={{ color: colors.primary.main }}>
-                                        {t('terms-conditions') }
-                                    </Text>
-                                </TouchableOpacity>
-                            </View>
+                            <Text className="text-gray-500 text-xs text-center">
+                                <Text 
+                                    className="text-xs font-semibold" 
+                                    style={{ color: colors.primary.main }}
+                                    onPress={() => router.push('/privacy-policy' as any)}
+                                >
+                                    {t('privacy-policy') }
+                                </Text>
+                                <Text className="text-gray-500 text-xs"> {t('and') || 'and'} </Text>
+                                <Text 
+                                    className="text-xs font-semibold" 
+                                    style={{ color: colors.primary.main }}
+                                    onPress={() => router.push('/terms-conditions' as any)}
+                                >
+                                    {t('terms-conditions') }
+                                </Text>
+                            </Text>
                         </View>
                     </View>
                 </View>
