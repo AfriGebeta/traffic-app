@@ -150,7 +150,7 @@ export default function RegistrationScreen() {
 
                         <View className="mb-6">
                             <Text className="text-sm font-bold text-gray-900 mb-2">
-                                {t('password') }
+                                {t('password')}
                             </Text>
                             <TextInput
                                 className="bg-gray-50 border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900 font-semibold"
@@ -179,7 +179,7 @@ export default function RegistrationScreen() {
                                     numberOfLines={2}
                                     style={{ minWidth: 80 }}
                                 >
-                                    {t('register') }
+                                    {t('register')}
                                 </Text>
                             )}
                         </TouchableOpacity>
@@ -209,27 +209,31 @@ export default function RegistrationScreen() {
                             activeOpacity={0.8}
                         >
                             <Text className="text-gray-700 text-base font-semibold">
-                                {t('continue-as-guest') }
+                                {t('continue-as-guest')}
                             </Text>
                         </TouchableOpacity>
 
-                        <View className="mt-6 items-center">
+                        <View className="mt-6 items-center px-4">
                             <Text className="text-gray-500 text-xs text-center mb-2">
-                                {t('by-continuing-you-agree') }
+                                {t('by-continuing-you-agree')}
                             </Text>
-                            <View className="flex-row items-center">
-                                <TouchableOpacity onPress={() => router.push('/privacy-policy' as any)}>
-                                    <Text className="text-xs font-semibold" style={{ color: colors.primary.main }}>
-                                        {t('privacy-policy') || 'Privacy Policy'}
-                                    </Text>
-                                </TouchableOpacity>
-                                <Text className="text-gray-500 text-xs mx-1">{t('and') || 'and'}</Text>
-                                <TouchableOpacity onPress={() => router.push('/terms-conditions' as any)}>
-                                    <Text className="text-xs font-semibold" style={{ color: colors.primary.main }}>
-                                        {t('terms-conditions') || 'Terms & Conditions'}
-                                    </Text>
-                                </TouchableOpacity>
-                            </View>
+                            <Text className="text-gray-500 text-xs text-center">
+                                <Text
+                                    className="text-xs font-semibold"
+                                    style={{ color: colors.primary.main }}
+                                    onPress={() => router.push('/privacy-policy' as any)}
+                                >
+                                    {t('privacy-policy') || 'Privacy Policy'}
+                                </Text>
+                                <Text className="text-gray-500 text-xs"> {t('and') || 'and'} </Text>
+                                <Text
+                                    className="text-xs font-semibold"
+                                    style={{ color: colors.primary.main }}
+                                    onPress={() => router.push('/terms-conditions' as any)}
+                                >
+                                    {t('terms-conditions') || 'Terms & Conditions'}
+                                </Text>
+                            </Text>
                         </View>
                     </View>
                 </View>
