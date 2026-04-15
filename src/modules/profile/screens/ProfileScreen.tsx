@@ -35,6 +35,11 @@ export const ProfileScreen = () => {
 
     const loadUser = async () => {
         const storedUser = await getStoredUser();
+
+        if (storedUser && storedUser.name) {
+            storedUser.name = storedUser.name.replace(/\s+undefined$/i, '').trim();
+        }
+
         setUser(storedUser);
 
         if (storedUser) {
@@ -164,7 +169,15 @@ export const ProfileScreen = () => {
                         <Text className="text-2xl font-bold text-gray-900 mb-1">
                             {user.name}
                         </Text>
-                        <Text className="text-gray-500">{user.phoneNumber}</Text>
+                        {user.phoneNumber && !user.phoneNumber.startsWith('telegram:') && (
+                            <Text className="text-gray-500">{user.phoneNumber}</Text>
+                        )}
+                        {user.phoneNumber && user.phoneNumber.startsWith('telegram:') && (
+                            <View className="flex-row items-center">
+                                <Ionicons name="paper-plane" size={14} color="#0088cc" style={{ marginRight: 4 }} />
+                                <Text className="text-gray-500">Telegram User</Text>
+                            </View>
+                        )}
                     </View>
                     <View className="flex-row mb-6 gap-3">
                         <View className="flex-1 bg-gray-50 rounded-2xl p-4">

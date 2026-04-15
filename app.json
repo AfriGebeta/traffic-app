@@ -45,6 +45,10 @@
             },
             {
               "scheme": "trafficapp"
+            },
+            {
+              "scheme": "trafficapp",
+              "host": "telegram-auth"
             }
           ],
           "category": [

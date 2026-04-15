@@ -7,10 +7,13 @@ import { IncidentFiltersProvider } from '../modules/incidents/context/IncidentFi
 import { useEffect } from 'react';
 import * as NavigationBar from 'expo-navigation-bar';
 import { Platform } from 'react-native';
+import { useTelegramDeepLink } from '../shared/hooks/useTelegramDeepLink';
 import './globals.css';
 import '../shared/utils/localization/i18n';
 
 export default function RootLayout() {
+  useTelegramDeepLink();
+
   useEffect(() => {
     if (Platform.OS === 'android') {
       try {
