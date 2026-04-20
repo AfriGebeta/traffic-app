@@ -167,17 +167,19 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                     <View className="px-6 py-3 border-t border-gray-100 mb-2">
                         <View className="bg-gray-200 rounded-2xl p-4 ">
                             <View className="flex-row items-start justify-between">
-                                <View className="mr-2" style={{ maxWidth: '50%' }}>
+                                <View className="flex-1 mr-3">
                                     <Text className="text-3xl font-bold text-gray-900">
                                         {formatTime(duration)}
                                     </Text>
                                     <Text className="text-gray-500 text-sm mt-1">
                                         {t('eta')} {formatETA(duration)} • {formatDistance(distance)}
                                     </Text>
-                                    <Text className="text-gray-900 font-medium mt-1">{destinationName}</Text>
+                                    <Text className="text-gray-900 font-medium mt-1" numberOfLines={2} ellipsizeMode="tail">
+                                        {destinationName}
+                                    </Text>
                                 </View>
 
-                                <View className="flex-row items-center">
+                                <View className="flex-row items-center flex-shrink-0">
                                     {destination && (
                                         <>
                                             <TouchableOpacity
