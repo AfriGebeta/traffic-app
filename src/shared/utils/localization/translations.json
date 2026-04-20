@@ -857,12 +857,17 @@
     {
         "key": "navigation-complete",
         "EN_US": "Navigation Complete",
-        "AM": "አሰሳ ተጠናቋል"
+        "AM": "ጉዞው ተጠናቋል"
     },
     {
         "key": "arrived-at-destination",
         "EN_US": "You have arrived at your destination!",
         "AM": "መድረሻዎ ላይ ደርሰዋል!"
+    },
+    {
+        "key": "done",
+        "EN_US": "Done",
+        "AM": "ተጠናቋል"
     },
     {
         "key": "off-route",

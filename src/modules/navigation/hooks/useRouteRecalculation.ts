@@ -26,6 +26,7 @@ interface UseRouteRecalculationProps {
     setRemainingTime: (time: number) => void;
     setCurrentInstruction: (instruction: string) => void;
     handleStopNavigation: () => void;
+    onArrival?: () => void;
     startSimulation: () => void;
     resetClosestIndex: () => void;
     setUserLocation?: (location: { lat: number; lng: number }) => void;
@@ -51,6 +52,7 @@ export const useRouteRecalculation = ({
     setRemainingTime,
     setCurrentInstruction,
     handleStopNavigation,
+    onArrival,
     startSimulation,
     resetClosestIndex,
     setUserLocation,
@@ -235,10 +237,7 @@ export const useRouteRecalculation = ({
                                 const distanceToDestination = R * c;
 
                                 if (distanceToDestination <= 10) {
-                                    showToast.success(
-                                        t('navigation-complete') || 'Navigation Complete',
-                                        t('arrived-at-destination') || 'You have arrived at your destination!'
-                                    );
+                                    onArrival?.();
                                     handleStopNavigation();
                                     return;
                                 }
@@ -275,10 +274,7 @@ export const useRouteRecalculation = ({
                             );
                         },
                         onNavigationComplete: () => {
-                            showToast.success(
-                                t('navigation-complete') || 'Navigation Complete',
-                                t('arrived-at-destination') || 'You have arrived at your destination!'
-                            );
+                            onArrival?.();
                             handleStopNavigation();
                         },
                     } as any);
