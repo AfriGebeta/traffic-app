@@ -543,6 +543,7 @@ export default function TrafficMap({ sharedLocation }: TrafficMapProps) {
                     onVoiceRelease={handleVoiceStop}
                     isRecording={isRecording}
                     isProcessingVoice={isProcessingVoice}
+                    showRoutePreview={showRoutePreview}
                     voiceNavigationData={voiceNavigationData}
                     onExploreCategory={handleExploreCategory}
                     isExploring={isExploring}

@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, TouchableOpacity, ActivityIndicator, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../../shared/theme/colors';
 import { ShareLocationButton } from '../../../shared/components/ShareLocationButton';
@@ -12,6 +12,7 @@ interface FloatingActionsProps {
     isRecording?: boolean;
     isProcessingVoice?: boolean;
     userLocation?: { lat: number; lng: number } | null;
+    isRoutePreviewActive?: boolean;
 }
 
 export const FloatingActions: React.FC<FloatingActionsProps> = ({
@@ -22,9 +23,20 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
     isRecording = false,
     isProcessingVoice = false,
     userLocation,
+    isRoutePreviewActive = false,
 }) => {
+    const bottomPosition = useRef(new Animated.Value(180)).current;
+
+    useEffect(() => {
+        Animated.timing(bottomPosition, {
+            toValue: isRoutePreviewActive ? 380 : 180,
+            duration: 250,
+            useNativeDriver: false,
+        }).start();
+    }, [isRoutePreviewActive]);
+
     return (
-        <View className="absolute right-4 bottom-52 gap-3">
+        <Animated.View className="absolute right-4 gap-3" style={{ bottom: bottomPosition }}>
             <TouchableOpacity
                 onPress={onLocationPress}
                 className="bg-white rounded-full p-3 shadow-lg"
@@ -71,6 +83,6 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
                     />
                 )}
             </TouchableOpacity>
-        </View>
+        </Animated.View>
     );
 };
