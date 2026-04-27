@@ -104,12 +104,6 @@ export default function TelegramLoginChoiceScreen() {
                     </Text>
                 </View>
             </View>
-
-            <View className="pb-8 items-center">
-                <Text className="text-gray-400 text-xs">
-                    {t('something-like-this-malet-new') || 'something like this malet new'}
-                </Text>
-            </View>
         </View>
     );
 }

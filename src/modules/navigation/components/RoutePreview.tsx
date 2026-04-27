@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { colors } from '../../../shared/theme/colors';
 import type { GeocodingPlace } from '../types/navigation.types';
@@ -59,6 +60,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
     destination,
 }) => {
     const { t } = useTranslation();
+    const insets = useSafeAreaInsets();
     const [showSaveModal, setShowSaveModal] = useState(false);
     const [savedPlace, setSavedPlace] = useState<SavedPlace | null>(null);
 
@@ -105,9 +107,12 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
     };
 
     return (
-        <View className="absolute bottom-0 pb-11 left-0 right-0 rounded-t-3xl shadow-2xl overflow-hidden">
-            <BlurView intensity={100} tint="light" style={{ flex: 1 }}>
-                <View style={{ backgroundColor: 'rgba(255, 255, 255, 0.4)' }}>
+        <View
+            className="absolute left-4 right-4 rounded-3xl shadow-2xl overflow-hidden"
+            style={{ bottom: insets.bottom > 0 ? insets.bottom + 8 : 36 }}
+        >
+            <BlurView intensity={100} tint="light" style={{ flex: 1, borderRadius: 24 }}>
+                <View style={{ backgroundColor: 'rgba(255, 255, 255, 0.4)', borderRadius: 24 }}>
                     <View className="px-6 pt-4 border-b" style={{ borderBottomColor: 'rgba(229, 231, 235, 0.5)' }}>
                         <View className="flex-row items-center justify-between mb-2">
                             <Text className="text-2xl font-bold text-gray-900">{t('directions')}</Text>
@@ -167,17 +172,19 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                     <View className="px-6 py-3 border-t border-gray-100 mb-2">
                         <View className="bg-gray-200 rounded-2xl p-4 ">
                             <View className="flex-row items-start justify-between">
-                                <View className="mr-2" style={{ maxWidth: '50%' }}>
+                                <View className="flex-1 mr-3">
                                     <Text className="text-3xl font-bold text-gray-900">
                                         {formatTime(duration)}
                                     </Text>
                                     <Text className="text-gray-500 text-sm mt-1">
                                         {t('eta')} {formatETA(duration)} • {formatDistance(distance)}
                                     </Text>
-                                    <Text className="text-gray-900 font-medium mt-1">{destinationName}</Text>
+                                    <Text className="text-gray-900 font-medium mt-1" numberOfLines={2} ellipsizeMode="tail">
+                                        {destinationName}
+                                    </Text>
                                 </View>
 
-                                <View className="flex-row items-center">
+                                <View className="flex-row items-center flex-shrink-0">
                                     {destination && (
                                         <>
                                             <TouchableOpacity

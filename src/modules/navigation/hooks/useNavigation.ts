@@ -34,6 +34,7 @@ export const useNavigation = (
     const [isRecalculating, setIsRecalculating] = useState(false);
     const [routeGeoJSON, setRouteGeoJSON] = useState<any>(null);
     const [fullRouteCoordinates, setFullRouteCoordinates] = useState<[number, number][]>([]);
+    const [showArrivalModal, setShowArrivalModal] = useState(false);
 
     const routeCoordinates = useRef<[number, number][]>([]);
     const isNavigatingRef = useRef(false);
@@ -48,7 +49,7 @@ export const useNavigation = (
     useVoiceInstructions({
         currentInstruction,
         isNavigating: navigationMode,
-        enabled: true, 
+        enabled: true,
     });
 
     const updateInstructionBasedOnPosition = (currentLat: number, currentLng: number) => {
@@ -79,6 +80,7 @@ export const useNavigation = (
                 stopNavigationRef.current();
             }
         },
+        onArrival: () => setShowArrivalModal(true),
         totalRouteDistance: totalRouteDistance.current,
         totalRouteDuration: totalRouteDuration.current,
     });
@@ -130,6 +132,7 @@ export const useNavigation = (
                 stopNavigationRef.current();
             }
         },
+        onArrival: () => setShowArrivalModal(true),
         startSimulation,
         resetClosestIndex,
         setUserLocation,
@@ -175,7 +178,7 @@ export const useNavigation = (
             if (instructionTexts.length > 0) {
                 console.log('prefetching audio for', instructionTexts.length, 'instructions');
                 voiceNavigationService.prefetchRouteInstructions(instructionTexts).catch(err => {
-                    
+
                 });
             }
 
@@ -301,7 +304,7 @@ export const useNavigation = (
             if (instructionTexts.length > 0) {
                 console.log('prefetching audio for', instructionTexts.length, 'instructions');
                 voiceNavigationService.prefetchRouteInstructions(instructionTexts).catch(err => {
-                    
+
                 });
             }
 
@@ -365,10 +368,7 @@ export const useNavigation = (
                         const distanceToDestination = R * c;
 
                         if (distanceToDestination <= 10) {
-                            showToast.success(
-                                t('navigation-complete') || 'Navigation Complete',
-                                t('arrived-at-destination') || 'You have arrived at your destination!'
-                            );
+                            setShowArrivalModal(true);
                             handleStopNavigation();
                             return;
                         }
@@ -410,10 +410,7 @@ export const useNavigation = (
                     );
                 },
                 onNavigationComplete: () => {
-                    showToast.success(
-                        t('navigation-complete') || 'Navigation Complete',
-                        t('arrived-at-destination') || 'You have arrived at your destination!'
-                    );
+                    setShowArrivalModal(true);
                     handleStopNavigation();
                 },
             } as any);
@@ -558,6 +555,8 @@ export const useNavigation = (
         remainingTime,
         isOffRoute,
         isRecalculating,
+        showArrivalModal,
+        setShowArrivalModal,
 
         routeCoordinates: routeCoordinates.current,
         routeGeoJSON,

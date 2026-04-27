@@ -14,6 +14,7 @@ interface UseSimulationProps {
     setRemainingTime: (time: number) => void;
     updateInstructionBasedOnPosition: (lat: number, lng: number) => void;
     onSimulationComplete?: () => void;
+    onArrival?: () => void;
     totalRouteDistance: number; //in meters
     totalRouteDuration: number; // in seconds
 }
@@ -29,6 +30,7 @@ export const useSimulation = ({
     setRemainingTime,
     updateInstructionBasedOnPosition,
     onSimulationComplete,
+    onArrival,
     totalRouteDistance,
     totalRouteDuration,
 }: UseSimulationProps) => {
@@ -52,7 +54,7 @@ export const useSimulation = ({
         simulationInterval.current = setInterval(() => {
             if (currentRouteIndex.current >= routeCoordinates.current.length) {
                 stopSimulation();
-                showToast.success('Arrived', 'You have reached your destination!');
+                onArrival?.();
                 if (onSimulationComplete) {
                     onSimulationComplete();
                 }
@@ -209,6 +211,7 @@ export const useSimulation = ({
         setRemainingTime,
         updateInstructionBasedOnPosition,
         onSimulationComplete,
+        onArrival,
         stopSimulation,
         totalRouteDistance,
         totalRouteDuration,

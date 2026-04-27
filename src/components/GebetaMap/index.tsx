@@ -4,6 +4,7 @@ import MapLibreGL from '@maplibre/maplibre-react-native';
 import { GebetaMapRef, GebetaMapProps } from '@gebeta/tiles-react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../shared/theme/colors';
+import { showToast } from '../../shared/utils/toast';
 
 const MAPPIN_IMAGE = require('../../../assets/images/Mappin.png');
 const PIN_NORMAL_IMAGE = require('../../../assets/images/pin-normal.png');
@@ -465,6 +466,40 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             </MapLibreGL.ShapeSource>
                         )}
 
+                        {routeGeoJSON && selectedDestination && (() => {
+                            const routeCoords = routeGeoJSON.geometry.coordinates;
+                            const lastRoutePoint = routeCoords[routeCoords.length - 1];
+                            const destinationPoint = [selectedDestination.longitude, selectedDestination.latitude];
+
+                            const walkingPathGeoJSON = {
+                                type: 'Feature' as const,
+                                properties: {},
+                                geometry: {
+                                    type: 'LineString' as const,
+                                    coordinates: [lastRoutePoint, destinationPoint]
+                                }
+                            };
+
+                            return (
+                                <MapLibreGL.ShapeSource
+                                    key={`walking-path-${Date.now()}`}
+                                    id="walking-path-source"
+                                    shape={walkingPathGeoJSON}
+                                >
+                                    <MapLibreGL.LineLayer
+                                        id="walking-path-layer"
+                                        style={{
+                                            lineColor: isNavigating ? '#888888' : '#666666',
+                                            lineWidth: isNavigating ? 5 : 4,
+                                            lineOpacity: isNavigating ? 0.8 : 0.7,
+                                            lineDasharray: [0.5, 2],
+                                            lineCap: 'round',
+                                        }}
+                                    />
+                                </MapLibreGL.ShapeSource>
+                            );
+                        })()}
+
                         {isNavigating && userLocation && imagesLoaded && (
                             <MapLibreGL.PointAnnotation
                                 key={`nav-marker-${renderKey}`}
@@ -527,6 +562,9 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                     key={`incident-${incident.id}-${renderKey}`}
                                     id={`incident-${incident.id}`}
                                     coordinate={[incident.lng, incident.lat]}
+                                    onSelected={() => {
+                                        showToast.info('Incident', incident.type.label || incident.type.name);
+                                    }}
                                 >
                                     <View style={{
                                         width: 40,

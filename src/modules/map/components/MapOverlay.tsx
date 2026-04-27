@@ -47,6 +47,7 @@ interface MapOverlayProps {
     isNavigationMinimized?: boolean;
     onRestoreNavigation?: () => void;
     navigationDestination?: GeocodingPlace | null;
+    showRoutePreview?: boolean;
 }
 
 export const MapOverlay: React.FC<MapOverlayProps> = ({
@@ -81,6 +82,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
     isNavigationMinimized = false,
     onRestoreNavigation,
     navigationDestination,
+    showRoutePreview = false,
 }) => {
     const { t } = useTranslation();
     const router = useRouter();
@@ -127,6 +129,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                 isRecording={isRecording}
                 isProcessingVoice={isProcessingVoice}
                 userLocation={userLocation}
+                isRoutePreviewActive={showRoutePreview}
             />
 
             {isNavigationMinimized && navigationDestination && onRestoreNavigation && (

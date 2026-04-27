@@ -25,11 +25,14 @@ class TelegramAuthService {
                 hash: String(queryParams.hash),
                 first_name: String(queryParams.first_name ?? ''),
                 username: queryParams.username ? String(queryParams.username) : undefined,
+                photo_url: queryParams.photo_url ? String(queryParams.photo_url) : undefined,
             };
 
             console.log('TelegramAuthService - Sending payload to API:', payload);
+
             const response = await telegramService.loginWithTelegram(payload);
             console.log('TelegramAuthService - API response:', response);
+
 
             if (response.data) {
                 // Store both token and user data

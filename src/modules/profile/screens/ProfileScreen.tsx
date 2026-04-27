@@ -138,7 +138,7 @@ export const ProfileScreen = () => {
                         {t('register-to-access-profile')}
                     </Text>
                     <TouchableOpacity
-                        onPress={() => router.push('/register')}
+                        onPress={() => router.push('/telegram-login')}
                         className="px-12 py-4 rounded-full"
                         style={{ minWidth: 160, backgroundColor: colors.primary.main }}
                     >

@@ -12,7 +12,7 @@ import { IncidentReportSheet } from './IncidentReportSheet';
 import { PlaceDetailsSheet } from './PlaceDetailsSheet';
 import { ExploreSheet } from '../../explore/components/ExploreSheet';
 import { RoutePreview } from '../../navigation/components/RoutePreview';
-
+import { ArrivalModal } from '../../navigation/components/ArrivalModal';
 import { NavigationOptionsModal } from '../../navigation/components/NavigationOptionsModal';
 import { VoiceNavigationModal } from '../../navigation/components/VoiceNavigationModal';
 import { useIncidents } from '../../incidents/hooks/useIncidents';
@@ -97,6 +97,8 @@ export default function TrafficMap({ sharedLocation }: TrafficMapProps) {
         isOffRoute,
         isRecalculating,
         routeCoordinates,
+        showArrivalModal,
+        setShowArrivalModal,
 
         routeGeoJSON,
         handleNavigate,
@@ -541,6 +543,7 @@ export default function TrafficMap({ sharedLocation }: TrafficMapProps) {
                     onVoiceRelease={handleVoiceStop}
                     isRecording={isRecording}
                     isProcessingVoice={isProcessingVoice}
+                    showRoutePreview={showRoutePreview}
                     voiceNavigationData={voiceNavigationData}
                     onExploreCategory={handleExploreCategory}
                     isExploring={isExploring}
@@ -604,6 +607,12 @@ export default function TrafficMap({ sharedLocation }: TrafficMapProps) {
                 onClose={handleCloseVoiceModal}
                 onPressIn={handleVoiceStart}
                 onPressOut={handleVoiceStop}
+            />
+
+            <ArrivalModal
+                visible={showArrivalModal}
+                destinationName={selectedDestination?.name}
+                onClose={() => setShowArrivalModal(false)}
             />
         </View>
     );
