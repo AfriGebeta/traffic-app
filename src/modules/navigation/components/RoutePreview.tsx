@@ -105,9 +105,9 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
     };
 
     return (
-        <View className="absolute bottom-0 pb-11 left-0 right-0 rounded-t-3xl shadow-2xl overflow-hidden">
-            <BlurView intensity={100} tint="light" style={{ flex: 1 }}>
-                <View style={{ backgroundColor: 'rgba(255, 255, 255, 0.4)' }}>
+        <View className="absolute bottom-10 left-4 right-4 rounded-3xl shadow-2xl overflow-hidden">
+            <BlurView intensity={100} tint="light" style={{ flex: 1, borderRadius: 24 }}>
+                <View style={{ backgroundColor: 'rgba(255, 255, 255, 0.4)', borderRadius: 24 }}>
                     <View className="px-6 pt-4 border-b" style={{ borderBottomColor: 'rgba(229, 231, 235, 0.5)' }}>
                         <View className="flex-row items-center justify-between mb-2">
                             <Text className="text-2xl font-bold text-gray-900">{t('directions')}</Text>
