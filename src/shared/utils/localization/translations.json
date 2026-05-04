@@ -1578,5 +1578,160 @@
         "key": "loading-nearby-stations",
         "EN_US": "Loading nearby stations...",
         "AM": "በአቅራቢያ ያሉ ጣቢያዎችን በመጫን ላይ..."
+    },
+    {
+        "key": "taxi-navigation",
+        "EN_US": "Taxi Navigation",
+        "AM": "የታክሲ መሄጃ"
+    },
+    {
+        "key": "find-taxi-route-to-destination",
+        "EN_US": "Find a taxi route to your destination",
+        "AM": "ወደ መድረሻዎ የታክሲ መስመር ያግኙ"
+    },
+    {
+        "key": "from",
+        "EN_US": "From",
+        "AM": "ከ"
+    },
+    {
+        "key": "to",
+        "EN_US": "To",
+        "AM": "ወደ"
+    },
+    {
+        "key": "current-location",
+        "EN_US": "Current Location",
+        "AM": "የአሁኑ አካባቢ"
+    },
+    {
+        "key": "waiting-for-location",
+        "EN_US": "Waiting for location...",
+        "AM": "አካባቢን በመጠበቅ ላይ..."
+    },
+    {
+        "key": "enter-destination-name",
+        "EN_US": "Enter destination name",
+        "AM": "የመድረሻ ስም ያስገቡ"
+    },
+    {
+        "key": "available-stations",
+        "EN_US": "Available Stations",
+        "AM": "ያሉ ጣቢያዎች"
+    },
+    {
+        "key": "loading-stations",
+        "EN_US": "Loading stations...",
+        "AM": "ጣቢያዎችን በመጠበቅ ላይ..."
+    },
+    {
+        "key": "or-pick-on-map",
+        "EN_US": "Or pick on map",
+        "AM": "ወይም በካርታ ላይ ይምረጡ"
+    },
+    {
+        "key": "find-taxi-route",
+        "EN_US": "Find Taxi Route",
+        "AM": "የታክሲ መስመር ያግኙ"
+    },
+    {
+        "key": "please-enter-destination",
+        "EN_US": "Please enter a destination",
+        "AM": "እባክዎ መድረሻ ያስገቡ"
+    },
+    {
+        "key": "failed-to-find-route",
+        "EN_US": "Failed to find route",
+        "AM": "መስመር ማግኘት አልተሳካም"
+    },
+    {
+        "key": "taxi-route",
+        "EN_US": "Taxi Route",
+        "AM": "የታክሲ መስመር"
+    },
+    {
+        "key": "walk-to-boarding-point",
+        "EN_US": "Walk to Boarding Point",
+        "AM": "ወደ መሳፈሪያ ቦታ በእግር ይሂዱ"
+    },
+    {
+        "key": "taxi-ride",
+        "EN_US": "Taxi Ride",
+        "AM": "የታክሲ ጉዞ"
+    },
+    {
+        "key": "walk-to-destination",
+        "EN_US": "Walk to Destination",
+        "AM": "ወደ መድረሻ በእግር ይሂዱ"
+    },
+    {
+        "key": "final-destination",
+        "EN_US": "Final Destination",
+        "AM": "የመጨረሻ መድረሻ"
+    },
+    {
+        "key": "total-fare",
+        "EN_US": "Total Fare",
+        "AM": "ጠቅላላ ዋጋ"
+    },
+    {
+        "key": "taxi-segments",
+        "EN_US": "taxi segments",
+        "AM": "የታክሲ ክፍሎች"
+    },
+    {
+        "key": "walk-segments",
+        "EN_US": "walk segments",
+        "AM": "የእግር ክፍሎች"
+    },
+    {
+        "key": "start-navigation",
+        "EN_US": "Start Navigation",
+        "AM": "ጉዞ ይጀምሩ"
+    },
+    {
+        "key": "go-back",
+        "EN_US": "Go Back",
+        "AM": "ተመለስ"
+    },
+    {
+        "key": "taxi-navigation-coming-soon",
+        "EN_US": "Active taxi navigation will be implemented in the next phase",
+        "AM": "Coming soon"
+    },
+    {
+        "key": "transportation-mode",
+        "EN_US": "Transportation Mode",
+        "AM": "የመጓጓዣ ዘዴ"
+    },
+    {
+        "key": "driving",
+        "EN_US": "Driving",
+        "AM": "በመኪና"
+    },
+    {
+        "key": "taxi-mode",
+        "EN_US": "Taxi",
+        "AM": "ታክሲ"
+    },
+    {
+        "key": "loading-taxi-route",
+        "EN_US": "Loading taxi route...",
+        "AM": "የታክሲ መስመር በመፈለግ ላይ..."
+    },
+    {
+        "key": "no-taxi-route-found",
+        "EN_US": "No taxi route found for this destination",
+        "AM": "ለዚህ መድረሻ የታክሲ መስመር አልተገኘም"
+    },
+    {
+        "key": "taxi-fare",
+        "EN_US": "Taxi Fare",
+        "AM": "የታክሲ ዋጋ"
+    },
+    {
+        "key": "taxi-route-unavailable",
+        "EN_US": "Taxi route is not available for this destination. Please try a different location.",
+        "AM": "ለዚህ መድረሻ የታክሲ መስመር አይገኝም። እባክዎ ሌላ ቦታ ይሞክሩ።"
     }
 ]

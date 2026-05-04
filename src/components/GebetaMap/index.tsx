@@ -5,6 +5,7 @@ import { GebetaMapRef, GebetaMapProps } from '@gebeta/tiles-react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../shared/theme/colors';
 import { showToast } from '../../shared/utils/toast';
+import { decodePolyline } from '../../shared/utils/polyline';
 
 const MAPPIN_IMAGE = require('../../../assets/images/Mappin.png');
 const PIN_NORMAL_IMAGE = require('../../../assets/images/pin-normal.png');
@@ -76,11 +77,28 @@ interface ExtendedGebetaMapProps extends GebetaMapProps {
     }>;
     exploreCategory?: string | null;
     onExplorePlacePress?: (place: any) => void;
+    taxiStations?: Array<{
+        id: number;
+        name: string;
+        lat: number;
+        lng: number;
+        type: 'start' | 'end' | 'intermediate';
+    }>;
+    taxiWalkRoutes?: Array<{
+        type: 'origin' | 'transfer' | 'destination';
+        polyline: string;
+    }>;
+    taxiRouteSegments?: Array<{
+        coordinates: Array<[number, number]>;
+        cost: number;
+        from: string;
+        to: string;
+    }>;
 }
 
 
 const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
-    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, explorePlaces, exploreCategory, onExplorePlacePress }, ref) => {
+    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments }, ref) => {
         const [mapStyleState, setMapStyleState] = useState<Record<string, unknown> | null>(null);
         const [loading, setLoading] = useState(true);
         const cameraRef = useRef<any>(null);
@@ -466,6 +484,77 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             </MapLibreGL.ShapeSource>
                         )}
 
+                        {taxiWalkRoutes && taxiWalkRoutes.map((route, index) => {
+                            try {
+                                const coords = decodePolyline(route.polyline, 6);
+
+                                const mapCoords = coords.map(([lat, lng]) => [lng, lat]);
+
+                                const color = route.type === 'origin' ? '#3B82F6' :
+                                    route.type === 'destination' ? '#10B981' :
+                                        '#F59E0B'; 
+
+                                const walkGeoJSON = {
+                                    type: 'Feature' as const,
+                                    properties: {},
+                                    geometry: {
+                                        type: 'LineString' as const,
+                                        coordinates: mapCoords
+                                    }
+                                };
+                                return (
+                                    <MapLibreGL.ShapeSource
+                                        key={`taxi-walk-${route.type}-${index}-${Date.now()}`}
+                                        id={`taxi-walk-${route.type}-${index}-source`}
+                                        shape={walkGeoJSON}
+                                    >
+                                        <MapLibreGL.LineLayer
+                                            id={`taxi-walk-${route.type}-${index}-layer`}
+                                            style={{
+                                                lineColor: color,
+                                                lineWidth: 4,
+                                                lineOpacity: 0.7,
+                                                lineDasharray: [0.5, 2],
+                                                lineCap: 'round',
+                                            }}
+                                        />
+                                    </MapLibreGL.ShapeSource>
+                                );
+                            } catch (error) {
+                                console.error(`[GebetaMap] Error decoding ${route.type} walk route:`, error);
+                                return null;
+                            }
+                        })}
+
+                        {taxiRouteSegments && taxiRouteSegments.map((segment, index) => {
+                            const taxiRouteGeoJSON = {
+                                type: 'Feature' as const,
+                                properties: {},
+                                geometry: {
+                                    type: 'LineString' as const,
+                                    coordinates: segment.coordinates
+                                }
+                            };
+                            return (
+                                <MapLibreGL.ShapeSource
+                                    key={`taxi-segment-${index}-${Date.now()}`}
+                                    id={`taxi-segment-${index}-source`}
+                                    shape={taxiRouteGeoJSON}
+                                >
+                                    <MapLibreGL.LineLayer
+                                        id={`taxi-segment-${index}-layer`}
+                                        style={{
+                                            lineColor: colors.primary.main,
+                                            lineWidth: 6,
+                                            lineOpacity: 0.8,
+                                            lineCap: 'round',
+                                            lineJoin: 'round',
+                                        }}
+                                    />
+                                </MapLibreGL.ShapeSource>
+                            );
+                        })}
+
                         {routeGeoJSON && selectedDestination && (() => {
                             const routeCoords = routeGeoJSON.geometry.coordinates;
                             const lastRoutePoint = routeCoords[routeCoords.length - 1];
@@ -737,6 +826,71 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                         ) : (
                                             <Ionicons name="location" size={28} color={colors.primary.main} />
                                         )}
+                                    </View>
+                                </MapLibreGL.PointAnnotation>
+                            );
+                        })}
+
+                        {taxiStations && imagesLoaded && taxiStations.map((station) => {
+
+                            const getStationStyle = () => {
+                                switch (station.type) {
+                                    case 'start':
+                                        return {
+                                            color: '#3B82F6', 
+                                            icon: 'walk' as const,
+                                            size: 44
+                                        };
+                                    case 'end':
+                                        return {
+                                            color: '#10B981', 
+                                            icon: 'car' as const,
+                                            size: 44
+                                        };
+                                    case 'intermediate':
+                                        return {
+                                            color: colors.primary.main,
+                                            icon: 'swap-horizontal' as const,
+                                            size: 36
+                                        };
+                                }
+                            };
+
+                            const style = getStationStyle();
+
+                            return (
+                                <MapLibreGL.PointAnnotation
+                                    key={`taxi-station-${station.type}-${station.id}-${renderKey}`}
+                                    id={`taxi-station-${station.type}-${station.id}`}
+                                    coordinate={[station.lng, station.lat]}
+                                >
+                                    <View style={{
+                                        width: 50,
+                                        height: 50,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}>
+                                        <View style={{
+                                            width: style.size,
+                                            height: style.size,
+                                            borderRadius: style.size / 2,
+                                            backgroundColor: style.color,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            borderWidth: 3,
+                                            borderColor: 'white',
+                                            shadowColor: '#000',
+                                            shadowOffset: { width: 0, height: 2 },
+                                            shadowOpacity: 0.3,
+                                            shadowRadius: 4,
+                                            elevation: 5,
+                                        }}>
+                                            <Ionicons
+                                                name={style.icon}
+                                                size={style.size === 44 ? 24 : 20}
+                                                color="white"
+                                            />
+                                        </View>
                                     </View>
                                 </MapLibreGL.PointAnnotation>
                             );

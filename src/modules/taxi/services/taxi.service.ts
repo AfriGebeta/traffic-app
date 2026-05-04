@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { CreateTaxiNodeRequest, CreateTaxiEdgeRequest, TaxiNode, TaxiEdge } from '../types/taxi.types';
+import { CreateTaxiNodeRequest, CreateTaxiEdgeRequest, TaxiNode, TaxiEdge, TaxiNavigationRequest, TaxiNavigationResponse } from '../types/taxi.types';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL ;
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 export const taxiService = {
     async createNode(data: CreateTaxiNodeRequest): Promise<TaxiNode> {
@@ -20,6 +20,22 @@ export const taxiService = {
         return response.data;
     },
 
+    async getAllNodes(): Promise<TaxiNode[]> {
+        const response = await axios.get(
+            `${API_URL}/api/navigation/taxi/contributions/nodes`,
+            { params: { limit: 1000 } } 
+        );
+        return response.data.data || response.data;
+    },
+
+    async getAllEdges(): Promise<TaxiEdge[]> {
+        const response = await axios.get(
+            `${API_URL}/api/navigation/taxi/contributions/edges`,
+            { params: { limit: 1000 } } 
+        );
+        return response.data.data || response.data;
+    },
+
     async createEdge(data: CreateTaxiEdgeRequest): Promise<TaxiEdge> {
         const response = await axios.post(
             `${API_URL}/api/navigation/taxi/contributions/edges`,
@@ -34,5 +50,13 @@ export const taxiService = {
             { params: { limit } }
         );
         return response.data;
+    },
+
+    async requestTaxiNavigation(data: TaxiNavigationRequest): Promise<TaxiNavigationResponse> {
+        const response = await axios.post(
+            `${API_URL}/api/navigation/request-taxi-navigation`,
+            data
+        );
+        return response.data.data;
     },
 };

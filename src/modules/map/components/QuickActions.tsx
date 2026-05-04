@@ -11,6 +11,7 @@ interface Category {
 }
 
 const categories: Category[] = [
+    { id: 'taxi', nameKey: 'taxi', icon: 'car' },
     { id: 'restaurants', nameKey: 'restaurants', icon: 'restaurant' },
     { id: 'gas', nameKey: 'gas-station', icon: 'water' },
     { id: 'parking', nameKey: 'parking', icon: 'car' },
@@ -63,7 +64,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
 
     const maxScroll = Math.max(0, contentWidth - scrollViewWidth);
     const indicatorWidth = 60;
-    const maxIndicatorTranslate = scrollViewWidth - indicatorWidth - 32; 
+    const maxIndicatorTranslate = scrollViewWidth - indicatorWidth - 32;
 
     return (
         <View className="mt-1.5 -mx-4">

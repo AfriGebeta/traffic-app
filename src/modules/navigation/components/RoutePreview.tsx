@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,6 +10,8 @@ import { SavePlaceModal } from '../../places/components/SavePlaceModal';
 import { placeService } from '../../places/services/place.service';
 import { showToast } from '../../../shared/utils/toast';
 import type { SavedPlaceType, SavedPlace } from '../../places/types/place.types';
+import { taxiService } from '../../taxi/services/taxi.service';
+import type { TaxiNavigationResponse } from '../../taxi/types/taxi.types';
 
 interface RoutePreviewProps {
     distance: number;
@@ -20,6 +22,9 @@ interface RoutePreviewProps {
     onStartNavigation: () => void;
     onCancel: () => void;
     destination?: GeocodingPlace | null;
+    userLocation?: { lat: number; lng: number } | null;
+    onTaxiRouteChange?: (taxiRoute: TaxiNavigationResponse | null) => void;
+    initialMode?: 'driving' | 'taxi';
 }
 
 const formatDistance = (meters: number): string => {
@@ -58,15 +63,70 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
     onStartNavigation,
     onCancel,
     destination,
+    userLocation,
+    onTaxiRouteChange,
+    initialMode = 'driving',
 }) => {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const [showSaveModal, setShowSaveModal] = useState(false);
     const [savedPlace, setSavedPlace] = useState<SavedPlace | null>(null);
 
+    const [transportMode, setTransportMode] = useState<'driving' | 'taxi'>(initialMode);
+    const [taxiRoute, setTaxiRoute] = useState<TaxiNavigationResponse | null>(null);
+    const [loadingTaxiRoute, setLoadingTaxiRoute] = useState(false);
+    const [taxiRouteError, setTaxiRouteError] = useState<string | null>(null);
+
     useEffect(() => {
         checkIfSaved();
     }, [destination]);
+
+    useEffect(() => {
+        if (transportMode === 'taxi' && destination && userLocation && !taxiRoute) {
+            fetchTaxiRoute();
+        }
+    }, [transportMode, destination, userLocation]);
+
+    const fetchTaxiRoute = async () => {
+        if (!destination || !userLocation) return;
+
+        setLoadingTaxiRoute(true);
+        setTaxiRouteError(null);
+        try {
+            const result = await taxiService.requestTaxiNavigation({
+                origin: [userLocation.lat, userLocation.lng],
+                destination: [destination.latitude, destination.longitude],
+            });
+            console.log('[RoutePreview] Taxi route fetched:', result);
+
+            if (!result.startNode || !result.endNode) {
+                setTaxiRouteError(t('taxi-route-unavailable'));
+                setTaxiRoute(null);
+                onTaxiRouteChange?.(null);
+            } else {
+                setTaxiRoute(result);
+                setTaxiRouteError(null);
+                console.log('[RoutePreview] Calling onTaxiRouteChange with:', result);
+                onTaxiRouteChange?.(result);
+            }
+        } catch (error: any) {
+            console.error('Error fetching taxi route:', error);
+            setTaxiRouteError(t('taxi-route-unavailable'));
+            setTaxiRoute(null);
+            onTaxiRouteChange?.(null);
+        } finally {
+            setLoadingTaxiRoute(false);
+        }
+    };
+
+    const handleModeChange = (mode: 'driving' | 'taxi') => {
+        setTransportMode(mode);
+        if (mode === 'driving') {
+            setTaxiRoute(null);
+            setTaxiRouteError(null);
+            onTaxiRouteChange?.(null);
+        }
+    };
 
     const checkIfSaved = async () => {
         if (!destination) return;
@@ -106,6 +166,22 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
         }
     };
 
+    const handleStartNavigation = () => {
+        if (transportMode === 'taxi') {
+            showToast.info(t('coming-soon'), t('taxi-navigation-coming-soon'));
+        } else {
+            onStartNavigation();
+        }
+    };
+
+    const displayDistance = transportMode === 'taxi' && taxiRoute
+        ? ((taxiRoute.originWalkRoute?.trip.summary.length || 0) + (taxiRoute.destinationWalkRoute?.trip.summary.length || 0)) * 1000
+        : distance;
+
+    const displayDuration = transportMode === 'taxi' && taxiRoute
+        ? (taxiRoute.originWalkRoute?.trip.summary.time || 0) + (taxiRoute.destinationWalkRoute?.trip.summary.time || 0)
+        : duration;
+
     return (
         <View
             className="absolute left-4 right-4 rounded-3xl shadow-2xl overflow-hidden"
@@ -121,6 +197,55 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                 className="w-10 h-10 items-center justify-center rounded-full bg-gray-100"
                             >
                                 <Ionicons name="close" size={24} color="#374151" />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    <View className="px-6 py-3 border-b border-gray-100">
+                        <View className="flex-row bg-gray-100 rounded-xl p-1">
+                            <TouchableOpacity
+                                onPress={() => handleModeChange('driving')}
+                                className="flex-1 flex-row items-center justify-center py-2 rounded-lg"
+                                style={{
+                                    backgroundColor: transportMode === 'driving' ? 'white' : 'transparent',
+                                }}
+                                activeOpacity={0.7}
+                            >
+                                <Ionicons
+                                    name="car"
+                                    size={20}
+                                    color={transportMode === 'driving' ? colors.primary.main : '#6B7280'}
+                                />
+                                <Text
+                                    className="ml-2 font-semibold"
+                                    style={{
+                                        color: transportMode === 'driving' ? colors.primary.main : '#6B7280',
+                                    }}
+                                >
+                                    {t('driving')}
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => handleModeChange('taxi')}
+                                className="flex-1 flex-row items-center justify-center py-2 rounded-lg"
+                                style={{
+                                    backgroundColor: transportMode === 'taxi' ? 'white' : 'transparent',
+                                }}
+                                activeOpacity={0.7}
+                            >
+                                <Ionicons
+                                    name="car"
+                                    size={20}
+                                    color={transportMode === 'taxi' ? colors.primary.main : '#6B7280'}
+                                />
+                                <Text
+                                    className="ml-2 font-semibold"
+                                    style={{
+                                        color: transportMode === 'taxi' ? colors.primary.main : '#6B7280',
+                                    }}
+                                >
+                                    {t('taxi-mode')}
+                                </Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -145,43 +270,134 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                         </View>
                     )}
                     <ScrollView className="max-h-48">
-                        <View className="px-6 py-3">
-                            <View className="bg-gray-200 rounded-2xl p-4">
-                                <View className="flex-row items-start mb-3">
-                                    <View className="w-8 items-center pt-1">
-                                        <View className="w-3 h-3 rounded-full bg-blue-500" />
-                                        <View className="w-0.5 h-8 bg-gray-400 my-1" />
-                                    </View>
-                                    <View className="flex-1 ml-3">
-                                        <Text className="text-gray-600 text-sm">{t('your-location')}</Text>
-                                    </View>
+                        {loadingTaxiRoute ? (
+                            <View className="px-6 py-8 items-center">
+                                <ActivityIndicator size="large" color={colors.primary.main} />
+                                <Text className="text-gray-600 mt-2">{t('loading-taxi-route')}</Text>
+                            </View>
+                        ) : taxiRouteError ? (
+                            <View className="px-6 py-6">
+                                <View className="rounded-2xl p-4" style={{ backgroundColor: `${colors.primary.main}15` }}>
+                                    <Text className="text-gray-900 font-semibold text-base mb-1">
+                                        {t('no-taxi-route-found')}
+                                    </Text>
+                                    <Text className="text-sm" style={{ color: colors.primary.main }}>
+                                        {taxiRouteError}
+                                    </Text>
                                 </View>
+                            </View>
+                        ) : transportMode === 'taxi' && taxiRoute ? (
+                            <View className="px-6 py-3">
+                                <View className="bg-gray-200 rounded-2xl p-4">
+                                    {taxiRoute.originWalkRoute && taxiRoute.startNode && (
+                                        <View className="flex-row items-start mb-3">
+                                            <View className="w-8 items-center pt-1">
+                                                <Ionicons name="walk" size={18} color="#3B82F6" />
+                                                <View className="w-0.5 h-8 bg-gray-400 my-1" />
+                                            </View>
+                                            <View className="flex-1 ml-3">
+                                                <Text className="text-gray-600 text-sm">{t('walk-to-boarding-point')}</Text>
+                                                <Text className="text-gray-900 font-semibold text-sm mt-1">
+                                                    {taxiRoute.startNode?.name || 'Boarding Point'}
+                                                </Text>
+                                                <Text className="text-gray-500 text-xs">
+                                                    {formatDistance((taxiRoute.originWalkRoute?.trip?.summary?.length || 0) * 1000)} • {formatTime(taxiRoute.originWalkRoute?.trip?.summary?.time || 0)}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    )}
 
-                                <View className="flex-row items-start">
-                                    <View className="w-8 items-center pt-1">
-                                        <Ionicons name="location" size={20} color={colors.primary.main} />
+                                    {taxiRoute.startNode && taxiRoute.endNode && (
+                                        <View className="flex-row items-start mb-3">
+                                            <View className="w-8 items-center pt-1">
+                                                <Ionicons name="car" size={18} color={colors.primary.main} />
+                                                <View className="w-0.5 h-8 bg-gray-400 my-1" />
+                                            </View>
+                                            <View className="flex-1 ml-3">
+                                                <Text className="text-gray-600 text-sm">{t('taxi-ride')}</Text>
+                                                <Text className="text-gray-900 font-semibold text-sm mt-1">
+                                                    {taxiRoute.formattedPath || `${taxiRoute.startNode?.name || 'Start'} → ${taxiRoute.endNode?.name || 'End'}`}
+                                                </Text>
+                                                <Text className="text-gray-500 text-xs">
+                                                    {taxiRoute.summary?.estimatedFare || 0} {taxiRoute.summary?.currency || 'ETB'} • {taxiRoute.summary?.taxiSegments || 0} {t('stops')}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    )}
+
+                                    {taxiRoute.destinationWalkRoute && (
+                                        <View className="flex-row items-start">
+                                            <View className="w-8 items-center pt-1">
+                                                <Ionicons name="walk" size={18} color="#10B981" />
+                                            </View>
+                                            <View className="flex-1 ml-3">
+                                                <Text className="text-gray-600 text-sm">{t('walk-to-destination')}</Text>
+                                                <Text className="text-gray-900 font-semibold text-sm mt-1">
+                                                    {destinationName}
+                                                </Text>
+                                                <Text className="text-gray-500 text-xs">
+                                                    {formatDistance((taxiRoute.destinationWalkRoute?.trip?.summary?.length || 0) * 1000)} • {formatTime(taxiRoute.destinationWalkRoute?.trip?.summary?.time || 0)}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    )}
+                                </View>
+                            </View>
+                        ) : (
+                            <View className="px-6 py-3">
+                                <View className="bg-gray-200 rounded-2xl p-4">
+                                    <View className="flex-row items-start mb-3">
+                                        <View className="w-8 items-center pt-1">
+                                            <View className="w-3 h-3 rounded-full bg-blue-500" />
+                                            <View className="w-0.5 h-8 bg-gray-400 my-1" />
+                                        </View>
+                                        <View className="flex-1 ml-3">
+                                            <Text className="text-gray-600 text-sm">{t('your-location')}</Text>
+                                        </View>
                                     </View>
-                                    <View className="flex-1 ml-3">
-                                        <Text className="text-gray-900 font-semibold text-base">{destinationName}</Text>
+
+                                    <View className="flex-row items-start">
+                                        <View className="w-8 items-center pt-1">
+                                            <Ionicons name="location" size={20} color={colors.primary.main} />
+                                        </View>
+                                        <View className="flex-1 ml-3">
+                                            <Text className="text-gray-900 font-semibold text-base">{destinationName}</Text>
+                                        </View>
                                     </View>
                                 </View>
                             </View>
-                        </View>
+                        )}
                     </ScrollView>
 
                     <View className="px-6 py-3 border-t border-gray-100 mb-2">
                         <View className="bg-gray-200 rounded-2xl p-4 ">
                             <View className="flex-row items-start justify-between">
                                 <View className="flex-1 mr-3">
-                                    <Text className="text-3xl font-bold text-gray-900">
-                                        {formatTime(duration)}
-                                    </Text>
-                                    <Text className="text-gray-500 text-sm mt-1">
-                                        {t('eta')} {formatETA(duration)} • {formatDistance(distance)}
-                                    </Text>
-                                    <Text className="text-gray-900 font-medium mt-1" numberOfLines={2} ellipsizeMode="tail">
-                                        {destinationName}
-                                    </Text>
+                                    {transportMode === 'taxi' && taxiRoute && taxiRoute.summary ? (
+                                        <>
+                                            <Text className="text-3xl font-bold" style={{ color: colors.primary.main }}>
+                                                {taxiRoute.summary?.estimatedFare || 0} {taxiRoute.summary?.currency || 'ETB'}
+                                            </Text>
+                                            <Text className="text-gray-500 text-sm mt-1">
+                                                {t('taxi-fare')} • {formatTime(displayDuration)}
+                                            </Text>
+                                            <Text className="text-gray-900 font-medium mt-1" numberOfLines={2} ellipsizeMode="tail">
+                                                {destinationName}
+                                            </Text>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Text className="text-3xl font-bold text-gray-900">
+                                                {formatTime(duration)}
+                                            </Text>
+                                            <Text className="text-gray-500 text-sm mt-1">
+                                                {t('eta')} {formatETA(duration)} • {formatDistance(distance)}
+                                            </Text>
+                                            <Text className="text-gray-900 font-medium mt-1" numberOfLines={2} ellipsizeMode="tail">
+                                                {destinationName}
+                                            </Text>
+                                        </>
+                                    )}
                                 </View>
 
                                 <View className="flex-row items-center flex-shrink-0">
@@ -214,7 +430,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                     )}
 
                                     <TouchableOpacity
-                                        onPress={onStartNavigation}
+                                        onPress={handleStartNavigation}
                                         className="rounded-2xl px-8 py-4 shadow-lg"
                                         style={{
                                             backgroundColor: colors.primary.main,
