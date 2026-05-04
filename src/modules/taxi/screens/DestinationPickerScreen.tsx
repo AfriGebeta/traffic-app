@@ -37,28 +37,18 @@ export default function DestinationPickerScreen() {
             return;
         }
 
-        setLoading(true);
-        try {
-            const result = await taxiService.requestTaxiNavigation({
-                origin: [userLocation.lat, userLocation.lng],
-                destination: [selectedLocation.lat, selectedLocation.lng],
-            });
+        
+        router.back(); 
+        router.back(); 
 
-            router.replace({
-                pathname: '/taxi/route-preview',
-                params: {
-                    routeData: JSON.stringify(result),
-                },
+        setTimeout(() => {
+            router.setParams({
+                taxiDestLat: selectedLocation.lat.toString(),
+                taxiDestLng: selectedLocation.lng.toString(),
+                taxiDestName: `${selectedLocation.lat.toFixed(4)}, ${selectedLocation.lng.toFixed(4)}`,
+                showTaxiMode: 'true',
             });
-        } catch (error: any) {
-            console.error('Error requesting taxi navigation:', error);
-            Alert.alert(
-                t('error'),
-                error.response?.data?.message || error.message || t('failed-to-find-route')
-            );
-        } finally {
-            setLoading(false);
-        }
+        }, 100);
     };
 
     return (

@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { taxiService } from '../services/taxi.service';
-import { TaxiNode } from '../types/taxi.types';
+import { TaxiNode, TaxiNavigationRequest } from '../types/taxi.types';
 
 export default function TaxiSearchScreen() {
     const router = useRouter();
@@ -61,15 +61,51 @@ export default function TaxiSearchScreen() {
 
         setLoading(true);
         try {
-            const result = await taxiService.requestTaxiNavigation({
-                origin: [userLocation.lat, userLocation.lng],
-                destinationName: destinationName.trim(),
-            });
+   
+            const matchingStation = stations.find(
+                s => s.name.toLowerCase() === destinationName.trim().toLowerCase()
+            );
+
+            let requestData: TaxiNavigationRequest;
+
+            if (matchingStation) {
+                requestData = {
+                    origin: [userLocation.lat, userLocation.lng] as [number, number],
+                    destination: [matchingStation.lat, matchingStation.lng] as [number, number],
+                };
+            } else {
+              
+                Alert.alert(
+                    t('error'),
+                    'Please select a destination from the available stations list'
+                );
+                setLoading(false);
+                return;
+            }
+
+            console.log('[TaxiSearch] Sending request:', requestData);
+
+            const result: any = await taxiService.requestTaxiNavigation(requestData);
+
+            console.log('[TaxiSearch] API result:', JSON.stringify(result, null, 2));
+
+            if (result.success === false) {
+                throw new Error(result.message || 'No route found');
+            }
+
+            if (!result || !result.startNode || !result.endNode) {
+                throw new Error('Invalid response from server: missing route data');
+            }
+
+            const destinationCoords = result.destination || {
+                lat: matchingStation.lat,
+                lng: matchingStation.lng
+            };
 
             const destination = {
                 name: destinationName.trim(),
-                latitude: result.destination.lat,
-                longitude: result.destination.lng,
+                latitude: destinationCoords.lat,
+                longitude: destinationCoords.lng,
                 type: 'destination' as const,
                 City: '',
                 Country: '',
@@ -87,10 +123,14 @@ export default function TaxiSearchScreen() {
             }, 100);
         } catch (error: any) {
             console.error('Error requesting taxi navigation:', error);
-            Alert.alert(
-                t('error'),
-                error.response?.data?.message || error.message || t('failed-to-find-route')
-            );
+            console.error('Error response:', error.response?.data);
+
+            const errorMessage = error.response?.data?.message
+                || error.response?.data?.error
+                || error.message
+                || t('failed-to-find-route');
+
+            Alert.alert(t('error'), errorMessage);
         } finally {
             setLoading(false);
         }
