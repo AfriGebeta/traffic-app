@@ -33,11 +33,11 @@ export interface CreateTaxiEdgeRequest {
 }
 
 export interface TaxiNavigationRequest {
-    origin?: [number, number]; 
-    destination?: [number, number]; 
+    origin?: [number, number];
+    destination?: [number, number];
     originName?: string;
     destinationName?: string;
-    at?: string; 
+    at?: string;
 }
 
 export interface WalkManeuver {
@@ -58,7 +58,7 @@ export interface WalkLeg {
         length: number;
         cost: number;
     };
-    shape: string; 
+    shape: string;
 }
 
 export interface WalkRoute {
@@ -116,4 +116,22 @@ export interface TaxiNavigationResponse {
         currency: string;
         pricingSource: string;
     };
+}
+
+export interface AvailabilityWindow {
+    edgeStartId: number;
+    edgeEndId: number;
+    dayOfWeek: number | null;
+    startMinutes: number;
+    endMinutes: number;
+    isAvailable: boolean;
+}
+
+export interface CreateAvailabilityWindowRequest {
+    edgeStartId: number;
+    edgeEndId: number;
+    dayOfWeek: number | null;
+    startMinutes: number;
+    endMinutes: number;
+    isAvailable: boolean;
 }

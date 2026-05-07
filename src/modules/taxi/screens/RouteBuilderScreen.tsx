@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { taxiService } from '../services/taxi.service';
 import { useRouteBuilder } from '../contexts/RouteBuilderContext';
+import { colors } from '../../../shared/theme/colors';
 
 interface RouteStop {
     id: string;
@@ -84,7 +85,7 @@ export default function RouteBuilderScreen() {
                         className="mr-4"
                         activeOpacity={0.7}
                     >
-                        <Ionicons name="arrow-back" size={28} color="#FFA500" />
+                        <Ionicons name="arrow-back" size={28} color={colors.primary.main} />
                     </TouchableOpacity>
                     <Text className="text-2xl font-bold text-gray-900">{t('build-route')}</Text>
                 </View>
@@ -124,7 +125,7 @@ export default function RouteBuilderScreen() {
                                 className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-4 flex-row items-center justify-center"
                                 onPress={() => handlePickLocation('start')}
                             >
-                                <Ionicons name="location" size={24} color="#FFA500" />
+                                <Ionicons name="location" size={24} color={colors.primary.main} />
                                 <Text className="text-gray-600 ml-2">{t('pick-on-map')}</Text>
                             </TouchableOpacity>
                         )}
@@ -153,7 +154,7 @@ export default function RouteBuilderScreen() {
                             className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-4 flex-row items-center justify-center mt-2"
                             onPress={() => handlePickLocation('intermediate')}
                         >
-                            <Ionicons name="add-circle" size={24} color="#FFA500" />
+                            <Ionicons name="add-circle" size={24} color={colors.primary.main} />
                             <Text className="text-gray-600 ml-2">{t('add-stop')}</Text>
                         </TouchableOpacity>
                     </View>
@@ -179,14 +180,15 @@ export default function RouteBuilderScreen() {
                                 className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-4 flex-row items-center justify-center"
                                 onPress={() => handlePickLocation('end')}
                             >
-                                <Ionicons name="location" size={24} color="#FFA500" />
+                                <Ionicons name="location" size={24} color={colors.primary.main} />
                                 <Text className="text-gray-600 ml-2">{t('pick-on-map')}</Text>
                             </TouchableOpacity>
                         )}
                     </View>
 
                     <TouchableOpacity
-                        className="bg-orange-500 py-4 rounded-xl"
+                        className="py-4 rounded-xl"
+                        style={{ backgroundColor: colors.primary.main }}
                         onPress={handleSubmit}
                         activeOpacity={0.7}
                     >

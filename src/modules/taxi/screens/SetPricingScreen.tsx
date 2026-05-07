@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { taxiService } from '../services/taxi.service';
+import { colors } from '../../../shared/theme/colors';
 
 interface RouteStop {
     id: string;
@@ -114,6 +115,7 @@ export default function SetPricingScreen() {
             console.log('All nodes created:', createdNodes);
             console.log('Creating edges:', edgePrices);
 
+            const createdEdges = [];
             for (const edge of edgePrices) {
                 if (edge.cost && parseFloat(edge.cost) > 0) {
                     const edgeData = {
@@ -124,18 +126,22 @@ export default function SetPricingScreen() {
                     };
                     console.log('Creating edge:', edgeData);
                     await taxiService.createEdge(edgeData);
+                    createdEdges.push({
+                        startNodeId: createdNodes[edge.from].id,
+                        endNodeId: createdNodes[edge.to].id,
+                        fromName: edge.fromName,
+                        toName: edge.toName,
+                    });
                 }
             }
 
-            Alert.alert(t('success'), t('route-created-successfully'), [
-                {
-                    text: t('ok'),
-                    onPress: () => {
-                        router.back();
-                        router.back();
-                    },
+            router.push({
+                pathname: '/taxi/set-availability',
+                params: {
+                    routeName,
+                    edges: JSON.stringify(createdEdges),
                 },
-            ]);
+            });
         } catch (error: any) {
             console.error('Route creation error:', error);
             console.error('Error response:', error.response?.data);
@@ -154,7 +160,7 @@ export default function SetPricingScreen() {
             <View className="px-4 py-6 border-b border-gray-50">
                 <View className="flex-row items-center mb-2">
                     <TouchableOpacity onPress={() => router.back()} className="mr-4" activeOpacity={0.7}>
-                        <Ionicons name="arrow-back" size={28} color="#FFA500" />
+                        <Ionicons name="arrow-back" size={28} color={colors.primary.main} />
                     </TouchableOpacity>
                     <Text className="text-2xl font-bold text-gray-900">{t('set-prices')}</Text>
                 </View>
@@ -172,8 +178,9 @@ export default function SetPricingScreen() {
                         return (
                             <View
                                 key={index}
-                                className={`mb-4 p-4 rounded-xl ${isMainRoute ? 'bg-orange-50 border-2 border-orange-300' : 'bg-gray-50'
+                                className={`mb-4 p-4 rounded-xl ${isMainRoute ? 'border-2' : 'bg-gray-50'
                                     }`}
+                                style={isMainRoute ? { backgroundColor: colors.primary.light, borderColor: colors.primary.main } : undefined}
                             >
                                 <View className="flex-row items-center justify-between mb-2">
                                     <View className="flex-1">
@@ -181,7 +188,7 @@ export default function SetPricingScreen() {
                                             {edge.fromName} → {edge.toName}
                                         </Text>
                                         {isMainRoute && (
-                                            <Text className="text-orange-600 text-xs mt-1">
+                                            <Text className="text-xs mt-1" style={{ color: colors.primary.dark }}>
                                                 {t('main-route-required')} *
                                             </Text>
                                         )}
@@ -199,7 +206,8 @@ export default function SetPricingScreen() {
                     })}
 
                     <TouchableOpacity
-                        className={`py-4 rounded-xl mt-4 ${loading ? 'bg-gray-400' : 'bg-orange-500'}`}
+                        className={`py-4 rounded-xl mt-4 ${loading ? 'bg-gray-400' : ''}`}
+                        style={!loading ? { backgroundColor: colors.primary.main } : undefined}
                         onPress={handleSubmit}
                         disabled={loading}
                         activeOpacity={0.7}

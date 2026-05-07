@@ -1733,5 +1733,115 @@
         "key": "taxi-route-unavailable",
         "EN_US": "Taxi route is not available for this destination. Please try a different location.",
         "AM": "ለዚህ መድረሻ የታክሲ መስመር አይገኝም። እባክዎ ሌላ ቦታ ይሞክሩ።"
+    },
+    {
+        "key": "set-availability",
+        "EN_US": "Set Availability",
+        "AM": "የአገልግሎት ሰዓት ያስገቡ"
+    },
+    {
+        "key": "edge",
+        "EN_US": "Edge",
+        "AM": "ክፍል"
+    },
+    {
+        "key": "of",
+        "EN_US": "of",
+        "AM": "ከ"
+    },
+    {
+        "key": "set-operating-hours-for-this-route",
+        "EN_US": "Set the operating hours for this route segment",
+        "AM": "ለዚህ የመስመር የአገልግሎት ሰዓት ያስገቡ"
+    },
+    {
+        "key": "time-window",
+        "EN_US": "Time Window",
+        "AM": "የሰዓት ክልል"
+    },
+    {
+        "key": "start-time",
+        "EN_US": "Start Time",
+        "AM": "መጀመሪያ ሰዓት"
+    },
+    {
+        "key": "end-time",
+        "EN_US": "End Time",
+        "AM": "መጨረሻ ሰዓት"
+    },
+    {
+        "key": "is-available",
+        "EN_US": "Is Available",
+        "AM": "ይገኛል"
+    },
+    {
+        "key": "add-time-window",
+        "EN_US": "Add Time Window",
+        "AM": "የሰዓት ክልል ያክሉ"
+    },
+    {
+        "key": "skip",
+        "EN_US": "Skip",
+        "AM": "ዝለል"
+    },
+    {
+        "key": "finish",
+        "EN_US": "Finish",
+        "AM": "ጨርስ"
+    },
+    {
+        "key": "set-start-time",
+        "EN_US": "Set Start Time",
+        "AM": "መጀመሪያ ሰዓት ያስገቡ"
+    },
+    {
+        "key": "set-end-time",
+        "EN_US": "Set End Time",
+        "AM": "መጨረሻ ሰዓት ያስገቡ"
+    },
+    {
+        "key": "hour",
+        "EN_US": "Hour",
+        "AM": "ሰዓት"
+    },
+    {
+        "key": "minute",
+        "EN_US": "Minute",
+        "AM": "ደቂቃ"
+    },
+    {
+        "key": "format-24-hour",
+        "EN_US": "24-hour format (00-23 hours, 00-59 minutes)",
+        "AM": "24 ሰዓት (00-23 ሰዓት፣ 00-59 ደቂቃ)"
+    },
+    {
+        "key": "save",
+        "EN_US": "Save",
+        "AM": "አስቀምጥ"
+    },
+    {
+        "key": "invalid-time-format",
+        "EN_US": "Invalid time format. Please enter valid hours (0-23) and minutes (0-59).",
+        "AM": "ልክ ያልሆነ ሰዓት። እባክዎ ትክክለኛ ሰዓት (0-23) እና ደቂቃ (0-59) ያስገቡ።"
+    },
+    {
+        "key": "please-add-at-least-one-time-window",
+        "EN_US": "Please add at least one time window",
+        "AM": "እባክዎ ቢያንስ አንድ የሰዓት ክልል ያስገቡ"
+    },
+    {
+        "key": "start-time-must-be-before-end-time",
+        "EN_US": "Start time must be before end time",
+        "AM": "መጀመሪያ ሰዓት ከመጨረሻ ሰዓት በፊት መሆን አለበት"
+    },
+    {
+        "key": "availability-windows-created-successfully",
+        "EN_US": "Availability windows created successfully!",
+        "AM": "የአገልግሎት ሰዓቶች በተሳካ ሁኔታ ተፈጥረዋል!"
+    },
+    {
+        "key": "failed-to-create-availability-window",
+        "EN_US": "Failed to create availability window",
+        "AM": "የአገልግሎት ሰዓት መፍጠር አልተሳካም"
     }
 ]
