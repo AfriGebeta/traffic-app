@@ -10,6 +10,7 @@ import { decodePolyline } from '../../shared/utils/polyline';
 const MAPPIN_IMAGE = require('../../../assets/images/Mappin.png');
 const PIN_NORMAL_IMAGE = require('../../../assets/images/pin-normal.png');
 const RED_PIN_IMAGE = require('../../../assets/images/red-pin.png');
+const TAXI_STATION_IMAGE = require('../../../assets/images/taxi-station-place.png');
 
 const EXPLORE_IMAGES = {
     restaurants: require('../../../assets/images/restaurant.png'),
@@ -119,6 +120,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         Image.prefetch(Image.resolveAssetSource(MAPPIN_IMAGE).uri),
                         Image.prefetch(Image.resolveAssetSource(PIN_NORMAL_IMAGE).uri),
                         Image.prefetch(Image.resolveAssetSource(RED_PIN_IMAGE).uri),
+                        Image.prefetch(Image.resolveAssetSource(TAXI_STATION_IMAGE).uri),
                         ...Object.values(EXPLORE_IMAGES).map(img =>
                             Image.prefetch(Image.resolveAssetSource(img).uri)
                         ),
@@ -872,20 +874,17 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                     case 'start':
                                         return {
                                             color: colors.primary.main,
-                                            icon: 'car' as const,
-                                            size: 44
+                                            size: 50
                                         };
                                     case 'end':
                                         return {
                                             color: colors.primary.main,
-                                            icon: 'car' as const,
-                                            size: 44
+                                            size: 50
                                         };
                                     case 'intermediate':
                                         return {
                                             color: colors.primary.main,
-                                            icon: 'swap-horizontal' as const,
-                                            size: 40
+                                            size: 46
                                         };
                                 }
                             };
@@ -893,40 +892,54 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             const style = getStationStyle();
 
                             return (
-                                <MapLibreGL.PointAnnotation
-                                    key={`taxi-station-${station.type}-${station.id}-${renderKey}`}
-                                    id={`taxi-station-${station.type}-${station.id}`}
-                                    coordinate={[station.lng, station.lat]}
-                                >
-                                    <View style={{
-                                        width: 50,
-                                        height: 50,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                    }}>
+                                <React.Fragment key={`taxi-station-fragment-${station.id}`}>
+                                    <MapLibreGL.PointAnnotation
+                                        key={`taxi-station-${station.type}-${station.id}-${renderKey}`}
+                                        id={`taxi-station-${station.type}-${station.id}`}
+                                        coordinate={[station.lng, station.lat]}
+                                    >
                                         <View style={{
                                             width: style.size,
                                             height: style.size,
-                                            borderRadius: style.size / 2,
-                                            backgroundColor: style.color,
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            borderWidth: 3,
-                                            borderColor: 'white',
-                                            shadowColor: '#000',
-                                            shadowOffset: { width: 0, height: 2 },
-                                            shadowOpacity: 0.3,
-                                            shadowRadius: 4,
-                                            elevation: 5,
                                         }}>
-                                            <Ionicons
-                                                name={style.icon}
-                                                size={style.size === 44 ? 24 : 22}
-                                                color="white"
+                                            <Image
+                                                source={TAXI_STATION_IMAGE}
+                                                style={{
+                                                    width: style.size,
+                                                    height: style.size,
+                                                }}
+                                                resizeMode="contain"
                                             />
                                         </View>
-                                    </View>
-                                </MapLibreGL.PointAnnotation>
+                                    </MapLibreGL.PointAnnotation>
+                                    <MapLibreGL.PointAnnotation
+                                        key={`taxi-station-label-${station.id}-${renderKey}`}
+                                        id={`taxi-station-label-${station.id}`}
+                                        coordinate={[station.lng, station.lat]}
+                                        anchor={{ x: 0.5, y: -0.8 }}
+                                    >
+                                        <View style={{
+                                            backgroundColor: '#FFFFFF',
+                                            paddingHorizontal: 10,
+                                            paddingVertical: 5,
+                                            borderRadius: 10,
+                                            borderWidth: 2,
+                                            borderColor: style.color,
+                                            maxWidth: 120,
+                                        }}>
+                                            <Text style={{
+                                                fontSize: 12,
+                                                fontWeight: 'bold',
+                                                color: '#1F2937',
+                                                textAlign: 'center',
+                                            }} numberOfLines={2}>
+                                                {station.name}
+                                            </Text>
+                                        </View>
+                                    </MapLibreGL.PointAnnotation>
+                                </React.Fragment>
                             );
                         })}
                     </MapLibreGL.MapView>

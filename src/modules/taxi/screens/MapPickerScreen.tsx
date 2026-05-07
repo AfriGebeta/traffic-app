@@ -36,6 +36,7 @@ export default function MapPickerScreen() {
         params.type === 'intermediate' ? 'stop' : 'station'
     );
     const [nearbyStations, setNearbyStations] = useState<TaxiNode[]>([]);
+    const [allStations, setAllStations] = useState<TaxiNode[]>([]);
     const [filteredStations, setFilteredStations] = useState<TaxiNode[]>([]);
     const [selectedExisting, setSelectedExisting] = useState<TaxiNode | null>(null);
     const [loadingStations, setLoadingStations] = useState(false);
@@ -54,6 +55,39 @@ export default function MapPickerScreen() {
 
         return Math.round(R * c);
     };
+
+    useEffect(() => {
+        const fetchAllStations = async () => {
+            console.log('[MapPicker] Fetching all stations...');
+            setLoadingStations(true);
+            try {
+                const response: any = await taxiService.getAllNodes();
+                console.log('[MapPicker] Response:', response);
+                const allNodes = Array.isArray(response) ? response : response.data || [];
+                console.log('[MapPicker] All nodes count:', allNodes.length);
+
+                if (!Array.isArray(allNodes)) {
+                    setAllStations([]);
+                    return;
+                }
+
+                const isIntermediate = params.type === 'intermediate';
+                const stations = allNodes.filter((node: TaxiNode) =>
+                    isIntermediate ? true : node.nodeType === 'station'
+                );
+
+                console.log('[MapPicker] Filtered stations count:', stations.length);
+                setAllStations(stations);
+            } catch (error) {
+                console.error('[MapPicker] Error fetching all stations:', error);
+                setAllStations([]);
+            } finally {
+                setLoadingStations(false);
+            }
+        };
+
+        fetchAllStations();
+    }, [params.type]);
 
     useEffect(() => {
         if (selectedLocation) {
@@ -197,6 +231,13 @@ export default function MapPickerScreen() {
                     selectedLocation={selectedLocation}
                     userLocation={userLocation}
                     showUserLocationMarker={true}
+                    taxiStations={allStations.map((station) => ({
+                        id: station.id,
+                        name: station.name,
+                        lat: station.lat,
+                        lng: station.lng,
+                        type: 'intermediate' as const,
+                    }))}
                 />
 
                 <View className="absolute top-4 left-4 right-4 bg-white rounded-xl p-4 shadow-lg">
