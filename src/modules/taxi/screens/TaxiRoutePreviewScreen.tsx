@@ -36,7 +36,34 @@ export default function TaxiRoutePreviewScreen() {
         );
     }
 
-    const { origin, destination, startNode, endNode, formattedPath, summary, originWalkRoute, destinationWalkRoute } = routeData;
+    const { origin, destination, startNode, endNode, formattedPath, summary, originWalkRoute, destinationWalkRoute, segments } = routeData;
+
+    const walkRoutes = segments?.filter(seg => seg.type === 'walk' || seg.mode === 'pedestrian').map((seg, idx) => ({
+        type: idx === 0 ? 'origin' as const : 'destination' as const,
+        polyline: seg.polyline
+    })) || [];
+
+    console.log('[TaxiRoutePreview] Walk routes prepared:', {
+        segmentsCount: segments?.length || 0,
+        walkRoutesCount: walkRoutes.length,
+        walkRoutes: walkRoutes.map(r => ({ type: r.type, polylineLength: r.polyline.length }))
+    });
+
+    const { decodePolyline } = require('../../../shared/utils/polyline');
+    const taxiSegments = segments?.filter(seg => seg.type === 'taxi' || seg.mode === 'auto').map(seg => {
+        const decoded = decodePolyline(seg.polyline, 6);
+        return {
+            coordinates: decoded.map(([lat, lng]: [number, number]) => [lng, lat] as [number, number]),
+            cost: seg.fare || 0,
+            from: seg.fromNode?.name || '',
+            to: seg.toNode?.name || ''
+        };
+    }) || [];
+
+    console.log('[TaxiRoutePreview] Taxi segments prepared:', {
+        taxiSegmentsCount: taxiSegments.length,
+        taxiSegments: taxiSegments.map(s => ({ from: s.from, to: s.to, coordsCount: s.coordinates.length }))
+    });
 
     useEffect(() => {
         if (mapReady && mapRef.current) {
@@ -114,6 +141,8 @@ export default function TaxiRoutePreviewScreen() {
                     center={[origin.lng, origin.lat]}
                     zoom={13}
                     onMapLoaded={() => setMapReady(true)}
+                    taxiWalkRoutes={walkRoutes.length > 0 ? walkRoutes : undefined}
+                    taxiRouteSegments={taxiSegments.length > 0 ? taxiSegments : undefined}
                 />
 
                 {!mapReady && (
@@ -149,83 +178,156 @@ export default function TaxiRoutePreviewScreen() {
                     </View>
 
                     <View className="px-6 py-4">
-                        {originWalkRoute && (
-                            <View className="mb-4">
-                                <View className="flex-row items-center mb-2">
-                                    <View className="w-8 h-8 rounded-full bg-blue-100 items-center justify-center">
-                                        <Ionicons name="walk" size={18} color="#3B82F6" />
-                                    </View>
-                                    <Text className="text-gray-900 font-semibold ml-3 flex-1">
-                                        {t('walk-to-boarding-point')}
-                                    </Text>
-                                    <Text className="text-gray-600 text-sm">
-                                        {formatDistance(originWalkRoute.trip.summary.length)}
-                                    </Text>
-                                </View>
-                                <View className="ml-4 pl-4 border-l-2 border-blue-200">
-                                    <Text className="text-gray-600 text-sm">
-                                        {startNode.name}
-                                    </Text>
-                                    <Text className="text-gray-500 text-xs mt-1">
-                                        {formatTime(originWalkRoute.trip.summary.time)}
-                                    </Text>
-                                </View>
-                            </View>
-                        )}
 
-                        <View className="mb-4">
-                            <View className="flex-row items-center mb-2">
-                                <View
-                                    className="w-8 h-8 rounded-full items-center justify-center"
-                                    style={{ backgroundColor: colors.primary.light }}
-                                >
-                                    <Ionicons name="car" size={18} color={colors.primary.main} />
-                                </View>
-                                <Text className="text-gray-900 font-semibold ml-3 flex-1">
-                                    {t('taxi-ride')}
-                                </Text>
-                                <Text
-                                    className="font-bold text-sm"
-                                    style={{ color: colors.primary.main }}
-                                >
-                                    {summary.estimatedFare} {summary.currency}
-                                </Text>
-                            </View>
-                            <View
-                                className="ml-4 pl-4 border-l-2"
-                                style={{ borderLeftColor: colors.primary.light }}
-                            >
-                                <Text className="text-gray-600 text-sm">
-                                    {startNode.name} → {endNode.name}
-                                </Text>
-                                <Text className="text-gray-500 text-xs mt-1">
-                                    {summary.taxiSegments} {t('stops')} • {startNode.route_name}
-                                </Text>
-                            </View>
-                        </View>
+                        {segments && segments.map((segment: any, index: number) => {
+                            const isWalkSegment = segment.type === 'walk' || segment.mode === 'pedestrian';
+                            const isTaxiSegment = segment.type === 'taxi' || segment.mode === 'auto';
 
-                        {destinationWalkRoute && (
-                            <View className="mb-4">
-                                <View className="flex-row items-center mb-2">
-                                    <View className="w-8 h-8 rounded-full bg-green-100 items-center justify-center">
-                                        <Ionicons name="walk" size={18} color="#10B981" />
+                            if (isWalkSegment) {
+                                return (
+                                    <View key={index} className="mb-4">
+                                        <View className="flex-row items-center mb-2">
+                                            <View className="w-8 h-8 rounded-full bg-blue-100 items-center justify-center">
+                                                <Ionicons name="walk" size={18} color="#3B82F6" />
+                                            </View>
+                                            <Text className="text-gray-900 font-semibold ml-3 flex-1">
+                                                {index === 0 ? t('walk-to-boarding-point') : t('walk-to-destination')}
+                                            </Text>
+                                            <Text className="text-gray-600 text-sm">
+                                                {formatDistance(segment.distance * 1000)}
+                                            </Text>
+                                        </View>
+                                        <View className="ml-4 pl-4 border-l-2 border-blue-200">
+                                            <Text className="text-gray-600 text-sm">
+                                                {segment.toNode?.name || (index === 0 ? startNode.name : t('final-destination'))}
+                                            </Text>
+                                            <Text className="text-gray-500 text-xs mt-1">
+                                                {formatTime(segment.time)}
+                                            </Text>
+                                        </View>
                                     </View>
-                                    <Text className="text-gray-900 font-semibold ml-3 flex-1">
-                                        {t('walk-to-destination')}
-                                    </Text>
-                                    <Text className="text-gray-600 text-sm">
-                                        {formatDistance(destinationWalkRoute.trip.summary.length)}
-                                    </Text>
+                                );
+                            }
+
+                            if (isTaxiSegment) {
+                                return (
+                                    <View key={index} className="mb-4">
+                                        <View className="flex-row items-center mb-2">
+                                            <View
+                                                className="w-8 h-8 rounded-full items-center justify-center"
+                                                style={{ backgroundColor: colors.primary.light }}
+                                            >
+                                                <Ionicons name="car" size={18} color={colors.primary.main} />
+                                            </View>
+                                            <Text className="text-gray-900 font-semibold ml-3 flex-1">
+                                                {t('taxi-ride')}
+                                            </Text>
+                                            <Text
+                                                className="font-bold text-sm"
+                                                style={{ color: colors.primary.main }}
+                                            >
+                                                {segment.fare || summary.estimatedFare} {summary.currency}
+                                            </Text>
+                                        </View>
+                                        <View
+                                            className="ml-4 pl-4 border-l-2"
+                                            style={{ borderLeftColor: colors.primary.light }}
+                                        >
+                                            <Text className="text-gray-600 text-sm">
+                                                {segment.fromNode?.name || startNode.name} → {segment.toNode?.name || endNode.name}
+                                            </Text>
+                                            <Text className="text-gray-500 text-xs mt-1">
+                                                {formatDistance(segment.distance * 1000)} • {formatTime(segment.time)}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                );
+                            }
+
+                            return null;
+                        })}
+
+                        {(!segments || segments.length === 0) && (
+                            <>
+                                {originWalkRoute && (
+                                    <View className="mb-4">
+                                        <View className="flex-row items-center mb-2">
+                                            <View className="w-8 h-8 rounded-full bg-blue-100 items-center justify-center">
+                                                <Ionicons name="walk" size={18} color="#3B82F6" />
+                                            </View>
+                                            <Text className="text-gray-900 font-semibold ml-3 flex-1">
+                                                {t('walk-to-boarding-point')}
+                                            </Text>
+                                            <Text className="text-gray-600 text-sm">
+                                                {formatDistance(originWalkRoute.trip.summary.length)}
+                                            </Text>
+                                        </View>
+                                        <View className="ml-4 pl-4 border-l-2 border-blue-200">
+                                            <Text className="text-gray-600 text-sm">
+                                                {startNode.name}
+                                            </Text>
+                                            <Text className="text-gray-500 text-xs mt-1">
+                                                {formatTime(originWalkRoute.trip.summary.time)}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                )}
+
+                                <View className="mb-4">
+                                    <View className="flex-row items-center mb-2">
+                                        <View
+                                            className="w-8 h-8 rounded-full items-center justify-center"
+                                            style={{ backgroundColor: colors.primary.light }}
+                                        >
+                                            <Ionicons name="car" size={18} color={colors.primary.main} />
+                                        </View>
+                                        <Text className="text-gray-900 font-semibold ml-3 flex-1">
+                                            {t('taxi-ride')}
+                                        </Text>
+                                        <Text
+                                            className="font-bold text-sm"
+                                            style={{ color: colors.primary.main }}
+                                        >
+                                            {summary.estimatedFare} {summary.currency}
+                                        </Text>
+                                    </View>
+                                    <View
+                                        className="ml-4 pl-4 border-l-2"
+                                        style={{ borderLeftColor: colors.primary.light }}
+                                    >
+                                        <Text className="text-gray-600 text-sm">
+                                            {startNode.name} → {endNode.name}
+                                        </Text>
+                                        <Text className="text-gray-500 text-xs mt-1">
+                                            {summary.taxiSegments} {t('stops')} • {startNode.route_name}
+                                        </Text>
+                                    </View>
                                 </View>
-                                <View className="ml-4 pl-4 border-l-2 border-green-200">
-                                    <Text className="text-gray-600 text-sm">
-                                        {t('final-destination')}
-                                    </Text>
-                                    <Text className="text-gray-500 text-xs mt-1">
-                                        {formatTime(destinationWalkRoute.trip.summary.time)}
-                                    </Text>
-                                </View>
-                            </View>
+
+                                {destinationWalkRoute && (
+                                    <View className="mb-4">
+                                        <View className="flex-row items-center mb-2">
+                                            <View className="w-8 h-8 rounded-full bg-green-100 items-center justify-center">
+                                                <Ionicons name="walk" size={18} color="#10B981" />
+                                            </View>
+                                            <Text className="text-gray-900 font-semibold ml-3 flex-1">
+                                                {t('walk-to-destination')}
+                                            </Text>
+                                            <Text className="text-gray-600 text-sm">
+                                                {formatDistance(destinationWalkRoute.trip.summary.length)}
+                                            </Text>
+                                        </View>
+                                        <View className="ml-4 pl-4 border-l-2 border-green-200">
+                                            <Text className="text-gray-600 text-sm">
+                                                {t('final-destination')}
+                                            </Text>
+                                            <Text className="text-gray-500 text-xs mt-1">
+                                                {formatTime(destinationWalkRoute.trip.summary.time)}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                )}
+                            </>
                         )}
                     </View>
 

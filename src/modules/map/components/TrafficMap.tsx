@@ -527,63 +527,75 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         const fetchTransferWalks = async () => {
             const walkRoutes: Array<{ type: 'origin' | 'transfer' | 'destination'; polyline: string }> = [];
 
-            const originShape = taxiRouteData.originWalkRoute?.trip.legs[0]?.shape;
-            if (originShape) {
-                walkRoutes.push({ type: 'origin', polyline: originShape });
-            }
+            if (taxiRouteData.segments && taxiRouteData.segments.length > 0) {
+                console.log('[Taxi Route] Processing segments array:', taxiRouteData.segments.length);
+                taxiRouteData.segments.forEach((segment: any, index: number) => {
+                    if ((segment.type === 'walk' || segment.mode === 'pedestrian') && segment.polyline) {
+                        const type = index === 0 ? 'origin' :
+                            index === taxiRouteData.segments.length - 1 ? 'destination' :
+                                'transfer';
+                        console.log(`[Taxi Route] Found walk segment ${index}:`, type, 'polyline length:', segment.polyline.length);
+                        walkRoutes.push({ type, polyline: segment.polyline });
+                    }
+                });
+            } else {
+                const originShape = taxiRouteData.originWalkRoute?.trip.legs[0]?.shape;
+                if (originShape) {
+                    walkRoutes.push({ type: 'origin', polyline: originShape });
+                }
 
-            if (taxiRouteData.path && taxiRouteData.path.length > 2) {
-                console.log('[Taxi Route] Checking path for transfer walks:', taxiRouteData.path);
-                try {
-                    const { taxiService } = await import('../../taxi/services/taxi.service');
-                    const allEdges = await taxiService.getAllEdges();
-                    console.log('[Taxi Route] Total edges available:', allEdges.length);
+                if (taxiRouteData.path && taxiRouteData.path.length > 2) {
+                    console.log('[Taxi Route] Checking path for transfer walks:', taxiRouteData.path);
+                    try {
+                        const { taxiService } = await import('../../taxi/services/taxi.service');
+                        const allEdges = await taxiService.getAllEdges();
+                        console.log('[Taxi Route] Total edges available:', allEdges.length);
 
-                    for (let i = 0; i < taxiRouteData.path.length - 1; i++) {
-                        const startNodeId = taxiRouteData.path[i];
-                        const endNodeId = taxiRouteData.path[i + 1];
+                        for (let i = 0; i < taxiRouteData.path.length - 1; i++) {
+                            const startNodeId = taxiRouteData.path[i];
+                            const endNodeId = taxiRouteData.path[i + 1];
 
-                        const edge = allEdges.find(
-                            (e: any) => e.start_node_id === startNodeId && e.end_node_id === endNodeId
-                        );
+                            const edge = allEdges.find(
+                                (e: any) => e.start_node_id === startNodeId && e.end_node_id === endNodeId
+                            );
 
-                        console.log(`[Taxi Route] Edge ${startNodeId} → ${endNodeId}:`, edge ? `connection=${edge.connection}` : 'not found');
+                            console.log(`[Taxi Route] Edge ${startNodeId} → ${endNodeId}:`, edge ? `connection=${edge.connection}` : 'not found');
 
-                        if (edge && edge.connection === 'walk') {
-                            const allNodes = await taxiService.getAllNodes();
-                            const startNode = allNodes.find((n: any) => n.id === startNodeId);
-                            const endNode = allNodes.find((n: any) => n.id === endNodeId);
+                            if (edge && edge.connection === 'walk') {
+                                const allNodes = await taxiService.getAllNodes();
+                                const startNode = allNodes.find((n: any) => n.id === startNodeId);
+                                const endNode = allNodes.find((n: any) => n.id === endNodeId);
 
-                            if (startNode && endNode) {
-                                console.log('[Taxi Route] Found transfer walk:', startNode.name, '→', endNode.name);
+                                if (startNode && endNode) {
+                                    console.log('[Taxi Route] Found transfer walk:', startNode.name, '→', endNode.name);
 
-
-                                const { navigationService } = await import('../../navigation/services/navigation.service');
-                                const walkRoute = await navigationService.getNavigation({
-                                    origin: [startNode.lat, startNode.lng],
-                                    destination: [endNode.lat, endNode.lng]
-                                });
-
-                                if (walkRoute?.data?.trip?.legs?.[0]?.shape) {
-                                    console.log('[Taxi Route] Transfer walk polyline fetched, length:', walkRoute.data.trip.legs[0].shape.length);
-                                    walkRoutes.push({
-                                        type: 'transfer',
-                                        polyline: walkRoute.data.trip.legs[0].shape
+                                    const { navigationService } = await import('../../navigation/services/navigation.service');
+                                    const walkRoute = await navigationService.getNavigation({
+                                        origin: [startNode.lat, startNode.lng],
+                                        destination: [endNode.lat, endNode.lng]
                                     });
+
+                                    if (walkRoute?.data?.trip?.legs?.[0]?.shape) {
+                                        console.log('[Taxi Route] Transfer walk polyline fetched, length:', walkRoute.data.trip.legs[0].shape.length);
+                                        walkRoutes.push({
+                                            type: 'transfer',
+                                            polyline: walkRoute.data.trip.legs[0].shape
+                                        });
+                                    }
                                 }
                             }
                         }
+                    } catch (error) {
+                        console.error('[Taxi Route] Error fetching transfer walks:', error);
                     }
-                } catch (error) {
-                    console.error('[Taxi Route] Error fetching transfer walks:', error);
+                } else {
+                    console.log('[Taxi Route] No intermediate nodes to check for transfers (path length:', taxiRouteData.path?.length, ')');
                 }
-            } else {
-                console.log('[Taxi Route] No intermediate nodes to check for transfers (path length:', taxiRouteData.path?.length, ')');
-            }
 
-            const destShape = taxiRouteData.destinationWalkRoute?.trip.legs[0]?.shape;
-            if (destShape) {
-                walkRoutes.push({ type: 'destination', polyline: destShape });
+                const destShape = taxiRouteData.destinationWalkRoute?.trip.legs[0]?.shape;
+                if (destShape) {
+                    walkRoutes.push({ type: 'destination', polyline: destShape });
+                }
             }
 
             console.log('[Taxi Route] Walking routes:', {

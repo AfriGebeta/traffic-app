@@ -484,15 +484,49 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             </MapLibreGL.ShapeSource>
                         )}
 
+                        {taxiRouteSegments && taxiRouteSegments.map((segment, index) => {
+                            const taxiRouteGeoJSON = {
+                                type: 'Feature' as const,
+                                properties: {},
+                                geometry: {
+                                    type: 'LineString' as const,
+                                    coordinates: segment.coordinates
+                                }
+                            };
+                            return (
+                                <MapLibreGL.ShapeSource
+                                    key={`taxi-segment-${index}-${Date.now()}`}
+                                    id={`taxi-segment-${index}-source`}
+                                    shape={taxiRouteGeoJSON}
+                                >
+                                    <MapLibreGL.LineLayer
+                                        id={`taxi-segment-${index}-layer`}
+                                        style={{
+                                            lineColor: colors.primary.main,
+                                            lineWidth: 6,
+                                            lineOpacity: 0.8,
+                                            lineCap: 'round',
+                                            lineJoin: 'round',
+                                        }}
+                                    />
+                                </MapLibreGL.ShapeSource>
+                            );
+                        })}
+
                         {taxiWalkRoutes && taxiWalkRoutes.map((route, index) => {
                             try {
                                 const coords = decodePolyline(route.polyline, 6);
+                                console.log(`[GebetaMap] Rendering walk route ${route.type}:`, {
+                                    index,
+                                    polylineLength: route.polyline.length,
+                                    coordsCount: coords.length,
+                                    firstCoord: coords[0],
+                                    lastCoord: coords[coords.length - 1]
+                                });
 
                                 const mapCoords = coords.map(([lat, lng]) => [lng, lat]);
 
-                                const color = route.type === 'origin' ? '#3B82F6' :
-                                    route.type === 'destination' ? '#10B981' :
-                                        '#F59E0B'; 
+                                const color = '#EF4444';
 
                                 const walkGeoJSON = {
                                     type: 'Feature' as const,
@@ -512,9 +546,9 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                             id={`taxi-walk-${route.type}-${index}-layer`}
                                             style={{
                                                 lineColor: color,
-                                                lineWidth: 4,
-                                                lineOpacity: 0.7,
-                                                lineDasharray: [0.5, 2],
+                                                lineWidth: 8,
+                                                lineOpacity: 1,
+                                                lineDasharray: [2, 4],
                                                 lineCap: 'round',
                                             }}
                                         />
@@ -837,13 +871,13 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                 switch (station.type) {
                                     case 'start':
                                         return {
-                                            color: '#3B82F6', 
-                                            icon: 'walk' as const,
+                                            color: colors.primary.main,
+                                            icon: 'car' as const,
                                             size: 44
                                         };
                                     case 'end':
                                         return {
-                                            color: '#10B981', 
+                                            color: colors.primary.main,
                                             icon: 'car' as const,
                                             size: 44
                                         };
@@ -851,7 +885,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                         return {
                                             color: colors.primary.main,
                                             icon: 'swap-horizontal' as const,
-                                            size: 36
+                                            size: 40
                                         };
                                 }
                             };
@@ -887,7 +921,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                         }}>
                                             <Ionicons
                                                 name={style.icon}
-                                                size={style.size === 44 ? 24 : 20}
+                                                size={style.size === 44 ? 24 : 22}
                                                 color="white"
                                             />
                                         </View>

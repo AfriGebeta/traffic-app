@@ -289,57 +289,118 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                         ) : transportMode === 'taxi' && taxiRoute ? (
                             <View className="px-6 py-3">
                                 <View className="bg-gray-200 rounded-2xl p-4">
-                                    {taxiRoute.originWalkRoute && taxiRoute.startNode && (
-                                        <View className="flex-row items-start mb-3">
-                                            <View className="w-8 items-center pt-1">
-                                                <Ionicons name="walk" size={18} color="#3B82F6" />
-                                                <View className="w-0.5 h-8 bg-gray-400 my-1" />
-                                            </View>
-                                            <View className="flex-1 ml-3">
-                                                <Text className="text-gray-600 text-sm">{t('walk-to-boarding-point')}</Text>
-                                                <Text className="text-gray-900 font-semibold text-sm mt-1">
-                                                    {taxiRoute.startNode?.name || 'Boarding Point'}
-                                                </Text>
-                                                <Text className="text-gray-500 text-xs">
-                                                    {formatDistance((taxiRoute.originWalkRoute?.trip?.summary?.length || 0) * 1000)} • {formatTime(taxiRoute.originWalkRoute?.trip?.summary?.time || 0)}
-                                                </Text>
-                                            </View>
-                                        </View>
-                                    )}
+                                  
+                                    {taxiRoute.segments && taxiRoute.segments.length > 0 ? (
+                                        taxiRoute.segments.map((segment: any, index: number) => {
+                                            const isWalkSegment = segment.type === 'walk' || segment.mode === 'pedestrian';
+                                            const isTaxiSegment = segment.type === 'taxi' || segment.mode === 'auto';
+                                            const isLastSegment = index === taxiRoute.segments!.length - 1;
 
-                                    {taxiRoute.startNode && taxiRoute.endNode && (
-                                        <View className="flex-row items-start mb-3">
-                                            <View className="w-8 items-center pt-1">
-                                                <Ionicons name="car" size={18} color={colors.primary.main} />
-                                                <View className="w-0.5 h-8 bg-gray-400 my-1" />
-                                            </View>
-                                            <View className="flex-1 ml-3">
-                                                <Text className="text-gray-600 text-sm">{t('taxi-ride')}</Text>
-                                                <Text className="text-gray-900 font-semibold text-sm mt-1">
-                                                    {taxiRoute.formattedPath || `${taxiRoute.startNode?.name || 'Start'} → ${taxiRoute.endNode?.name || 'End'}`}
-                                                </Text>
-                                                <Text className="text-gray-500 text-xs">
-                                                    {taxiRoute.summary?.estimatedFare || 0} {taxiRoute.summary?.currency || 'ETB'} • {taxiRoute.summary?.taxiSegments || 0} {t('stops')}
-                                                </Text>
-                                            </View>
-                                        </View>
-                                    )}
+                                            if (isWalkSegment) {
+                                                const isOrigin = index === 0;
+                                                const isDestination = index === taxiRoute.segments!.length - 1;
+                                                return (
+                                                    <View key={index} className={`flex-row items-start ${!isLastSegment ? 'mb-3' : ''}`}>
+                                                        <View className="w-8 items-center pt-1">
+                                                            <Ionicons name="walk" size={18} color="#EF4444" />
+                                                            {!isLastSegment && <View className="w-0.5 h-8 bg-gray-400 my-1" />}
+                                                        </View>
+                                                        <View className="flex-1 ml-3">
+                                                            <Text className="text-gray-600 text-sm">
+                                                                {isOrigin ? t('walk-to-boarding-point') : t('walk-to-destination')}
+                                                            </Text>
+                                                            <Text className="text-gray-900 font-semibold text-sm mt-1">
+                                                                {isOrigin
+                                                                    ? (segment.toNode?.name || taxiRoute.startNode?.name || 'Boarding Point')
+                                                                    : destinationName
+                                                                }
+                                                            </Text>
+                                                            <Text className="text-gray-500 text-xs">
+                                                                {formatDistance(segment.distance * 1000)} • {formatTime(segment.time)}
+                                                            </Text>
+                                                        </View>
+                                                    </View>
+                                                );
+                                            }
 
-                                    {taxiRoute.destinationWalkRoute && (
-                                        <View className="flex-row items-start">
-                                            <View className="w-8 items-center pt-1">
-                                                <Ionicons name="walk" size={18} color="#10B981" />
-                                            </View>
-                                            <View className="flex-1 ml-3">
-                                                <Text className="text-gray-600 text-sm">{t('walk-to-destination')}</Text>
-                                                <Text className="text-gray-900 font-semibold text-sm mt-1">
-                                                    {destinationName}
-                                                </Text>
-                                                <Text className="text-gray-500 text-xs">
-                                                    {formatDistance((taxiRoute.destinationWalkRoute?.trip?.summary?.length || 0) * 1000)} • {formatTime(taxiRoute.destinationWalkRoute?.trip?.summary?.time || 0)}
-                                                </Text>
-                                            </View>
-                                        </View>
+                                            if (isTaxiSegment) {
+                                                return (
+                                                    <View key={index} className={`flex-row items-start ${!isLastSegment ? 'mb-3' : ''}`}>
+                                                        <View className="w-8 items-center pt-1">
+                                                            <Ionicons name="car" size={18} color={colors.primary.main} />
+                                                            {!isLastSegment && <View className="w-0.5 h-8 bg-gray-400 my-1" />}
+                                                        </View>
+                                                        <View className="flex-1 ml-3">
+                                                            <Text className="text-gray-600 text-sm">{t('taxi-ride')}</Text>
+                                                            <Text className="text-gray-900 font-semibold text-sm mt-1">
+                                                                {segment.fromNode?.name || taxiRoute.startNode?.name || 'Start'} → {segment.toNode?.name || taxiRoute.endNode?.name || 'End'}
+                                                            </Text>
+                                                            <Text className="text-gray-500 text-xs">
+                                                                {segment.fare || taxiRoute.summary?.estimatedFare || 0} {taxiRoute.summary?.currency || 'ETB'} • {formatDistance(segment.distance * 1000)}
+                                                            </Text>
+                                                        </View>
+                                                    </View>
+                                                );
+                                            }
+
+                                            return null;
+                                        })
+                                    ) : (
+                                        
+                                        <>
+                                            {taxiRoute.originWalkRoute && taxiRoute.startNode && (
+                                                <View className="flex-row items-start mb-3">
+                                                    <View className="w-8 items-center pt-1">
+                                                        <Ionicons name="walk" size={18} color="#EF4444" />
+                                                        <View className="w-0.5 h-8 bg-gray-400 my-1" />
+                                                    </View>
+                                                    <View className="flex-1 ml-3">
+                                                        <Text className="text-gray-600 text-sm">{t('walk-to-boarding-point')}</Text>
+                                                        <Text className="text-gray-900 font-semibold text-sm mt-1">
+                                                            {taxiRoute.startNode?.name || 'Boarding Point'}
+                                                        </Text>
+                                                        <Text className="text-gray-500 text-xs">
+                                                            {formatDistance((taxiRoute.originWalkRoute?.trip?.summary?.length || 0) * 1000)} • {formatTime(taxiRoute.originWalkRoute?.trip?.summary?.time || 0)}
+                                                        </Text>
+                                                    </View>
+                                                </View>
+                                            )}
+
+                                            {taxiRoute.startNode && taxiRoute.endNode && (
+                                                <View className="flex-row items-start mb-3">
+                                                    <View className="w-8 items-center pt-1">
+                                                        <Ionicons name="car" size={18} color={colors.primary.main} />
+                                                        <View className="w-0.5 h-8 bg-gray-400 my-1" />
+                                                    </View>
+                                                    <View className="flex-1 ml-3">
+                                                        <Text className="text-gray-600 text-sm">{t('taxi-ride')}</Text>
+                                                        <Text className="text-gray-900 font-semibold text-sm mt-1">
+                                                            {taxiRoute.formattedPath || `${taxiRoute.startNode?.name || 'Start'} → ${taxiRoute.endNode?.name || 'End'}`}
+                                                        </Text>
+                                                        <Text className="text-gray-500 text-xs">
+                                                            {taxiRoute.summary?.estimatedFare || 0} {taxiRoute.summary?.currency || 'ETB'} • {taxiRoute.summary?.taxiSegments || 0} {t('stops')}
+                                                        </Text>
+                                                    </View>
+                                                </View>
+                                            )}
+
+                                            {taxiRoute.destinationWalkRoute && (
+                                                <View className="flex-row items-start">
+                                                    <View className="w-8 items-center pt-1">
+                                                        <Ionicons name="walk" size={18} color="#EF4444" />
+                                                    </View>
+                                                    <View className="flex-1 ml-3">
+                                                        <Text className="text-gray-600 text-sm">{t('walk-to-destination')}</Text>
+                                                        <Text className="text-gray-900 font-semibold text-sm mt-1">
+                                                            {destinationName}
+                                                        </Text>
+                                                        <Text className="text-gray-500 text-xs">
+                                                            {formatDistance((taxiRoute.destinationWalkRoute?.trip?.summary?.length || 0) * 1000)} • {formatTime(taxiRoute.destinationWalkRoute?.trip?.summary?.time || 0)}
+                                                        </Text>
+                                                    </View>
+                                                </View>
+                                            )}
+                                        </>
                                     )}
                                 </View>
                             </View>

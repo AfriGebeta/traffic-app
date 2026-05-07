@@ -77,6 +77,26 @@ export interface WalkRoute {
     };
 }
 
+export interface RouteSegment {
+    type: 'walk' | 'taxi';
+    mode: 'pedestrian' | 'auto';
+    distance: number;
+    time: number;
+    polyline: string;
+    fare?: number;
+    from: {
+        lat: number;
+        lng: number;
+    };
+    to: {
+        lat: number;
+        lng: number;
+    };
+    fromNode?: TaxiNode;
+    toNode?: TaxiNode;
+    instructions?: any[];
+}
+
 export interface TaxiNavigationResponse {
     success: boolean;
     timestamp: string;
@@ -106,6 +126,7 @@ export interface TaxiNavigationResponse {
     };
     path: number[];
     formattedPath: string;
+    segments?: RouteSegment[];
     originWalkRoute?: WalkRoute;
     destinationWalkRoute?: WalkRoute;
     summary: {
