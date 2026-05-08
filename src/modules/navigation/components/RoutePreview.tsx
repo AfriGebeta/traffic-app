@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -217,10 +217,13 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                 }}
                                 activeOpacity={0.7}
                             >
-                                <Ionicons
-                                    name="car"
-                                    size={20}
-                                    color={transportMode === 'driving' ? colors.primary.main : '#6B7280'}
+                                <Image
+                                    source={transportMode === 'driving'
+                                        ? require('../../../../assets/images/car-selected.png')
+                                        : require('../../../../assets/images/car-unselected.png')
+                                    }
+                                    style={{ width: 20, height: 20 }}
+                                    resizeMode="contain"
                                 />
                                 <Text
                                     className="ml-2 font-semibold"
@@ -239,10 +242,13 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                 }}
                                 activeOpacity={0.7}
                             >
-                                <Ionicons
-                                    name="subway"
-                                    size={20}
-                                    color={transportMode === 'taxi' ? colors.primary.main : '#6B7280'}
+                                <Image
+                                    source={transportMode === 'taxi'
+                                        ? require('../../../../assets/images/minibus-selected.png')
+                                        : require('../../../../assets/images/minibus-unselected.png')
+                                    }
+                                    style={{ width: 20, height: 20 }}
+                                    resizeMode="contain"
                                 />
                                 <Text
                                     className="ml-2 font-semibold"
@@ -256,7 +262,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                         </View>
                     </View>
 
-                    {__DEV__ && (
+                    {/* {__DEV__ && (
                         <View className="px-6 py-3 border-b border-gray-100">
                             <TouchableOpacity
                                 onPress={onSimulateToggle}
@@ -274,7 +280,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                 </View>
                             </TouchableOpacity>
                         </View>
-                    )}
+                    )} */}
                     <ScrollView className="max-h-48">
                         {loadingTaxiRoute ? (
                             <View className="px-6 py-8 items-center">
