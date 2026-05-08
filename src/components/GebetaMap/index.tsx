@@ -100,12 +100,13 @@ interface ExtendedGebetaMapProps extends GebetaMapProps {
     segmentedRoutes?: Array<{
         geoJSON: any;
         isWalking: boolean;
+        segmentIndex: number;
     }>;
 }
 
 
 const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
-    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex }, ref) => {
+    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes }, ref) => {
         const [mapStyleState, setMapStyleState] = useState<Record<string, unknown> | null>(null);
         const [loading, setLoading] = useState(true);
         const cameraRef = useRef<any>(null);
@@ -473,7 +474,64 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             }}
                         />
 
-                        {routeGeoJSON && (
+                        {/* Segmented routes for taxi navigation - render each segment with proper styling */}
+                        {segmentedRoutes && segmentedRoutes.length > 0 && (() => {
+                            console.log('[GebetaMap] Rendering segmented routes:', {
+                                count: segmentedRoutes.length,
+                                segments: segmentedRoutes.map(r => ({
+                                    index: r.segmentIndex,
+                                    isWalking: r.isWalking,
+                                    coordsCount: r.geoJSON.geometry.coordinates.length
+                                })),
+                                currentSegmentIndex: currentTaxiSegmentIndex
+                            });
+                            return segmentedRoutes.map((route, index) => {
+                                const isCurrentSegment = isTaxiNavigation && currentTaxiSegmentIndex === route.segmentIndex;
+                                const isPastSegment = isTaxiNavigation && currentTaxiSegmentIndex !== undefined && route.segmentIndex < currentTaxiSegmentIndex;
+
+                                // Skip rendering past segments completely
+                                if (isPastSegment) {
+                                    console.log(`[GebetaMap] Skipping past segment ${route.segmentIndex}`);
+                                    return null;
+                                }
+
+                                console.log(`[GebetaMap] Segment ${route.segmentIndex}:`, {
+                                    isWalking: route.isWalking,
+                                    isCurrentSegment,
+                                    isPastSegment,
+                                    color: route.isWalking ? '#EF4444' : '#3B82F6',
+                                    style: route.isWalking ? 'dotted' : 'solid'
+                                });
+
+                                const lineStyle: any = {
+                                    lineColor: route.isWalking ? '#EF4444' : '#3B82F6',
+                                    lineWidth: route.isWalking ? 5 : 7,
+                                    lineOpacity: isCurrentSegment ? 1 : 0.7,
+                                    lineCap: 'round',
+                                    lineJoin: 'round',
+                                };
+
+                                // Only add lineDasharray for walking segments
+                                if (route.isWalking) {
+                                    lineStyle.lineDasharray = [2, 2];
+                                }
+
+                                return (
+                                    <MapLibreGL.ShapeSource
+                                        key={`segment-${route.segmentIndex}-${Date.now()}`}
+                                        id={`segment-${route.segmentIndex}-source`}
+                                        shape={route.geoJSON}
+                                    >
+                                        <MapLibreGL.LineLayer
+                                            id={`segment-${route.segmentIndex}-layer`}
+                                            style={lineStyle}
+                                        />
+                                    </MapLibreGL.ShapeSource>
+                                );
+                            });
+                        })()}
+
+                        {routeGeoJSON && !segmentedRoutes && (
                             <MapLibreGL.ShapeSource
                                 key={`route-${routeGeoJSON.properties?.timestamp || Date.now()}-${JSON.stringify(routeGeoJSON.geometry.coordinates[0])}`}
                                 id="route-preview-source"

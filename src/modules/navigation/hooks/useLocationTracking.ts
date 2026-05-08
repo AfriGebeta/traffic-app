@@ -3,6 +3,7 @@ import * as Location from 'expo-location';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 import { showToast } from '../../../shared/utils/toast';
 import { calculateBearing, calculateDistance } from '../utils/navigationUtils';
+import { decodePolyline } from '../../../shared/utils/polyline';
 
 interface UseLocationTrackingProps {
     routeCoordinates: React.MutableRefObject<[number, number][]>;
@@ -17,11 +18,21 @@ interface UseLocationTrackingProps {
     setIsOffRoute: (value: boolean) => void;
     setIsRecalculating: (value: boolean) => void;
     updateInstructionBasedOnPosition: (lat: number, lng: number) => void;
-
     recalculateRoute: (fromLocation?: { lat: number; lng: number }) => Promise<void>;
     rerouteTimeout: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
-    totalRouteDistance: number; //meters
-    totalRouteDuration: number; //secs
+    totalRouteDistance: number;
+    totalRouteDuration: number;
+    // Taxi-specific
+    taxiSegments?: Array<{
+        polyline: string;
+        type: string;
+        mode: string;
+    }>;
+    setSegmentedRoutes?: (routes: Array<{
+        geoJSON: any;
+        isWalking: boolean;
+        segmentIndex: number;
+    }>) => void;
 }
 
 export const useLocationTracking = ({
@@ -34,15 +45,15 @@ export const useLocationTracking = ({
     setRouteGeoJSON,
     setRemainingDistance,
     setRemainingTime,
-
     setIsOffRoute,
     setIsRecalculating,
     updateInstructionBasedOnPosition,
     recalculateRoute,
     rerouteTimeout,
-    
     totalRouteDistance,
     totalRouteDuration,
+    taxiSegments,
+    setSegmentedRoutes,
 }: UseLocationTrackingProps) => {
     const locationSubscription = useRef<Location.LocationSubscription | null>(null);
     const lastClosestIndex = useRef<number>(0);
@@ -178,13 +189,13 @@ export const useLocationTracking = ({
                         displayLng = snappedLng;
 
                         const OFF_ROUTE_THRESHOLD = 50;
-                        const OFF_ROUTE_DELAY = 3000; 
+                        const OFF_ROUTE_DELAY = 3000;
 
                         if (distanceFromRoute > OFF_ROUTE_THRESHOLD) {
                             lastOffRoutePosition.current = { lat: latitude, lng: longitude };
 
                             if (!isOffRouteRef.current) {
-    
+
                                 isOffRouteRef.current = true;
                                 offRouteStartTime.current = Date.now();
                                 setIsOffRoute(true);
@@ -242,15 +253,61 @@ export const useLocationTracking = ({
                         if (remainingCoords.length > 0) {
                             const routeWithSnappedStart = [[displayLng, displayLat] as [number, number], ...remainingCoords];
 
-                            const remainingGeoJSON = {
-                                type: 'Feature',
-                                properties: {},
-                                geometry: {
-                                    type: 'LineString',
-                                    coordinates: routeWithSnappedStart,
+                            // For taxi navigation, update segmented routes
+                            if (taxiSegments && setSegmentedRoutes) {
+                                // Find which segment we're in based on coordinate count
+                                let coordCount = 0;
+                                let currentSegIdx = 0;
+                                let positionInSegment = closestIndex;
+
+                                for (let i = 0; i < taxiSegments.length; i++) {
+                                    const decoded = decodePolyline(taxiSegments[i].polyline, 6);
+                                    if (closestIndex < coordCount + decoded.length) {
+                                        currentSegIdx = i;
+                                        positionInSegment = closestIndex - coordCount;
+                                        break;
+                                    }
+                                    coordCount += decoded.length;
                                 }
-                            };
-                            setRouteGeoJSON(remainingGeoJSON);
+
+                                // Build segmented routes with current segment trimmed
+                                const updatedSegments = taxiSegments.map((seg, idx) => {
+                                    const decoded = decodePolyline(seg.polyline, 6);
+                                    let coordinates = decoded.map(([lat, lng]: [number, number]) => [lng, lat] as [number, number]);
+
+                                    // Trim current segment
+                                    if (idx === currentSegIdx) {
+                                        const remaining = coordinates.slice(positionInSegment + 1);
+                                        coordinates = [[displayLng, displayLat], ...remaining];
+                                    }
+
+                                    return {
+                                        geoJSON: {
+                                            type: 'Feature' as const,
+                                            properties: { segmentIndex: idx },
+                                            geometry: {
+                                                type: 'LineString' as const,
+                                                coordinates
+                                            }
+                                        },
+                                        isWalking: seg.type === 'walk' || seg.mode === 'pedestrian',
+                                        segmentIndex: idx
+                                    };
+                                });
+
+                                setSegmentedRoutes(updatedSegments);
+                            } else {
+                                // Normal navigation - update single routeGeoJSON
+                                const remainingGeoJSON = {
+                                    type: 'Feature',
+                                    properties: {},
+                                    geometry: {
+                                        type: 'LineString',
+                                        coordinates: routeWithSnappedStart,
+                                    }
+                                };
+                                setRouteGeoJSON(remainingGeoJSON);
+                            }
 
                             let totalDistance = 0;
                             for (let i = 0; i < routeWithSnappedStart.length - 1; i++) {

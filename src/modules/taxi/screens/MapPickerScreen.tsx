@@ -108,7 +108,6 @@ export default function MapPickerScreen() {
                 return;
             }
 
-            // For intermediate stops, show both stations and stops; for start/end, only stations
             const isIntermediate = params.type === 'intermediate';
             const nearby = allNodes
                 .filter((node: TaxiNode) =>

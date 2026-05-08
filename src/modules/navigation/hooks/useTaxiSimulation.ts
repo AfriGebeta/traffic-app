@@ -18,6 +18,17 @@ interface UseTaxiSimulationProps {
     onArrival?: () => void;
     totalRouteDistance: number;
     totalRouteDuration: number;
+    // Taxi-specific
+    taxiSegments?: Array<{
+        polyline: string;
+        type: string;
+        mode: string;
+    }>;
+    setSegmentedRoutes?: (routes: Array<{
+        geoJSON: any;
+        isWalking: boolean;
+        segmentIndex: number;
+    }>) => void;
 }
 
 export const useTaxiSimulation = ({
@@ -33,6 +44,8 @@ export const useTaxiSimulation = ({
     onArrival,
     totalRouteDistance,
     totalRouteDuration,
+    taxiSegments,
+    setSegmentedRoutes,
 }: UseTaxiSimulationProps) => {
     const simulationInterval = useRef<ReturnType<typeof setInterval> | null>(null);
     const currentRouteIndex = useRef(0);
@@ -146,15 +159,63 @@ export const useTaxiSimulation = ({
             if (remainingCoords.length > 0) {
                 const routeWithSnappedStart = [[displayLng, displayLat] as [number, number], ...remainingCoords];
 
-                const remainingGeoJSON = {
-                    type: 'Feature',
-                    properties: {},
-                    geometry: {
-                        type: 'LineString',
-                        coordinates: routeWithSnappedStart,
+                // For taxi navigation, update segmented routes
+                if (taxiSegments && setSegmentedRoutes) {
+                    // Find which segment we're in based on coordinate count
+                    let coordCount = 0;
+                    let currentSegIdx = 0;
+                    let positionInSegment = currentRouteIndex.current;
+
+                    for (let i = 0; i < taxiSegments.length; i++) {
+                        const decoded = decodePolyline(taxiSegments[i].polyline, 6);
+                        if (currentRouteIndex.current < coordCount + decoded.length) {
+                            currentSegIdx = i;
+                            positionInSegment = currentRouteIndex.current - coordCount;
+                            break;
+                        }
+                        coordCount += decoded.length;
                     }
-                };
-                setRouteGeoJSON(remainingGeoJSON);
+
+                    // Build segmented routes with current segment trimmed
+                    const updatedSegments = taxiSegments.map((seg, idx) => {
+                        const decoded = decodePolyline(seg.polyline, 6);
+                        let coordinates = decoded.map(([lat, lng]: [number, number]) => [lng, lat] as [number, number]);
+
+                        // Trim current segment
+                        if (idx === currentSegIdx) {
+                            const remaining = coordinates.slice(positionInSegment + 1);
+                            coordinates = [[displayLng, displayLat], ...remaining];
+                        }
+
+                        return {
+                            geoJSON: {
+                                type: 'Feature' as const,
+                                properties: { segmentIndex: idx },
+                                geometry: {
+                                    type: 'LineString' as const,
+                                    coordinates
+                                }
+                            },
+                            isWalking: seg.type === 'walk' || seg.mode === 'pedestrian',
+                            segmentIndex: idx
+                        };
+                    });
+
+                    setSegmentedRoutes(updatedSegments);
+                } else {
+                    // Normal navigation - update single routeGeoJSON
+                    const remainingGeoJSON = {
+                        type: 'Feature',
+                        properties: {},
+                        geometry: {
+                            type: 'LineString',
+                            coordinates: routeWithSnappedStart,
+                        }
+                    };
+                    if (setRouteGeoJSON) {
+                        setRouteGeoJSON(remainingGeoJSON);
+                    }
+                }
 
                 // Calculate remaining distance
                 let totalDistance = 0;

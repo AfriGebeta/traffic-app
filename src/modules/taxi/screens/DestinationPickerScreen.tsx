@@ -53,7 +53,6 @@ export default function DestinationPickerScreen() {
 
     return (
         <View className="flex-1 bg-gray-50">
-            {/* Map */}
             <View className="flex-1">
                 <GebetaMap
                     apiKey={process.env.EXPO_PUBLIC_GEBETA_API_KEY || ''}

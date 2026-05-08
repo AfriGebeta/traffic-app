@@ -157,7 +157,6 @@ export interface CreateAvailabilityWindowRequest {
     isAvailable: boolean;
 }
 
-// Navigation types
 export type NavigationMode = 'driving' | 'taxi';
 export type SegmentMode = 'walk' | 'taxi' | 'auto' | 'pedestrian';
 

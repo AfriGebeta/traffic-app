@@ -338,7 +338,6 @@ export default function TaxiRoutePreviewScreen() {
                     </View>
 
                     <View className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-                        {/* Simulation Toggle (Dev Only) */}
                         {__DEV__ && (
                             <TouchableOpacity
                                 onPress={() => setSimulateMovement(!simulateMovement)}

@@ -49,21 +49,24 @@ export default function TaxiNavigationScreen() {
     const [remainingDistance, setRemainingDistance] = useState(0);
     const [remainingTime, setRemainingTime] = useState(0);
 
-    // Use the same user location hook as TrafficMap
     const { userLocation, setUserLocation } = useUserLocation();
 
-    // Fixed initial center (like TrafficMap)
     const [initialCenter] = useState<[number, number]>([routeData.origin.lng, routeData.origin.lat]);
     const [initialZoom] = useState(15);
 
     const activeRoute = currentRoute || routeData;
 
-    // Build complete route coordinates from all segments
     const allRouteCoordinates = useRef<[number, number][]>([]);
     const totalDistance = useRef<number>(0);
     const totalDuration = useRef<number>(0);
     const isNavigatingRef = useRef(true);
     const rerouteTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const [segmentedRoutes, setSegmentedRoutes] = useState<Array<{
+        geoJSON: any;
+        isWalking: boolean;
+        segmentIndex: number;
+    }>>([]);
 
     useEffect(() => {
         const coords: [number, number][] = [];
@@ -87,7 +90,6 @@ export default function TaxiNavigationScreen() {
         totalDistance.current = distance;
         totalDuration.current = duration;
 
-        // Set initial route GeoJSON
         if (coords.length > 0) {
             setRouteGeoJSON({
                 type: 'Feature',
@@ -106,7 +108,30 @@ export default function TaxiNavigationScreen() {
         });
     }, [activeRoute]);
 
-    // Simulation hook - EXACT same pattern as normal navigation
+    useEffect(() => {
+        if (!activeRoute.segments) return;
+
+        const routes = activeRoute.segments.map((seg, idx) => {
+            const decoded = decodePolyline(seg.polyline, 6);
+            const coordinates = decoded.map(([lat, lng]: [number, number]) => [lng, lat] as [number, number]);
+
+            return {
+                geoJSON: {
+                    type: 'Feature' as const,
+                    properties: { segmentIndex: idx },
+                    geometry: {
+                        type: 'LineString' as const,
+                        coordinates
+                    }
+                },
+                isWalking: seg.type === 'walk' || seg.mode === 'pedestrian',
+                segmentIndex: idx
+            };
+        });
+
+        setSegmentedRoutes(routes);
+    }, [activeRoute]); 
+
     const { startSimulation, stopSimulation, simulateOffRoute, isSimulating } = useTaxiSimulation({
         routeCoordinates: allRouteCoordinates,
         isNavigatingRef,
@@ -116,16 +141,17 @@ export default function TaxiNavigationScreen() {
         setRouteGeoJSON,
         setRemainingDistance,
         setRemainingTime,
-        updateInstructionBasedOnPosition: () => { }, // useTaxiNavigation handles this
+        updateInstructionBasedOnPosition: () => { }, 
         onArrival: () => {
             setShowArrivalModal(true);
             setIsNavigating(false);
         },
         totalRouteDistance: totalDistance.current,
         totalRouteDuration: totalDuration.current,
+        taxiSegments: activeRoute.segments,
+        setSegmentedRoutes,
     });
 
-    // Location tracking hook - EXACT same pattern as normal navigation
     const { startLocationTracking, stopLocationTracking } = useLocationTracking({
         routeCoordinates: allRouteCoordinates,
         isNavigatingRef,
@@ -138,14 +164,15 @@ export default function TaxiNavigationScreen() {
         setRemainingTime,
         setIsOffRoute: () => { },
         setIsRecalculating: () => { },
-        updateInstructionBasedOnPosition: () => { }, // useTaxiNavigation handles this
+        updateInstructionBasedOnPosition: () => { }, 
         recalculateRoute: async () => { },
         rerouteTimeout,
         totalRouteDistance: totalDistance.current,
         totalRouteDuration: totalDuration.current,
+        taxiSegments: activeRoute.segments,
+        setSegmentedRoutes,
     });
 
-    // Taxi navigation hook
     const {
         currentSegmentIndex,
         currentSegment,
@@ -170,7 +197,6 @@ export default function TaxiNavigationScreen() {
         },
     });
 
-    // Prepare segments for progress bar
     const progressSegments = activeRoute.segments?.map((seg, idx) => ({
         type: (seg.mode === 'pedestrian' || seg.type === 'walk' ? 'walk' : 'taxi') as 'walk' | 'taxi',
         label: seg.mode === 'pedestrian' || seg.type === 'walk'
@@ -178,28 +204,6 @@ export default function TaxiNavigationScreen() {
             : 'Taxi',
     })) || [];
 
-    // Prepare walk routes for rendering
-    const walkRoutes = activeRoute.segments?.filter(seg =>
-        seg.type === 'walk' || seg.mode === 'pedestrian'
-    ).map((seg, idx) => ({
-        type: idx === 0 ? 'origin' as const : 'destination' as const,
-        polyline: seg.polyline
-    })) || [];
-
-    // Prepare taxi segments for rendering
-    const taxiSegments = activeRoute.segments?.filter(seg =>
-        seg.type === 'taxi' || seg.mode === 'auto'
-    ).map(seg => {
-        const decoded = decodePolyline(seg.polyline, 6);
-        return {
-            coordinates: decoded.map(([lat, lng]: [number, number]) => [lng, lat] as [number, number]),
-            cost: seg.fare || 0,
-            from: seg.fromNode?.name || '',
-            to: seg.toNode?.name || ''
-        };
-    }) || [];
-
-    // Start navigation when component mounts - EXACT same pattern as normal navigation
     useEffect(() => {
         console.log('[Taxi Nav] Starting navigation, simulateMovement:', simulateMovement);
 
@@ -214,7 +218,7 @@ export default function TaxiNavigationScreen() {
             stopLocationTracking();
             stopSimulation();
         };
-    }, [simulateMovement]); // Only depend on simulateMovement, not the functions
+    }, [simulateMovement]); 
 
     const handleStopNavigation = () => {
         setIsNavigating(false);
@@ -241,6 +245,12 @@ export default function TaxiNavigationScreen() {
         return `${hours}h ${remainingMinutes}m`;
     };
 
+    console.log('[TaxiNav] Rendering map with segmentedRoutes:', {
+        count: segmentedRoutes.length,
+        isTaxiNavigation: true,
+        currentSegmentIndex
+    });
+
     return (
         <View className="flex-1 bg-gray-50">
             <View className="flex-1">
@@ -258,10 +268,7 @@ export default function TaxiNavigationScreen() {
                     userLocation={userLocation}
                     userHeading={userHeading}
                     showUserLocationMarker={true}
-                    routeGeoJSON={routeGeoJSON}
-                    // Don't show static taxi routes during navigation - only show the dynamic routeGeoJSON
-                    taxiWalkRoutes={undefined}
-                    taxiRouteSegments={undefined}
+                    segmentedRoutes={segmentedRoutes}
                 />
 
                 {!mapReady && (
