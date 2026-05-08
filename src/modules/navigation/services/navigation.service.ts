@@ -4,6 +4,11 @@ import type {
     NavigationRequest,
     NavigationResponse,
 } from '../types/navigation.types';
+import type { RouteSegment } from '../../taxi/types/taxi.types';
+import { calculateDistance } from '../utils/navigationUtils';
+
+const STATION_ARRIVAL_THRESHOLD = 50; // 50 meters
+const WALKING_END_THRESHOLD = 20; // 20 meters
 
 export const navigationService = {
     async geocodePlace(placeName: string): Promise<GeocodingPlace[]> {
@@ -51,7 +56,7 @@ export const navigationService = {
                 }
             }
         } catch (error) {
-            
+
         }
 
         return {
@@ -72,5 +77,40 @@ export const navigationService = {
         }
 
         return response.data;
+    },
+
+    // Taxi navigation helpers
+    detectSegmentTransition(
+        currentLocation: { lat: number; lng: number },
+        currentSegment: RouteSegment,
+        nextSegment?: RouteSegment
+    ): boolean {
+        const endPoint = currentSegment.toNode || currentSegment.to;
+        const distance = calculateDistance(
+            currentLocation.lat,
+            currentLocation.lng,
+            endPoint.lat,
+            endPoint.lng
+        );
+
+        const threshold =
+            currentSegment.mode === 'pedestrian' || currentSegment.type === 'walk'
+                ? WALKING_END_THRESHOLD
+                : STATION_ARRIVAL_THRESHOLD;
+
+        return distance < threshold;
+    },
+
+    getSegmentInstruction(segment: RouteSegment, isStart: boolean = false): string {
+        if (segment.mode === 'auto' || segment.type === 'taxi') {
+            if (isStart) {
+                return `Board taxi at ${segment.fromNode?.name || 'station'}`;
+            }
+            return `Stay on taxi to ${segment.toNode?.name || 'destination'}`;
+        } else if (segment.mode === 'pedestrian' || segment.type === 'walk') {
+            const destination = segment.toNode?.name || 'destination';
+            return `Walk to ${destination}`;
+        }
+        return 'Continue ahead';
     },
 };

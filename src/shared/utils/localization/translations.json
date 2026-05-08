@@ -1695,8 +1695,38 @@
         "AM": "ተመለስ"
     },
     {
+        "key": "on-taxi",
+        "EN_US": "On Taxi",
+        "AM": "በታክሲ ላይ"
+    },
+    {
+        "key": "walking",
+        "EN_US": "Walking",
+        "AM": "በእግር እየተጓዙ"
+    },
+    {
+        "key": "exit-at",
+        "EN_US": "Exit at",
+        "AM": "ይውጡ በ"
+    },
+    {
+        "key": "heading-to",
+        "EN_US": "Heading to",
+        "AM": "እየሄዱ ወደ"
+    },
+    {
+        "key": "board-taxi-at",
+        "EN_US": "Board taxi at",
+        "AM": "ታክሲ ይውሰዱ በ"
+    },
+    {
+        "key": "continue-ahead",
+        "EN_US": "Continue ahead",
+        "AM": "ቀጥል"
+    },
+    {
         "key": "taxi-navigation-coming-soon",
-        "EN_US": "Active taxi navigation will be implemented in the next phase",
+        "EN_US": "taxi Navigation coming soon",
         "AM": "Coming soon"
     },
     {

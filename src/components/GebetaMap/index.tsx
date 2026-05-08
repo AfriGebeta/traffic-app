@@ -95,11 +95,13 @@ interface ExtendedGebetaMapProps extends GebetaMapProps {
         from: string;
         to: string;
     }>;
+    isTaxiNavigation?: boolean;
+    currentTaxiSegmentIndex?: number;
 }
 
 
 const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
-    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments }, ref) => {
+    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex }, ref) => {
         const [mapStyleState, setMapStyleState] = useState<Record<string, unknown> | null>(null);
         const [loading, setLoading] = useState(true);
         const cameraRef = useRef<any>(null);
@@ -528,7 +530,8 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
                                 const mapCoords = coords.map(([lat, lng]) => [lng, lat]);
 
-                                const color = '#EF4444';
+                                // Use blue for walking segments, with dotted line
+                                const color = isTaxiNavigation ? '#3B82F6' : '#EF4444';
 
                                 const walkGeoJSON = {
                                     type: 'Feature' as const,
@@ -548,9 +551,9 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                             id={`taxi-walk-${route.type}-${index}-layer`}
                                             style={{
                                                 lineColor: color,
-                                                lineWidth: 8,
+                                                lineWidth: isTaxiNavigation ? 4 : 8,
                                                 lineOpacity: 1,
-                                                lineDasharray: [2, 4],
+                                                lineDasharray: [2, 2], // Dotted line for walking
                                                 lineCap: 'round',
                                             }}
                                         />

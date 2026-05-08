@@ -20,6 +20,7 @@ export default function TaxiRoutePreviewScreen() {
     const mapRef = useRef<GebetaMapRef>(null);
 
     const [mapReady, setMapReady] = useState(false);
+    const [simulateMovement, setSimulateMovement] = useState(false);
 
     const routeData: TaxiNavigationResponse | null = params.routeData
         ? JSON.parse(params.routeData as string)
@@ -126,8 +127,13 @@ export default function TaxiRoutePreviewScreen() {
     };
 
     const handleStartNavigation = () => {
-        showToast.info(t('coming-soon'), 'Active taxi navigation will be implemented in Phase 5');
-        router.back();
+        router.push({
+            pathname: '/taxi/navigation',
+            params: {
+                routeData: JSON.stringify(routeData),
+                simulateMovement: simulateMovement.toString(),
+            },
+        });
     };
 
     return (
@@ -332,6 +338,26 @@ export default function TaxiRoutePreviewScreen() {
                     </View>
 
                     <View className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                        {/* Simulation Toggle (Dev Only) */}
+                        {__DEV__ && (
+                            <TouchableOpacity
+                                onPress={() => setSimulateMovement(!simulateMovement)}
+                                className="flex-row items-center justify-between mb-4 py-2"
+                                activeOpacity={0.7}
+                            >
+                                <View className="flex-row items-center">
+                                    <Ionicons
+                                        name={simulateMovement ? "checkmark-circle" : "ellipse-outline"}
+                                        size={24}
+                                        color={simulateMovement ? colors.primary.main : "#9CA3AF"}
+                                    />
+                                    <Text className="text-gray-700 font-medium ml-3">
+                                        Simulate Movement (testing)
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
+                        )}
+
                         <View className="flex-row items-center justify-between mb-2">
                             <Text className="text-gray-600">{t('total-fare')}</Text>
                             <Text

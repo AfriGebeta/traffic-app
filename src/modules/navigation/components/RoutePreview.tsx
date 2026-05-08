@@ -20,6 +20,7 @@ interface RoutePreviewProps {
     simulateMovement: boolean;
     onSimulateToggle: () => void;
     onStartNavigation: () => void;
+    onStartTaxiNavigation?: (taxiRoute: TaxiNavigationResponse) => void;
     onCancel: () => void;
     destination?: GeocodingPlace | null;
     userLocation?: { lat: number; lng: number } | null;
@@ -61,6 +62,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
     simulateMovement,
     onSimulateToggle,
     onStartNavigation,
+    onStartTaxiNavigation,
     onCancel,
     destination,
     userLocation,
@@ -168,7 +170,11 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
 
     const handleStartNavigation = () => {
         if (transportMode === 'taxi') {
-            showToast.info(t('coming-soon'), t('taxi-navigation-coming-soon'));
+            if (taxiRoute && onStartTaxiNavigation) {
+                onStartTaxiNavigation(taxiRoute);
+            } else {
+                showToast.error('Error', 'No taxi route available');
+            }
         } else {
             onStartNavigation();
         }
@@ -289,7 +295,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                         ) : transportMode === 'taxi' && taxiRoute ? (
                             <View className="px-6 py-3">
                                 <View className="bg-gray-200 rounded-2xl p-4">
-                                  
+
                                     {taxiRoute.segments && taxiRoute.segments.length > 0 ? (
                                         taxiRoute.segments.map((segment: any, index: number) => {
                                             const isWalkSegment = segment.type === 'walk' || segment.mode === 'pedestrian';
@@ -346,7 +352,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                             return null;
                                         })
                                     ) : (
-                                        
+
                                         <>
                                             {taxiRoute.originWalkRoute && taxiRoute.startNode && (
                                                 <View className="flex-row items-start mb-3">

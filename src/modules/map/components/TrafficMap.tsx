@@ -856,6 +856,15 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     simulateMovement={simulateMovement}
                     onSimulateToggle={() => setSimulateMovement(!simulateMovement)}
                     onStartNavigation={() => handleStartNavigation(setUserLocation)}
+                    onStartTaxiNavigation={(taxiRoute) => {
+                        router.push({
+                            pathname: '/taxi/navigation',
+                            params: {
+                                routeData: JSON.stringify(taxiRoute),
+                                simulateMovement: simulateMovement.toString(),
+                            },
+                        });
+                    }}
                     onCancel={() => {
                         setShowRoutePreview(false);
                         handleClearRoute();

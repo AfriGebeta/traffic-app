@@ -156,3 +156,26 @@ export interface CreateAvailabilityWindowRequest {
     endMinutes: number;
     isAvailable: boolean;
 }
+
+// Navigation types
+export type NavigationMode = 'driving' | 'taxi';
+export type SegmentMode = 'walk' | 'taxi' | 'auto' | 'pedestrian';
+
+export interface TaxiNavigationData {
+    mode: 'taxi';
+    segments: RouteSegment[];
+    currentSegmentIndex: number;
+    startNode: TaxiNode;
+    endNode: TaxiNode;
+    totalFare: number;
+    origin: { lat: number; lng: number };
+    destination: { lat: number; lng: number };
+    fullRoute: TaxiNavigationResponse;
+}
+
+export interface SegmentTransitionEvent {
+    fromSegment: RouteSegment;
+    toSegment: RouteSegment;
+    segmentIndex: number;
+    totalSegments: number;
+}
