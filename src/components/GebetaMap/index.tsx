@@ -97,6 +97,10 @@ interface ExtendedGebetaMapProps extends GebetaMapProps {
     }>;
     isTaxiNavigation?: boolean;
     currentTaxiSegmentIndex?: number;
+    segmentedRoutes?: Array<{
+        geoJSON: any;
+        isWalking: boolean;
+    }>;
 }
 
 

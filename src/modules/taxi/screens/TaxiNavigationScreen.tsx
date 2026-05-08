@@ -3,19 +3,19 @@ import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Location from 'expo-location';
 import GebetaMap from '../../../components/GebetaMap';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 import { colors } from '../../../shared/theme/colors';
 import { showToast } from '../../../shared/utils/toast';
 import { useMapTheme } from '../../map/context/MapThemeContext';
+import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { TaxiNavigationResponse } from '../types/taxi.types';
 import { useTaxiNavigation } from '../../navigation/hooks/useTaxiNavigation';
 import { useTaxiSimulation } from '../../navigation/hooks/useTaxiSimulation';
+import { useLocationTracking } from '../../navigation/hooks/useLocationTracking';
 import { SegmentProgressBar } from '../../navigation/components/SegmentProgressBar';
 import { ArrivalModal } from '../../navigation/components/ArrivalModal';
 import { decodePolyline } from '../../../shared/utils/polyline';
-import { calculateBearing, calculateDistance } from '../../navigation/utils/navigationUtils';
 
 export default function TaxiNavigationScreen() {
     const router = useRouter();
@@ -40,13 +40,17 @@ export default function TaxiNavigationScreen() {
     }
 
     const [mapReady, setMapReady] = useState(false);
-    const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-    const [userHeading, setUserHeading] = useState(0);
     const [showArrivalModal, setShowArrivalModal] = useState(false);
     const [isNavigating, setIsNavigating] = useState(true);
     const [currentRoute, setCurrentRoute] = useState<TaxiNavigationResponse | null>(routeData);
     const [simulateMovement, setSimulateMovement] = useState(params.simulateMovement === 'true');
     const [routeGeoJSON, setRouteGeoJSON] = useState<any>(null);
+    const [userHeading, setUserHeading] = useState(0);
+    const [remainingDistance, setRemainingDistance] = useState(0);
+    const [remainingTime, setRemainingTime] = useState(0);
+
+    // Use the same user location hook as TrafficMap
+    const { userLocation, setUserLocation } = useUserLocation();
 
     // Fixed initial center (like TrafficMap)
     const [initialCenter] = useState<[number, number]>([routeData.origin.lng, routeData.origin.lat]);
@@ -58,6 +62,8 @@ export default function TaxiNavigationScreen() {
     const allRouteCoordinates = useRef<[number, number][]>([]);
     const totalDistance = useRef<number>(0);
     const totalDuration = useRef<number>(0);
+    const isNavigatingRef = useRef(true);
+    const rerouteTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         const coords: [number, number][] = [];
@@ -100,22 +106,43 @@ export default function TaxiNavigationScreen() {
         });
     }, [activeRoute]);
 
-    // Simulation hook
+    // Simulation hook - EXACT same pattern as normal navigation
     const { startSimulation, stopSimulation, simulateOffRoute, isSimulating } = useTaxiSimulation({
-        taxiRoute: activeRoute,
+        routeCoordinates: allRouteCoordinates,
+        isNavigatingRef,
         mapRef,
-        setUserLocation: (loc) => {
-            console.log('[Taxi Nav] Simulation updating location:', loc);
-            setUserLocation(loc);
-        },
-        setCurrentHeading: (heading) => {
-            console.log('[Taxi Nav] Simulation updating heading:', heading);
-            setUserHeading(heading);
-        },
+        setUserLocation,
+        setCurrentHeading: setUserHeading,
+        setRouteGeoJSON,
+        setRemainingDistance,
+        setRemainingTime,
+        updateInstructionBasedOnPosition: () => { }, // useTaxiNavigation handles this
         onArrival: () => {
             setShowArrivalModal(true);
             setIsNavigating(false);
         },
+        totalRouteDistance: totalDistance.current,
+        totalRouteDuration: totalDuration.current,
+    });
+
+    // Location tracking hook - EXACT same pattern as normal navigation
+    const { startLocationTracking, stopLocationTracking } = useLocationTracking({
+        routeCoordinates: allRouteCoordinates,
+        isNavigatingRef,
+        mapRef,
+        isOffRoute: false,
+        setUserLocation,
+        setCurrentHeading: setUserHeading,
+        setRouteGeoJSON,
+        setRemainingDistance,
+        setRemainingTime,
+        setIsOffRoute: () => { },
+        setIsRecalculating: () => { },
+        updateInstructionBasedOnPosition: () => { }, // useTaxiNavigation handles this
+        recalculateRoute: async () => { },
+        rerouteTimeout,
+        totalRouteDistance: totalDistance.current,
+        totalRouteDuration: totalDuration.current,
     });
 
     // Taxi navigation hook
@@ -124,8 +151,6 @@ export default function TaxiNavigationScreen() {
         currentSegment,
         isOnTaxi,
         currentInstruction,
-        remainingDistance,
-        remainingTime,
         isOffRoute,
         isRecalculating,
         endNode,
@@ -174,177 +199,28 @@ export default function TaxiNavigationScreen() {
         };
     }) || [];
 
-    // Location tracking with route snapping (like normal navigation)
-    const lastClosestIndex = useRef<number>(0);
-    const locationSubscription = useRef<Location.LocationSubscription | null>(null);
-    const rawUserLocation = useRef<{ lat: number; lng: number } | null>(null);
-
-    // Separate effect for route snapping - works for BOTH simulation and real GPS
+    // Start navigation when component mounts - EXACT same pattern as normal navigation
     useEffect(() => {
-        if (!userLocation || allRouteCoordinates.current.length === 0) return;
+        console.log('[Taxi Nav] Starting navigation, simulateMovement:', simulateMovement);
 
-        console.log('[Taxi Nav] Route snapping effect triggered:', userLocation);
-
-        const { lat: latitude, lng: longitude } = userLocation;
-        let displayLat = latitude;
-        let displayLng = longitude;
-        let closestIndex = lastClosestIndex.current;
-
-        let minDistance = Infinity;
-        let snappedLat = latitude;
-        let snappedLng = longitude;
-
-        const SEARCH_WINDOW = 50;
-        const startIndex = Math.max(0, lastClosestIndex.current - SEARCH_WINDOW);
-        const endIndex = Math.min(allRouteCoordinates.current.length - 1, lastClosestIndex.current + SEARCH_WINDOW);
-
-        // Find closest point on route
-        for (let i = startIndex; i < endIndex; i++) {
-            const [lng1, lat1] = allRouteCoordinates.current[i];
-            const [lng2, lat2] = allRouteCoordinates.current[i + 1];
-
-            const dx = lng2 - lng1;
-            const dy = lat2 - lat1;
-
-            if (dx === 0 && dy === 0) {
-                const dist = calculateDistance(latitude, longitude, lat1, lng1);
-                if (dist < minDistance) {
-                    minDistance = dist;
-                    closestIndex = i;
-                    snappedLat = lat1;
-                    snappedLng = lng1;
-                }
-                continue;
-            }
-
-            const t = Math.max(0, Math.min(1,
-                ((longitude - lng1) * dx + (latitude - lat1) * dy) / (dx * dx + dy * dy)
-            ));
-
-            const projLat = lat1 + t * dy;
-            const projLng = lng1 + t * dx;
-
-            const dist = calculateDistance(latitude, longitude, projLat, projLng);
-
-            if (dist < minDistance) {
-                minDistance = dist;
-                closestIndex = i;
-                snappedLat = projLat;
-                snappedLng = projLng;
-            }
+        if (simulateMovement) {
+            startSimulation();
+        } else {
+            startLocationTracking();
         }
-
-        lastClosestIndex.current = closestIndex;
-        displayLat = snappedLat;
-        displayLng = snappedLng;
-
-        console.log('[Taxi Nav] Snapped:', {
-            original: { lat: latitude, lng: longitude },
-            snapped: { lat: displayLat, lng: displayLng },
-            closestIndex,
-            minDistance: minDistance.toFixed(2),
-        });
-
-        // Calculate bearing for camera
-        if (closestIndex < allRouteCoordinates.current.length - 1) {
-            const [lng1, lat1] = [displayLng, displayLat];
-            const [lng2, lat2] = allRouteCoordinates.current[closestIndex + 1];
-
-            const bearing = calculateBearing([lng1, lat1], [lng2, lat2]);
-            setUserHeading(bearing);
-        }
-
-        // Update remaining route GeoJSON
-        const remainingCoords = allRouteCoordinates.current.slice(closestIndex + 1);
-        if (remainingCoords.length > 0) {
-            const routeWithSnappedStart = [[displayLng, displayLat] as [number, number], ...remainingCoords];
-
-            console.log('[Taxi Nav] Updating route GeoJSON:', {
-                remainingPoints: remainingCoords.length,
-                totalPoints: routeWithSnappedStart.length,
-            });
-
-            setRouteGeoJSON({
-                type: 'Feature',
-                properties: {},
-                geometry: {
-                    type: 'LineString',
-                    coordinates: routeWithSnappedStart,
-                }
-            });
-        }
-
-        // Update user location with snapped coordinates if different
-        if (Math.abs(displayLat - latitude) > 0.00001 || Math.abs(displayLng - longitude) > 0.00001) {
-            setUserLocation({ lat: displayLat, lng: displayLng });
-        }
-    }, [userLocation?.lat, userLocation?.lng]);
-
-    // GPS tracking effect - only handles getting raw GPS data
-    useEffect(() => {
-        console.log('[Taxi Nav] Location tracking effect triggered:', {
-            simulateMovement,
-            routePointsCount: allRouteCoordinates.current.length,
-        });
-
-        const startTracking = async () => {
-            if (simulateMovement) {
-                console.log('[Taxi Nav] Starting simulation...');
-                startSimulation();
-                return;
-            }
-
-            console.log('[Taxi Nav] Starting real GPS tracking...');
-
-            try {
-                const { status } = await Location.requestForegroundPermissionsAsync();
-                if (status !== 'granted') {
-                    showToast.error('Permission Required', 'Location permission is required');
-                    return;
-                }
-
-                console.log('[Taxi Nav] GPS permission granted, starting watch...');
-
-                locationSubscription.current = await Location.watchPositionAsync(
-                    {
-                        accuracy: Location.Accuracy.BestForNavigation,
-                        timeInterval: 1000,
-                        distanceInterval: 5,
-                    },
-                    (location) => {
-                        const { latitude, longitude, heading } = location.coords;
-
-                        console.log('[Taxi Nav] GPS update received:', { latitude, longitude });
-
-                        // Just update the raw location - the snapping effect will handle the rest
-                        rawUserLocation.current = { lat: latitude, lng: longitude };
-                        setUserLocation({ lat: latitude, lng: longitude });
-
-                        // Update heading if available
-                        if (heading !== null && heading !== undefined) {
-                            setUserHeading(heading);
-                        }
-                    }
-                );
-            } catch (error) {
-                console.error('Location tracking error:', error);
-                showToast.error('Error', 'Could not start location tracking');
-            }
-        };
-
-        startTracking();
 
         return () => {
-            if (locationSubscription.current) {
-                locationSubscription.current.remove();
-            }
+            console.log('[Taxi Nav] Cleaning up navigation');
+            stopLocationTracking();
             stopSimulation();
         };
-    }, [simulateMovement]);
+    }, [simulateMovement]); // Only depend on simulateMovement, not the functions
 
     const handleStopNavigation = () => {
         setIsNavigating(false);
+        isNavigatingRef.current = false;
         stopSimulation();
+        stopLocationTracking();
         router.back();
     };
 
@@ -383,8 +259,9 @@ export default function TaxiNavigationScreen() {
                     userHeading={userHeading}
                     showUserLocationMarker={true}
                     routeGeoJSON={routeGeoJSON}
-                    taxiWalkRoutes={walkRoutes.length > 0 ? walkRoutes : undefined}
-                    taxiRouteSegments={taxiSegments.length > 0 ? taxiSegments : undefined}
+                    // Don't show static taxi routes during navigation - only show the dynamic routeGeoJSON
+                    taxiWalkRoutes={undefined}
+                    taxiRouteSegments={undefined}
                 />
 
                 {!mapReady && (
