@@ -240,7 +240,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                 activeOpacity={0.7}
                             >
                                 <Ionicons
-                                    name="car"
+                                    name="subway"
                                     size={20}
                                     color={transportMode === 'taxi' ? colors.primary.main : '#6B7280'}
                                 />
