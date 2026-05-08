@@ -130,7 +130,7 @@ export default function TaxiNavigationScreen() {
         });
 
         setSegmentedRoutes(routes);
-    }, [activeRoute]); 
+    }, [activeRoute]);
 
     const { startSimulation, stopSimulation, simulateOffRoute, isSimulating } = useTaxiSimulation({
         routeCoordinates: allRouteCoordinates,
@@ -141,7 +141,7 @@ export default function TaxiNavigationScreen() {
         setRouteGeoJSON,
         setRemainingDistance,
         setRemainingTime,
-        updateInstructionBasedOnPosition: () => { }, 
+        updateInstructionBasedOnPosition: () => { },
         onArrival: () => {
             setShowArrivalModal(true);
             setIsNavigating(false);
@@ -164,7 +164,7 @@ export default function TaxiNavigationScreen() {
         setRemainingTime,
         setIsOffRoute: () => { },
         setIsRecalculating: () => { },
-        updateInstructionBasedOnPosition: () => { }, 
+        updateInstructionBasedOnPosition: () => { },
         recalculateRoute: async () => { },
         rerouteTimeout,
         totalRouteDistance: totalDistance.current,
@@ -218,7 +218,7 @@ export default function TaxiNavigationScreen() {
             stopLocationTracking();
             stopSimulation();
         };
-    }, [simulateMovement]); 
+    }, [simulateMovement]);
 
     const handleStopNavigation = () => {
         setIsNavigating(false);
@@ -277,23 +277,13 @@ export default function TaxiNavigationScreen() {
                     </View>
                 )}
 
-                <View
-                    className="absolute left-4 bg-white rounded-full shadow-lg"
-                    style={{ top: insets.top + 16 }}
-                >
-                    <TouchableOpacity
-                        onPress={handleStopNavigation}
-                        className="w-12 h-12 items-center justify-center"
-                        activeOpacity={0.7}
-                    >
-                        <Ionicons name="close" size={24} color="#374151" />
-                    </TouchableOpacity>
-                </View>
-
                 {(isOffRoute || isRecalculating) && (
                     <View
-                        className="absolute right-4 bg-orange-500 rounded-full px-4 py-2 shadow-lg flex-row items-center"
-                        style={{ top: insets.top + 16 }}
+                        className="absolute right-4 rounded-2xl px-4 py-2 shadow-lg flex-row items-center border border-orange-500/50"
+                        style={{
+                            top: insets.top + 16,
+                            backgroundColor: 'rgba(249, 115, 22, 0.9)'
+                        }}
                     >
                         {isRecalculating && (
                             <ActivityIndicator size="small" color="white" style={{ marginRight: 8 }} />
@@ -304,112 +294,132 @@ export default function TaxiNavigationScreen() {
                     </View>
                 )}
 
-                {__DEV__ && (
+                {/* Top Navigation Bar - Floating Style */}
+                <View className="absolute left-4 right-4" style={{ top: insets.top + 18 }}>
                     <View
-                        className="absolute left-4 right-4 bg-white rounded-2xl shadow-lg p-3"
-                        style={{ bottom: insets.bottom + 320 }}
+                        className="border border-white/10"
+                        style={{
+                            backgroundColor: 'rgba(55, 65, 81, 0.75)',
+                            borderTopLeftRadius: 24,
+                            borderTopRightRadius: 24,
+                            borderBottomLeftRadius: 24,
+                            borderBottomRightRadius: 0,
+                            padding: 16,
+                        }}
                     >
-                        <Text className="text-gray-700 font-semibold mb-2">Debug Controls</Text>
-                        <View className="flex-row items-center justify-between">
-                            <TouchableOpacity
-                                onPress={() => setSimulateMovement(!simulateMovement)}
-                                className={`flex-1 mr-2 py-2 px-3 rounded-lg ${simulateMovement ? 'bg-green-500' : 'bg-gray-300'
-                                    }`}
-                                activeOpacity={0.7}
-                            >
-                                <Text className={`text-center font-semibold ${simulateMovement ? 'text-white' : 'text-gray-700'
-                                    }`}>
-                                    {simulateMovement ? '✓ Simulating' : 'Real GPS'}
+                        <View className="flex-row items-start justify-between">
+                            <View className="flex-1">
+                                <View className="flex-row items-baseline gap-2 mb-1">
+                                    <Text className="text-white text-2xl font-extrabold">
+                                        {formatDistance(remainingDistance)}
+                                    </Text>
+                                    <Text className="text-gray-300 text-base font-bold">
+                                        • {formatTime(remainingTime)}
+                                    </Text>
+                                </View>
+
+                                <Text className="text-gray-300 text-sm font-semibold mb-2" numberOfLines={1}>
+                                    {endNode.name}
                                 </Text>
-                            </TouchableOpacity>
+
+                                <View className="flex-row items-center gap-3">
+                                    <View className="flex-row items-center">
+                                        <View
+                                            className="w-6 h-6 rounded-full items-center justify-center"
+                                            style={{ backgroundColor: isOnTaxi ? colors.primary.main : '#3B82F6' }}
+                                        >
+                                            <Ionicons
+                                                name={isOnTaxi ? 'car' : 'walk'}
+                                                size={14}
+                                                color="white"
+                                            />
+                                        </View>
+                                        <Text className="text-gray-300 text-xs font-semibold ml-1.5">
+                                            {isOnTaxi ? 'On Taxi' : 'Walking'}
+                                        </Text>
+                                    </View>
+                                    <View className="flex-row items-center">
+                                        <Ionicons name="cash" size={14} color={colors.primary.main} />
+                                        <Text className="font-bold ml-1 text-sm" style={{ color: colors.primary.main }}>
+                                            {totalFare} {currency}
+                                        </Text>
+                                    </View>
+                                </View>
+                            </View>
+
                             <TouchableOpacity
-                                onPress={simulateOffRoute}
-                                className="flex-1 py-2 px-3 rounded-lg bg-orange-500"
-                                activeOpacity={0.7}
-                                disabled={!isSimulating}
+                                className="bg-white/10 rounded-full p-3"
+                                onPress={handleStopNavigation}
+                                style={{ borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.15)' }}
                             >
-                                <Text className="text-white text-center font-semibold">
-                                    Test Off-Route
-                                </Text>
+                                <Ionicons name="close" size={24} color="#FFFFFF" />
                             </TouchableOpacity>
                         </View>
-                    </View>
-                )}
-            </View>
 
-            <View
-                className="bg-white rounded-t-3xl shadow-2xl"
-                style={{ paddingBottom: insets.bottom + 16 }}
-            >
-                <SegmentProgressBar
-                    segments={progressSegments}
-                    currentIndex={currentSegmentIndex}
-                />
-
-                <View className="px-6 py-4 border-b border-gray-200">
-                    <View className="flex-row items-center mb-2">
-                        <View
-                            className={`w-10 h-10 rounded-full items-center justify-center ${isOnTaxi ? 'bg-orange-500' : 'bg-blue-500'
-                                }`}
-                        >
-                            <Ionicons
-                                name={isOnTaxi ? 'car' : 'walk'}
-                                size={20}
-                                color="white"
-                            />
-                        </View>
-                        <View className="ml-3 flex-1">
-                            <Text className="text-gray-500 text-xs">
-                                {isOnTaxi ? 'On Taxi' : 'Walking'}
-                            </Text>
-                            <Text className="text-gray-900 font-semibold text-lg">
-                                {currentInstruction || 'Continue ahead'}
-                            </Text>
-                        </View>
-                    </View>
-
-                    <View className="flex-row items-center justify-between mt-2">
-                        <View className="flex-row items-center">
-                            <Ionicons name="navigate" size={16} color="#6B7280" />
-                            <Text className="text-gray-600 ml-1">
-                                {formatDistance(remainingDistance)}
-                            </Text>
-                        </View>
-                        <View className="flex-row items-center">
-                            <Ionicons name="time" size={16} color="#6B7280" />
-                            <Text className="text-gray-600 ml-1">
-                                {formatTime(remainingTime)}
-                            </Text>
-                        </View>
-                        <View className="flex-row items-center">
-                            <Ionicons name="cash" size={16} color={colors.primary.main} />
-                            <Text className="font-bold ml-1" style={{ color: colors.primary.main }}>
-                                {totalFare} {currency}
-                            </Text>
-                        </View>
+                        {currentInstruction && (
+                            <View className="absolute -bottom-10 -right-0.5">
+                                <View
+                                    className="px-3 py-2 flex-row items-center gap-2 border border-white/10"
+                                    style={{
+                                        backgroundColor: 'rgba(55, 65, 81, 0.75)',
+                                        borderTopLeftRadius: 0,
+                                        borderTopRightRadius: 0,
+                                        borderBottomLeftRadius: 12,
+                                        borderBottomRightRadius: 12,
+                                    }}
+                                >
+                                    <Ionicons
+                                        name={isOnTaxi ? 'car' : 'walk'}
+                                        size={18}
+                                        color={colors.primary.main}
+                                    />
+                                    <Text className="text-white text-xs font-bold" numberOfLines={1} style={{ maxWidth: 150 }}>
+                                        {currentInstruction}
+                                    </Text>
+                                </View>
+                            </View>
+                        )}
                     </View>
                 </View>
 
-                {currentSegment && (
-                    <View className="px-6 py-3 bg-gray-50">
-                        <Text className="text-gray-500 text-xs mb-1">
-                            {isOnTaxi ? 'Exit at' : 'Heading to'}
-                        </Text>
-                        <Text className="text-gray-900 font-semibold">
-                            {currentSegment.toNode?.name || 'Destination'}
-                        </Text>
-                    </View>
-                )}
-            </View>
+                <View
+                    className="absolute left-4 right-4"
+                    style={{ bottom: insets.bottom + 24 }}
+                >
+                    <View
+                        className="rounded-3xl p-4 border border-white/10"
+                        style={{ backgroundColor: 'rgba(55, 65, 81, 0.75)' }}
+                    >
+                        {/* Segment Progress Bar */}
+                        <View className="mb-3">
+                            <SegmentProgressBar
+                                segments={progressSegments}
+                                currentIndex={currentSegmentIndex}
+                            />
+                        </View>
 
-            <ArrivalModal
-                visible={showArrivalModal}
-                onClose={() => {
-                    setShowArrivalModal(false);
-                    router.back();
-                }}
-                destinationName={endNode.name}
-            />
+                        {currentSegment && (
+                            <View className="bg-white/10 rounded-xl p-3 border border-white/10">
+                                <Text className="text-gray-400 text-xs mb-1">
+                                    {isOnTaxi ? 'Exit at' : 'Heading to'}
+                                </Text>
+                                <Text className="text-white font-semibold">
+                                    {currentSegment.toNode?.name || 'Destination'}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+                </View>
+
+                <ArrivalModal
+                    visible={showArrivalModal}
+                    onClose={() => {
+                        setShowArrivalModal(false);
+                        router.back();
+                    }}
+                    destinationName={endNode.name}
+                />
+            </View>
         </View>
     );
 }
