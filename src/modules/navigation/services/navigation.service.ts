@@ -70,7 +70,13 @@ export const navigationService = {
     },
 
     async getNavigation(request: NavigationRequest): Promise<NavigationResponse | null> {
-        const response = await apiService.post<NavigationResponse>('/api/navigation/request-navigation', request);
+        const payload = {
+            origin: request.origin,
+            destination: request.destination,
+            costing: request.costing || 'auto', 
+        };
+
+        const response = await apiService.post<NavigationResponse>('/api/navigation/request-navigation', payload);
 
         if (response.error || !response.data) {
             return null;

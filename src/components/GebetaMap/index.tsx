@@ -41,6 +41,7 @@ interface ExtendedGebetaMapProps extends GebetaMapProps {
         color?: string;
         width?: number;
         opacity?: number;
+        isDotted?: boolean;
     };
     isNavigating?: boolean;
     userLocation?: { lat: number; lng: number } | null;
@@ -155,870 +156,870 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             return () => clearTimeout(fallbackTimeout);
         }, []);
 
-useEffect(() => {
-    if (imagesLoaded && (showUserLocationMarker || isNavigating)) {
-        setRenderKey(prev => prev + 1);
-        setTimeout(() => setRenderKey(prev => prev + 1), 100);
-    }
-}, [imagesLoaded, showUserLocationMarker, isNavigating]);
+        useEffect(() => {
+            if (imagesLoaded && (showUserLocationMarker || isNavigating)) {
+                setRenderKey(prev => prev + 1);
+                setTimeout(() => setRenderKey(prev => prev + 1), 100);
+            }
+        }, [imagesLoaded, showUserLocationMarker, isNavigating]);
 
-useEffect(() => {
-    if (imagesLoaded && mapStyleState) {
-        setRenderKey(prev => prev + 1);
-        setTimeout(() => setRenderKey(prev => prev + 1), 100);
-        setTimeout(() => setRenderKey(prev => prev + 1), 300);
-    }
-}, [mapStyleState, imagesLoaded]);
-
-
-useEffect(() => {
-    if (imagesLoaded && explorePlaces && explorePlaces.length > 0) {
-        setRenderKey(prev => prev + 1);
-        setTimeout(() => setRenderKey(prev => prev + 1), 100);
-        setTimeout(() => setRenderKey(prev => prev + 1), 200);
-    }
-}, [explorePlaces, exploreCategory, imagesLoaded]);
-
-useEffect(() => {
-    console.log('[GebetaMap] rules changed — count:', rules?.length, 'imagesLoaded:', imagesLoaded, 'isNavigating:', isNavigating, 'mapStyleReady:', !!mapStyleState);
-    if (!imagesLoaded || !mapStyleState) return;
-    const timer = setTimeout(() => setRenderKey(prev => prev + 1), 200);
-    return () => clearTimeout(timer);
-}, [rules, imagesLoaded, mapStyleState]);
-
-useEffect(() => {
-    if (imagesLoaded && selectedLocation) {
-        setRenderKey(prev => prev + 1);
-        setTimeout(() => setRenderKey(prev => prev + 1), 100);
-    }
-}, [selectedLocation, imagesLoaded]);
-
-useEffect(() => {
-    if (selectedDestination) {
-        const timer = setTimeout(() => setRenderKey(prev => prev + 1), 150);
-        return () => clearTimeout(timer);
-    }
-}, [selectedDestination]);
-
-useEffect(() => {
-    if (imagesLoaded && taxiStations && taxiStations.length > 0) {
-        setRenderKey(prev => prev + 1);
-        setTimeout(() => setRenderKey(prev => prev + 1), 100);
-        setTimeout(() => setRenderKey(prev => prev + 1), 200);
-    }
-}, [taxiStations, imagesLoaded]);
+        useEffect(() => {
+            if (imagesLoaded && mapStyleState) {
+                setRenderKey(prev => prev + 1);
+                setTimeout(() => setRenderKey(prev => prev + 1), 100);
+                setTimeout(() => setRenderKey(prev => prev + 1), 300);
+            }
+        }, [mapStyleState, imagesLoaded]);
 
 
-useEffect(() => {
-    if (showUserLocationMarker && !isNavigating) {
-        pulseAnim.setValue(1);
-        const pulse = Animated.loop(
-            Animated.sequence([
-                Animated.timing(pulseAnim, {
-                    toValue: 1.15,
-                    duration: 1000,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(pulseAnim, {
-                    toValue: 1,
-                    duration: 1000,
-                    useNativeDriver: true,
-                }),
-            ])
-        );
-        pulse.start();
-        return () => {
-            pulse.stop();
-            pulseAnim.setValue(1);
-        };
-    } else {
-        pulseAnim.setValue(1);
-    }
-}, [showUserLocationMarker, isNavigating, pulseAnim, mapStyleState]);
+        useEffect(() => {
+            if (imagesLoaded && explorePlaces && explorePlaces.length > 0) {
+                setRenderKey(prev => prev + 1);
+                setTimeout(() => setRenderKey(prev => prev + 1), 100);
+                setTimeout(() => setRenderKey(prev => prev + 1), 200);
+            }
+        }, [explorePlaces, exploreCategory, imagesLoaded]);
 
-const stableUserLocation = useRef<[number, number] | null>(null);
-useEffect(() => {
-    if (userLocation) {
-        stableUserLocation.current = [userLocation.lng, userLocation.lat];
-    }
-}, [userLocation?.lat, userLocation?.lng]);
+        useEffect(() => {
+            console.log('[GebetaMap] rules changed — count:', rules?.length, 'imagesLoaded:', imagesLoaded, 'isNavigating:', isNavigating, 'mapStyleReady:', !!mapStyleState);
+            if (!imagesLoaded || !mapStyleState) return;
+            const timer = setTimeout(() => setRenderKey(prev => prev + 1), 200);
+            return () => clearTimeout(timer);
+        }, [rules, imagesLoaded, mapStyleState]);
 
-useEffect(() => {
-    if (isNavigating && !hasStartedNavigating.current) {
-        hasStartedNavigating.current = true;
-        userHasZoomedOut.current = false;
-        //initial nav zoom
-        if (cameraRef.current && userLocation) {
-            const offsetDistance = 0.0007;
-            const headingRad = ((userHeading || 0) * Math.PI) / 180;
-            const latOffset = offsetDistance * Math.cos(headingRad);
-            const lngOffset = offsetDistance * Math.sin(headingRad);
+        useEffect(() => {
+            if (imagesLoaded && selectedLocation) {
+                setRenderKey(prev => prev + 1);
+                setTimeout(() => setRenderKey(prev => prev + 1), 100);
+            }
+        }, [selectedLocation, imagesLoaded]);
 
-            cameraRef.current.setCamera({
-                centerCoordinate: [userLocation.lng + lngOffset, userLocation.lat + latOffset],
-                zoomLevel: 18,
-                animationDuration: 500,
-                pitch: 60,
-                heading: userHeading || 0,
-                animationMode: 'flyTo',
-            });
-        }
-    } else if (!isNavigating && hasStartedNavigating.current) {
-        hasStartedNavigating.current = false;
-        lastCameraUpdate.current = null;
-        userHasZoomedOut.current = false;
-    }
-}, [isNavigating, userLocation, userHeading]);
+        useEffect(() => {
+            if (selectedDestination) {
+                const timer = setTimeout(() => setRenderKey(prev => prev + 1), 150);
+                return () => clearTimeout(timer);
+            }
+        }, [selectedDestination]);
 
-const defaultRouteStyle = {
-    color: routeStyle?.color || '#3B82F6',
-    width: 9,
-    opacity: routeStyle?.opacity || 0.8,
-};
+        useEffect(() => {
+            if (imagesLoaded && taxiStations && taxiStations.length > 0) {
+                setRenderKey(prev => prev + 1);
+                setTimeout(() => setRenderKey(prev => prev + 1), 100);
+                setTimeout(() => setRenderKey(prev => prev + 1), 200);
+            }
+        }, [taxiStations, imagesLoaded]);
 
-useImperativeHandle(ref, () => ({
-    flyTo: (options: any) => {
-        if (cameraRef.current) {
-            cameraRef.current.setCamera({
-                centerCoordinate: options.center,
-                zoomLevel: options.zoom,
-                animationMode: 'flyTo',
-                animationDuration: options.duration || 1000,
-                pitch: options.pitch,
-            });
-        }
-    },
-    addImageMarker: () => ({ marker: {} }),
-    addMarker: () => ({}),
-    clearMarkers: () => { },
-    getMarkers: () => [],
 
-    getMapInstance: () => mapViewRef.current,
-    startFence: () => { },
-    addFencePoint: () => { },
-    closeFence: () => { },
-    clearFence: () => { },
-    clearAllFences: () => { },
-    getFences: () => [],
-    getFencePoints: () => [],
-
-    isDrawingFence: () => false,
-    addPath: () => { },
-    clearPaths: () => { },
-    addClusteredMarker: () => { },
-    clearClusteredMarkers: () => { },
-    updateClustering: () => { },
-    setClusteringEnabled: () => { },
-    setClusterImage: () => { },
-    geocode: async () => [],
-    reverseGeocode: async () => [],
-    getDirections: async () => null,
-
-    convertDirectionsToNavigationRoute: () => null,
-    displayRoute: () => { },
-    clearRoute: () => { },
-    getCurrentRoute: () => null,
-    getRouteSummary: () => null,
-    updateRouteStyle: () => { },
-    startNavigation: () => { },
-    stopNavigation: () => { },
-    updateNavigationPosition: () => { },
-    getNavigationState: () => null,
-    isNavigating: () => false,
-}), []);
-
-useEffect(() => {
-    async function processStyle() {
-        try {
-            let styleJson: any;
-
-            if (mapStyleJson) {
-                styleJson = mapStyleJson;
-            } else if (mapStyleUrl) {
-                const response = await fetch(mapStyleUrl);
-                if (!response.ok) throw new Error(`Failed to fetch style JSON: ${response.status}`);
-                styleJson = await response.json();
+        useEffect(() => {
+            if (showUserLocationMarker && !isNavigating) {
+                pulseAnim.setValue(1);
+                const pulse = Animated.loop(
+                    Animated.sequence([
+                        Animated.timing(pulseAnim, {
+                            toValue: 1.15,
+                            duration: 1000,
+                            useNativeDriver: true,
+                        }),
+                        Animated.timing(pulseAnim, {
+                            toValue: 1,
+                            duration: 1000,
+                            useNativeDriver: true,
+                        }),
+                    ])
+                );
+                pulse.start();
+                return () => {
+                    pulse.stop();
+                    pulseAnim.setValue(1);
+                };
             } else {
-                const defaultStyleUrl = `https://tiles.gebeta.app/styles/standard/style.json?device=mobile&apiKey=${apiKey}`;
-                const response = await fetch(defaultStyleUrl);
-                if (!response.ok) throw new Error(`Failed to fetch default style JSON: ${response.status}`);
-                styleJson = await response.json();
+                pulseAnim.setValue(1);
             }
+        }, [showUserLocationMarker, isNavigating, pulseAnim, mapStyleState]);
 
-            if (styleJson.sources) {
-                for (const sourceKey of Object.keys(styleJson.sources)) {
-                    const source = styleJson.sources[sourceKey];
-                    if (Array.isArray(source.tiles)) {
-                        source.tiles = source.tiles.map((tileUrl: string) => {
-                            const separator = tileUrl.includes('?') ? '&' : '?';
-                            return `${tileUrl}${separator}apiKey=${apiKey}`;
-                        });
-                    }
+        const stableUserLocation = useRef<[number, number] | null>(null);
+        useEffect(() => {
+            if (userLocation) {
+                stableUserLocation.current = [userLocation.lng, userLocation.lat];
+            }
+        }, [userLocation?.lat, userLocation?.lng]);
+
+        useEffect(() => {
+            if (isNavigating && !hasStartedNavigating.current) {
+                hasStartedNavigating.current = true;
+                userHasZoomedOut.current = false;
+                //initial nav zoom
+                if (cameraRef.current && userLocation) {
+                    const offsetDistance = 0.0007;
+                    const headingRad = ((userHeading || 0) * Math.PI) / 180;
+                    const latOffset = offsetDistance * Math.cos(headingRad);
+                    const lngOffset = offsetDistance * Math.sin(headingRad);
+
+                    cameraRef.current.setCamera({
+                        centerCoordinate: [userLocation.lng + lngOffset, userLocation.lat + latOffset],
+                        zoomLevel: 18,
+                        animationDuration: 500,
+                        pitch: 60,
+                        heading: userHeading || 0,
+                        animationMode: 'flyTo',
+                    });
                 }
+            } else if (!isNavigating && hasStartedNavigating.current) {
+                hasStartedNavigating.current = false;
+                lastCameraUpdate.current = null;
+                userHasZoomedOut.current = false;
             }
+        }, [isNavigating, userLocation, userHeading]);
 
-            setMapStyleState(styleJson);
-            setLoading(false);
-        } catch (error) {
-            console.error("Error loading style JSON:", error);
-            Alert.alert("Map Style Load Error", String(error));
-            setLoading(false);
-        }
-    }
+        const defaultRouteStyle = {
+            color: routeStyle?.color || '#3B82F6',
+            width: 9,
+            opacity: routeStyle?.opacity || 0.8,
+        };
 
-    processStyle();
-}, [apiKey, mapStyleUrl, mapStyleJson]);
+        useImperativeHandle(ref, () => ({
+            flyTo: (options: any) => {
+                if (cameraRef.current) {
+                    cameraRef.current.setCamera({
+                        centerCoordinate: options.center,
+                        zoomLevel: options.zoom,
+                        animationMode: 'flyTo',
+                        animationDuration: options.duration || 1000,
+                        pitch: options.pitch,
+                    });
+                }
+            },
+            addImageMarker: () => ({ marker: {} }),
+            addMarker: () => ({}),
+            clearMarkers: () => { },
+            getMarkers: () => [],
 
-const handleMapLoad = () => {
-    onMapLoaded?.();
-};
+            getMapInstance: () => mapViewRef.current,
+            startFence: () => { },
+            addFencePoint: () => { },
+            closeFence: () => { },
+            clearFence: () => { },
+            clearAllFences: () => { },
+            getFences: () => [],
+            getFencePoints: () => [],
 
-useEffect(() => {
-    if (isNavigating && userLocation && cameraRef.current) {
-        const hasChanged = !lastCameraUpdate.current ||
-            Math.abs(lastCameraUpdate.current.lat - userLocation.lat) > 0.00001 ||
-            Math.abs(lastCameraUpdate.current.lng - userLocation.lng) > 0.00001 ||
-            Math.abs(lastCameraUpdate.current.heading - (userHeading || 0)) > 1;
+            isDrawingFence: () => false,
+            addPath: () => { },
+            clearPaths: () => { },
+            addClusteredMarker: () => { },
+            clearClusteredMarkers: () => { },
+            updateClustering: () => { },
+            setClusteringEnabled: () => { },
+            setClusterImage: () => { },
+            geocode: async () => [],
+            reverseGeocode: async () => [],
+            getDirections: async () => null,
 
-        if (hasChanged) {
+            convertDirectionsToNavigationRoute: () => null,
+            displayRoute: () => { },
+            clearRoute: () => { },
+            getCurrentRoute: () => null,
+            getRouteSummary: () => null,
+            updateRouteStyle: () => { },
+            startNavigation: () => { },
+            stopNavigation: () => { },
+            updateNavigationPosition: () => { },
+            getNavigationState: () => null,
+            isNavigating: () => false,
+        }), []);
 
-            const offsetDistance = 0.0007; //distance in deg.
-            const headingRad = ((userHeading || 0) * Math.PI) / 180;
+        useEffect(() => {
+            async function processStyle() {
+                try {
+                    let styleJson: any;
 
-            // down the screen
-            const latOffset = offsetDistance * Math.cos(headingRad);
-            const lngOffset = offsetDistance * Math.sin(headingRad);
+                    if (mapStyleJson) {
+                        styleJson = mapStyleJson;
+                    } else if (mapStyleUrl) {
+                        const response = await fetch(mapStyleUrl);
+                        if (!response.ok) throw new Error(`Failed to fetch style JSON: ${response.status}`);
+                        styleJson = await response.json();
+                    } else {
+                        const defaultStyleUrl = `https://tiles.gebeta.app/styles/standard/style.json?device=mobile&apiKey=${apiKey}`;
+                        const response = await fetch(defaultStyleUrl);
+                        if (!response.ok) throw new Error(`Failed to fetch default style JSON: ${response.status}`);
+                        styleJson = await response.json();
+                    }
 
-            const cameraConfig: any = {
-                centerCoordinate: [userLocation.lng + lngOffset, userLocation.lat + latOffset],
-                animationDuration: 300,
-                pitch: 60,
-                heading: userHeading || 0,
-                animationMode: 'easeTo',
-            };
-
-            //only set zoom if user didnt zoom out
-            if (!userHasZoomedOut.current) {
-                cameraConfig.zoomLevel = 18;
-                lastSetZoom.current = 18;
-            }
-
-            cameraRef.current.setCamera(cameraConfig);
-
-            lastCameraUpdate.current = {
-                lat: userLocation.lat,
-                lng: userLocation.lng,
-                heading: userHeading || 0,
-            };
-        }
-    }
-}, [isNavigating, userLocation?.lat, userLocation?.lng, userHeading]);
-
-if (loading || !mapStyleState) {
-    return (
-        <View style={[styles.container, styles.loaderContainer]}>
-            <ActivityIndicator size="large" color="#000" />
-        </View>
-    );
-}
-
-return (
-    <View style={styles.container}>
-        <View
-            style={styles.map}
-            onTouchStart={() => {
-                if (isNavigating) {
-                    setTimeout(() => {
-                        userHasZoomedOut.current = true;
-                        if (onUserInteraction) {
-                            onUserInteraction();
+                    if (styleJson.sources) {
+                        for (const sourceKey of Object.keys(styleJson.sources)) {
+                            const source = styleJson.sources[sourceKey];
+                            if (Array.isArray(source.tiles)) {
+                                source.tiles = source.tiles.map((tileUrl: string) => {
+                                    const separator = tileUrl.includes('?') ? '&' : '?';
+                                    return `${tileUrl}${separator}apiKey=${apiKey}`;
+                                });
+                            }
                         }
-                    }, 500);
-                }
-            }}
-        >
-            <MapLibreGL.MapView
-                ref={mapViewRef}
-                style={styles.map}
-                mapStyle={mapStyleState}
-                attributionEnabled={false}
-                logoEnabled={false}
-                compassEnabled={!isNavigating}
-                compassViewPosition={1}
-                compassViewMargins={{ x: 16, y: 120 }}
-                onPress={(e) => {
-                    const coords = (e.geometry as any)?.coordinates;
-                    if (coords && onMapClick) {
-                        onMapClick([coords[0], coords[1]], e);
                     }
-                }}
-                onRegionIsChanging={(e: any) => {
-                    if (isNavigating && e.properties?.zoom !== undefined) {
-                        const currentZoom = e.properties.zoom;
-                        if (Math.abs(currentZoom - lastSetZoom.current) > 0.5) {
-                            if (!userHasZoomedOut.current) {
+
+                    setMapStyleState(styleJson);
+                    setLoading(false);
+                } catch (error) {
+                    console.error("Error loading style JSON:", error);
+                    Alert.alert("Map Style Load Error", String(error));
+                    setLoading(false);
+                }
+            }
+
+            processStyle();
+        }, [apiKey, mapStyleUrl, mapStyleJson]);
+
+        const handleMapLoad = () => {
+            onMapLoaded?.();
+        };
+
+        useEffect(() => {
+            if (isNavigating && userLocation && cameraRef.current) {
+                const hasChanged = !lastCameraUpdate.current ||
+                    Math.abs(lastCameraUpdate.current.lat - userLocation.lat) > 0.00001 ||
+                    Math.abs(lastCameraUpdate.current.lng - userLocation.lng) > 0.00001 ||
+                    Math.abs(lastCameraUpdate.current.heading - (userHeading || 0)) > 1;
+
+                if (hasChanged) {
+
+                    const offsetDistance = 0.0007; 
+                    const headingRad = ((userHeading || 0) * Math.PI) / 180;
+
+                    const latOffset = offsetDistance * Math.cos(headingRad);
+                    const lngOffset = offsetDistance * Math.sin(headingRad);
+
+                    const cameraConfig: any = {
+                        centerCoordinate: [userLocation.lng + lngOffset, userLocation.lat + latOffset],
+                        animationDuration: 300,
+                        pitch: 60,
+                        heading: userHeading || 0,
+                        animationMode: 'easeTo',
+                    };
+
+                    //only set zoom if user didnt zoom out
+                    if (!userHasZoomedOut.current) {
+                        cameraConfig.zoomLevel = 18;
+                        lastSetZoom.current = 18;
+                    }
+
+                    cameraRef.current.setCamera(cameraConfig);
+
+                    lastCameraUpdate.current = {
+                        lat: userLocation.lat,
+                        lng: userLocation.lng,
+                        heading: userHeading || 0,
+                    };
+                }
+            }
+        }, [isNavigating, userLocation?.lat, userLocation?.lng, userHeading]);
+
+        if (loading || !mapStyleState) {
+            return (
+                <View style={[styles.container, styles.loaderContainer]}>
+                    <ActivityIndicator size="large" color="#000" />
+                </View>
+            );
+        }
+
+        return (
+            <View style={styles.container}>
+                <View
+                    style={styles.map}
+                    onTouchStart={() => {
+                        if (isNavigating) {
+                            setTimeout(() => {
                                 userHasZoomedOut.current = true;
                                 if (onUserInteraction) {
                                     onUserInteraction();
                                 }
-                            }
+                            }, 500);
                         }
-                    }
-                }}
-                onDidFinishLoadingMap={handleMapLoad}
-            >
-                <MapLibreGL.Camera
-                    ref={cameraRef}
-                    centerCoordinate={center}
-                    zoomLevel={zoom}
-                    pitch={0}
-                    heading={0}
-                    animationMode="flyTo"
-                    animationDuration={800}
-                    maxBounds={undefined}
-                    defaultSettings={{
-                        centerCoordinate: center,
-                        zoomLevel: zoom,
                     }}
-                />
-
-               
-                {segmentedRoutes && segmentedRoutes.length > 0 && (() => {
-                    console.log('[GebetaMap] Rendering segmented routes:', {
-                        count: segmentedRoutes.length,
-                        segments: segmentedRoutes.map(r => ({
-                            index: r.segmentIndex,
-                            isWalking: r.isWalking,
-                            coordsCount: r.geoJSON.geometry.coordinates.length
-                        })),
-                        currentSegmentIndex: currentTaxiSegmentIndex
-                    });
-                    return segmentedRoutes.map((route, index) => {
-                        const isCurrentSegment = isTaxiNavigation && currentTaxiSegmentIndex === route.segmentIndex;
-                        const isPastSegment = isTaxiNavigation && currentTaxiSegmentIndex !== undefined && route.segmentIndex < currentTaxiSegmentIndex;
-
-                        
-                        if (isPastSegment) {
-                            console.log(`[GebetaMap] Skipping past segment ${route.segmentIndex}`);
-                            return null;
-                        }
-
-                        console.log(`[GebetaMap] Segment ${route.segmentIndex}:`, {
-                            isWalking: route.isWalking,
-                            isCurrentSegment,
-                            isPastSegment,
-                            color: route.isWalking ? '#EF4444' : '#3B82F6',
-                            style: route.isWalking ? 'dotted' : 'solid'
-                        });
-
-                        const lineStyle: any = {
-                            lineColor: route.isWalking ? '#EF4444' : '#3B82F6',
-                            lineWidth: route.isWalking ? 5 : 7,
-                            lineOpacity: isCurrentSegment ? 1 : 0.7,
-                            lineCap: 'round',
-                            lineJoin: 'round',
-                        };
-
-                       
-                        if (route.isWalking) {
-                            lineStyle.lineDasharray = [2, 2];
-                        }
-
-                        return (
-                            <MapLibreGL.ShapeSource
-                                key={`segment-${route.segmentIndex}-${Date.now()}`}
-                                id={`segment-${route.segmentIndex}-source`}
-                                shape={route.geoJSON}
-                            >
-                                <MapLibreGL.LineLayer
-                                    id={`segment-${route.segmentIndex}-layer`}
-                                    style={lineStyle}
-                                />
-                            </MapLibreGL.ShapeSource>
-                        );
-                    });
-                })()}
-
-                {routeGeoJSON && !segmentedRoutes && (
-                    <MapLibreGL.ShapeSource
-                        key={`route-${routeGeoJSON.properties?.timestamp || Date.now()}-${JSON.stringify(routeGeoJSON.geometry.coordinates[0])}`}
-                        id="route-preview-source"
-                        shape={routeGeoJSON}
+                >
+                    <MapLibreGL.MapView
+                        ref={mapViewRef}
+                        style={styles.map}
+                        mapStyle={mapStyleState}
+                        attributionEnabled={false}
+                        logoEnabled={false}
+                        compassEnabled={!isNavigating}
+                        compassViewPosition={1}
+                        compassViewMargins={{ x: 16, y: 120 }}
+                        onPress={(e) => {
+                            const coords = (e.geometry as any)?.coordinates;
+                            if (coords && onMapClick) {
+                                onMapClick([coords[0], coords[1]], e);
+                            }
+                        }}
+                        onRegionIsChanging={(e: any) => {
+                            if (isNavigating && e.properties?.zoom !== undefined) {
+                                const currentZoom = e.properties.zoom;
+                                if (Math.abs(currentZoom - lastSetZoom.current) > 0.5) {
+                                    if (!userHasZoomedOut.current) {
+                                        userHasZoomedOut.current = true;
+                                        if (onUserInteraction) {
+                                            onUserInteraction();
+                                        }
+                                    }
+                                }
+                            }
+                        }}
+                        onDidFinishLoadingMap={handleMapLoad}
                     >
-                        <MapLibreGL.LineLayer
-                            id="route-preview-layer"
-                            style={{
-                                lineColor: defaultRouteStyle.color,
-                                lineWidth: defaultRouteStyle.width,
-                                lineOpacity: isNavigating ? 0.6 : defaultRouteStyle.opacity,
-                                lineCap: 'round',
-                                lineJoin: 'round',
+                        <MapLibreGL.Camera
+                            ref={cameraRef}
+                            centerCoordinate={center}
+                            zoomLevel={zoom}
+                            pitch={0}
+                            heading={0}
+                            animationMode="flyTo"
+                            animationDuration={800}
+                            maxBounds={undefined}
+                            defaultSettings={{
+                                centerCoordinate: center,
+                                zoomLevel: zoom,
                             }}
                         />
-                    </MapLibreGL.ShapeSource>
-                )}
 
-                {taxiRouteSegments && taxiRouteSegments.map((segment, index) => {
-                    const taxiRouteGeoJSON = {
-                        type: 'Feature' as const,
-                        properties: {},
-                        geometry: {
-                            type: 'LineString' as const,
-                            coordinates: segment.coordinates
-                        }
-                    };
-                    return (
-                        <MapLibreGL.ShapeSource
-                            key={`taxi-segment-${index}-${Date.now()}`}
-                            id={`taxi-segment-${index}-source`}
-                            shape={taxiRouteGeoJSON}
-                        >
-                            <MapLibreGL.LineLayer
-                                id={`taxi-segment-${index}-layer`}
-                                style={{
-                                    lineColor: colors.primary.main,
-                                    lineWidth: 6,
-                                    lineOpacity: 0.8,
+
+                        {segmentedRoutes && segmentedRoutes.length > 0 && (() => {
+                            console.log('[GebetaMap] Rendering segmented routes:', {
+                                count: segmentedRoutes.length,
+                                segments: segmentedRoutes.map(r => ({
+                                    index: r.segmentIndex,
+                                    isWalking: r.isWalking,
+                                    coordsCount: r.geoJSON.geometry.coordinates.length
+                                })),
+                                currentSegmentIndex: currentTaxiSegmentIndex
+                            });
+                            return segmentedRoutes.map((route, index) => {
+                                const isCurrentSegment = isTaxiNavigation && currentTaxiSegmentIndex === route.segmentIndex;
+                                const isPastSegment = isTaxiNavigation && currentTaxiSegmentIndex !== undefined && route.segmentIndex < currentTaxiSegmentIndex;
+
+
+                                if (isPastSegment) {
+                                    console.log(`[GebetaMap] Skipping past segment ${route.segmentIndex}`);
+                                    return null;
+                                }
+
+                                console.log(`[GebetaMap] Segment ${route.segmentIndex}:`, {
+                                    isWalking: route.isWalking,
+                                    isCurrentSegment,
+                                    isPastSegment,
+                                    color: route.isWalking ? '#EF4444' : '#3B82F6',
+                                    style: route.isWalking ? 'dotted' : 'solid'
+                                });
+
+                                const lineStyle: any = {
+                                    lineColor: route.isWalking ? '#EF4444' : '#3B82F6',
+                                    lineWidth: route.isWalking ? 5 : 7,
+                                    lineOpacity: isCurrentSegment ? 1 : 0.7,
                                     lineCap: 'round',
                                     lineJoin: 'round',
-                                }}
-                            />
-                        </MapLibreGL.ShapeSource>
-                    );
-                })}
+                                };
 
-                {taxiWalkRoutes && taxiWalkRoutes.map((route, index) => {
-                    try {
-                        const coords = decodePolyline(route.polyline, 6);
-                        console.log(`[GebetaMap] Rendering walk route ${route.type}:`, {
-                            index,
-                            polylineLength: route.polyline.length,
-                            coordsCount: coords.length,
-                            firstCoord: coords[0],
-                            lastCoord: coords[coords.length - 1]
-                        });
 
-                        const mapCoords = coords.map(([lat, lng]) => [lng, lat]);
+                                if (route.isWalking) {
+                                    lineStyle.lineDasharray = [2, 2];
+                                }
 
-                        
-                        const color = isTaxiNavigation ? '#3B82F6' : '#EF4444';
+                                return (
+                                    <MapLibreGL.ShapeSource
+                                        key={`segment-${route.segmentIndex}-${Date.now()}`}
+                                        id={`segment-${route.segmentIndex}-source`}
+                                        shape={route.geoJSON}
+                                    >
+                                        <MapLibreGL.LineLayer
+                                            id={`segment-${route.segmentIndex}-layer`}
+                                            style={lineStyle}
+                                        />
+                                    </MapLibreGL.ShapeSource>
+                                );
+                            });
+                        })()}
 
-                        const walkGeoJSON = {
-                            type: 'Feature' as const,
-                            properties: {},
-                            geometry: {
-                                type: 'LineString' as const,
-                                coordinates: mapCoords
-                            }
-                        };
-                        return (
+                        {routeGeoJSON && !segmentedRoutes && (
                             <MapLibreGL.ShapeSource
-                                key={`taxi-walk-${route.type}-${index}-${Date.now()}`}
-                                id={`taxi-walk-${route.type}-${index}-source`}
-                                shape={walkGeoJSON}
+                                key={`route-${routeGeoJSON.properties?.timestamp || Date.now()}-${JSON.stringify(routeGeoJSON.geometry.coordinates[0])}`}
+                                id="route-preview-source"
+                                shape={routeGeoJSON}
                             >
                                 <MapLibreGL.LineLayer
-                                    id={`taxi-walk-${route.type}-${index}-layer`}
+                                    id="route-preview-layer"
                                     style={{
-                                        lineColor: color,
-                                        lineWidth: isTaxiNavigation ? 4 : 8,
-                                        lineOpacity: 1,
-                                        lineDasharray: [2, 2], //dotted line
+                                        lineColor: defaultRouteStyle.color,
+                                        lineWidth: routeStyle?.isDotted ? 6 : defaultRouteStyle.width,
+                                        lineOpacity: routeStyle?.isDotted ? 1 : (isNavigating ? 0.6 : defaultRouteStyle.opacity),
                                         lineCap: 'round',
+                                        lineJoin: 'round',
+                                        ...(routeStyle?.isDotted && { lineDasharray: [2, 2] }),
                                     }}
                                 />
                             </MapLibreGL.ShapeSource>
-                        );
-                    } catch (error) {
-                        console.error(`[GebetaMap] Error decoding ${route.type} walk route:`, error);
-                        return null;
-                    }
-                })}
+                        )}
 
-                {taxiRouteSegments && taxiRouteSegments.map((segment, index) => {
-                    const taxiRouteGeoJSON = {
-                        type: 'Feature' as const,
-                        properties: {},
-                        geometry: {
-                            type: 'LineString' as const,
-                            coordinates: segment.coordinates
-                        }
-                    };
-                    return (
-                        <MapLibreGL.ShapeSource
-                            key={`taxi-segment-${index}-${Date.now()}`}
-                            id={`taxi-segment-${index}-source`}
-                            shape={taxiRouteGeoJSON}
-                        >
-                            <MapLibreGL.LineLayer
-                                id={`taxi-segment-${index}-layer`}
-                                style={{
-                                    lineColor: colors.primary.main,
-                                    lineWidth: 6,
-                                    lineOpacity: 0.8,
-                                    lineCap: 'round',
-                                    lineJoin: 'round',
-                                }}
-                            />
-                        </MapLibreGL.ShapeSource>
-                    );
-                })}
-
-                {routeGeoJSON && selectedDestination && (() => {
-                    const routeCoords = routeGeoJSON.geometry.coordinates;
-                    const lastRoutePoint = routeCoords[routeCoords.length - 1];
-                    const destinationPoint = [selectedDestination.longitude, selectedDestination.latitude];
-
-                    const walkingPathGeoJSON = {
-                        type: 'Feature' as const,
-                        properties: {},
-                        geometry: {
-                            type: 'LineString' as const,
-                            coordinates: [lastRoutePoint, destinationPoint]
-                        }
-                    };
-
-                    return (
-                        <MapLibreGL.ShapeSource
-                            key={`walking-path-${Date.now()}`}
-                            id="walking-path-source"
-                            shape={walkingPathGeoJSON}
-                        >
-                            <MapLibreGL.LineLayer
-                                id="walking-path-layer"
-                                style={{
-                                    lineColor: isNavigating ? '#888888' : '#666666',
-                                    lineWidth: isNavigating ? 5 : 4,
-                                    lineOpacity: isNavigating ? 0.8 : 0.7,
-                                    lineDasharray: [0.5, 2],
-                                    lineCap: 'round',
-                                }}
-                            />
-                        </MapLibreGL.ShapeSource>
-                    );
-                })()}
-
-                {isNavigating && userLocation && imagesLoaded && (
-                    <MapLibreGL.PointAnnotation
-                        key={`nav-marker-${renderKey}`}
-                        id="user-location-marker-nav"
-                        coordinate={[userLocation.lng, userLocation.lat]}
-                    >
-                        <View style={{
-                            width: 60,
-                            height: 60,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}>
-                            <View style={{
-                                transform: [{ rotate: `${userHeading || 0}deg` }],
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}>
-                                <Image
-                                    source={MAPPIN_IMAGE}
-                                    style={{
-                                        width: 50,
-                                        height: 50,
-                                    }}
-                                    resizeMode="contain"
-                                />
-                            </View>
-                        </View>
-                    </MapLibreGL.PointAnnotation>
-                )}
-
-                {!isNavigating && showUserLocationMarker && userLocation && imagesLoaded && (
-                    <MapLibreGL.PointAnnotation
-                        key={`user-location-${renderKey}`}
-                        id="user-location-marker-static"
-                        coordinate={[userLocation.lng, userLocation.lat]}
-                    >
-                        <View style={{
-                            width: 50,
-                            height: 50,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}>
-                            <Image
-                                source={PIN_NORMAL_IMAGE}
-                                style={{
-                                    width: 40,
-                                    height: 40,
-                                }}
-                                resizeMode="contain"
-                            />
-                        </View>
-                    </MapLibreGL.PointAnnotation>
-                )}
-
-                {incidents && imagesLoaded && incidents.map((incident) => {
-                    const imageSource = INCIDENT_IMAGES[incident.type.name as keyof typeof INCIDENT_IMAGES];
-
-                    return (
-                        <MapLibreGL.PointAnnotation
-                            key={`incident-${incident.id}-${renderKey}`}
-                            id={`incident-${incident.id}`}
-                            coordinate={[incident.lng, incident.lat]}
-                            onSelected={() => {
-                                showToast.info('Incident', incident.type.label || incident.type.name);
-                            }}
-                        >
-                            <View style={{
-                                width: 40,
-                                height: 40,
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}>
-                                {imageSource ? (
-                                    <Image
-                                        source={imageSource}
+                        {taxiRouteSegments && taxiRouteSegments.map((segment, index) => {
+                            const taxiRouteGeoJSON = {
+                                type: 'Feature' as const,
+                                properties: {},
+                                geometry: {
+                                    type: 'LineString' as const,
+                                    coordinates: segment.coordinates
+                                }
+                            };
+                            return (
+                                <MapLibreGL.ShapeSource
+                                    key={`taxi-segment-${index}-${Date.now()}`}
+                                    id={`taxi-segment-${index}-source`}
+                                    shape={taxiRouteGeoJSON}
+                                >
+                                    <MapLibreGL.LineLayer
+                                        id={`taxi-segment-${index}-layer`}
                                         style={{
-                                            width: 36,
-                                            height: 36,
+                                            lineColor: colors.primary.main,
+                                            lineWidth: 6,
+                                            lineOpacity: 0.8,
+                                            lineCap: 'round',
+                                            lineJoin: 'round',
                                         }}
-                                        resizeMode="contain"
                                     />
-                                ) : (
-                                    <Ionicons name="alert-circle" size={32} color="#F97316" />
-                                )}
-                            </View>
-                        </MapLibreGL.PointAnnotation>
-                    );
-                })}
+                                </MapLibreGL.ShapeSource>
+                            );
+                        })}
 
-                {rules && imagesLoaded && mapStyleState && !isNavigating && rules.map((rule, index) => {
-                    return (
-                        <MapLibreGL.PointAnnotation
-                            key={`rule-${rule.id}-${renderKey}`}
-                            id={`rule-${rule.id}`}
-                            coordinate={[rule.lng, rule.lat]}
-                        >
-                            <View style={{
-                                width: 40,
-                                height: 40,
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}>
-                                {rule.type.img ? (
-                                    <Image
-                                        source={{ uri: rule.type.img }}
+                        {taxiWalkRoutes && taxiWalkRoutes.map((route, index) => {
+                            try {
+                                const coords = decodePolyline(route.polyline, 6);
+                                console.log(`[GebetaMap] Rendering walk route ${route.type}:`, {
+                                    index,
+                                    polylineLength: route.polyline.length,
+                                    coordsCount: coords.length,
+                                    firstCoord: coords[0],
+                                    lastCoord: coords[coords.length - 1]
+                                });
+
+                                const mapCoords = coords.map(([lat, lng]) => [lng, lat]);
+
+
+                                const color = isTaxiNavigation ? '#3B82F6' : '#EF4444';
+
+                                const walkGeoJSON = {
+                                    type: 'Feature' as const,
+                                    properties: {},
+                                    geometry: {
+                                        type: 'LineString' as const,
+                                        coordinates: mapCoords
+                                    }
+                                };
+                                return (
+                                    <MapLibreGL.ShapeSource
+                                        key={`taxi-walk-${route.type}-${index}-${Date.now()}`}
+                                        id={`taxi-walk-${route.type}-${index}-source`}
+                                        shape={walkGeoJSON}
+                                    >
+                                        <MapLibreGL.LineLayer
+                                            id={`taxi-walk-${route.type}-${index}-layer`}
+                                            style={{
+                                                lineColor: color,
+                                                lineWidth: isTaxiNavigation ? 4 : 8,
+                                                lineOpacity: 1,
+                                                lineDasharray: [2, 2], //dotted line
+                                                lineCap: 'round',
+                                            }}
+                                        />
+                                    </MapLibreGL.ShapeSource>
+                                );
+                            } catch (error) {
+                                console.error(`[GebetaMap] Error decoding ${route.type} walk route:`, error);
+                                return null;
+                            }
+                        })}
+
+                        {taxiRouteSegments && taxiRouteSegments.map((segment, index) => {
+                            const taxiRouteGeoJSON = {
+                                type: 'Feature' as const,
+                                properties: {},
+                                geometry: {
+                                    type: 'LineString' as const,
+                                    coordinates: segment.coordinates
+                                }
+                            };
+                            return (
+                                <MapLibreGL.ShapeSource
+                                    key={`taxi-segment-${index}-${Date.now()}`}
+                                    id={`taxi-segment-${index}-source`}
+                                    shape={taxiRouteGeoJSON}
+                                >
+                                    <MapLibreGL.LineLayer
+                                        id={`taxi-segment-${index}-layer`}
                                         style={{
-                                            width: 36,
-                                            height: 36,
+                                            lineColor: colors.primary.main,
+                                            lineWidth: 6,
+                                            lineOpacity: 0.8,
+                                            lineCap: 'round',
+                                            lineJoin: 'round',
                                         }}
-                                        resizeMode="contain"
                                     />
-                                ) : (
-                                    <Ionicons name="warning" size={32} color="#EF4444" />
-                                )}
-                            </View>
-                        </MapLibreGL.PointAnnotation>
-                    );
-                })}
+                                </MapLibreGL.ShapeSource>
+                            );
+                        })}
 
-                {selectedLocation && imagesLoaded && (
-                    <MapLibreGL.PointAnnotation
-                        key={`selected-location-${renderKey}`}
-                        id="selected-location-marker"
-                        coordinate={[selectedLocation.lng, selectedLocation.lat]}
-                    >
-                        <View style={{
-                            width: 40,
-                            height: 40,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}>
-                            <View style={{
-                                position: 'absolute',
-                                width: 40,
-                                height: 40,
-                                borderRadius: 20,
-                                backgroundColor: '#EF4444',
-                                opacity: 0.3,
-                            }} />
-                            <View style={{
-                                width: 20,
-                                height: 20,
-                                borderRadius: 10,
-                                backgroundColor: '#EF4444',
-                                borderWidth: 3,
-                                borderColor: '#FFFFFF',
-                            }} />
-                        </View>
-                    </MapLibreGL.PointAnnotation>
-                )}
+                        {routeGeoJSON && selectedDestination && (() => {
+                            const routeCoords = routeGeoJSON.geometry.coordinates;
+                            const lastRoutePoint = routeCoords[routeCoords.length - 1];
+                            const destinationPoint = [selectedDestination.longitude, selectedDestination.latitude];
 
-                {clickedLocation && imagesLoaded && (
-                    <MapLibreGL.PointAnnotation
-                        key={`clicked-location-${renderKey}`}
-                        id="clicked-location-marker"
-                        coordinate={[clickedLocation.lng, clickedLocation.lat]}
-                        anchor={{ x: 0.5, y: 1 }}
-                    >
-                        <View
-                            style={{
-                                width: 28,
-                                height: 28,
-                                alignItems: 'center',
-                                justifyContent: 'flex-end',
-                            }}
-                        >
-                            <Image
-                                source={RED_PIN_IMAGE}
-                                style={{
-                                    width: 28,
-                                    height: 28,
-                                }}
-                                resizeMode="contain"
-                            />
-                        </View>
-                    </MapLibreGL.PointAnnotation>
-                )}
+                            const walkingPathGeoJSON = {
+                                type: 'Feature' as const,
+                                properties: {},
+                                geometry: {
+                                    type: 'LineString' as const,
+                                    coordinates: [lastRoutePoint, destinationPoint]
+                                }
+                            };
 
-                {selectedDestination && (
-                    <MapLibreGL.PointAnnotation
-                        key={`destination-${selectedDestination.latitude}-${selectedDestination.longitude}-${renderKey}`}
-                        id="destination-marker"
-                        coordinate={[selectedDestination.longitude, selectedDestination.latitude]}
-                        anchor={{ x: 0.5, y: 1 }}
-                    >
-                        <View
-                            style={{
-                                width: 32,
-                                height: 32,
-                                alignItems: 'center',
-                                justifyContent: 'flex-end',
-                            }}
-                        >
-                            {imagesLoaded ? (
-                                <Image
-                                    source={RED_PIN_IMAGE}
-                                    style={{
-                                        width: 32,
-                                        height: 32,
-                                    }}
-                                    resizeMode="contain"
-                                />
-                            ) : (
-                                <Ionicons name="location" size={32} color="#EF4444" />
-                            )}
-                        </View>
-                    </MapLibreGL.PointAnnotation>
-                )}
-
-                {explorePlaces && imagesLoaded && explorePlaces.map((place, index) => {
-                    const imageSource = EXPLORE_IMAGES[exploreCategory as keyof typeof EXPLORE_IMAGES];
-
-                    return (
-                        <MapLibreGL.PointAnnotation
-                            key={`explore-${exploreCategory}-${index}-${renderKey}`}
-                            id={`explore-place-${index}`}
-                            coordinate={[place.longitude, place.latitude]}
-                            onSelected={() => onExplorePlacePress?.(place)}
-                        >
-                            <View style={{
-                                width: 40,
-                                height: 40,
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}>
-                                {imageSource ? (
-                                    <Image
-                                        source={imageSource}
+                            return (
+                                <MapLibreGL.ShapeSource
+                                    key={`walking-path-${Date.now()}`}
+                                    id="walking-path-source"
+                                    shape={walkingPathGeoJSON}
+                                >
+                                    <MapLibreGL.LineLayer
+                                        id="walking-path-layer"
                                         style={{
-                                            width: 36,
-                                            height: 36,
+                                            lineColor: isNavigating ? '#888888' : '#666666',
+                                            lineWidth: isNavigating ? 5 : 4,
+                                            lineOpacity: isNavigating ? 0.8 : 0.7,
+                                            lineDasharray: [0.5, 2],
+                                            lineCap: 'round',
                                         }}
-                                        resizeMode="contain"
                                     />
-                                ) : (
-                                    <Ionicons name="location" size={28} color={colors.primary.main} />
-                                )}
-                            </View>
-                        </MapLibreGL.PointAnnotation>
-                    );
-                })}
+                                </MapLibreGL.ShapeSource>
+                            );
+                        })()}
 
-                {taxiStations && imagesLoaded && taxiStations.map((station) => {
-
-                    const getStationStyle = () => {
-                        switch (station.type) {
-                            case 'start':
-                                return {
-                                    color: colors.primary.main,
-                                    size: 50
-                                };
-                            case 'end':
-                                return {
-                                    color: colors.primary.main,
-                                    size: 50
-                                };
-                            case 'intermediate':
-                                return {
-                                    color: colors.primary.main,
-                                    size: 46
-                                };
-                        }
-                    };
-
-                    const style = getStationStyle();
-
-                    return (
-                        <React.Fragment key={`taxi-station-fragment-${station.id}`}>
+                        {isNavigating && userLocation && imagesLoaded && (
                             <MapLibreGL.PointAnnotation
-                                key={`taxi-station-${station.type}-${station.id}-${renderKey}`}
-                                id={`taxi-station-${station.type}-${station.id}`}
-                                coordinate={[station.lng, station.lat]}
+                                key={`nav-marker-${renderKey}`}
+                                id="user-location-marker-nav"
+                                coordinate={[userLocation.lng, userLocation.lat]}
                             >
                                 <View style={{
-                                    width: style.size,
-                                    height: style.size,
+                                    width: 60,
+                                    height: 60,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}>
+                                    <View style={{
+                                        transform: [{ rotate: `${userHeading || 0}deg` }],
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}>
+                                        <Image
+                                            source={MAPPIN_IMAGE}
+                                            style={{
+                                                width: 50,
+                                                height: 50,
+                                            }}
+                                            resizeMode="contain"
+                                        />
+                                    </View>
+                                </View>
+                            </MapLibreGL.PointAnnotation>
+                        )}
+
+                        {!isNavigating && showUserLocationMarker && userLocation && imagesLoaded && (
+                            <MapLibreGL.PointAnnotation
+                                key={`user-location-${renderKey}`}
+                                id="user-location-marker-static"
+                                coordinate={[userLocation.lng, userLocation.lat]}
+                            >
+                                <View style={{
+                                    width: 50,
+                                    height: 50,
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                 }}>
                                     <Image
-                                        source={MINIBUS_SELECTED_IMAGE}
+                                        source={PIN_NORMAL_IMAGE}
                                         style={{
-                                            width: style.size,
-                                            height: style.size,
+                                            width: 40,
+                                            height: 40,
                                         }}
                                         resizeMode="contain"
                                     />
                                 </View>
                             </MapLibreGL.PointAnnotation>
+                        )}
+
+                        {incidents && imagesLoaded && incidents.map((incident) => {
+                            const imageSource = INCIDENT_IMAGES[incident.type.name as keyof typeof INCIDENT_IMAGES];
+
+                            return (
+                                <MapLibreGL.PointAnnotation
+                                    key={`incident-${incident.id}-${renderKey}`}
+                                    id={`incident-${incident.id}`}
+                                    coordinate={[incident.lng, incident.lat]}
+                                    onSelected={() => {
+                                        showToast.info('Incident', incident.type.label || incident.type.name);
+                                    }}
+                                >
+                                    <View style={{
+                                        width: 40,
+                                        height: 40,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}>
+                                        {imageSource ? (
+                                            <Image
+                                                source={imageSource}
+                                                style={{
+                                                    width: 36,
+                                                    height: 36,
+                                                }}
+                                                resizeMode="contain"
+                                            />
+                                        ) : (
+                                            <Ionicons name="alert-circle" size={32} color="#F97316" />
+                                        )}
+                                    </View>
+                                </MapLibreGL.PointAnnotation>
+                            );
+                        })}
+
+                        {rules && imagesLoaded && mapStyleState && !isNavigating && rules.map((rule, index) => {
+                            return (
+                                <MapLibreGL.PointAnnotation
+                                    key={`rule-${rule.id}-${renderKey}`}
+                                    id={`rule-${rule.id}`}
+                                    coordinate={[rule.lng, rule.lat]}
+                                >
+                                    <View style={{
+                                        width: 40,
+                                        height: 40,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}>
+                                        {rule.type.img ? (
+                                            <Image
+                                                source={{ uri: rule.type.img }}
+                                                style={{
+                                                    width: 36,
+                                                    height: 36,
+                                                }}
+                                                resizeMode="contain"
+                                            />
+                                        ) : (
+                                            <Ionicons name="warning" size={32} color="#EF4444" />
+                                        )}
+                                    </View>
+                                </MapLibreGL.PointAnnotation>
+                            );
+                        })}
+
+                        {selectedLocation && imagesLoaded && (
                             <MapLibreGL.PointAnnotation
-                                key={`taxi-station-label-${station.id}-${renderKey}`}
-                                id={`taxi-station-label-${station.id}`}
-                                coordinate={[station.lng, station.lat]}
-                                anchor={{ x: 0.5, y: -0.8 }}
+                                key={`selected-location-${renderKey}`}
+                                id="selected-location-marker"
+                                coordinate={[selectedLocation.lng, selectedLocation.lat]}
                             >
                                 <View style={{
-                                    backgroundColor: '#FFFFFF',
-                                    paddingHorizontal: 10,
-                                    paddingVertical: 5,
-                                    borderRadius: 10,
-                                    borderWidth: 2,
-                                    borderColor: style.color,
-                                    maxWidth: 120,
+                                    width: 40,
+                                    height: 40,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
                                 }}>
-                                    <Text style={{
-                                        fontSize: 12,
-                                        fontWeight: 'bold',
-                                        color: '#1F2937',
-                                        textAlign: 'center',
-                                    }} numberOfLines={2}>
-                                        {station.name}
-                                    </Text>
+                                    <View style={{
+                                        position: 'absolute',
+                                        width: 40,
+                                        height: 40,
+                                        borderRadius: 20,
+                                        backgroundColor: '#EF4444',
+                                        opacity: 0.3,
+                                    }} />
+                                    <View style={{
+                                        width: 20,
+                                        height: 20,
+                                        borderRadius: 10,
+                                        backgroundColor: '#EF4444',
+                                        borderWidth: 3,
+                                        borderColor: '#FFFFFF',
+                                    }} />
                                 </View>
                             </MapLibreGL.PointAnnotation>
-                        </React.Fragment>
-                    );
-                })}
-            </MapLibreGL.MapView>
-        </View>
-    </View >
-);
+                        )}
+
+                        {clickedLocation && imagesLoaded && (
+                            <MapLibreGL.PointAnnotation
+                                key={`clicked-location-${renderKey}`}
+                                id="clicked-location-marker"
+                                coordinate={[clickedLocation.lng, clickedLocation.lat]}
+                                anchor={{ x: 0.5, y: 1 }}
+                            >
+                                <View
+                                    style={{
+                                        width: 28,
+                                        height: 28,
+                                        alignItems: 'center',
+                                        justifyContent: 'flex-end',
+                                    }}
+                                >
+                                    <Image
+                                        source={RED_PIN_IMAGE}
+                                        style={{
+                                            width: 28,
+                                            height: 28,
+                                        }}
+                                        resizeMode="contain"
+                                    />
+                                </View>
+                            </MapLibreGL.PointAnnotation>
+                        )}
+
+                        {selectedDestination && (
+                            <MapLibreGL.PointAnnotation
+                                key={`destination-${selectedDestination.latitude}-${selectedDestination.longitude}-${renderKey}`}
+                                id="destination-marker"
+                                coordinate={[selectedDestination.longitude, selectedDestination.latitude]}
+                                anchor={{ x: 0.5, y: 1 }}
+                            >
+                                <View
+                                    style={{
+                                        width: 32,
+                                        height: 32,
+                                        alignItems: 'center',
+                                        justifyContent: 'flex-end',
+                                    }}
+                                >
+                                    {imagesLoaded ? (
+                                        <Image
+                                            source={RED_PIN_IMAGE}
+                                            style={{
+                                                width: 32,
+                                                height: 32,
+                                            }}
+                                            resizeMode="contain"
+                                        />
+                                    ) : (
+                                        <Ionicons name="location" size={32} color="#EF4444" />
+                                    )}
+                                </View>
+                            </MapLibreGL.PointAnnotation>
+                        )}
+
+                        {explorePlaces && imagesLoaded && explorePlaces.map((place, index) => {
+                            const imageSource = EXPLORE_IMAGES[exploreCategory as keyof typeof EXPLORE_IMAGES];
+
+                            return (
+                                <MapLibreGL.PointAnnotation
+                                    key={`explore-${exploreCategory}-${index}-${renderKey}`}
+                                    id={`explore-place-${index}`}
+                                    coordinate={[place.longitude, place.latitude]}
+                                    onSelected={() => onExplorePlacePress?.(place)}
+                                >
+                                    <View style={{
+                                        width: 40,
+                                        height: 40,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}>
+                                        {imageSource ? (
+                                            <Image
+                                                source={imageSource}
+                                                style={{
+                                                    width: 36,
+                                                    height: 36,
+                                                }}
+                                                resizeMode="contain"
+                                            />
+                                        ) : (
+                                            <Ionicons name="location" size={28} color={colors.primary.main} />
+                                        )}
+                                    </View>
+                                </MapLibreGL.PointAnnotation>
+                            );
+                        })}
+
+                        {taxiStations && imagesLoaded && taxiStations.map((station) => {
+
+                            const getStationStyle = () => {
+                                switch (station.type) {
+                                    case 'start':
+                                        return {
+                                            color: colors.primary.main,
+                                            size: 50
+                                        };
+                                    case 'end':
+                                        return {
+                                            color: colors.primary.main,
+                                            size: 50
+                                        };
+                                    case 'intermediate':
+                                        return {
+                                            color: colors.primary.main,
+                                            size: 46
+                                        };
+                                }
+                            };
+
+                            const style = getStationStyle();
+
+                            return (
+                                <React.Fragment key={`taxi-station-fragment-${station.id}`}>
+                                    <MapLibreGL.PointAnnotation
+                                        key={`taxi-station-${station.type}-${station.id}-${renderKey}`}
+                                        id={`taxi-station-${station.type}-${station.id}`}
+                                        coordinate={[station.lng, station.lat]}
+                                    >
+                                        <View style={{
+                                            width: style.size,
+                                            height: style.size,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                        }}>
+                                            <Image
+                                                source={MINIBUS_SELECTED_IMAGE}
+                                                style={{
+                                                    width: style.size,
+                                                    height: style.size,
+                                                }}
+                                                resizeMode="contain"
+                                            />
+                                        </View>
+                                    </MapLibreGL.PointAnnotation>
+                                    <MapLibreGL.PointAnnotation
+                                        key={`taxi-station-label-${station.id}-${renderKey}`}
+                                        id={`taxi-station-label-${station.id}`}
+                                        coordinate={[station.lng, station.lat]}
+                                        anchor={{ x: 0.5, y: -0.8 }}
+                                    >
+                                        <View style={{
+                                            backgroundColor: '#FFFFFF',
+                                            paddingHorizontal: 10,
+                                            paddingVertical: 5,
+                                            borderRadius: 10,
+                                            borderWidth: 2,
+                                            borderColor: style.color,
+                                            maxWidth: 120,
+                                        }}>
+                                            <Text style={{
+                                                fontSize: 12,
+                                                fontWeight: 'bold',
+                                                color: '#1F2937',
+                                                textAlign: 'center',
+                                            }} numberOfLines={2}>
+                                                {station.name}
+                                            </Text>
+                                        </View>
+                                    </MapLibreGL.PointAnnotation>
+                                </React.Fragment>
+                            );
+                        })}
+                    </MapLibreGL.MapView>
+                </View>
+            </View >
+        );
     }
 );
 

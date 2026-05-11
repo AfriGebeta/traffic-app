@@ -11,6 +11,7 @@ import { placeService } from '../../places/services/place.service';
 import { showToast } from '../../../shared/utils/toast';
 import type { SavedPlaceType, SavedPlace } from '../../places/types/place.types';
 import { taxiService } from '../../taxi/services/taxi.service';
+import { navigationService } from '../services/navigation.service';
 import type { TaxiNavigationResponse } from '../../taxi/types/taxi.types';
 
 interface RoutePreviewProps {
@@ -25,7 +26,8 @@ interface RoutePreviewProps {
     destination?: GeocodingPlace | null;
     userLocation?: { lat: number; lng: number } | null;
     onTaxiRouteChange?: (taxiRoute: TaxiNavigationResponse | null) => void;
-    initialMode?: 'driving' | 'taxi';
+    initialMode?: 'driving' | 'taxi' | 'walking';
+    onModeChange?: (mode: 'driving' | 'taxi' | 'walking') => void;
 }
 
 const formatDistance = (meters: number): string => {
@@ -68,16 +70,19 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
     userLocation,
     onTaxiRouteChange,
     initialMode = 'driving',
+    onModeChange,
 }) => {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const [showSaveModal, setShowSaveModal] = useState(false);
     const [savedPlace, setSavedPlace] = useState<SavedPlace | null>(null);
 
-    const [transportMode, setTransportMode] = useState<'driving' | 'taxi'>(initialMode);
+    const [transportMode, setTransportMode] = useState<'driving' | 'taxi' | 'walking'>(initialMode);
     const [taxiRoute, setTaxiRoute] = useState<TaxiNavigationResponse | null>(null);
     const [loadingTaxiRoute, setLoadingTaxiRoute] = useState(false);
     const [taxiRouteError, setTaxiRouteError] = useState<string | null>(null);
+    const [walkingRoute, setWalkingRoute] = useState<{ distance: number; duration: number } | null>(null);
+    const [loadingWalkingRoute, setLoadingWalkingRoute] = useState(false);
 
     useEffect(() => {
         checkIfSaved();
@@ -86,6 +91,8 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
     useEffect(() => {
         if (transportMode === 'taxi' && destination && userLocation && !taxiRoute) {
             fetchTaxiRoute();
+        } else if (transportMode === 'walking' && destination && userLocation && !walkingRoute) {
+            fetchWalkingRoute();
         }
     }, [transportMode, destination, userLocation]);
 
@@ -121,9 +128,46 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
         }
     };
 
-    const handleModeChange = (mode: 'driving' | 'taxi') => {
+    const fetchWalkingRoute = async () => {
+        if (!destination || !userLocation) return;
+
+        setLoadingWalkingRoute(true);
+        try {
+            const result = await navigationService.getNavigation({
+                origin: [userLocation.lat, userLocation.lng],
+                destination: [destination.latitude, destination.longitude],
+                costing: 'pedestrian',
+            });
+
+            if (result?.data?.trip?.legs?.[0]) {
+                const leg = result.data.trip.legs[0];
+                setWalkingRoute({
+                    distance: leg.summary.length * 1000,
+                    duration: leg.summary.time,
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching walking route:', error);
+        } finally {
+            setLoadingWalkingRoute(false);
+        }
+    };
+
+    const handleModeChange = (mode: 'driving' | 'taxi' | 'walking') => {
         setTransportMode(mode);
+
+        if (onModeChange) {
+            onModeChange(mode);
+        }
+
         if (mode === 'driving') {
+            setTaxiRoute(null);
+            setTaxiRouteError(null);
+            setWalkingRoute(null);
+            onTaxiRouteChange?.(null);
+        } else if (mode === 'taxi') {
+            setWalkingRoute(null);
+        } else if (mode === 'walking') {
             setTaxiRoute(null);
             setTaxiRouteError(null);
             onTaxiRouteChange?.(null);
@@ -182,11 +226,20 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
 
     const displayDistance = transportMode === 'taxi' && taxiRoute
         ? ((taxiRoute.originWalkRoute?.trip.summary.length || 0) + (taxiRoute.destinationWalkRoute?.trip.summary.length || 0)) * 1000
-        : distance;
+        : transportMode === 'walking' && walkingRoute
+            ? walkingRoute.distance
+            : distance;
 
     const displayDuration = transportMode === 'taxi' && taxiRoute
-        ? (taxiRoute.originWalkRoute?.trip.summary.time || 0) + (taxiRoute.destinationWalkRoute?.trip.summary.time || 0)
-        : duration;
+        ? (() => {
+            if (taxiRoute.segments && taxiRoute.segments.length > 0) {
+                return taxiRoute.segments.reduce((total, segment) => total + segment.time, 0);
+            }
+            return (taxiRoute.originWalkRoute?.trip.summary.time || 0) + (taxiRoute.destinationWalkRoute?.trip.summary.time || 0);
+        })()
+        : transportMode === 'walking' && walkingRoute
+            ? walkingRoute.duration
+            : duration;
 
     return (
         <View
@@ -226,12 +279,34 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                     resizeMode="contain"
                                 />
                                 <Text
-                                    className="ml-2 font-semibold"
+                                    className="ml-2 font-semibold text-xs"
                                     style={{
                                         color: transportMode === 'driving' ? colors.primary.main : '#6B7280',
                                     }}
                                 >
                                     {t('driving')}
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => handleModeChange('walking')}
+                                className="flex-1 flex-row items-center justify-center py-2 rounded-lg"
+                                style={{
+                                    backgroundColor: transportMode === 'walking' ? 'white' : 'transparent',
+                                }}
+                                activeOpacity={0.7}
+                            >
+                                <Ionicons
+                                    name="walk"
+                                    size={20}
+                                    color={transportMode === 'walking' ? colors.primary.main : '#6B7280'}
+                                />
+                                <Text
+                                    className="ml-2 font-semibold text-xs"
+                                    style={{
+                                        color: transportMode === 'walking' ? colors.primary.main : '#6B7280',
+                                    }}
+                                >
+                                    {t('walking')}
                                 </Text>
                             </TouchableOpacity>
                             <TouchableOpacity
@@ -251,7 +326,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                     resizeMode="contain"
                                 />
                                 <Text
-                                    className="ml-2 font-semibold"
+                                    className="ml-2 font-semibold text-xs"
                                     style={{
                                         color: transportMode === 'taxi' ? colors.primary.main : '#6B7280',
                                     }}

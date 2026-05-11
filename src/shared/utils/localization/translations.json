@@ -1740,6 +1740,11 @@
         "AM": "በመኪና"
     },
     {
+        "key": "walking",
+        "EN_US": "Walking",
+        "AM": "በእግር"
+    },
+    {
         "key": "taxi-mode",
         "EN_US": "Taxi",
         "AM": "ታክሲ"

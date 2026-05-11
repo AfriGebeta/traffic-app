@@ -117,6 +117,8 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         handleClearRoute,
         simulateOffRoute,
         recalculateRoute,
+        currentCosting,
+        setCurrentCosting,
     } = useNavigation(mapRef, userLocation, setUserLocation, stopBackgroundTracking, startBackgroundTracking);
 
     const [nearbyRules, setNearbyRules] = useState<any[]>([]);
@@ -726,7 +728,8 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 routeStyle={{
                     color: navigationMode ? '#3B82F6' : colors.primary.main,
                     width: 5,
-                    opacity: 0.8
+                    opacity: 0.8,
+                    isDotted: currentCosting === 'pedestrian',
                 }}
                 isNavigating={navigationMode && !isNavigationMinimized}
                 userLocation={userLocation}
@@ -875,6 +878,16 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     destination={selectedDestination}
                     userLocation={userLocation}
                     onTaxiRouteChange={(taxiRoute) => setTaxiRouteData(taxiRoute)}
+                    onModeChange={(mode) => {
+                        if (mode === 'walking') {
+                            setCurrentCosting('pedestrian');
+                        } else if (mode === 'driving') {
+                            setCurrentCosting('auto');
+                            if (selectedDestination && userLocation) {
+                                handleNavigate(setUserLocation, selectedDestination);
+                            }
+                        }
+                    }}
                     initialMode={isFromTaxiSearch ? 'taxi' : 'driving'}
                 />
             )}
