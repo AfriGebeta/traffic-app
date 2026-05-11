@@ -253,9 +253,9 @@ export const useLocationTracking = ({
                         if (remainingCoords.length > 0) {
                             const routeWithSnappedStart = [[displayLng, displayLat] as [number, number], ...remainingCoords];
 
-                            // For taxi navigation, update segmented routes
+                            
                             if (taxiSegments && setSegmentedRoutes) {
-                                // Find which segment we're in based on coordinate count
+                               
                                 let coordCount = 0;
                                 let currentSegIdx = 0;
                                 let positionInSegment = closestIndex;
@@ -270,14 +270,15 @@ export const useLocationTracking = ({
                                     coordCount += decoded.length;
                                 }
 
-                                // Build segmented routes with current segment trimmed
+                                
                                 const updatedSegments = taxiSegments.map((seg, idx) => {
                                     const decoded = decodePolyline(seg.polyline, 6);
                                     let coordinates = decoded.map(([lat, lng]: [number, number]) => [lng, lat] as [number, number]);
 
-                                    // Trim current segment
+                                    
                                     if (idx === currentSegIdx) {
                                         const remaining = coordinates.slice(positionInSegment + 1);
+                                       
                                         coordinates = [[displayLng, displayLat], ...remaining];
                                     }
 
@@ -295,9 +296,10 @@ export const useLocationTracking = ({
                                     };
                                 });
 
+                              
                                 setSegmentedRoutes(updatedSegments);
                             } else {
-                                // Normal navigation - update single routeGeoJSON
+                                
                                 const remainingGeoJSON = {
                                     type: 'Feature',
                                     properties: {},
@@ -337,6 +339,7 @@ export const useLocationTracking = ({
                         }
                     }
 
+                   
                     if (setUserLocation) {
                         setUserLocation({ lat: displayLat, lng: displayLng });
                     }

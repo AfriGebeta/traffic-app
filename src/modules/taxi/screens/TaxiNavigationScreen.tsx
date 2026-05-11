@@ -49,12 +49,29 @@ export default function TaxiNavigationScreen() {
     const [remainingDistance, setRemainingDistance] = useState(0);
     const [remainingTime, setRemainingTime] = useState(0);
 
-    const { userLocation, setUserLocation } = useUserLocation();
+    const { userLocation, setUserLocation, stopLocationTracking: stopBackgroundTracking } = useUserLocation();
 
     const [initialCenter] = useState<[number, number]>([routeData.origin.lng, routeData.origin.lat]);
     const [initialZoom] = useState(15);
 
     const activeRoute = currentRoute || routeData;
+
+    const taxiStations = activeRoute.segments ? [
+        {
+            id: activeRoute.startNode?.id || 1,
+            name: activeRoute.startNode?.name || 'Start',
+            lat: activeRoute.startNode?.lat || 0,
+            lng: activeRoute.startNode?.lng || 0,
+            type: 'start' as const
+        },
+        {
+            id: activeRoute.endNode?.id || 2,
+            name: activeRoute.endNode?.name || 'End',
+            lat: activeRoute.endNode?.lat || 0,
+            lng: activeRoute.endNode?.lng || 0,
+            type: 'end' as const
+        }
+    ] : [];
 
     const allRouteCoordinates = useRef<[number, number][]>([]);
     const totalDistance = useRef<number>(0);
@@ -207,6 +224,8 @@ export default function TaxiNavigationScreen() {
     useEffect(() => {
         console.log('[Taxi Nav] Starting navigation, simulateMovement:', simulateMovement);
 
+        stopBackgroundTracking();
+
         if (simulateMovement) {
             startSimulation();
         } else {
@@ -269,13 +288,8 @@ export default function TaxiNavigationScreen() {
                     userHeading={userHeading}
                     showUserLocationMarker={true}
                     segmentedRoutes={segmentedRoutes}
+                    taxiStations={taxiStations.length > 0 ? taxiStations : undefined}
                 />
-
-                {!mapReady && (
-                    <View className="absolute inset-0 items-center justify-center bg-gray-100">
-                        <ActivityIndicator size="large" color={colors.primary.main} />
-                    </View>
-                )}
 
                 {(isOffRoute || isRecalculating) && (
                     <View

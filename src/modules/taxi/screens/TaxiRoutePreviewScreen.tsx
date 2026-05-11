@@ -61,9 +61,27 @@ export default function TaxiRoutePreviewScreen() {
         };
     }) || [];
 
+    const taxiStations = segments ? [
+        {
+            id: startNode.id || 1,
+            name: startNode.name,
+            lat: startNode.lat,
+            lng: startNode.lng,
+            type: 'start' as const
+        },
+        {
+            id: endNode.id || 2,
+            name: endNode.name,
+            lat: endNode.lat,
+            lng: endNode.lng,
+            type: 'end' as const
+        }
+    ] : [];
+
     console.log('[TaxiRoutePreview] Taxi segments prepared:', {
         taxiSegmentsCount: taxiSegments.length,
-        taxiSegments: taxiSegments.map(s => ({ from: s.from, to: s.to, coordsCount: s.coordinates.length }))
+        taxiSegments: taxiSegments.map(s => ({ from: s.from, to: s.to, coordsCount: s.coordinates.length })),
+        taxiStations: taxiStations.map(s => ({ name: s.name, type: s.type }))
     });
 
     useEffect(() => {
@@ -149,6 +167,7 @@ export default function TaxiRoutePreviewScreen() {
                     onMapLoaded={() => setMapReady(true)}
                     taxiWalkRoutes={walkRoutes.length > 0 ? walkRoutes : undefined}
                     taxiRouteSegments={taxiSegments.length > 0 ? taxiSegments : undefined}
+                    taxiStations={taxiStations.length > 0 ? taxiStations : undefined}
                 />
 
                 {!mapReady && (
