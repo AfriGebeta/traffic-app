@@ -175,6 +175,12 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         // clear search result
         setSearchResults([]);
         setShowSearchContainer(false);
+
+        // clearing old route
+        if (showRoutePreview || routeGeoJSON) {
+            handleClearRoute();
+        }
+
         setSelectedDestination(place);
         setSearchQuery('');
 

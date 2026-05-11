@@ -383,7 +383,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
                 if (hasChanged) {
 
-                    const offsetDistance = 0.0007; 
+                    const offsetDistance = 0.0007;
                     const headingRad = ((userHeading || 0) * Math.PI) / 180;
 
                     const latOffset = offsetDistance * Math.cos(headingRad);
