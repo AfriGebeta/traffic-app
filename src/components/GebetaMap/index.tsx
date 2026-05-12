@@ -5,10 +5,12 @@ import { GebetaMapRef, GebetaMapProps } from '@gebeta/tiles-react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../shared/theme/colors';
 import { showToast } from '../../shared/utils/toast';
+import { decodePolyline } from '../../shared/utils/polyline';
 
 const MAPPIN_IMAGE = require('../../../assets/images/Mappin.png');
 const PIN_NORMAL_IMAGE = require('../../../assets/images/pin-normal.png');
 const RED_PIN_IMAGE = require('../../../assets/images/red-pin.png');
+const MINIBUS_SELECTED_IMAGE = require('../../../assets/images/minibus-selected.png');
 
 const EXPLORE_IMAGES = {
     restaurants: require('../../../assets/images/restaurant.png'),
@@ -39,6 +41,7 @@ interface ExtendedGebetaMapProps extends GebetaMapProps {
         color?: string;
         width?: number;
         opacity?: number;
+        isDotted?: boolean;
     };
     isNavigating?: boolean;
     userLocation?: { lat: number; lng: number } | null;
@@ -76,11 +79,35 @@ interface ExtendedGebetaMapProps extends GebetaMapProps {
     }>;
     exploreCategory?: string | null;
     onExplorePlacePress?: (place: any) => void;
+    taxiStations?: Array<{
+        id: number;
+        name: string;
+        lat: number;
+        lng: number;
+        type: 'start' | 'end' | 'intermediate';
+    }>;
+    taxiWalkRoutes?: Array<{
+        type: 'origin' | 'transfer' | 'destination';
+        polyline: string;
+    }>;
+    taxiRouteSegments?: Array<{
+        coordinates: Array<[number, number]>;
+        cost: number;
+        from: string;
+        to: string;
+    }>;
+    isTaxiNavigation?: boolean;
+    currentTaxiSegmentIndex?: number;
+    segmentedRoutes?: Array<{
+        geoJSON: any;
+        isWalking: boolean;
+        segmentIndex: number;
+    }>;
 }
 
 
 const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
-    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, explorePlaces, exploreCategory, onExplorePlacePress }, ref) => {
+    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes }, ref) => {
         const [mapStyleState, setMapStyleState] = useState<Record<string, unknown> | null>(null);
         const [loading, setLoading] = useState(true);
         const cameraRef = useRef<any>(null);
@@ -101,6 +128,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         Image.prefetch(Image.resolveAssetSource(MAPPIN_IMAGE).uri),
                         Image.prefetch(Image.resolveAssetSource(PIN_NORMAL_IMAGE).uri),
                         Image.prefetch(Image.resolveAssetSource(RED_PIN_IMAGE).uri),
+                        Image.prefetch(Image.resolveAssetSource(MINIBUS_SELECTED_IMAGE).uri),
                         ...Object.values(EXPLORE_IMAGES).map(img =>
                             Image.prefetch(Image.resolveAssetSource(img).uri)
                         ),
@@ -172,6 +200,14 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 return () => clearTimeout(timer);
             }
         }, [selectedDestination]);
+
+        useEffect(() => {
+            if (imagesLoaded && taxiStations && taxiStations.length > 0) {
+                setRenderKey(prev => prev + 1);
+                setTimeout(() => setRenderKey(prev => prev + 1), 100);
+                setTimeout(() => setRenderKey(prev => prev + 1), 200);
+            }
+        }, [taxiStations, imagesLoaded]);
 
 
         useEffect(() => {
@@ -347,10 +383,9 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
                 if (hasChanged) {
 
-                    const offsetDistance = 0.0007; //distance in deg.
+                    const offsetDistance = 0.0007;
                     const headingRad = ((userHeading || 0) * Math.PI) / 180;
 
-                    // down the screen
                     const latOffset = offsetDistance * Math.cos(headingRad);
                     const lngOffset = offsetDistance * Math.sin(headingRad);
 
@@ -410,7 +445,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         logoEnabled={false}
                         compassEnabled={!isNavigating}
                         compassViewPosition={1}
-                        compassViewMargins={{ x: 16, y: 120 }}
+                        compassViewMargins={{ x: 16, y: 130 }}
                         onPress={(e) => {
                             const coords = (e.geometry as any)?.coordinates;
                             if (coords && onMapClick) {
@@ -447,7 +482,72 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             }}
                         />
 
-                        {routeGeoJSON && (
+
+                        {segmentedRoutes && segmentedRoutes.length > 0 && (() => {
+                            console.log('[GebetaMap] Rendering segmented routes:', {
+                                count: segmentedRoutes.length,
+                                segments: segmentedRoutes.map(r => ({
+                                    index: r.segmentIndex,
+                                    isWalking: r.isWalking,
+                                    coordsCount: r.geoJSON.geometry.coordinates.length
+                                })),
+                                currentSegmentIndex: currentTaxiSegmentIndex
+                            });
+                            return segmentedRoutes.map((route, index) => {
+                                const isCurrentSegment = isTaxiNavigation && currentTaxiSegmentIndex === route.segmentIndex;
+                                const isPastSegment = isTaxiNavigation && currentTaxiSegmentIndex !== undefined && route.segmentIndex < currentTaxiSegmentIndex;
+
+
+                                if (isPastSegment) {
+                                    console.log(`[GebetaMap] Skipping past segment ${route.segmentIndex}`);
+                                    return null;
+                                }
+
+                                console.log(`[GebetaMap] Segment ${route.segmentIndex}:`, {
+                                    isWalking: route.isWalking,
+                                    isCurrentSegment,
+                                    isPastSegment,
+                                    color: route.isWalking ? '#EF4444' : '#3B82F6',
+                                    style: route.isWalking ? 'dotted' : 'solid',
+                                    firstCoord: route.geoJSON.geometry.coordinates[0],
+                                    markerPos: route.geoJSON.properties?.markerLat ?
+                                        [route.geoJSON.properties.markerLng, route.geoJSON.properties.markerLat] : 'none'
+                                });
+
+                                const lineStyle: any = {
+                                    lineColor: route.isWalking ? '#EF4444' : '#3B82F6',
+                                    lineWidth: route.isWalking ? 5 : 7,
+                                    lineOpacity: isCurrentSegment ? 1 : 0.7,
+                                    lineCap: 'round',
+                                    lineJoin: 'round',
+                                };
+
+
+                                if (route.isWalking) {
+                                    lineStyle.lineDasharray = [2, 2];
+                                }
+
+
+                                const markerKey = route.geoJSON.properties?.markerLat && route.geoJSON.properties?.markerLng
+                                    ? `${route.geoJSON.properties.markerLat.toFixed(6)}-${route.geoJSON.properties.markerLng.toFixed(6)}`
+                                    : renderKey;
+
+                                return (
+                                    <MapLibreGL.ShapeSource
+                                        key={`segment-${route.segmentIndex}-${markerKey}`}
+                                        id={`segment-${route.segmentIndex}-source`}
+                                        shape={route.geoJSON}
+                                    >
+                                        <MapLibreGL.LineLayer
+                                            id={`segment-${route.segmentIndex}-layer`}
+                                            style={lineStyle}
+                                        />
+                                    </MapLibreGL.ShapeSource>
+                                );
+                            });
+                        })()}
+
+                        {routeGeoJSON && !segmentedRoutes && (
                             <MapLibreGL.ShapeSource
                                 key={`route-${routeGeoJSON.properties?.timestamp || Date.now()}-${JSON.stringify(routeGeoJSON.geometry.coordinates[0])}`}
                                 id="route-preview-source"
@@ -457,14 +557,121 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                     id="route-preview-layer"
                                     style={{
                                         lineColor: defaultRouteStyle.color,
-                                        lineWidth: defaultRouteStyle.width,
-                                        lineOpacity: isNavigating ? 0.6 : defaultRouteStyle.opacity,
+                                        lineWidth: routeStyle?.isDotted ? 6 : defaultRouteStyle.width,
+                                        lineOpacity: routeStyle?.isDotted ? 1 : (isNavigating ? 0.6 : defaultRouteStyle.opacity),
                                         lineCap: 'round',
                                         lineJoin: 'round',
+                                        ...(routeStyle?.isDotted && { lineDasharray: [2, 2] }),
                                     }}
                                 />
                             </MapLibreGL.ShapeSource>
                         )}
+
+                        {taxiRouteSegments && taxiRouteSegments.map((segment, index) => {
+                            const taxiRouteGeoJSON = {
+                                type: 'Feature' as const,
+                                properties: {},
+                                geometry: {
+                                    type: 'LineString' as const,
+                                    coordinates: segment.coordinates
+                                }
+                            };
+                            return (
+                                <MapLibreGL.ShapeSource
+                                    key={`taxi-segment-${index}-${Date.now()}`}
+                                    id={`taxi-segment-${index}-source`}
+                                    shape={taxiRouteGeoJSON}
+                                >
+                                    <MapLibreGL.LineLayer
+                                        id={`taxi-segment-${index}-layer`}
+                                        style={{
+                                            lineColor: colors.primary.main,
+                                            lineWidth: 6,
+                                            lineOpacity: 0.8,
+                                            lineCap: 'round',
+                                            lineJoin: 'round',
+                                        }}
+                                    />
+                                </MapLibreGL.ShapeSource>
+                            );
+                        })}
+
+                        {taxiWalkRoutes && taxiWalkRoutes.map((route, index) => {
+                            try {
+                                const coords = decodePolyline(route.polyline, 6);
+                                console.log(`[GebetaMap] Rendering walk route ${route.type}:`, {
+                                    index,
+                                    polylineLength: route.polyline.length,
+                                    coordsCount: coords.length,
+                                    firstCoord: coords[0],
+                                    lastCoord: coords[coords.length - 1]
+                                });
+
+                                const mapCoords = coords.map(([lat, lng]) => [lng, lat]);
+
+
+                                const color = isTaxiNavigation ? '#3B82F6' : '#EF4444';
+
+                                const walkGeoJSON = {
+                                    type: 'Feature' as const,
+                                    properties: {},
+                                    geometry: {
+                                        type: 'LineString' as const,
+                                        coordinates: mapCoords
+                                    }
+                                };
+                                return (
+                                    <MapLibreGL.ShapeSource
+                                        key={`taxi-walk-${route.type}-${index}-${Date.now()}`}
+                                        id={`taxi-walk-${route.type}-${index}-source`}
+                                        shape={walkGeoJSON}
+                                    >
+                                        <MapLibreGL.LineLayer
+                                            id={`taxi-walk-${route.type}-${index}-layer`}
+                                            style={{
+                                                lineColor: color,
+                                                lineWidth: isTaxiNavigation ? 4 : 8,
+                                                lineOpacity: 1,
+                                                lineDasharray: [2, 2], //dotted line
+                                                lineCap: 'round',
+                                            }}
+                                        />
+                                    </MapLibreGL.ShapeSource>
+                                );
+                            } catch (error) {
+                                console.error(`[GebetaMap] Error decoding ${route.type} walk route:`, error);
+                                return null;
+                            }
+                        })}
+
+                        {taxiRouteSegments && taxiRouteSegments.map((segment, index) => {
+                            const taxiRouteGeoJSON = {
+                                type: 'Feature' as const,
+                                properties: {},
+                                geometry: {
+                                    type: 'LineString' as const,
+                                    coordinates: segment.coordinates
+                                }
+                            };
+                            return (
+                                <MapLibreGL.ShapeSource
+                                    key={`taxi-segment-${index}-${Date.now()}`}
+                                    id={`taxi-segment-${index}-source`}
+                                    shape={taxiRouteGeoJSON}
+                                >
+                                    <MapLibreGL.LineLayer
+                                        id={`taxi-segment-${index}-layer`}
+                                        style={{
+                                            lineColor: colors.primary.main,
+                                            lineWidth: 6,
+                                            lineOpacity: 0.8,
+                                            lineCap: 'round',
+                                            lineJoin: 'round',
+                                        }}
+                                    />
+                                </MapLibreGL.ShapeSource>
+                            );
+                        })}
 
                         {routeGeoJSON && selectedDestination && (() => {
                             const routeCoords = routeGeoJSON.geometry.coordinates;
@@ -739,6 +946,82 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                         )}
                                     </View>
                                 </MapLibreGL.PointAnnotation>
+                            );
+                        })}
+
+                        {taxiStations && imagesLoaded && taxiStations.map((station) => {
+
+                            const getStationStyle = () => {
+                                switch (station.type) {
+                                    case 'start':
+                                        return {
+                                            color: colors.primary.main,
+                                            size: 50
+                                        };
+                                    case 'end':
+                                        return {
+                                            color: colors.primary.main,
+                                            size: 50
+                                        };
+                                    case 'intermediate':
+                                        return {
+                                            color: colors.primary.main,
+                                            size: 46
+                                        };
+                                }
+                            };
+
+                            const style = getStationStyle();
+
+                            return (
+                                <React.Fragment key={`taxi-station-fragment-${station.id}`}>
+                                    <MapLibreGL.PointAnnotation
+                                        key={`taxi-station-${station.type}-${station.id}-${renderKey}`}
+                                        id={`taxi-station-${station.type}-${station.id}`}
+                                        coordinate={[station.lng, station.lat]}
+                                    >
+                                        <View style={{
+                                            width: style.size,
+                                            height: style.size,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                        }}>
+                                            <Image
+                                                source={MINIBUS_SELECTED_IMAGE}
+                                                style={{
+                                                    width: style.size,
+                                                    height: style.size,
+                                                }}
+                                                resizeMode="contain"
+                                            />
+                                        </View>
+                                    </MapLibreGL.PointAnnotation>
+                                    <MapLibreGL.PointAnnotation
+                                        key={`taxi-station-label-${station.id}-${renderKey}`}
+                                        id={`taxi-station-label-${station.id}`}
+                                        coordinate={[station.lng, station.lat]}
+                                        anchor={{ x: 0.5, y: -0.8 }}
+                                    >
+                                        <View style={{
+                                            backgroundColor: '#FFFFFF',
+                                            paddingHorizontal: 10,
+                                            paddingVertical: 5,
+                                            borderRadius: 10,
+                                            borderWidth: 2,
+                                            borderColor: style.color,
+                                            maxWidth: 120,
+                                        }}>
+                                            <Text style={{
+                                                fontSize: 12,
+                                                fontWeight: 'bold',
+                                                color: '#1F2937',
+                                                textAlign: 'center',
+                                            }} numberOfLines={2}>
+                                                {station.name}
+                                            </Text>
+                                        </View>
+                                    </MapLibreGL.PointAnnotation>
+                                </React.Fragment>
                             );
                         })}
                     </MapLibreGL.MapView>

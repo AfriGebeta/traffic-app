@@ -26,6 +26,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.anonymous.trafficapp",
+      "softwareKeyboardLayoutMode": "resize",
       "permissions": [
         "RECORD_AUDIO"
       ],

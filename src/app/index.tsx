@@ -63,5 +63,9 @@ export default function Index() {
     );
   }
 
-  return <TrafficMap sharedLocation={sharedLocation} />;
+  return <TrafficMap sharedLocation={sharedLocation} taxiDestination={params.taxiDestLat && params.taxiDestLng ? {
+    lat: parseFloat(params.taxiDestLat as string),
+    lng: parseFloat(params.taxiDestLng as string),
+    name: params.taxiDestName as string || 'Destination',
+  } : undefined} showTaxiMode={params.showTaxiMode === 'true'} />;
 }

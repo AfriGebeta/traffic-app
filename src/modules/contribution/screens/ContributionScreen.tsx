@@ -25,6 +25,13 @@ export default function ContributionScreen() {
             image: require('../../../../assets/images/rules.png'),
             route: '/rules/contribute',
         },
+        {
+            id: 'taxi',
+            titleKey: 'contribute-taxi-info',
+            descriptionKey: 'contribute-taxi-info-description',
+            image: require('../../../../assets/images/taxi-station-place.png'),
+            route: '/taxi/build-route',
+        },
     ];
 
     return (

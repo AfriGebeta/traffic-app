@@ -29,7 +29,7 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
 
     useEffect(() => {
         Animated.timing(bottomPosition, {
-            toValue: isRoutePreviewActive ? 380 : 180,
+            toValue: isRoutePreviewActive ? 450 : 180,
             duration: 250,
             useNativeDriver: false,
         }).start();

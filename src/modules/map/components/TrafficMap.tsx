@@ -35,12 +35,16 @@ import { useTranslation } from 'react-i18next';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 import { useRulePreferences } from '../../rules/hooks/useRulePreferences';
 import type { SharedLocation } from '../../../shared/utils/deepLinking';
+import { decodePolyline } from '../../../shared/utils/polyline';
+import type { TaxiNavigationResponse } from '../../taxi/types/taxi.types';
 
 interface TrafficMapProps {
     sharedLocation?: SharedLocation | null;
+    taxiDestination?: { lat: number; lng: number; name: string };
+    showTaxiMode?: boolean;
 }
 
-export default function TrafficMap({ sharedLocation }: TrafficMapProps) {
+export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMode }: TrafficMapProps) {
     const mapRef = useRef<GebetaMapRef>(null);
     const searchMarkerRef = useRef<any>(null);
     const hasZoomedToUserLocation = useRef(false);
@@ -59,6 +63,11 @@ export default function TrafficMap({ sharedLocation }: TrafficMapProps) {
     const [hasUserZoomedOut, setHasUserZoomedOut] = useState(false);
     const [isOnIncidentReportScreen, setIsOnIncidentReportScreen] = useState(false);
     const [isMapLoaded, setIsMapLoaded] = useState(false);
+    const [taxiRouteData, setTaxiRouteData] = useState<any>(null);
+    const [taxiStations, setTaxiStations] = useState<Array<{ id: number; name: string; lat: number; lng: number; type: 'start' | 'end' | 'intermediate' }> | null>(null);
+    const [taxiWalkRoutes, setTaxiWalkRoutes] = useState<Array<{ type: 'origin' | 'transfer' | 'destination'; polyline: string }> | null>(null);
+    const [taxiRouteSegments, setTaxiRouteSegments] = useState<Array<{ coordinates: Array<[number, number]>; cost: number; from: string; to: string }> | null>(null);
+    const [isFromTaxiSearch, setIsFromTaxiSearch] = useState(false);
 
     const { t } = useTranslation();
     const params = useLocalSearchParams();
@@ -108,6 +117,8 @@ export default function TrafficMap({ sharedLocation }: TrafficMapProps) {
         handleClearRoute,
         simulateOffRoute,
         recalculateRoute,
+        currentCosting,
+        setCurrentCosting,
     } = useNavigation(mapRef, userLocation, setUserLocation, stopBackgroundTracking, startBackgroundTracking);
 
     const [nearbyRules, setNearbyRules] = useState<any[]>([]);
@@ -164,10 +175,19 @@ export default function TrafficMap({ sharedLocation }: TrafficMapProps) {
         // clear search result
         setSearchResults([]);
         setShowSearchContainer(false);
+
+        // clearing old route
+        if (showRoutePreview || routeGeoJSON) {
+            handleClearRoute();
+        }
+
         setSelectedDestination(place);
         setSearchQuery('');
 
         setClickedLocation(null);
+
+        //reset taxi search
+        setIsFromTaxiSearch(false);
 
         if (autoNavigate) {
             setTimeout(() => {
@@ -228,6 +248,12 @@ export default function TrafficMap({ sharedLocation }: TrafficMapProps) {
     });
 
     const handleExploreCategory = async (categoryId: string) => {
+        //taxi cateogry-separate
+        if (categoryId === 'taxi') {
+            router.push('/taxi/search');
+            return;
+        }
+
         if (!userLocation) {
             showToast.error(t('location-unavailable'), t('please-wait-for-location'));
             return;
@@ -280,6 +306,8 @@ export default function TrafficMap({ sharedLocation }: TrafficMapProps) {
     };
 
     const handleNavigateToExplorePlace = (place: GeocodingPlace) => {
+
+        setIsFromTaxiSearch(false);
         handleSelectPlace(place);
     };
 
@@ -405,6 +433,277 @@ export default function TrafficMap({ sharedLocation }: TrafficMapProps) {
     }, [sharedLocation, isMapLoaded]);
 
     useEffect(() => {
+        if (taxiDestination && userLocation && isMapLoaded) {
+            const place: GeocodingPlace = {
+                name: taxiDestination.name,
+                latitude: taxiDestination.lat,
+                longitude: taxiDestination.lng,
+                type: 'destination',
+                City: '',
+                Country: '',
+            };
+
+            setSelectedDestination(place);
+
+            setIsFromTaxiSearch(true);
+
+            setTimeout(() => {
+                handleNavigate(setUserLocation, place);
+            }, 100);
+        }
+    }, [taxiDestination, userLocation, isMapLoaded]);
+
+    useEffect(() => {
+        console.log('[Taxi Route] Effect triggered:', {
+            hasTaxiData: !!taxiRouteData,
+            isMapLoaded
+        });
+
+        if (!taxiRouteData) {
+            console.log('[Taxi Route] No taxi data, clearing stations');
+            setTaxiStations(null);
+            setTaxiWalkRoutes(null);
+            setTaxiRouteSegments(null);
+            return;
+        }
+
+        if (!taxiRouteData.startNode || !taxiRouteData.endNode || !taxiRouteData.origin || !taxiRouteData.destination) {
+            console.log('[Taxi Route] Invalid taxi route data - missing required nodes');
+            setTaxiStations(null);
+            setTaxiWalkRoutes(null);
+            setTaxiRouteSegments(null);
+            return;
+        }
+
+        console.log('[Taxi Route] Setting taxi stations:', taxiRouteData);
+
+        const fetchIntermediateNodes = async () => {
+            const stations: Array<{ id: number; name: string; lat: number; lng: number; type: 'start' | 'end' | 'intermediate' }> = [
+                {
+                    id: taxiRouteData.startNode.id,
+                    name: taxiRouteData.startNode.name,
+                    lat: taxiRouteData.startNode.lat,
+                    lng: taxiRouteData.startNode.lng,
+                    type: 'start'
+                }
+            ];
+
+            if (taxiRouteData.path && taxiRouteData.path.length > 2) {
+                const intermediateIds = taxiRouteData.path.slice(1, -1);
+                console.log('[Taxi Route] Fetching intermediate nodes:', intermediateIds);
+
+                try {
+                    const { taxiService } = await import('../../taxi/services/taxi.service');
+                    const allNodes = await taxiService.getAllNodes();
+
+                    const intermediateNodes = allNodes.filter((node: any) =>
+                        intermediateIds.includes(node.id)
+                    );
+
+                    console.log('[Taxi Route] Found intermediate nodes:', intermediateNodes.length);
+
+                    intermediateIds.forEach((id: number) => {
+                        const node = intermediateNodes.find((n: any) => n.id === id);
+                        if (node) {
+                            stations.push({
+                                id: node.id,
+                                name: node.name,
+                                lat: node.lat,
+                                lng: node.lng,
+                                type: 'intermediate'
+                            });
+                        }
+                    });
+                } catch (error) {
+                    console.error('[Taxi Route] Error fetching intermediate nodes:', error);
+                }
+            }
+
+            stations.push({
+                id: taxiRouteData.endNode.id,
+                name: taxiRouteData.endNode.name,
+                lat: taxiRouteData.endNode.lat,
+                lng: taxiRouteData.endNode.lng,
+                type: 'end'
+            });
+
+            setTaxiStations(stations);
+        };
+
+        fetchIntermediateNodes();
+
+        const fetchTransferWalks = async () => {
+            const walkRoutes: Array<{ type: 'origin' | 'transfer' | 'destination'; polyline: string }> = [];
+
+            if (taxiRouteData.segments && taxiRouteData.segments.length > 0) {
+                console.log('[Taxi Route] Processing segments array:', taxiRouteData.segments.length);
+                taxiRouteData.segments.forEach((segment: any, index: number) => {
+                    if ((segment.type === 'walk' || segment.mode === 'pedestrian') && segment.polyline) {
+                        const type = index === 0 ? 'origin' :
+                            index === taxiRouteData.segments.length - 1 ? 'destination' :
+                                'transfer';
+                        console.log(`[Taxi Route] Found walk segment ${index}:`, type, 'polyline length:', segment.polyline.length);
+                        walkRoutes.push({ type, polyline: segment.polyline });
+                    }
+                });
+            } else {
+                const originShape = taxiRouteData.originWalkRoute?.trip.legs[0]?.shape;
+                if (originShape) {
+                    walkRoutes.push({ type: 'origin', polyline: originShape });
+                }
+
+                if (taxiRouteData.path && taxiRouteData.path.length > 2) {
+                    console.log('[Taxi Route] Checking path for transfer walks:', taxiRouteData.path);
+                    try {
+                        const { taxiService } = await import('../../taxi/services/taxi.service');
+                        const allEdges = await taxiService.getAllEdges();
+                        console.log('[Taxi Route] Total edges available:', allEdges.length);
+
+                        for (let i = 0; i < taxiRouteData.path.length - 1; i++) {
+                            const startNodeId = taxiRouteData.path[i];
+                            const endNodeId = taxiRouteData.path[i + 1];
+
+                            const edge = allEdges.find(
+                                (e: any) => e.start_node_id === startNodeId && e.end_node_id === endNodeId
+                            );
+
+                            console.log(`[Taxi Route] Edge ${startNodeId} → ${endNodeId}:`, edge ? `connection=${edge.connection}` : 'not found');
+
+                            if (edge && edge.connection === 'walk') {
+                                const allNodes = await taxiService.getAllNodes();
+                                const startNode = allNodes.find((n: any) => n.id === startNodeId);
+                                const endNode = allNodes.find((n: any) => n.id === endNodeId);
+
+                                if (startNode && endNode) {
+                                    console.log('[Taxi Route] Found transfer walk:', startNode.name, '→', endNode.name);
+
+                                    const { navigationService } = await import('../../navigation/services/navigation.service');
+                                    const walkRoute = await navigationService.getNavigation({
+                                        origin: [startNode.lat, startNode.lng],
+                                        destination: [endNode.lat, endNode.lng]
+                                    });
+
+                                    if (walkRoute?.data?.trip?.legs?.[0]?.shape) {
+                                        console.log('[Taxi Route] Transfer walk polyline fetched, length:', walkRoute.data.trip.legs[0].shape.length);
+                                        walkRoutes.push({
+                                            type: 'transfer',
+                                            polyline: walkRoute.data.trip.legs[0].shape
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.error('[Taxi Route] Error fetching transfer walks:', error);
+                    }
+                } else {
+                    console.log('[Taxi Route] No intermediate nodes to check for transfers (path length:', taxiRouteData.path?.length, ')');
+                }
+
+                const destShape = taxiRouteData.destinationWalkRoute?.trip.legs[0]?.shape;
+                if (destShape) {
+                    walkRoutes.push({ type: 'destination', polyline: destShape });
+                }
+            }
+
+            console.log('[Taxi Route] Walking routes:', {
+                total: walkRoutes.length,
+                origin: walkRoutes.filter(r => r.type === 'origin').length,
+                transfers: walkRoutes.filter(r => r.type === 'transfer').length,
+                destination: walkRoutes.filter(r => r.type === 'destination').length,
+            });
+
+            setTaxiWalkRoutes(walkRoutes);
+        };
+
+        fetchTransferWalks();
+
+
+        const fetchTaxiDrivingRoute = async () => {
+            try {
+                const { navigationService } = await import('../../navigation/services/navigation.service');
+                const routeData = await navigationService.getNavigation({
+                    origin: [taxiRouteData.startNode.lat, taxiRouteData.startNode.lng],
+                    destination: [taxiRouteData.endNode.lat, taxiRouteData.endNode.lng]
+                });
+
+                if (routeData?.data?.trip?.legs?.[0]?.shape) {
+                    const decodedCoords = decodePolyline(routeData.data.trip.legs[0].shape, 6);
+                    const mapCoords: [number, number][] = decodedCoords.map(([lat, lng]) => [lng, lat] as [number, number]);
+                    console.log('[Taxi Route] Driving route decoded:', {
+                        coordsCount: decodedCoords.length,
+                        firstCoord: decodedCoords[0],
+                        lastCoord: decodedCoords[decodedCoords.length - 1],
+                        firstMapCoord: mapCoords[0],
+                    });
+                    setTaxiRouteSegments([{
+                        coordinates: mapCoords,
+                        cost: taxiRouteData.summary.estimatedFare,
+                        from: taxiRouteData.startNode.name,
+                        to: taxiRouteData.endNode.name
+                    }]);
+                } else {
+                    console.log('[Taxi Route] No driving route, using straight line');
+                    if (taxiRouteData.startNode && taxiRouteData.endNode && taxiRouteData.summary) {
+                        setTaxiRouteSegments([{
+                            coordinates: [
+                                [taxiRouteData.startNode.lng, taxiRouteData.startNode.lat],
+                                [taxiRouteData.endNode.lng, taxiRouteData.endNode.lat],
+                            ],
+                            cost: taxiRouteData.summary.estimatedFare,
+                            from: taxiRouteData.startNode.name,
+                            to: taxiRouteData.endNode.name
+                        }]);
+                    }
+                }
+            } catch (error) {
+                console.error('[Taxi Route] Error fetching driving route:', error);
+                if (taxiRouteData.startNode && taxiRouteData.endNode && taxiRouteData.summary) {
+                    setTaxiRouteSegments([{
+                        coordinates: [
+                            [taxiRouteData.startNode.lng, taxiRouteData.startNode.lat],
+                            [taxiRouteData.endNode.lng, taxiRouteData.endNode.lat],
+                        ],
+                        cost: taxiRouteData.summary.estimatedFare,
+                        from: taxiRouteData.startNode.name,
+                        to: taxiRouteData.endNode.name
+                    }]);
+                }
+            }
+        };
+
+        fetchTaxiDrivingRoute();
+
+        if (mapRef.current && isMapLoaded) {
+            const allCoords = [
+                [taxiRouteData.origin.lng, taxiRouteData.origin.lat],
+                [taxiRouteData.startNode.lng, taxiRouteData.startNode.lat],
+                [taxiRouteData.endNode.lng, taxiRouteData.endNode.lat],
+                [taxiRouteData.destination.lng, taxiRouteData.destination.lat],
+            ];
+
+            const lngs = allCoords.map(c => c[0]);
+            const lats = allCoords.map(c => c[1]);
+            const minLng = Math.min(...lngs);
+            const maxLng = Math.max(...lngs);
+            const minLat = Math.min(...lats);
+            const maxLat = Math.max(...lats);
+
+            const centerLng = (minLng + maxLng) / 2;
+            const centerLat = (minLat + maxLat) / 2;
+
+            console.log('[Taxi Route] Flying to center:', [centerLng, centerLat]);
+            setTimeout(() => {
+                mapRef.current?.flyTo({
+                    center: [centerLng, centerLat],
+                    zoom: 13,
+                    duration: 1000,
+                });
+            }, 100);
+        }
+    }, [taxiRouteData, isMapLoaded]);
+
+    useEffect(() => {
         if (!navigationMode) return;
 
         const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -431,11 +730,12 @@ export default function TrafficMap({ sharedLocation }: TrafficMapProps) {
                 zoom={initialZoom}
                 onMapClick={handleMapClick}
                 onMapLoaded={handleMapLoaded}
-                routeGeoJSON={isNavigationMinimized ? undefined : routeGeoJSON}
+                routeGeoJSON={isNavigationMinimized ? undefined : (taxiRouteData ? undefined : routeGeoJSON)}
                 routeStyle={{
                     color: navigationMode ? '#3B82F6' : colors.primary.main,
                     width: 5,
-                    opacity: 0.8
+                    opacity: 0.8,
+                    isDotted: currentCosting === 'pedestrian',
                 }}
                 isNavigating={navigationMode && !isNavigationMinimized}
                 userLocation={userLocation}
@@ -450,6 +750,9 @@ export default function TrafficMap({ sharedLocation }: TrafficMapProps) {
                 explorePlaces={exploreResults}
                 exploreCategory={selectedExploreCategory}
                 onExplorePlacePress={(place) => setSelectedExplorePlace(place)}
+                taxiStations={taxiStations || undefined}
+                taxiWalkRoutes={taxiWalkRoutes || undefined}
+                taxiRouteSegments={taxiRouteSegments || undefined}
             />
 
             {activeIncidentAlert && (
@@ -562,12 +865,36 @@ export default function TrafficMap({ sharedLocation }: TrafficMapProps) {
                     simulateMovement={simulateMovement}
                     onSimulateToggle={() => setSimulateMovement(!simulateMovement)}
                     onStartNavigation={() => handleStartNavigation(setUserLocation)}
+                    onStartTaxiNavigation={(taxiRoute) => {
+                        router.push({
+                            pathname: '/taxi/navigation',
+                            params: {
+                                routeData: JSON.stringify(taxiRoute),
+                                simulateMovement: simulateMovement.toString(),
+                            },
+                        });
+                    }}
                     onCancel={() => {
                         setShowRoutePreview(false);
                         handleClearRoute();
                         setClickedLocation(null);
+                        setTaxiRouteData(null);
+                        setIsFromTaxiSearch(false);
                     }}
                     destination={selectedDestination}
+                    userLocation={userLocation}
+                    onTaxiRouteChange={(taxiRoute) => setTaxiRouteData(taxiRoute)}
+                    onModeChange={(mode) => {
+                        if (mode === 'walking') {
+                            setCurrentCosting('pedestrian');
+                        } else if (mode === 'driving') {
+                            setCurrentCosting('auto');
+                            if (selectedDestination && userLocation) {
+                                handleNavigate(setUserLocation, selectedDestination);
+                            }
+                        }
+                    }}
+                    initialMode={isFromTaxiSearch ? 'taxi' : 'driving'}
                 />
             )}
 
