@@ -445,7 +445,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         logoEnabled={false}
                         compassEnabled={!isNavigating}
                         compassViewPosition={1}
-                        compassViewMargins={{ x: 16, y: 120 }}
+                        compassViewMargins={{ x: 16, y: 130 }}
                         onPress={(e) => {
                             const coords = (e.geometry as any)?.coordinates;
                             if (coords && onMapClick) {
@@ -508,7 +508,10 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                     isCurrentSegment,
                                     isPastSegment,
                                     color: route.isWalking ? '#EF4444' : '#3B82F6',
-                                    style: route.isWalking ? 'dotted' : 'solid'
+                                    style: route.isWalking ? 'dotted' : 'solid',
+                                    firstCoord: route.geoJSON.geometry.coordinates[0],
+                                    markerPos: route.geoJSON.properties?.markerLat ?
+                                        [route.geoJSON.properties.markerLng, route.geoJSON.properties.markerLat] : 'none'
                                 });
 
                                 const lineStyle: any = {
@@ -524,9 +527,14 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                     lineStyle.lineDasharray = [2, 2];
                                 }
 
+
+                                const markerKey = route.geoJSON.properties?.markerLat && route.geoJSON.properties?.markerLng
+                                    ? `${route.geoJSON.properties.markerLat.toFixed(6)}-${route.geoJSON.properties.markerLng.toFixed(6)}`
+                                    : renderKey;
+
                                 return (
                                     <MapLibreGL.ShapeSource
-                                        key={`segment-${route.segmentIndex}-${Date.now()}`}
+                                        key={`segment-${route.segmentIndex}-${markerKey}`}
                                         id={`segment-${route.segmentIndex}-source`}
                                         shape={route.geoJSON}
                                     >

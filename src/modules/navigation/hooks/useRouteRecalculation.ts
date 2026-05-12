@@ -190,7 +190,6 @@ export const useRouteRecalculation = ({
                     }
                 };
 
-                // For real GPS navigation, immediately show route starting from current position
                 if (!simulateMovement && locationToUse && newRoute.coordinates.length > 0) {
                     const routeWithCurrentStart = [[locationToUse.lng, locationToUse.lat] as [number, number], ...newRoute.coordinates];
                     newGeoJSON.geometry.coordinates = routeWithCurrentStart;

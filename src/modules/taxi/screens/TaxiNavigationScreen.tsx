@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -48,8 +48,58 @@ export default function TaxiNavigationScreen() {
     const [userHeading, setUserHeading] = useState(0);
     const [remainingDistance, setRemainingDistance] = useState(0);
     const [remainingTime, setRemainingTime] = useState(0);
+    const [isOffRoute, setIsOffRoute] = useState(false);
+    const [isRecalculating, setIsRecalculating] = useState(false);
 
-    const { userLocation, setUserLocation, stopLocationTracking: stopBackgroundTracking } = useUserLocation();
+    
+    const [navigationState, setNavigationState] = useState<{
+        userLocation: { lat: number; lng: number } | null;
+        segmentedRoutes: Array<{
+            geoJSON: any;
+            isWalking: boolean;
+            segmentIndex: number;
+        }>;
+    }>({
+        userLocation: null,
+        segmentedRoutes: []
+    });
+
+    const { userLocation: bgUserLocation, setUserLocation: setBgUserLocation, stopLocationTracking: stopBackgroundTracking } = useUserLocation();
+
+    const updateNavigationState = useCallback((
+        location: { lat: number; lng: number },
+        routes: Array<{
+            geoJSON: any;
+            isWalking: boolean;
+            segmentIndex: number;
+        }>
+    ) => {
+        setNavigationState({
+            userLocation: location,
+            segmentedRoutes: routes
+        });
+    }, []);
+
+    const setUserLocation = useCallback((location: { lat: number; lng: number }) => {
+        setNavigationState(prev => ({
+            ...prev,
+            userLocation: location
+        }));
+    }, []);
+
+    const setSegmentedRoutes = useCallback((routes: Array<{
+        geoJSON: any;
+        isWalking: boolean;
+        segmentIndex: number;
+    }>) => {
+        setNavigationState(prev => ({
+            ...prev,
+            segmentedRoutes: routes
+        }));
+    }, []);
+
+    const userLocation = navigationState.userLocation;
+    const segmentedRoutes = navigationState.segmentedRoutes;
 
     const [initialCenter] = useState<[number, number]>([routeData.origin.lng, routeData.origin.lat]);
     const [initialZoom] = useState(15);
@@ -78,12 +128,6 @@ export default function TaxiNavigationScreen() {
     const totalDuration = useRef<number>(0);
     const isNavigatingRef = useRef(true);
     const rerouteTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    const [segmentedRoutes, setSegmentedRoutes] = useState<Array<{
-        geoJSON: any;
-        isWalking: boolean;
-        segmentIndex: number;
-    }>>([]);
 
     useEffect(() => {
         const coords: [number, number][] = [];
@@ -173,21 +217,72 @@ export default function TaxiNavigationScreen() {
         routeCoordinates: allRouteCoordinates,
         isNavigatingRef,
         mapRef,
-        isOffRoute: false,
+        isOffRoute,
         setUserLocation,
         setCurrentHeading: setUserHeading,
         setRouteGeoJSON,
         setRemainingDistance,
         setRemainingTime,
-        setIsOffRoute: () => { },
-        setIsRecalculating: () => { },
+        setIsOffRoute,
+        setIsRecalculating,
         updateInstructionBasedOnPosition: () => { },
-        recalculateRoute: async () => { },
+        recalculateRoute: async (fromLocation) => {
+            if (!fromLocation) return;
+
+            setIsRecalculating(true);
+            showToast.info('Recalculating', 'Finding new route...');
+
+            try {
+                const { taxiService } = await import('../../taxi/services/taxi.service');
+                const newRoute = await taxiService.requestTaxiNavigation({
+                    origin: [fromLocation.lat, fromLocation.lng],
+                    destination: [
+                        activeRoute.destination.lat,
+                        activeRoute.destination.lng,
+                    ],
+                });
+
+                if (newRoute.success && newRoute.segments) {
+                    setCurrentRoute(newRoute);
+
+                    const coords: [number, number][] = [];
+                    let distance = 0;
+                    let duration = 0;
+
+                    newRoute.segments?.forEach(segment => {
+                        try {
+                            const decoded = decodePolyline(segment.polyline, 6);
+                            decoded.forEach(([lat, lng]: [number, number]) => {
+                                coords.push([lng, lat]);
+                            });
+                            distance += segment.distance * 1000;
+                            duration += segment.time;
+                        } catch (error) {
+                            console.error('Error decoding segment:', error);
+                        }
+                    });
+
+                    allRouteCoordinates.current = coords;
+                    totalDistance.current = distance;
+                    totalDuration.current = duration;
+
+                    showToast.success('Route Updated', 'New route calculated');
+                } else {
+                    showToast.error('Recalculation Failed', 'Could not find alternative route');
+                }
+            } catch (error) {
+                console.error('Recalculation error:', error);
+                showToast.error('Error', 'Failed to recalculate route');
+            } finally {
+                setIsRecalculating(false);
+            }
+        },
         rerouteTimeout,
         totalRouteDistance: totalDistance.current,
         totalRouteDuration: totalDuration.current,
         taxiSegments: activeRoute.segments,
         setSegmentedRoutes,
+        updateNavigationState, 
     });
 
     const {
@@ -195,8 +290,6 @@ export default function TaxiNavigationScreen() {
         currentSegment,
         isOnTaxi,
         currentInstruction,
-        isOffRoute,
-        isRecalculating,
         endNode,
         totalFare,
         currency,
@@ -308,7 +401,6 @@ export default function TaxiNavigationScreen() {
                     </View>
                 )}
 
-                {/* Top Navigation Bar - Floating Style */}
                 <View className="absolute left-4 right-4" style={{ top: insets.top + 18 }}>
                     <View
                         className="border border-white/10"
@@ -404,7 +496,6 @@ export default function TaxiNavigationScreen() {
                         className="rounded-3xl p-4 border border-white/10"
                         style={{ backgroundColor: 'rgba(55, 65, 81, 0.75)' }}
                     >
-                        {/* Segment Progress Bar */}
                         <View className="mb-3">
                             <SegmentProgressBar
                                 segments={progressSegments}

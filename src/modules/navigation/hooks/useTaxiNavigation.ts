@@ -16,8 +16,8 @@ interface UseTaxiNavigationProps {
     onRouteUpdate?: (newRoute: TaxiNavigationResponse) => void;
 }
 
-const STATION_ARRIVAL_THRESHOLD = 50; // 50 meters
-const WALKING_END_THRESHOLD = 20; // 20 meters
+const STATION_ARRIVAL_THRESHOLD = 80; // 50 meters
+const WALKING_END_THRESHOLD = 40; // 20 meters
 const OFF_ROUTE_THRESHOLD = 50; // 50 meters for taxi routes
 
 export const useTaxiNavigation = ({
@@ -33,13 +33,9 @@ export const useTaxiNavigation = ({
     const [remainingDistance, setRemainingDistance] = useState<number>(0);
     const [remainingTime, setRemainingTime] = useState<number>(0);
     const [isOnTaxi, setIsOnTaxi] = useState(false);
-    const [isOffRoute, setIsOffRoute] = useState(false);
-    const [isRecalculating, setIsRecalculating] = useState(false);
 
-    const rerouteTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const currentRouteRef = useRef(taxiRoute);
 
-    // Update route ref when route changes
     useEffect(() => {
         currentRouteRef.current = taxiRoute;
     }, [taxiRoute]);
@@ -47,7 +43,6 @@ export const useTaxiNavigation = ({
     const currentSegment = currentRouteRef.current.segments?.[currentSegmentIndex];
     const nextSegment = currentRouteRef.current.segments?.[currentSegmentIndex + 1];
 
-    // Check if user has reached the end of current segment
     const checkSegmentTransition = () => {
         if (!userLocation || !currentSegment) return false;
 
@@ -66,7 +61,6 @@ export const useTaxiNavigation = ({
         return distance < threshold;
     };
 
-    // Advance to next segment
     const advanceToNextSegment = () => {
         if (currentSegmentIndex < (currentRouteRef.current.segments?.length || 0) - 1) {
             const newIndex = currentSegmentIndex + 1;
@@ -76,16 +70,13 @@ export const useTaxiNavigation = ({
             if (newSegment) {
                 announceSegmentTransition(newSegment);
 
-                // Update taxi status
                 setIsOnTaxi(newSegment.mode === 'auto' || newSegment.type === 'taxi');
             }
         } else {
-            // Reached final destination
             onNavigationComplete();
         }
     };
 
-    // Announce segment transitions
     const announceSegmentTransition = (segment: RouteSegment) => {
         if (segment.mode === 'auto' || segment.type === 'taxi') {
             const message = `Board taxi at ${segment.fromNode?.name} to ${segment.toNode?.name}`;
@@ -101,7 +92,6 @@ export const useTaxiNavigation = ({
         }
     };
 
-    // Calculate remaining distance and time
     const calculateRemaining = () => {
         if (!currentRouteRef.current.segments) return { distance: 0, time: 0 };
 
@@ -110,84 +100,21 @@ export const useTaxiNavigation = ({
 
         for (let i = currentSegmentIndex; i < currentRouteRef.current.segments.length; i++) {
             const segment = currentRouteRef.current.segments[i];
-            totalDistance += segment.distance * 1000; // Convert to meters
+            totalDistance += segment.distance * 1000;
             totalTime += segment.time;
         }
 
         return { distance: totalDistance, time: totalTime };
     };
 
-    // Check if user is off route
-    const checkOffRoute = () => {
-        if (!userLocation || !currentSegment) return false;
 
-        // Decode current segment polyline
-        try {
-            const coords = decodePolyline(currentSegment.polyline, 6);
 
-            // Find closest point on route
-            let minDistance = Infinity;
-            for (const [lat, lng] of coords) {
-                const distance = calculateDistance(
-                    userLocation.lat,
-                    userLocation.lng,
-                    lat,
-                    lng
-                );
-                minDistance = Math.min(minDistance, distance);
-            }
-
-            return minDistance > OFF_ROUTE_THRESHOLD;
-        } catch (error) {
-            console.error('Error checking off route:', error);
-            return false;
-        }
-    };
-
-    // Recalculate route
-    const recalculateRoute = async () => {
-        if (!userLocation || isRecalculating) return;
-
-        setIsRecalculating(true);
-        showToast.info('Recalculating', 'Finding new route...');
-
-        try {
-            const newRoute = await taxiService.requestTaxiNavigation({
-                origin: [userLocation.lat, userLocation.lng],
-                destination: [
-                    currentRouteRef.current.destination.lat,
-                    currentRouteRef.current.destination.lng,
-                ],
-            });
-
-            if (newRoute.success && newRoute.segments) {
-                currentRouteRef.current = newRoute;
-                setCurrentSegmentIndex(0);
-                setIsOffRoute(false);
-                showToast.success('Route Updated', 'New route calculated');
-
-                if (onRouteUpdate) {
-                    onRouteUpdate(newRoute);
-                }
-            } else {
-                showToast.error('Recalculation Failed', 'Could not find alternative route');
-            }
-        } catch (error) {
-            console.error('Recalculation error:', error);
-            showToast.error('Error', 'Failed to recalculate route');
-        } finally {
-            setIsRecalculating(false);
-        }
-    };
-
-    // Update remaining stats
     useEffect(() => {
         const { distance, time } = calculateRemaining();
         setRemainingDistance(distance);
         setRemainingTime(time);
     }, [currentSegmentIndex]);
 
-    // Check for segment transitions
     useEffect(() => {
         if (!userLocation || !currentSegment) return;
 
@@ -196,41 +123,13 @@ export const useTaxiNavigation = ({
             advanceToNextSegment();
         }
 
-        // Check if off route (only for walking segments)
-        if (currentSegment.mode === 'pedestrian' || currentSegment.type === 'walk') {
-            const offRoute = checkOffRoute();
-            if (offRoute && !isOffRoute) {
-                setIsOffRoute(true);
-                showToast.info('Off Route', 'You are off the planned route');
-
-                // Schedule recalculation
-                if (rerouteTimeout.current) {
-                    clearTimeout(rerouteTimeout.current);
-                }
-                rerouteTimeout.current = setTimeout(() => {
-                    recalculateRoute();
-                }, 3000);
-            } else if (!offRoute && isOffRoute) {
-                setIsOffRoute(false);
-                if (rerouteTimeout.current) {
-                    clearTimeout(rerouteTimeout.current);
-                    rerouteTimeout.current = null;
-                }
-                showToast.success('Back on Route', 'You are back on the planned route');
-            }
-        }
     }, [userLocation, currentSegment]);
 
-    // Cleanup
     useEffect(() => {
         return () => {
-            if (rerouteTimeout.current) {
-                clearTimeout(rerouteTimeout.current);
-            }
         };
     }, []);
 
-    // Initial instruction
     useEffect(() => {
         if (currentSegment) {
             announceSegmentTransition(currentSegment);
@@ -246,12 +145,9 @@ export const useTaxiNavigation = ({
         currentInstruction,
         remainingDistance,
         remainingTime,
-        isOffRoute,
-        isRecalculating,
         startNode: currentRouteRef.current.startNode,
         endNode: currentRouteRef.current.endNode,
         totalFare: currentRouteRef.current.summary.estimatedFare,
         currency: currentRouteRef.current.summary.currency,
-        recalculateRoute,
     };
 };

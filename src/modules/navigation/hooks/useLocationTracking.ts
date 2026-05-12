@@ -33,6 +33,14 @@ interface UseLocationTrackingProps {
         isWalking: boolean;
         segmentIndex: number;
     }>) => void;
+    updateNavigationState?: (
+        location: { lat: number; lng: number },
+        routes: Array<{
+            geoJSON: any;
+            isWalking: boolean;
+            segmentIndex: number;
+        }>
+    ) => void;
 }
 
 export const useLocationTracking = ({
@@ -54,6 +62,7 @@ export const useLocationTracking = ({
     totalRouteDuration,
     taxiSegments,
     setSegmentedRoutes,
+    updateNavigationState,
 }: UseLocationTrackingProps) => {
     const locationSubscription = useRef<Location.LocationSubscription | null>(null);
     const lastClosestIndex = useRef<number>(0);
@@ -98,6 +107,8 @@ export const useLocationTracking = ({
                     let displayLng = longitude;
                     let closestIndex = lastClosestIndex.current;
                     let distanceFromRoute = Infinity;
+
+                    console.log('[useLocationTracking] Raw GPS:', { latitude, longitude }, 'isNavigating:', isNavigatingRef.current);
 
                     if (isNavigatingRef.current && routeCoordinates.current.length > 0) {
 
@@ -253,9 +264,9 @@ export const useLocationTracking = ({
                         if (remainingCoords.length > 0) {
                             const routeWithSnappedStart = [[displayLng, displayLat] as [number, number], ...remainingCoords];
 
-                            
+
                             if (taxiSegments && setSegmentedRoutes) {
-                               
+
                                 let coordCount = 0;
                                 let currentSegIdx = 0;
                                 let positionInSegment = closestIndex;
@@ -270,22 +281,29 @@ export const useLocationTracking = ({
                                     coordCount += decoded.length;
                                 }
 
-                                
+
                                 const updatedSegments = taxiSegments.map((seg, idx) => {
                                     const decoded = decodePolyline(seg.polyline, 6);
                                     let coordinates = decoded.map(([lat, lng]: [number, number]) => [lng, lat] as [number, number]);
 
-                                    
+
                                     if (idx === currentSegIdx) {
                                         const remaining = coordinates.slice(positionInSegment + 1);
-                                       
+
                                         coordinates = [[displayLng, displayLat], ...remaining];
+                                    } else if (idx < currentSegIdx) {
+                                        coordinates = [];
                                     }
 
                                     return {
                                         geoJSON: {
                                             type: 'Feature' as const,
-                                            properties: { segmentIndex: idx },
+                                            properties: {
+                                                segmentIndex: idx,
+                                                
+                                                markerLat: displayLat,
+                                                markerLng: displayLng,
+                                            },
                                             geometry: {
                                                 type: 'LineString' as const,
                                                 coordinates
@@ -296,10 +314,18 @@ export const useLocationTracking = ({
                                     };
                                 });
 
-                              
-                                setSegmentedRoutes(updatedSegments);
+
+                                if (updateNavigationState) {
+                                    updateNavigationState({ lat: displayLat, lng: displayLng }, updatedSegments);
+                                } else {
+                                    setSegmentedRoutes(updatedSegments);
+                                    if (setUserLocation) {
+                                        console.log('[useLocationTracking] Setting snapped location:', { lat: displayLat, lng: displayLng });
+                                        setUserLocation({ lat: displayLat, lng: displayLng });
+                                    }
+                                }
                             } else {
-                                
+
                                 const remainingGeoJSON = {
                                     type: 'Feature',
                                     properties: {},
@@ -308,6 +334,11 @@ export const useLocationTracking = ({
                                         coordinates: routeWithSnappedStart,
                                     }
                                 };
+
+                                if (setUserLocation) {
+                                    console.log('[useLocationTracking] Setting snapped location:', { lat: displayLat, lng: displayLng });
+                                    setUserLocation({ lat: displayLat, lng: displayLng });
+                                }
                                 setRouteGeoJSON(remainingGeoJSON);
                             }
 
@@ -337,11 +368,11 @@ export const useLocationTracking = ({
                             const estimatedTime = totalDistance / averageSpeedMps;
                             setRemainingTime(estimatedTime);
                         }
-                    }
-
-                   
-                    if (setUserLocation) {
-                        setUserLocation({ lat: displayLat, lng: displayLng });
+                    } else {
+                        if (setUserLocation) {
+                            console.log('[useLocationTracking] Setting raw GPS location:', { lat: displayLat, lng: displayLng });
+                            setUserLocation({ lat: displayLat, lng: displayLng });
+                        }
                     }
 
                     updateInstructionBasedOnPosition(displayLat, displayLng);

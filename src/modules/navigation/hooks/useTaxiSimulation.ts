@@ -79,7 +79,6 @@ export const useTaxiSimulation = ({
 
             console.log('[Taxi Simulation] Step', currentRouteIndex.current, '/', routeCoordinates.current.length, 'at', { lat, lng });
 
-            // Add GPS inaccuracy (3-8 meters)
             const offsetMeters = 3 + Math.random() * 5;
             const offsetAngle = Math.random() * 2 * Math.PI;
             const offsetLat = (offsetMeters / 111320) * Math.cos(offsetAngle);
@@ -88,7 +87,8 @@ export const useTaxiSimulation = ({
             const inaccurateLat = lat + offsetLat;
             const inaccurateLng = lng + offsetLng;
 
-            // Calculate bearing
+            console.log('[Taxi Simulation] Inaccurate GPS:', { lat: inaccurateLat, lng: inaccurateLng }, 'offset:', offsetMeters.toFixed(1), 'm');
+
             let bearing = 0;
             if (currentRouteIndex.current < routeCoordinates.current.length - 1) {
                 const currentPoint = routeCoordinates.current[currentRouteIndex.current];
@@ -99,24 +99,23 @@ export const useTaxiSimulation = ({
 
             updateInstructionBasedOnPosition(inaccurateLat, inaccurateLng);
 
-            // Snap to route (same as normal navigation)
             let displayLat = inaccurateLat;
             let displayLng = inaccurateLng;
 
             if (setUserLocation) {
                 if (routeCoordinates.current.length > 0) {
-                    let closestIndex = currentRouteIndex.current;
                     let minDistance = Infinity;
                     let snappedLat = inaccurateLat;
                     let snappedLng = inaccurateLng;
 
-                    const SEARCH_WINDOW = 20;
+                    const SEARCH_WINDOW = 50;
                     const startIndex = Math.max(0, currentRouteIndex.current - SEARCH_WINDOW);
                     const endIndex = Math.min(routeCoordinates.current.length - 1, currentRouteIndex.current + SEARCH_WINDOW);
 
                     for (let i = startIndex; i < endIndex; i++) {
                         const [lng1, lat1] = routeCoordinates.current[i];
                         const [lng2, lat2] = routeCoordinates.current[i + 1];
+
                         const dx = lng2 - lng1;
                         const dy = lat2 - lat1;
 
@@ -124,7 +123,6 @@ export const useTaxiSimulation = ({
                             const dist = calculateDistance(inaccurateLat, inaccurateLng, lat1, lng1);
                             if (dist < minDistance) {
                                 minDistance = dist;
-                                closestIndex = i;
                                 snappedLat = lat1;
                                 snappedLng = lng1;
                             }
@@ -137,11 +135,11 @@ export const useTaxiSimulation = ({
 
                         const projLat = lat1 + t * dy;
                         const projLng = lng1 + t * dx;
+
                         const dist = calculateDistance(inaccurateLat, inaccurateLng, projLat, projLng);
 
                         if (dist < minDistance) {
                             minDistance = dist;
-                            closestIndex = i;
                             snappedLat = projLat;
                             snappedLng = projLng;
                         }
@@ -149,19 +147,16 @@ export const useTaxiSimulation = ({
 
                     displayLat = snappedLat;
                     displayLng = snappedLng;
-                }
 
-                setUserLocation({ lat: displayLat, lng: displayLng });
+                    console.log('[Taxi Simulation] Snapped:', { lat: snappedLat, lng: snappedLng }, 'distance from route:', minDistance.toFixed(2), 'm');
+                }
             }
 
-            // Update remaining route GeoJSON
             const remainingCoords = routeCoordinates.current.slice(currentRouteIndex.current + 1);
             if (remainingCoords.length > 0) {
                 const routeWithSnappedStart = [[displayLng, displayLat] as [number, number], ...remainingCoords];
 
-                // For taxi navigation, update segmented routes
                 if (taxiSegments && setSegmentedRoutes) {
-                    // Find which segment we're in based on coordinate count
                     let coordCount = 0;
                     let currentSegIdx = 0;
                     let positionInSegment = currentRouteIndex.current;
@@ -176,21 +171,26 @@ export const useTaxiSimulation = ({
                         coordCount += decoded.length;
                     }
 
-                    // Build segmented routes with current segment trimmed
                     const updatedSegments = taxiSegments.map((seg, idx) => {
                         const decoded = decodePolyline(seg.polyline, 6);
                         let coordinates = decoded.map(([lat, lng]: [number, number]) => [lng, lat] as [number, number]);
 
-                        // Trim current segment
                         if (idx === currentSegIdx) {
                             const remaining = coordinates.slice(positionInSegment + 1);
+                           
                             coordinates = [[displayLng, displayLat], ...remaining];
+                        } else if (idx < currentSegIdx) {
+                            coordinates = [];
                         }
 
                         return {
                             geoJSON: {
                                 type: 'Feature' as const,
-                                properties: { segmentIndex: idx },
+                                properties: {
+                                    segmentIndex: idx,
+                                    markerLat: displayLat,
+                                    markerLng: displayLng,
+                                },
                                 geometry: {
                                     type: 'LineString' as const,
                                     coordinates
@@ -202,8 +202,19 @@ export const useTaxiSimulation = ({
                     });
 
                     setSegmentedRoutes(updatedSegments);
+                    if (setUserLocation) {
+                        console.log('[Taxi Simulation] Setting user location:', { lat: displayLat, lng: displayLng });
+                        setUserLocation({ lat: displayLat, lng: displayLng });
+                    }
+
+                    console.log('[Taxi Simulation] Updated segments:', {
+                        currentSegIdx,
+                        positionInSegment,
+                        currentRouteIndex: currentRouteIndex.current,
+                        markerPos: { lat: displayLat, lng: displayLng },
+                        routeStart: updatedSegments[currentSegIdx]?.geoJSON.geometry.coordinates[0]
+                    });
                 } else {
-                    // Normal navigation - update single routeGeoJSON
                     const remainingGeoJSON = {
                         type: 'Feature',
                         properties: {},
@@ -212,12 +223,15 @@ export const useTaxiSimulation = ({
                             coordinates: routeWithSnappedStart,
                         }
                     };
+                    if (setUserLocation) {
+                        console.log('[Taxi Simulation] Setting user location:', { lat: displayLat, lng: displayLng });
+                        setUserLocation({ lat: displayLat, lng: displayLng });
+                    }
                     if (setRouteGeoJSON) {
                         setRouteGeoJSON(remainingGeoJSON);
                     }
                 }
 
-                // Calculate remaining distance
                 let totalDistance = 0;
                 for (let i = 0; i < routeWithSnappedStart.length - 1; i++) {
                     const [lng1, lat1] = routeWithSnappedStart[i];

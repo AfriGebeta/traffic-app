@@ -85,7 +85,7 @@ export const navigationService = {
         return response.data;
     },
 
-    // Taxi navigation helpers
+    // taxi navigation helpers
     detectSegmentTransition(
         currentLocation: { lat: number; lng: number },
         currentSegment: RouteSegment,
