@@ -73,7 +73,7 @@ export default function MapPickerScreen() {
 
                 const isIntermediate = params.type === 'intermediate';
                 const stations = allNodes.filter((node: TaxiNode) =>
-                    isIntermediate ? true : node.nodeType === 'station'
+                    isIntermediate ? true : (node.nodeType === 'station' || node.nodeType === 'stop')
                 );
 
                 console.log('[MapPicker] Filtered stations count:', stations.length);
@@ -111,13 +111,13 @@ export default function MapPickerScreen() {
             const isIntermediate = params.type === 'intermediate';
             const nearby = allNodes
                 .filter((node: TaxiNode) =>
-                    isIntermediate ? true : node.nodeType === 'station'
+                    isIntermediate ? true : (node.nodeType === 'station' || node.nodeType === 'stop')
                 )
                 .map((node: TaxiNode) => ({
                     ...node,
                     distance: calculateDistance(selectedLocation, { lat: node.lat, lng: node.lng }),
                 }))
-                .filter((node: any) => node.distance < 600)
+                .filter((node: any) => node.distance < 1000) // 1km radius
                 .sort((a: any, b: any) => a.distance - b.distance);
 
             setNearbyStations(nearby as TaxiNode[]);
@@ -318,7 +318,7 @@ export default function MapPickerScreen() {
                                                             )}
                                                         </View>
                                                         <Text className="text-gray-500 text-xs mt-1">
-                                                            📍 {(station as any).distance}m away
+                                                             {(station as any).distance}m away
                                                             {station.routeName && ` • ${station.routeName}`}
                                                         </Text>
                                                     </TouchableOpacity>
@@ -327,7 +327,7 @@ export default function MapPickerScreen() {
                                         </View>
                                     )}
 
-                                    {loadingStations && <Text className="text-gray-500 text-sm mt-2">{t('loading-nearby-stations')}</Text>}
+                                    {loadingStations && <Text className="text-gray-500 text-sm mt-2">{t('loading-nearby-stations-and-stops') || 'Loading nearby stations & stops...'}</Text>}
                                 </View>
 
                                 {params.type !== 'intermediate' && !selectedExisting && (
