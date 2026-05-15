@@ -76,26 +76,7 @@ const BASE_THEMES: (Omit<MapTheme, 'styleJson'> & { styleJson?: Record<string, u
         name: 'Satellite',
         nameAmharic: 'ሳተላይት',
         icon: 'globe-outline',
-        styleJson: {
-            version: 8,
-            name: 'Satellite',
-            sources: {
-                'satellite': {
-                    type: 'raster',
-                    tiles: [`https://tiles.gebeta.app/tiles/raster/{z}/{x}/{y}.png?apiKey=${process.env.EXPO_PUBLIC_GEBETA_API_KEY}`],
-                    tileSize: 256,
-                    minzoom: 0,
-                    maxzoom: 16,
-                },
-            },
-            layers: [
-                {
-                    id: 'satellite-layer',
-                    type: 'raster',
-                    source: 'satellite',
-                },
-            ],
-        } as Record<string, unknown>,
+        styleUrl: 'https://tiles.gebeta.app/styles/raster/raster.json',
     },
 ];
 
@@ -116,16 +97,17 @@ export const MapThemeProvider: React.FC<{ children: ReactNode }> = ({ children }
     useEffect(() => {
         const loadThemes = async () => {
             try {
-                const [lightStyle, darkStyle] = await Promise.all([
+                const [lightStyle, darkStyle, rasterStyle] = await Promise.all([
                     processRemoteStyle('https://tiles.gebeta.app/styles/standard/light.json'),
                     processRemoteStyle('https://tiles.gebeta.app/styles/standard/dark.json'),
+                    processRemoteStyle('https://tiles.gebeta.app/styles/raster/raster.json'),
                 ]);
 
                 const loadedThemes: MapTheme[] = [
                     BASE_THEMES[0],
                     { ...BASE_THEMES[1], styleJson: lightStyle },
                     { ...BASE_THEMES[2], styleJson: darkStyle },
-                    BASE_THEMES[3],
+                    { ...BASE_THEMES[3], styleJson: rasterStyle },
                 ];
 
                 setThemes(loadedThemes);
