@@ -776,16 +776,19 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                 isNavigating={isNavigating}
                                 lineStyle={{
                                     lineColor: defaultRouteStyle.color,
-                                    lineWidth: defaultRouteStyle.width,
+                                    lineWidth: routeStyle?.isDotted ? 6 : defaultRouteStyle.width,
                                     lineOpacity: 0.6,
                                     lineCap: 'round',
                                     lineJoin: 'round',
+                                    ...(routeStyle?.isDotted && { lineDasharray: [0, 2] }),
                                 }}
                             />
                         )}
 
+          
                         {!isNavigating && routeGeoJSON && !segmentedRoutes && (
                             <MapLibreGL.ShapeSource
+                                key={`route-preview-${routeStyle?.isDotted ? 'dotted' : 'solid'}`}
                                 id="route-preview-source"
                                 shape={routeGeoJSON}
                             >
@@ -797,7 +800,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                         lineOpacity: routeStyle?.isDotted ? 1 : defaultRouteStyle.opacity,
                                         lineCap: 'round',
                                         lineJoin: 'round',
-                                        ...(routeStyle?.isDotted && { lineDasharray: [2, 2] }),
+                                        ...(routeStyle?.isDotted && { lineDasharray: [0, 2] }),
                                     }}
                                 />
                             </MapLibreGL.ShapeSource>

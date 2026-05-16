@@ -140,7 +140,7 @@ export const useNavigation = (
         setUserLocation,
     });
 
-    const handleNavigate = async (setUserLocation?: (location: { lat: number; lng: number }) => void, destination?: GeocodingPlace) => {
+    const handleNavigate = async (setUserLocation?: (location: { lat: number; lng: number }) => void, destination?: GeocodingPlace, costingOverride?: 'auto' | 'pedestrian') => {
         const targetDestination = destination || selectedDestination;
 
         if (!userLocation || !targetDestination) {
@@ -158,7 +158,7 @@ export const useNavigation = (
             const navigationData = await navigationService.getNavigation({
                 origin: [userLocation.lat, userLocation.lng],
                 destination: [targetDestination.latitude, targetDestination.longitude],
-                costing: currentCosting,
+                costing: costingOverride ?? currentCosting,
             });
 
             if (!navigationData?.data?.trip?.legs?.[0]) {

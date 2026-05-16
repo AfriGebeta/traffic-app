@@ -887,10 +887,13 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     onModeChange={(mode) => {
                         if (mode === 'walking') {
                             setCurrentCosting('pedestrian');
+                            if (selectedDestination && userLocation) {
+                                handleNavigate(setUserLocation, selectedDestination, 'pedestrian');
+                            }
                         } else if (mode === 'driving') {
                             setCurrentCosting('auto');
                             if (selectedDestination && userLocation) {
-                                handleNavigate(setUserLocation, selectedDestination);
+                                handleNavigate(setUserLocation, selectedDestination, 'auto');
                             }
                         }
                     }}
