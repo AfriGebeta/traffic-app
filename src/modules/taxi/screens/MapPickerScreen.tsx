@@ -318,7 +318,7 @@ export default function MapPickerScreen() {
                                                             )}
                                                         </View>
                                                         <Text className="text-gray-500 text-xs mt-1">
-                                                             {(station as any).distance}m away
+                                                            {(station as any).distance}m away
                                                             {station.routeName && ` • ${station.routeName}`}
                                                         </Text>
                                                     </TouchableOpacity>

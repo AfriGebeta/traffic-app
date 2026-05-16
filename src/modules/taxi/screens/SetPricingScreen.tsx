@@ -148,11 +148,11 @@ export default function SetPricingScreen() {
                     );
 
                     if (!alreadyExists) {
-                       
+
                         const mainRoute = edgePrices.find(e => e.from === 0 && e.to === stops.length - 1);
                         const mainCost = mainRoute && mainRoute.cost ? parseFloat(mainRoute.cost) : 0;
 
-                        const segmentCost = mainCost > 0 ? mainCost / (stops.length - 1) : 10; 
+                        const segmentCost = mainCost > 0 ? mainCost / (stops.length - 1) : 10;
 
                         const edgeData = {
                             startNodeId: fromNode.id,
@@ -223,9 +223,9 @@ export default function SetPricingScreen() {
                         return (
                             <View
                                 key={index}
-                                className={`mb-4 p-4 rounded-xl ${isMainRoute ? 'border-2' : 'bg-gray-50'
+                                className={`mb-4 p-4 rounded-xl ${isMainRoute ? 'bg-white border' : 'bg-gray-50'
                                     }`}
-                                style={isMainRoute ? { backgroundColor: colors.primary.light, borderColor: colors.primary.main } : undefined}
+                                style={isMainRoute ? { borderColor: colors.primary.main } : undefined}
                             >
                                 <View className="flex-row items-center justify-between mb-2">
                                     <View className="flex-1">

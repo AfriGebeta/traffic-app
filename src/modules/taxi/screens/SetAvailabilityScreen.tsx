@@ -119,20 +119,19 @@ export default function SetAvailabilityScreen() {
 
         setLoading(true);
         try {
-           
+
             console.log(`[Availability] Creating windows for ${edges.length} edges`);
 
             for (const edge of edges) {
-                for (const window of timeWindows) {
-                    await taxiService.createAvailabilityWindow({
-                        edgeStartId: edge.startNodeId,
-                        edgeEndId: edge.endNodeId,
-                        dayOfWeek: null,
-                        startMinutes: window.startMinutes,
-                        endMinutes: window.endMinutes,
-                        isAvailable: window.isAvailable,
-                    });
-                }
+                const window = timeWindows[0];
+                await taxiService.createAvailabilityWindow({
+                    edgeStartId: edge.startNodeId,
+                    edgeEndId: edge.endNodeId,
+                    dayOfWeek: null,
+                    startMinutes: window.startMinutes,
+                    endMinutes: window.endMinutes,
+                    isAvailable: window.isAvailable,
+                });
                 console.log(`[Availability] Created windows for edge: ${edge.fromName} → ${edge.toName}`);
             }
 
@@ -184,7 +183,7 @@ export default function SetAvailabilityScreen() {
                         {t('these-hours-will-apply-to-all-edges')} ({edges.length} {t('edges')})
                     </Text>
 
-                   
+
                     <View className="mb-4 p-3 bg-gray-50 rounded-xl">
                         <Text className="text-gray-700 font-semibold mb-2">{t('affected-routes')}:</Text>
                         {edges.map((edge, index) => (
@@ -198,13 +197,8 @@ export default function SetAvailabilityScreen() {
                         <View key={index} className="mb-6 p-4 bg-gray-50 rounded-xl">
                             <View className="flex-row items-center justify-between mb-4">
                                 <Text className="text-gray-900 font-semibold">
-                                    {t('time-window')} {index + 1}
+                                    {t('operating-hours')}
                                 </Text>
-                                {timeWindows.length > 1 && (
-                                    <TouchableOpacity onPress={() => removeTimeWindow(index)}>
-                                        <Ionicons name="trash" size={20} color="#EF4444" />
-                                    </TouchableOpacity>
-                                )}
                             </View>
 
                             <View className="flex-row items-center justify-between mb-4">
@@ -243,15 +237,6 @@ export default function SetAvailabilityScreen() {
                             </View>
                         </View>
                     ))}
-
-                    <TouchableOpacity
-                        className="bg-gray-200 py-3 rounded-xl mb-4 flex-row items-center justify-center"
-                        onPress={addTimeWindow}
-                        activeOpacity={0.7}
-                    >
-                        <Ionicons name="add-circle" size={24} color={colors.primary.main} />
-                        <Text className="text-gray-700 font-semibold ml-2">{t('add-time-window')}</Text>
-                    </TouchableOpacity>
 
                     <View className="flex-row space-x-2">
                         <TouchableOpacity

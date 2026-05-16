@@ -12,6 +12,8 @@ import { useLocation } from '../../../shared/contexts/LocationContext';
 import { useTranslation } from 'react-i18next';
 import { getPlaceTranslationKey } from '../utils/placeTranslations';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useUserLocation } from '../../map/hooks/useUserLocation';
+import { colors } from '../../../shared/theme/colors';
 
 export default function AddPlaceScreen() {
     const { t } = useTranslation();
@@ -20,6 +22,7 @@ export default function AddPlaceScreen() {
     const params = useLocalSearchParams();
     const placeType = params.type as PlaceType;
     const { selectedLocation } = useLocation();
+    const { userLocation } = useUserLocation();
 
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
@@ -27,6 +30,7 @@ export default function AddPlaceScreen() {
     const [images, setImages] = useState<string[]>([]);
     const [uploading, setUploading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [usingCurrentLocation, setUsingCurrentLocation] = useState(false);
 
     const placeInfo = PLACE_TYPES.find((p) => p.id === placeType);
 
@@ -96,6 +100,16 @@ export default function AddPlaceScreen() {
 
     const handlePickLocation = () => {
         router.push('/places/map-picker');
+    };
+
+    const handleUseCurrentLocation = () => {
+        if (!userLocation) {
+            showToast.error(t('location-unavailable'), t('please-wait-for-location'));
+            return;
+        }
+
+        setCoordinates(userLocation);
+        setUsingCurrentLocation(true);
     };
 
     const handleSubmit = async () => {
@@ -209,38 +223,65 @@ export default function AddPlaceScreen() {
                         <Text className="text-sm font-semibold text-gray-700 mb-2">
                             {t('location')} <Text className="text-orange-500">*</Text>
                         </Text>
-                        <TouchableOpacity
-                            className="bg-white border-2 border-gray-200 rounded-2xl p-4 flex-row items-center justify-between active:border-orange-200"
-                            onPress={handlePickLocation}
-                            activeOpacity={0.7}
-                            style={{
-                                shadowColor: '#000',
-                                shadowOffset: { width: 0, height: 1 },
-                                shadowOpacity: 0.05,
-                                shadowRadius: 4,
-                                elevation: 1,
-                            }}
-                        >
-                            <View className="flex-row items-center flex-1">
-                                <View
-                                    className={`w-10 h-10 rounded-full items-center justify-center ${coordinates ? 'bg-green-100' : 'bg-gray-100'
-                                        }`}
-                                >
-                                    <Ionicons name="location" size={20} color={coordinates ? '#10B981' : '#9CA3AF'} />
-                                </View>
-                                <View className="ml-3 flex-1">
-                                    <Text className={`text-sm font-medium ${coordinates ? 'text-gray-900' : 'text-gray-500'}`}>
-                                        {coordinates ? 'Location Selected' : t('pick-location-on-map')}
-                                    </Text>
-                                    {coordinates && (
-                                        <Text className="text-xs text-gray-500 mt-0.5">
-                                            {coordinates.lat.toFixed(4)}, {coordinates.lng.toFixed(4)}
+                        {coordinates ? (
+                            <View className="bg-green-50 border border-green-200 rounded-xl p-4">
+                                <View className="flex-row items-center justify-between">
+                                    <View className="flex-1">
+                                        <Text className="text-gray-900 font-semibold">
+                                            {usingCurrentLocation ? t('current-location') : t('location-selected')}
                                         </Text>
-                                    )}
+                                        <Text className="text-gray-500 text-sm">
+                                            {coordinates.lat.toFixed(7)}, {coordinates.lng.toFixed(7)}
+                                        </Text>
+                                    </View>
+                                    <TouchableOpacity onPress={() => { setCoordinates(null); setUsingCurrentLocation(false); }}>
+                                        <Ionicons name="close-circle" size={24} color="#EF4444" />
+                                    </TouchableOpacity>
                                 </View>
                             </View>
-                            <Ionicons name="chevron-forward" size={20} color="#D1D5DB" />
-                        </TouchableOpacity>
+                        ) : (
+                            <View>
+                                <TouchableOpacity
+                                    className="bg-white border-2 border-gray-200 rounded-2xl p-4 flex-row items-center justify-between active:border-orange-200 mb-2"
+                                    onPress={handlePickLocation}
+                                    activeOpacity={0.7}
+                                    style={{
+                                        shadowColor: '#000',
+                                        shadowOffset: { width: 0, height: 1 },
+                                        shadowOpacity: 0.05,
+                                        shadowRadius: 4,
+                                        elevation: 1,
+                                    }}
+                                >
+                                    <View className="flex-row items-center flex-1">
+                                        <View className="w-10 h-10 rounded-full items-center justify-center bg-gray-100">
+                                            <Ionicons name="map" size={20} color="#9CA3AF" />
+                                        </View>
+                                        <View className="ml-3 flex-1">
+                                            <Text className="text-sm font-medium text-gray-500">
+                                                {t('pick-location-on-map')}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                    <Ionicons name="chevron-forward" size={20} color="#D1D5DB" />
+                                </TouchableOpacity>
+                                <View className="flex-row items-center justify-center my-2">
+                                    <View className="flex-1 h-px bg-gray-200" />
+                                    <Text className="text-gray-400 text-sm mx-3">{t('or')}</Text>
+                                    <View className="flex-1 h-px bg-gray-200" />
+                                </View>
+                                <TouchableOpacity
+                                    className="py-3 rounded-xl flex-row items-center justify-center"
+                                    style={{ backgroundColor: colors.primary.main }}
+                                    onPress={handleUseCurrentLocation}
+                                    activeOpacity={0.7}
+                                    disabled={!userLocation}
+                                >
+                                    <Ionicons name="locate" size={20} color="white" />
+                                    <Text className="text-white font-semibold ml-2">{t('use-current-location')}</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
                     </View>
 
                     {/* Photos */}
