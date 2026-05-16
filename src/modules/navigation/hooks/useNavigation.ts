@@ -47,6 +47,7 @@ export const useNavigation = (
     const totalRouteDistance = useRef<number>(0);
     const totalRouteDuration = useRef<number>(0);
 
+
     useVoiceInstructions({
         currentInstruction,
         isNavigating: navigationMode,
