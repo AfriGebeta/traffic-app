@@ -324,6 +324,133 @@ const AnimatedRouteSource = memo(({
     );
 });
 AnimatedRouteSource.displayName = 'AnimatedRouteSource';
+
+const AnimatedSegmentedRoutes = memo(({
+    segmentedRoutes,
+    targetLat,
+    targetLng,
+    isNavigating,
+    currentTaxiSegmentIndex,
+}: {
+    segmentedRoutes: Array<{ geoJSON: any; isWalking: boolean; segmentIndex: number }>;
+    targetLat: number;
+    targetLng: number;
+    isNavigating: boolean;
+    currentTaxiSegmentIndex?: number;
+}) => {
+    const [animatedSegments, setAnimatedSegments] = useState(segmentedRoutes);
+
+    const displayPosRef = useRef({ lat: targetLat, lng: targetLng });
+    const fromPosRef = useRef({ lat: targetLat, lng: targetLng });
+    const toPosRef = useRef({ lat: targetLat, lng: targetLng });
+    const animStartTime = useRef(Date.now());
+    const updateIntervalRef = useRef(1000);
+    const lastUpdateTime = useRef(Date.now());
+    const isFirstRef = useRef(true);
+    const currentSegmentsRef = useRef(segmentedRoutes);
+    const currentSegmentIndexRef = useRef(currentTaxiSegmentIndex);
+
+    useEffect(() => {
+        currentSegmentsRef.current = segmentedRoutes;
+    }, [segmentedRoutes]);
+
+    useEffect(() => {
+        currentSegmentIndexRef.current = currentTaxiSegmentIndex;
+    }, [currentTaxiSegmentIndex]);
+
+    useEffect(() => {
+        if (isFirstRef.current) {
+            isFirstRef.current = false;
+            displayPosRef.current = { lat: targetLat, lng: targetLng };
+            fromPosRef.current = { lat: targetLat, lng: targetLng };
+            toPosRef.current = { lat: targetLat, lng: targetLng };
+            lastUpdateTime.current = Date.now();
+            setAnimatedSegments(segmentedRoutes);
+            return;
+        }
+        const now = Date.now();
+        const measured = now - lastUpdateTime.current;
+        updateIntervalRef.current = Math.max(200, Math.min(measured, 3000));
+        lastUpdateTime.current = now;
+        fromPosRef.current = { ...displayPosRef.current };
+        toPosRef.current = { lat: targetLat, lng: targetLng };
+        animStartTime.current = now;
+    }, [targetLat, targetLng]);
+
+    useEffect(() => {
+        if (!isNavigating) {
+            isFirstRef.current = true;
+            return;
+        }
+
+        const interval = setInterval(() => {
+            const elapsed = Date.now() - animStartTime.current;
+            const t = Math.min(1, elapsed / updateIntervalRef.current);
+            const easedT = 1 - (1 - t) * (1 - t);
+
+            const lat = fromPosRef.current.lat + (toPosRef.current.lat - fromPosRef.current.lat) * easedT;
+            const lng = fromPosRef.current.lng + (toPosRef.current.lng - fromPosRef.current.lng) * easedT;
+            displayPosRef.current = { lat, lng };
+
+            const segments = currentSegmentsRef.current;
+            if (segments.length === 0) return;
+
+            const curIdx = currentSegmentIndexRef.current;
+            const animated = segments.map((seg) => {
+                if (seg.segmentIndex !== curIdx) return seg;
+                const coords = seg.geoJSON.geometry.coordinates;
+                if (coords.length === 0) return seg;
+                return {
+                    ...seg,
+                    geoJSON: {
+                        ...seg.geoJSON,
+                        geometry: {
+                            ...seg.geoJSON.geometry,
+                            coordinates: [[lng, lat], ...coords],
+                        },
+                    },
+                };
+            });
+
+            setAnimatedSegments(animated);
+        }, 33);
+
+        return () => clearInterval(interval);
+    }, [isNavigating]);
+
+    return (
+        <>
+            {animatedSegments.map((route) => {
+                if (route.geoJSON.geometry.coordinates.length === 0) return null;
+
+                const lineStyle: any = {
+                    lineColor: route.isWalking ? '#EF4444' : '#3B82F6',
+                    lineWidth: route.isWalking ? 5 : 7,
+                    lineOpacity: currentSegmentIndexRef.current === route.segmentIndex ? 1 : 0.7,
+                    lineCap: 'round',
+                    lineJoin: 'round',
+                };
+                if (route.isWalking) {
+                    lineStyle.lineDasharray = [0, 2];
+                }
+
+                return (
+                    <MapLibreGL.ShapeSource
+                        key={`segment-${route.segmentIndex}-source`}
+                        id={`segment-${route.segmentIndex}-source`}
+                        shape={route.geoJSON}
+                    >
+                        <MapLibreGL.LineLayer
+                            id={`segment-${route.segmentIndex}-layer`}
+                            style={lineStyle}
+                        />
+                    </MapLibreGL.ShapeSource>
+                );
+            })}
+        </>
+    );
+});
+AnimatedSegmentedRoutes.displayName = 'AnimatedSegmentedRoutes';
 // ---------------------------------------------------------------------------
 
 const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
@@ -703,69 +830,42 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         />
 
 
-                        {segmentedRoutes && segmentedRoutes.length > 0 && (() => {
-                            console.log('[GebetaMap] Rendering segmented routes:', {
-                                count: segmentedRoutes.length,
-                                segments: segmentedRoutes.map(r => ({
-                                    index: r.segmentIndex,
-                                    isWalking: r.isWalking,
-                                    coordsCount: r.geoJSON.geometry.coordinates.length
-                                })),
-                                currentSegmentIndex: currentTaxiSegmentIndex
-                            });
-                            return segmentedRoutes.map((route, index) => {
-                                const isCurrentSegment = isTaxiNavigation && currentTaxiSegmentIndex === route.segmentIndex;
-                                const isPastSegment = isTaxiNavigation && currentTaxiSegmentIndex !== undefined && route.segmentIndex < currentTaxiSegmentIndex;
+                        {isNavigating && isTaxiNavigation && segmentedRoutes && segmentedRoutes.length > 0 && userLocation && (
+                            <AnimatedSegmentedRoutes
+                                segmentedRoutes={segmentedRoutes}
+                                targetLat={userLocation.lat}
+                                targetLng={userLocation.lng}
+                                isNavigating={!!isNavigating}
+                                currentTaxiSegmentIndex={currentTaxiSegmentIndex}
+                            />
+                        )}
 
-
-                                if (isPastSegment) {
-                                    console.log(`[GebetaMap] Skipping past segment ${route.segmentIndex}`);
-                                    return null;
-                                }
-
-                                console.log(`[GebetaMap] Segment ${route.segmentIndex}:`, {
-                                    isWalking: route.isWalking,
-                                    isCurrentSegment,
-                                    isPastSegment,
-                                    color: route.isWalking ? '#EF4444' : '#3B82F6',
-                                    style: route.isWalking ? 'dotted' : 'solid',
-                                    firstCoord: route.geoJSON.geometry.coordinates[0],
-                                    markerPos: route.geoJSON.properties?.markerLat ?
-                                        [route.geoJSON.properties.markerLng, route.geoJSON.properties.markerLat] : 'none'
-                                });
-
-                                const lineStyle: any = {
-                                    lineColor: route.isWalking ? '#EF4444' : '#3B82F6',
-                                    lineWidth: route.isWalking ? 5 : 7,
-                                    lineOpacity: isCurrentSegment ? 1 : 0.7,
-                                    lineCap: 'round',
-                                    lineJoin: 'round',
-                                };
-
-
-                                if (route.isWalking) {
-                                    lineStyle.lineDasharray = [2, 2];
-                                }
-
-
-                                const markerKey = route.geoJSON.properties?.markerLat && route.geoJSON.properties?.markerLng
-                                    ? `${route.geoJSON.properties.markerLat.toFixed(6)}-${route.geoJSON.properties.markerLng.toFixed(6)}`
-                                    : renderKey;
-
-                                return (
-                                    <MapLibreGL.ShapeSource
-                                        key={`segment-${route.segmentIndex}-${markerKey}`}
-                                        id={`segment-${route.segmentIndex}-source`}
-                                        shape={route.geoJSON}
-                                    >
-                                        <MapLibreGL.LineLayer
-                                            id={`segment-${route.segmentIndex}-layer`}
-                                            style={lineStyle}
-                                        />
-                                    </MapLibreGL.ShapeSource>
-                                );
-                            });
-                        })()}
+                        {!(isNavigating && isTaxiNavigation) && segmentedRoutes && segmentedRoutes.length > 0 && segmentedRoutes.map((route) => {
+                            if (route.geoJSON.geometry.coordinates.length === 0) return null;
+                            const isCurrentSegment = currentTaxiSegmentIndex === route.segmentIndex;
+                            const lineStyle: any = {
+                                lineColor: route.isWalking ? '#EF4444' : '#3B82F6',
+                                lineWidth: route.isWalking ? 5 : 7,
+                                lineOpacity: isCurrentSegment ? 1 : 0.7,
+                                lineCap: 'round',
+                                lineJoin: 'round',
+                            };
+                            if (route.isWalking) {
+                                lineStyle.lineDasharray = [0, 2];
+                            }
+                            return (
+                                <MapLibreGL.ShapeSource
+                                    key={`segment-static-${route.segmentIndex}`}
+                                    id={`segment-${route.segmentIndex}-source`}
+                                    shape={route.geoJSON}
+                                >
+                                    <MapLibreGL.LineLayer
+                                        id={`segment-${route.segmentIndex}-layer`}
+                                        style={lineStyle}
+                                    />
+                                </MapLibreGL.ShapeSource>
+                            );
+                        })}
 
 
                         {isNavigating && routeGeoJSON && !segmentedRoutes && userLocation && (
