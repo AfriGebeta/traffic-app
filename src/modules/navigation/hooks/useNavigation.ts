@@ -35,6 +35,7 @@ export const useNavigation = (
     const [routeGeoJSON, setRouteGeoJSON] = useState<any>(null);
     const [fullRouteCoordinates, setFullRouteCoordinates] = useState<[number, number][]>([]);
     const [showArrivalModal, setShowArrivalModal] = useState(false);
+    const [currentCosting, setCurrentCosting] = useState<'auto' | 'pedestrian'>('auto');
 
     const routeCoordinates = useRef<[number, number][]>([]);
     const isNavigatingRef = useRef(false);
@@ -155,7 +156,8 @@ export const useNavigation = (
         try {
             const navigationData = await navigationService.getNavigation({
                 origin: [userLocation.lat, userLocation.lng],
-                destination: [targetDestination.latitude, targetDestination.longitude]
+                destination: [targetDestination.latitude, targetDestination.longitude],
+                costing: currentCosting,
             });
 
             if (!navigationData?.data?.trip?.legs?.[0]) {
@@ -287,7 +289,8 @@ export const useNavigation = (
 
             const navigationData = await navigationService.getNavigation({
                 origin: [userLocation.lat, userLocation.lng],
-                destination: [selectedDestination.latitude, selectedDestination.longitude]
+                destination: [selectedDestination.latitude, selectedDestination.longitude],
+                costing: currentCosting,
             });
 
             if (!navigationData?.data?.trip?.legs?.[0]) {
@@ -493,6 +496,7 @@ export const useNavigation = (
         setRemainingTime(0);
         setIsOffRoute(false);
         setIsRecalculating(false);
+        setCurrentCosting('auto'); 
 
         if (startBackgroundTracking) {
             startBackgroundTracking();
@@ -516,6 +520,7 @@ export const useNavigation = (
         setRemainingDistance(0);
         setRemainingTime(0);
         setShowRoutePreview(false);
+        setCurrentCosting('auto'); 
     };
     const simulateOffRoute = (setUserLocation: (location: { lat: number; lng: number }) => void) => {
         simulateOffRouteInternal(
@@ -557,6 +562,8 @@ export const useNavigation = (
         isRecalculating,
         showArrivalModal,
         setShowArrivalModal,
+        currentCosting,
+        setCurrentCosting,
 
         routeCoordinates: routeCoordinates.current,
         routeGeoJSON,

@@ -4,6 +4,7 @@ import * as Location from 'expo-location';
 export const useUserLocation = () => {
     const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
     const locationSubscription = useRef<Location.LocationSubscription | null>(null);
+    const isBackgroundTrackingActive = useRef(true);
 
     const startLocationTracking = async () => {
         try {
@@ -13,14 +14,17 @@ export const useUserLocation = () => {
                 return;
             }
 
+            isBackgroundTrackingActive.current = true;
 
             const initialLocation = await Location.getCurrentPositionAsync({
                 accuracy: Location.Accuracy.High,
             });
-            setUserLocation({
-                lat: initialLocation.coords.latitude,
-                lng: initialLocation.coords.longitude,
-            });
+            if (isBackgroundTrackingActive.current) {
+                setUserLocation({
+                    lat: initialLocation.coords.latitude,
+                    lng: initialLocation.coords.longitude,
+                });
+            }
 
             // start watching update
             locationSubscription.current = await Location.watchPositionAsync(
@@ -30,10 +34,18 @@ export const useUserLocation = () => {
                     distanceInterval: 10,
                 },
                 (location) => {
-                    setUserLocation({
-                        lat: location.coords.latitude,
-                        lng: location.coords.longitude,
-                    });
+                    if (isBackgroundTrackingActive.current) {
+                        console.log('[useUserLocation] Background GPS update:', {
+                            lat: location.coords.latitude,
+                            lng: location.coords.longitude
+                        });
+                        setUserLocation({
+                            lat: location.coords.latitude,
+                            lng: location.coords.longitude,
+                        });
+                    } else {
+                        console.log('[useUserLocation] Ignoring background GPS (tracking stopped)');
+                    }
                 }
             );
         } catch (error) {
@@ -42,10 +54,12 @@ export const useUserLocation = () => {
     };
 
     const stopLocationTracking = () => {
+        isBackgroundTrackingActive.current = false;
         if (locationSubscription.current) {
             locationSubscription.current.remove();
             locationSubscription.current = null;
         }
+        console.log('[useUserLocation] Background location tracking stopped');
     };
 
     useEffect(() => {

@@ -13,9 +13,12 @@ export interface GeocodingResponse {
     data: GeocodingPlace[];
 }
 
+export type Costing = 'auto' | 'bicycle' | 'pedestrian' | 'truck';
+
 export interface NavigationRequest {
     origin: [number, number];
     destination: [number, number];
+    costing?: Costing;
 }
 
 export interface Maneuver {

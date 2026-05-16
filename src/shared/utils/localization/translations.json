@@ -1243,5 +1243,685 @@
         "key": "atm",
         "EN_US": "ATM",
         "AM": "ኤቲኤም"
+    },
+    {
+        "key": "contribute-taxi-info",
+        "EN_US": "Contribute Taxi Info",
+        "AM": "የታክሲ መረጃ ያስገቡ"
+    },
+    {
+        "key": "contribute-taxi-info-description",
+        "EN_US": "Help taxi users by adding stops and routes",
+        "AM": "ማቆሚያዎችን እና መስመሮችን በመጨመር የታክሲ ተጠቃሚዎችን ይርዱ"
+    },
+    {
+        "key": "help-taxi-users-navigate",
+        "EN_US": "Help taxi users navigate better",
+        "AM": "የታክሲ ተጠቃሚዎች በተሻለ መንገድ እንዲጓዙ ይርዱ"
+    },
+    {
+        "key": "add-taxi-stop",
+        "EN_US": "Add Taxi Stop",
+        "AM": "የታክሲ ማቆሚያ ያስገቡ"
+    },
+    {
+        "key": "add-taxi-stop-description",
+        "EN_US": "Mark a new taxi station or stop on the map",
+        "AM": "አዲስ የታክሲ ጣቢያ ወይም ማቆሚያ በካርታው ላይ ያመልክቱ"
+    },
+    {
+        "key": "link-taxi-stops",
+        "EN_US": "Link Taxi Stops",
+        "AM": "የታክሲ ማቆሚያዎችን ያገናኙ"
+    },
+    {
+        "key": "link-taxi-stops-description",
+        "EN_US": "Connect two stops to create a route",
+        "AM": "መስመር ለመፍጠር ሁለት ማቆሚያዎችን ያገናኙ"
+    },
+    {
+        "key": "stop-name",
+        "EN_US": "Stop Name",
+        "AM": "የማቆሚያ ስም"
+    },
+    {
+        "key": "enter-stop-name",
+        "EN_US": "Enter stop name",
+        "AM": "የማቆሚያ ስም ያስገቡ"
+    },
+    {
+        "key": "please-enter-stop-name",
+        "EN_US": "Please enter stop name",
+        "AM": "እባክዎ የማቆሚያ ስም ያስገቡ"
+    },
+    {
+        "key": "latitude",
+        "EN_US": "Latitude",
+        "AM": "ላቲቲዪድ"
+    },
+    {
+        "key": "longitude",
+        "EN_US": "Longitude",
+        "AM": "ሎንጊቲዩድ"
+    },
+    {
+        "key": "please-enter-valid-coordinates",
+        "EN_US": "Please enter valid coordinates",
+        "AM": "እባክዎ ትክክለኛ መረጃ ያስገቡ"
+    },
+    {
+        "key": "type",
+        "EN_US": "Type",
+        "AM": "አይነት"
+    },
+    {
+        "key": "station",
+        "EN_US": "Station",
+        "AM": "ጣቢያ"
+    },
+    {
+        "key": "stop",
+        "EN_US": "Stop",
+        "AM": "ማቆሚያ"
+    },
+    {
+        "key": "route-name",
+        "EN_US": "Route Name",
+        "AM": "የመስመር ስም"
+    },
+    {
+        "key": "enter-route-name",
+        "EN_US": "Enter route name",
+        "AM": "የመስመር ስም ያስገቡ"
+    },
+    {
+        "key": "enter-route-name-example",
+        "EN_US": "e.g., Megenagna-Mexico",
+        "AM": "ለምሳሌ፣ መገናኛ-ሜክሲኮ"
+    },
+    {
+        "key": "optional",
+        "EN_US": "Optional",
+        "AM": "አማራጭ"
+    },
+    {
+        "key": "submit",
+        "EN_US": "Submit",
+        "AM": "ያስገቡ"
+    },
+    {
+        "key": "taxi-stop-added-successfully",
+        "EN_US": "Taxi stop added successfully",
+        "AM": "የታክሲ ማቆሚያ በተሳካ ሁኔታ ተጨምሯል"
+    },
+    {
+        "key": "failed-to-add-taxi-stop",
+        "EN_US": "Failed to add taxi stop",
+        "AM": "የታክሲ ማቆሚያ መጨመር አልተሳካም"
+    },
+    {
+        "key": "please-enter-route-name",
+        "EN_US": "Please enter route name",
+        "AM": "እባክዎ የመስመር ስም ያስገቡ"
+    },
+    {
+        "key": "from-stop",
+        "EN_US": "From Stop",
+        "AM": "ከማቆሚያ"
+    },
+    {
+        "key": "to-stop",
+        "EN_US": "To Stop",
+        "AM": "ወደ ማቆሚያ"
+    },
+    {
+        "key": "select-stop",
+        "EN_US": "Select a stop",
+        "AM": "ማቆሚያ ይምረጡ"
+    },
+    {
+        "key": "please-select-both-stops",
+        "EN_US": "Please select both stops",
+        "AM": "እባክዎ ሁለቱንም ማቆሚያዎች ይምረጡ"
+    },
+    {
+        "key": "start-and-end-must-be-different",
+        "EN_US": "Start and end stops must be different",
+        "AM": "መነሻ እና መድረሻ ማቆሚያዎች የተለያዩ መሆን አለባቸው"
+    },
+    {
+        "key": "cost-etb",
+        "EN_US": "Cost (ETB)",
+        "AM": "ዋጋ (ብር)"
+    },
+    {
+        "key": "please-enter-valid-cost",
+        "EN_US": "Please enter a valid cost",
+        "AM": "እባክዎ ትክክለኛ ዋጋ ያስገቡ"
+    },
+    {
+        "key": "connection-type",
+        "EN_US": "Connection Type",
+        "AM": "የግንኙነት አይነት"
+    },
+    {
+        "key": "taxi",
+        "EN_US": "Taxi",
+        "AM": "ታክሲ"
+    },
+    {
+        "key": "walk",
+        "EN_US": "Walk",
+        "AM": "በእግር"
+    },
+    {
+        "key": "stops-linked-successfully",
+        "EN_US": "Stops linked successfully",
+        "AM": "ማቆሚያዎች በተሳካ ሁኔታ ተገናኝተዋል"
+    },
+    {
+        "key": "failed-to-link-stops",
+        "EN_US": "Failed to link stops",
+        "AM": "ማቆሚያዎችን ማገናኘት አልተሳካም"
+    },
+    {
+        "key": "failed-to-load-stops",
+        "EN_US": "Failed to load stops",
+        "AM": "ማቆሚያዎችን መጫን አልተሳካም"
+    },
+    {
+        "key": "build-route",
+        "EN_US": "Build Route",
+        "AM": "መስመር ይፍጠሩ"
+    },
+    {
+        "key": "build-route-description",
+        "EN_US": "Create a complete route with all stops at once",
+        "AM": "ሁሉንም ማቆሚያዎች በአንድ ጊዜ የያዘ ሙሉ መስመር ይፍጠሩ"
+    },
+    {
+        "key": "create-route-with-stops",
+        "EN_US": "Create a complete route with all stops",
+        "AM": "ሁሉንም ማቆሚያዎች የያዘ ሙሉ መስመር ይፍጠሩ"
+    },
+    {
+        "key": "start-station",
+        "EN_US": "Start Station",
+        "AM": "መነሻ ጣቢያ"
+    },
+    {
+        "key": "end-station",
+        "EN_US": "End Station",
+        "AM": "መድረሻ ጣቢያ"
+    },
+    {
+        "key": "intermediate-stops",
+        "EN_US": "Intermediate Stops",
+        "AM": "መካከለኛ ማቆሚያዎች"
+    },
+    {
+        "key": "pick-on-map",
+        "EN_US": "Pick on map",
+        "AM": "በካርታ ላይ ይምረጡ"
+    },
+    {
+        "key": "add-stop",
+        "EN_US": "Add Stop",
+        "AM": "ማቆሚያ ያክሉ"
+    },
+    {
+        "key": "total-cost-start-to-end",
+        "EN_US": "Total Cost (Start to End)",
+        "AM": "ጠቅላላ ዋጋ (ከመነሻ እስከ መድረሻ)"
+    },
+    {
+        "key": "cost-will-be-distributed-evenly",
+        "EN_US": "Cost will be distributed evenly across all segments",
+        "AM": "ዋጋው በሁሉም ክፍሎች እኩል ይከፋፈላል"
+    },
+    {
+        "key": "create-route",
+        "EN_US": "Create Route",
+        "AM": "መስመር ይፍጠሩ"
+    },
+    {
+        "key": "please-select-start-end-stations",
+        "EN_US": "Please select start and end stations",
+        "AM": "እባክዎ መነሻ እና መድረሻ ጣቢያዎችን ይምረጡ"
+    },
+    {
+        "key": "route-created-successfully",
+        "EN_US": "Route created successfully",
+        "AM": "መስመር በተሳካ ሁኔታ ተፈጥሯል"
+    },
+    {
+        "key": "failed-to-create-route",
+        "EN_US": "Failed to create route",
+        "AM": "መስመር መፍጠር አልተሳካም"
+    },
+    {
+        "key": "pick-start-station",
+        "EN_US": "Pick Start Station",
+        "AM": "መነሻ ጣቢያ ይምረጡ"
+    },
+    {
+        "key": "pick-end-station",
+        "EN_US": "Pick End Station",
+        "AM": "መድረሻ ጣቢያ ይምረጡ"
+    },
+    {
+        "key": "pick-intermediate-stop",
+        "EN_US": "Pick Intermediate Stop",
+        "AM": "መካከለኛ ማቆሚያ ይምረጡ"
+    },
+    {
+        "key": "pick-location",
+        "EN_US": "Pick Location",
+        "AM": "ቦታ ይምረጡ"
+    },
+    {
+        "key": "tap-map-to-select-location",
+        "EN_US": "Tap on the map to select a location",
+        "AM": "ቦታ ለመምረጥ ካርታውን ይንኩ"
+    },
+    {
+        "key": "please-select-location-on-map",
+        "EN_US": "Please select a location on the map",
+        "AM": "እባክዎ በካርታው ላይ ቦታ ይምረጡ"
+    },
+    {
+        "key": "confirm-location",
+        "EN_US": "Confirm Location",
+        "AM": "ቦታውን ያረጋግጡ"
+    },
+    {
+        "key": "set-prices",
+        "EN_US": "Set Prices",
+        "AM": "ዋጋዎችን ያስገቡ"
+    },
+    {
+        "key": "set-prices-description",
+        "EN_US": "Set the fare for each connection (at least the main route)",
+        "AM": "ለእያንዳንዱ ግንኙነት ዋጋ ያስገቡ (ቢያንስ ዋናው መስመር)"
+    },
+    {
+        "key": "stops",
+        "EN_US": "stops",
+        "AM": "ማቆሚያዎች"
+    },
+    {
+        "key": "main-route-required",
+        "EN_US": "Main route (required)",
+        "AM": "ዋና መስመር (አስፈላጊ)"
+    },
+    {
+        "key": "required",
+        "EN_US": "Required",
+        "AM": "አስፈላጊ"
+    },
+    {
+        "key": "please-enter-main-route-cost",
+        "EN_US": "Please enter the cost for the main route",
+        "AM": "እባክዎ ለዋናው መስመር ዋጋ ያስገቡ"
+    },
+    {
+        "key": "using-existing-station",
+        "EN_US": "Using existing station",
+        "AM": "ነባር ጣቢያ በመጠቀም ላይ"
+    },
+    {
+        "key": "using-current-location",
+        "EN_US": "Using current location",
+        "AM": "የአሁን አካባቢ በመጠቀም ላይ"
+    },
+    {
+        "key": "enter-station-name",
+        "EN_US": "Enter station name",
+        "AM": "የጣቢያ ስም ያስገቡ"
+    },
+    {
+        "key": "confirm",
+        "EN_US": "Confirm",
+        "AM": "ያረጋግጡ"
+    },
+    {
+        "key": "nearby-existing-stations",
+        "EN_US": "Nearby existing stations",
+        "AM": "በአቅራቢያ ያሉ ጣቢያዎች"
+    },
+    {
+        "key": "loading-nearby-stations",
+        "EN_US": "Loading nearby stations...",
+        "AM": "በአቅራቢያ ያሉ ጣቢያዎችን በመጫን ላይ..."
+    },
+    {
+        "key": "taxi-navigation",
+        "EN_US": "Taxi Navigation",
+        "AM": "የታክሲ መሄጃ"
+    },
+    {
+        "key": "find-taxi-route-to-destination",
+        "EN_US": "Find a taxi route to your destination",
+        "AM": "ወደ መድረሻዎ የታክሲ መስመር ያግኙ"
+    },
+    {
+        "key": "from",
+        "EN_US": "From",
+        "AM": "ከ"
+    },
+    {
+        "key": "to",
+        "EN_US": "To",
+        "AM": "ወደ"
+    },
+    {
+        "key": "current-location",
+        "EN_US": "Current Location",
+        "AM": "የአሁኑ አካባቢ"
+    },
+    {
+        "key": "use-current-location",
+        "EN_US": "Use Current Location",
+        "AM": "የአሁኑን አካባቢ ይጠቀሙ"
+    },
+    {
+        "key": "waiting-for-location",
+        "EN_US": "Waiting for location...",
+        "AM": "አካባቢን በመጠበቅ ላይ..."
+    },
+    {
+        "key": "enter-destination-name",
+        "EN_US": "Enter destination name",
+        "AM": "የመድረሻ ስም ያስገቡ"
+    },
+    {
+        "key": "available-stations",
+        "EN_US": "Available Stations",
+        "AM": "ያሉ ጣቢያዎች"
+    },
+    {
+        "key": "loading-stations",
+        "EN_US": "Loading stations...",
+        "AM": "ጣቢያዎችን በመጠበቅ ላይ..."
+    },
+    {
+        "key": "or-pick-on-map",
+        "EN_US": "Or pick on map",
+        "AM": "ወይም በካርታ ላይ ይምረጡ"
+    },
+    {
+        "key": "find-taxi-route",
+        "EN_US": "Find Taxi Route",
+        "AM": "የታክሲ መስመር ያግኙ"
+    },
+    {
+        "key": "please-enter-destination",
+        "EN_US": "Please enter a destination",
+        "AM": "እባክዎ መድረሻ ያስገቡ"
+    },
+    {
+        "key": "failed-to-find-route",
+        "EN_US": "Failed to find route",
+        "AM": "መስመር ማግኘት አልተሳካም"
+    },
+    {
+        "key": "taxi-route",
+        "EN_US": "Taxi Route",
+        "AM": "የታክሲ መስመር"
+    },
+    {
+        "key": "walk-to-boarding-point",
+        "EN_US": "Walk to Boarding Point",
+        "AM": "ወደ መሳፈሪያ ቦታ በእግር ይሂዱ"
+    },
+    {
+        "key": "taxi-ride",
+        "EN_US": "Taxi Ride",
+        "AM": "የታክሲ ጉዞ"
+    },
+    {
+        "key": "walk-to-destination",
+        "EN_US": "Walk to Destination",
+        "AM": "ወደ መድረሻ በእግር ይሂዱ"
+    },
+    {
+        "key": "final-destination",
+        "EN_US": "Final Destination",
+        "AM": "የመጨረሻ መድረሻ"
+    },
+    {
+        "key": "total-fare",
+        "EN_US": "Total Fare",
+        "AM": "ጠቅላላ ዋጋ"
+    },
+    {
+        "key": "taxi-segments",
+        "EN_US": "taxi segments",
+        "AM": "የታክሲ ክፍሎች"
+    },
+    {
+        "key": "walk-segments",
+        "EN_US": "walk segments",
+        "AM": "የእግር ክፍሎች"
+    },
+    {
+        "key": "start-navigation",
+        "EN_US": "Start Navigation",
+        "AM": "ጉዞ ይጀምሩ"
+    },
+    {
+        "key": "go-back",
+        "EN_US": "Go Back",
+        "AM": "ተመለስ"
+    },
+    {
+        "key": "on-taxi",
+        "EN_US": "On Taxi",
+        "AM": "በታክሲ ላይ"
+    },
+    {
+        "key": "walking",
+        "EN_US": "Walking",
+        "AM": "በእግር እየተጓዙ"
+    },
+    {
+        "key": "exit-at",
+        "EN_US": "Exit at",
+        "AM": "ይውጡ በ"
+    },
+    {
+        "key": "heading-to",
+        "EN_US": "Heading to",
+        "AM": "እየሄዱ ወደ"
+    },
+    {
+        "key": "board-taxi-at",
+        "EN_US": "Board taxi at",
+        "AM": "ታክሲ ይውሰዱ በ"
+    },
+    {
+        "key": "continue-ahead",
+        "EN_US": "Continue ahead",
+        "AM": "ቀጥል"
+    },
+    {
+        "key": "taxi-navigation-coming-soon",
+        "EN_US": "taxi Navigation coming soon",
+        "AM": "Coming soon"
+    },
+    {
+        "key": "transportation-mode",
+        "EN_US": "Transportation Mode",
+        "AM": "የመጓጓዣ ዘዴ"
+    },
+    {
+        "key": "driving",
+        "EN_US": "Driving",
+        "AM": "በመኪና"
+    },
+    {
+        "key": "walking",
+        "EN_US": "Walking",
+        "AM": "በእግር"
+    },
+    {
+        "key": "taxi-mode",
+        "EN_US": "Taxi",
+        "AM": "ታክሲ"
+    },
+    {
+        "key": "loading-taxi-route",
+        "EN_US": "Loading taxi route...",
+        "AM": "የታክሲ መስመር በመፈለግ ላይ..."
+    },
+    {
+        "key": "no-taxi-route-found",
+        "EN_US": "No taxi route found for this destination",
+        "AM": "ለዚህ መድረሻ የታክሲ መስመር አልተገኘም"
+    },
+    {
+        "key": "taxi-fare",
+        "EN_US": "Taxi Fare",
+        "AM": "የታክሲ ዋጋ"
+    },
+    {
+        "key": "taxi-route-unavailable",
+        "EN_US": "Taxi route is not available for this destination. Please try a different location.",
+        "AM": "ለዚህ መድረሻ የታክሲ መስመር አይገኝም። እባክዎ ሌላ ቦታ ይሞክሩ።"
+    },
+    {
+        "key": "set-availability",
+        "EN_US": "Set Availability",
+        "AM": "የአገልግሎት ሰዓት ያስገቡ"
+    },
+    {
+        "key": "edge",
+        "EN_US": "Edge",
+        "AM": "ክፍል"
+    },
+    {
+        "key": "of",
+        "EN_US": "of",
+        "AM": "ከ"
+    },
+    {
+        "key": "set-operating-hours-for-this-route",
+        "EN_US": "Set the operating hours for this route segment",
+        "AM": "ለዚህ የመስመር የአገልግሎት ሰዓት ያስገቡ"
+    },
+    {
+        "key": "time-window",
+        "EN_US": "Time Window",
+        "AM": "የሰዓት ክልል"
+    },
+    {
+        "key": "start-time",
+        "EN_US": "Start Time",
+        "AM": "መጀመሪያ ሰዓት"
+    },
+    {
+        "key": "end-time",
+        "EN_US": "End Time",
+        "AM": "መጨረሻ ሰዓት"
+    },
+    {
+        "key": "is-available",
+        "EN_US": "Is Available",
+        "AM": "ይገኛል"
+    },
+    {
+        "key": "add-time-window",
+        "EN_US": "Add Time Window",
+        "AM": "የሰዓት ክልል ያክሉ"
+    },
+    {
+        "key": "skip",
+        "EN_US": "Skip",
+        "AM": "ዝለል"
+    },
+    {
+        "key": "finish",
+        "EN_US": "Finish",
+        "AM": "ጨርስ"
+    },
+    {
+        "key": "set-start-time",
+        "EN_US": "Set Start Time",
+        "AM": "መጀመሪያ ሰዓት ያስገቡ"
+    },
+    {
+        "key": "set-end-time",
+        "EN_US": "Set End Time",
+        "AM": "መጨረሻ ሰዓት ያስገቡ"
+    },
+    {
+        "key": "hour",
+        "EN_US": "Hour",
+        "AM": "ሰዓት"
+    },
+    {
+        "key": "minute",
+        "EN_US": "Minute",
+        "AM": "ደቂቃ"
+    },
+    {
+        "key": "format-24-hour",
+        "EN_US": "24-hour format (00-23 hours, 00-59 minutes)",
+        "AM": "24 ሰዓት (00-23 ሰዓት፣ 00-59 ደቂቃ)"
+    },
+    {
+        "key": "save",
+        "EN_US": "Save",
+        "AM": "አስቀምጥ"
+    },
+    {
+        "key": "invalid-time-format",
+        "EN_US": "Invalid time format. Please enter valid hours (0-23) and minutes (0-59).",
+        "AM": "ልክ ያልሆነ ሰዓት። እባክዎ ትክክለኛ ሰዓት (0-23) እና ደቂቃ (0-59) ያስገቡ።"
+    },
+    {
+        "key": "please-add-at-least-one-time-window",
+        "EN_US": "Please add at least one time window",
+        "AM": "እባክዎ ቢያንስ አንድ የሰዓት ክልል ያስገቡ"
+    },
+    {
+        "key": "start-time-must-be-before-end-time",
+        "EN_US": "Start time must be before end time",
+        "AM": "መጀመሪያ ሰዓት ከመጨረሻ ሰዓት በፊት መሆን አለበት"
+    },
+    {
+        "key": "availability-windows-created-successfully",
+        "EN_US": "Availability windows created successfully!",
+        "AM": "የአገልግሎት ሰዓቶች በተሳካ ሁኔታ ተፈጥረዋል!"
+    },
+    {
+        "key": "failed-to-create-availability-window",
+        "EN_US": "Failed to create availability window",
+        "AM": "የአገልግሎት ሰዓት መፍጠር አልተሳካም"
+    },
+    {
+        "key": "affected-routes",
+        "EN_US": "Affected Routes",
+        "AM": "የተመረጡ መንገዶች"
+    },
+    {
+        "key": "these-hours-will-apply-to-all-edges",
+        "EN_US": "These hours will apply to all edges",
+        "AM": "ይህ ሰዐት ለሁሉም ምርጫዎች ያገለግላል"
+    },
+    {
+        "key": "set-operating-hours-for-all-routes",
+        "EN_US": "Set operating hours for all routes",
+        "AM": "ታክሲ የሚገኝባቸውን ጣቢያዎች ሰዐት ይምረጡ"
+    },
+    {
+        "key": "operating-hours",
+        "EN_US": "Operating Hours",
+        "AM": "የአገልግሎት ሰዓት"
+    },
+    {
+        "key": "apply-to-all-routes",
+        "EN_US": "Apply to all routes",
+        "AM": "ያስገቡ"
     }
 ]
