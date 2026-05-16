@@ -116,6 +116,7 @@ export default function SetPricingScreen() {
             console.log('Creating edges:', edgePrices);
 
             const createdEdges = [];
+
             for (const edge of edgePrices) {
                 if (edge.cost && parseFloat(edge.cost) > 0) {
                     const edgeData = {
@@ -133,6 +134,50 @@ export default function SetPricingScreen() {
                         toName: edge.toName,
                     });
                 }
+            }
+
+            if (stops.length > 2) {
+                console.log(' Creating intermediate edges for consecutive stops');
+
+                for (let i = 0; i < stops.length - 1; i++) {
+                    const fromNode = createdNodes[i];
+                    const toNode = createdNodes[i + 1];
+
+                    const alreadyExists = createdEdges.some(
+                        e => e.startNodeId === fromNode.id && e.endNodeId === toNode.id
+                    );
+
+                    if (!alreadyExists) {
+
+                        const mainRoute = edgePrices.find(e => e.from === 0 && e.to === stops.length - 1);
+                        const mainCost = mainRoute && mainRoute.cost ? parseFloat(mainRoute.cost) : 0;
+
+                        const segmentCost = mainCost > 0 ? mainCost / (stops.length - 1) : 10;
+
+                        const edgeData = {
+                            startNodeId: fromNode.id,
+                            endNodeId: toNode.id,
+                            cost: segmentCost,
+                            connection: 'taxi' as const,
+                        };
+
+                        console.log('Creating intermediate edge:', {
+                            from: stops[i].name,
+                            to: stops[i + 1].name,
+                            cost: segmentCost
+                        });
+
+                        await taxiService.createEdge(edgeData);
+                        createdEdges.push({
+                            startNodeId: fromNode.id,
+                            endNodeId: toNode.id,
+                            fromName: stops[i].name,
+                            toName: stops[i + 1].name,
+                        });
+                    }
+                }
+
+                console.log(`Total edges created: ${createdEdges.length}`);
             }
 
             router.push({
@@ -178,9 +223,9 @@ export default function SetPricingScreen() {
                         return (
                             <View
                                 key={index}
-                                className={`mb-4 p-4 rounded-xl ${isMainRoute ? 'border-2' : 'bg-gray-50'
+                                className={`mb-4 p-4 rounded-xl ${isMainRoute ? 'bg-white border' : 'bg-gray-50'
                                     }`}
-                                style={isMainRoute ? { backgroundColor: colors.primary.light, borderColor: colors.primary.main } : undefined}
+                                style={isMainRoute ? { borderColor: colors.primary.main } : undefined}
                             >
                                 <View className="flex-row items-center justify-between mb-2">
                                     <View className="flex-1">

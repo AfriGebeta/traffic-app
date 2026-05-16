@@ -1570,6 +1570,21 @@
         "AM": "ነባር ጣቢያ በመጠቀም ላይ"
     },
     {
+        "key": "using-current-location",
+        "EN_US": "Using current location",
+        "AM": "የአሁን አካባቢ በመጠቀም ላይ"
+    },
+    {
+        "key": "enter-station-name",
+        "EN_US": "Enter station name",
+        "AM": "የጣቢያ ስም ያስገቡ"
+    },
+    {
+        "key": "confirm",
+        "EN_US": "Confirm",
+        "AM": "ያረጋግጡ"
+    },
+    {
         "key": "nearby-existing-stations",
         "EN_US": "Nearby existing stations",
         "AM": "በአቅራቢያ ያሉ ጣቢያዎች"
@@ -1603,6 +1618,11 @@
         "key": "current-location",
         "EN_US": "Current Location",
         "AM": "የአሁኑ አካባቢ"
+    },
+    {
+        "key": "use-current-location",
+        "EN_US": "Use Current Location",
+        "AM": "የአሁኑን አካባቢ ይጠቀሙ"
     },
     {
         "key": "waiting-for-location",
@@ -1878,5 +1898,30 @@
         "key": "failed-to-create-availability-window",
         "EN_US": "Failed to create availability window",
         "AM": "የአገልግሎት ሰዓት መፍጠር አልተሳካም"
+    },
+    {
+        "key": "affected-routes",
+        "EN_US": "Affected Routes",
+        "AM": "የተመረጡ መንገዶች"
+    },
+    {
+        "key": "these-hours-will-apply-to-all-edges",
+        "EN_US": "These hours will apply to all edges",
+        "AM": "ይህ ሰዐት ለሁሉም ምርጫዎች ያገለግላል"
+    },
+    {
+        "key": "set-operating-hours-for-all-routes",
+        "EN_US": "Set operating hours for all routes",
+        "AM": "ታክሲ የሚገኝባቸውን ጣቢያዎች ሰዐት ይምረጡ"
+    },
+    {
+        "key": "operating-hours",
+        "EN_US": "Operating Hours",
+        "AM": "የአገልግሎት ሰዓት"
+    },
+    {
+        "key": "apply-to-all-routes",
+        "EN_US": "Apply to all routes",
+        "AM": "ያስገቡ"
     }
 ]

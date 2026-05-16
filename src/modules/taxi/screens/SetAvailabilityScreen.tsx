@@ -27,7 +27,6 @@ export default function SetAvailabilityScreen() {
     const params = useLocalSearchParams();
 
     const [edges, setEdges] = useState<EdgeInfo[]>([]);
-    const [selectedEdgeIndex, setSelectedEdgeIndex] = useState(0);
     const [timeWindows, setTimeWindows] = useState<TimeWindow[]>([]);
     const [loading, setLoading] = useState(false);
     const [showTimePicker, setShowTimePicker] = useState(false);
@@ -120,38 +119,32 @@ export default function SetAvailabilityScreen() {
 
         setLoading(true);
         try {
-            const currentEdge = edges[selectedEdgeIndex];
 
-            for (const window of timeWindows) {
+            console.log(`[Availability] Creating windows for ${edges.length} edges`);
+
+            for (const edge of edges) {
+                const window = timeWindows[0];
                 await taxiService.createAvailabilityWindow({
-                    edgeStartId: currentEdge.startNodeId,
-                    edgeEndId: currentEdge.endNodeId,
-                    dayOfWeek: null, 
+                    edgeStartId: edge.startNodeId,
+                    edgeEndId: edge.endNodeId,
+                    dayOfWeek: null,
                     startMinutes: window.startMinutes,
                     endMinutes: window.endMinutes,
                     isAvailable: window.isAvailable,
                 });
+                console.log(`[Availability] Created windows for edge: ${edge.fromName} → ${edge.toName}`);
             }
 
-            if (selectedEdgeIndex < edges.length - 1) {
-                setSelectedEdgeIndex(selectedEdgeIndex + 1);
-                setTimeWindows([{
-                    startMinutes: 300, 
-                    endMinutes: 1320, 
-                    isAvailable: true,
-                }]);
-            } else {
-                Alert.alert(t('success'), t('availability-windows-created-successfully'), [
-                    {
-                        text: t('ok'),
-                        onPress: () => {
-                            router.back();
-                            router.back();
-                            router.back();
-                        },
+            Alert.alert(t('success'), t('availability-windows-created-successfully'), [
+                {
+                    text: t('ok'),
+                    onPress: () => {
+                        router.back();
+                        router.back();
+                        router.back();
                     },
-                ]);
-            }
+                },
+            ]);
         } catch (error: any) {
             console.error('Availability window creation error:', error);
             Alert.alert(
@@ -163,26 +156,9 @@ export default function SetAvailabilityScreen() {
         }
     };
 
-    const skipEdge = () => {
-        if (selectedEdgeIndex < edges.length - 1) {
-            setSelectedEdgeIndex(selectedEdgeIndex + 1);
-            setTimeWindows([{
-                startMinutes: 300,
-                endMinutes: 1320,
-                isAvailable: true,
-            }]);
-        } else {
-            router.back();
-            router.back();
-            router.back();
-        }
-    };
-
     if (edges.length === 0) {
         return null;
     }
-
-    const currentEdge = edges[selectedEdgeIndex];
 
     return (
         <View className="flex-1 bg-gray-50" style={{ paddingTop: insets.top }}>
@@ -194,30 +170,35 @@ export default function SetAvailabilityScreen() {
                     <Text className="text-2xl font-bold text-gray-900">{t('set-availability')}</Text>
                 </View>
                 <Text className="text-gray-600 mt-2">
-                    {t('edge')} {selectedEdgeIndex + 1} {t('of')} {edges.length}
+                    {t('set-operating-hours-for-all-routes')}
                 </Text>
             </View>
 
             <ScrollView className="flex-1 p-4" contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}>
                 <View className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-4">
                     <Text className="text-lg font-bold text-gray-900 mb-2">
-                        {currentEdge.fromName} → {currentEdge.toName}
+                        {params.routeName}
                     </Text>
                     <Text className="text-gray-600 text-sm mb-4">
-                        {t('set-operating-hours-for-this-route')}
+                        {t('these-hours-will-apply-to-all-edges')} ({edges.length} {t('edges')})
                     </Text>
+
+
+                    <View className="mb-4 p-3 bg-gray-50 rounded-xl">
+                        <Text className="text-gray-700 font-semibold mb-2">{t('affected-routes')}:</Text>
+                        {edges.map((edge, index) => (
+                            <Text key={index} className="text-gray-600 text-sm">
+                                • {edge.fromName} → {edge.toName}
+                            </Text>
+                        ))}
+                    </View>
 
                     {timeWindows.map((window, index) => (
                         <View key={index} className="mb-6 p-4 bg-gray-50 rounded-xl">
                             <View className="flex-row items-center justify-between mb-4">
                                 <Text className="text-gray-900 font-semibold">
-                                    {t('time-window')} {index + 1}
+                                    {t('operating-hours')}
                                 </Text>
-                                {timeWindows.length > 1 && (
-                                    <TouchableOpacity onPress={() => removeTimeWindow(index)}>
-                                        <Ionicons name="trash" size={20} color="#EF4444" />
-                                    </TouchableOpacity>
-                                )}
                             </View>
 
                             <View className="flex-row items-center justify-between mb-4">
@@ -257,25 +238,9 @@ export default function SetAvailabilityScreen() {
                         </View>
                     ))}
 
-                    <TouchableOpacity
-                        className="bg-gray-200 py-3 rounded-xl mb-4 flex-row items-center justify-center"
-                        onPress={addTimeWindow}
-                        activeOpacity={0.7}
-                    >
-                        <Ionicons name="add-circle" size={24} color={colors.primary.main} />
-                        <Text className="text-gray-700 font-semibold ml-2">{t('add-time-window')}</Text>
-                    </TouchableOpacity>
-
                     <View className="flex-row space-x-2">
                         <TouchableOpacity
-                            className="flex-1 bg-gray-400 py-4 rounded-xl mr-2"
-                            onPress={skipEdge}
-                            activeOpacity={0.7}
-                        >
-                            <Text className="text-white text-center font-bold text-lg">{t('skip')}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            className={`flex-1 py-4 rounded-xl ml-2 ${loading ? 'bg-gray-400' : 'bg-primary'}`}
+                            className={`flex-1 py-4 rounded-xl ${loading ? 'bg-gray-400' : 'bg-primary'}`}
                             onPress={handleSubmit}
                             disabled={loading}
                             activeOpacity={0.7}
@@ -285,7 +250,7 @@ export default function SetAvailabilityScreen() {
                                 <ActivityIndicator color="white" />
                             ) : (
                                 <Text className="text-white text-center font-bold text-lg">
-                                    {selectedEdgeIndex < edges.length - 1 ? t('next') : t('finish')}
+                                    {t('apply-to-all-routes')}
                                 </Text>
                             )}
                         </TouchableOpacity>

@@ -1,70 +1,108 @@
-import axios from 'axios';
+import { apiService } from '../../../shared/services/api';
 import { CreateTaxiNodeRequest, CreateTaxiEdgeRequest, TaxiNode, TaxiEdge, TaxiNavigationRequest, TaxiNavigationResponse, CreateAvailabilityWindowRequest, AvailabilityWindow } from '../types/taxi.types';
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 export const taxiService = {
     async createNode(data: CreateTaxiNodeRequest): Promise<TaxiNode> {
-        const response = await axios.post(
-            `${API_URL}/api/navigation/taxi/contributions/nodes`,
+        const response = await apiService.post<TaxiNode>(
+            '/api/navigation/taxi/contributions/nodes',
             data
         );
+
+        if (response.error || !response.data) {
+            throw new Error(response.error || 'Failed to create node');
+        }
+
         return response.data;
     },
 
     async getNodes(limit: number = 100): Promise<TaxiNode[]> {
-        const response = await axios.get(
-            `${API_URL}/api/navigation/taxi/contributions/nodes`,
-            { params: { limit } }
+        const response = await apiService.get<TaxiNode[]>(
+            `/api/navigation/taxi/contributions/nodes?limit=${limit}`
         );
+
+        if (response.error || !response.data) {
+            throw new Error(response.error || 'Failed to fetch nodes');
+        }
+
         return response.data;
     },
 
     async getAllNodes(): Promise<TaxiNode[]> {
-        const response = await axios.get(
-            `${API_URL}/api/navigation/taxi/contributions/nodes`,
-            { params: { limit: 1000 } }
+        const response = await apiService.get<{ data?: TaxiNode[] } | TaxiNode[]>(
+            '/api/navigation/taxi/contributions/nodes?limit=1000'
         );
-        return response.data.data || response.data;
+
+        if (response.error || !response.data) {
+            throw new Error(response.error || 'Failed to fetch all nodes');
+        }
+
+        // Handle both response formats
+        const data = response.data as any;
+        return data.data || data;
     },
 
     async getAllEdges(): Promise<TaxiEdge[]> {
-        const response = await axios.get(
-            `${API_URL}/api/navigation/taxi/contributions/edges`,
-            { params: { limit: 1000 } }
+        const response = await apiService.get<{ data?: TaxiEdge[] } | TaxiEdge[]>(
+            '/api/navigation/taxi/contributions/edges?limit=1000'
         );
-        return response.data.data || response.data;
+
+        if (response.error || !response.data) {
+            throw new Error(response.error || 'Failed to fetch all edges');
+        }
+
+        // Handle both response formats
+        const data = response.data as any;
+        return data.data || data;
     },
 
     async createEdge(data: CreateTaxiEdgeRequest): Promise<TaxiEdge> {
-        const response = await axios.post(
-            `${API_URL}/api/navigation/taxi/contributions/edges`,
+        const response = await apiService.post<TaxiEdge>(
+            '/api/navigation/taxi/contributions/edges',
             data
         );
+
+        if (response.error || !response.data) {
+            throw new Error(response.error || 'Failed to create edge');
+        }
+
         return response.data;
     },
 
     async getEdges(limit: number = 100): Promise<TaxiEdge[]> {
-        const response = await axios.get(
-            `${API_URL}/api/navigation/taxi/contributions/edges`,
-            { params: { limit } }
+        const response = await apiService.get<TaxiEdge[]>(
+            `/api/navigation/taxi/contributions/edges?limit=${limit}`
         );
+
+        if (response.error || !response.data) {
+            throw new Error(response.error || 'Failed to fetch edges');
+        }
+
         return response.data;
     },
 
     async requestTaxiNavigation(data: TaxiNavigationRequest): Promise<TaxiNavigationResponse> {
-        const response = await axios.post(
-            `${API_URL}/api/navigation/request-taxi-navigation`,
+        const response = await apiService.post<{ data: TaxiNavigationResponse }>(
+            '/api/navigation/request-taxi-navigation',
             data
         );
+
+        if (response.error || !response.data) {
+            throw new Error(response.error || 'Failed to request taxi navigation');
+        }
+
         return response.data.data;
     },
 
     async createAvailabilityWindow(data: CreateAvailabilityWindowRequest): Promise<AvailabilityWindow> {
-        const response = await axios.post(
-            `${API_URL}/api/navigation/taxi/availability-windows`,
+        const response = await apiService.post<AvailabilityWindow>(
+            '/api/navigation/taxi/availability-windows',
             data
         );
+
+        if (response.error || !response.data) {
+            throw new Error(response.error || 'Failed to create availability window');
+        }
+
         return response.data;
     },
 };
