@@ -35,16 +35,10 @@ export const useUserLocation = () => {
                 },
                 (location) => {
                     if (isBackgroundTrackingActive.current) {
-                        console.log('[useUserLocation] Background GPS update:', {
-                            lat: location.coords.latitude,
-                            lng: location.coords.longitude
-                        });
                         setUserLocation({
                             lat: location.coords.latitude,
                             lng: location.coords.longitude,
                         });
-                    } else {
-                        console.log('[useUserLocation] Ignoring background GPS (tracking stopped)');
                     }
                 }
             );

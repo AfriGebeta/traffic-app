@@ -1,4 +1,4 @@
-import React, { forwardRef, useState, useImperativeHandle, useRef, useEffect, memo } from 'react';
+import React, { forwardRef, useState, useImperativeHandle, useRef, useEffect, memo, useMemo } from 'react';
 import { View, StyleSheet, ActivityIndicator, Alert, Text, Animated, Image } from 'react-native';
 import MapLibreGL from '@maplibre/maplibre-react-native';
 import { GebetaMapRef, GebetaMapProps } from '@gebeta/tiles-react-native';
@@ -121,103 +121,33 @@ const calcBearing = (
     return ((Math.atan2(y, x) * 180 / Math.PI) + 360) % 360;
 };
 
-// marker at 30fps.
 
 const NavigationMarkerAnimated = memo(({
-    targetLat,
-    targetLng,
+    animatedLat,
+    animatedLng,
+    animatedHeading,
     isNavigating,
     imagesLoaded,
     renderKey,
 }: {
-    targetLat: number;
-    targetLng: number;
+    animatedLat: number;
+    animatedLng: number;
+    animatedHeading: number;
     isNavigating: boolean;
     imagesLoaded: boolean;
     renderKey: number;
 }) => {
-    const [displayPos, setDisplayPos] = useState({ lat: targetLat, lng: targetLng });
-    const [displayHeading, setDisplayHeading] = useState(0);
-
-    const displayPosRef = useRef({ lat: targetLat, lng: targetLng });
-    const fromPosRef = useRef({ lat: targetLat, lng: targetLng });
-    const toPosRef = useRef({ lat: targetLat, lng: targetLng });
-    const animStartTime = useRef(Date.now());
-
-    const updateInterval = useRef(1000);
-    const lastUpdateTime = useRef(Date.now());
-    const isFirst = useRef(true);
-    const smoothHeadingRef = useRef(0);
-
-
-    useEffect(() => {
-        if (isFirst.current) {
-            isFirst.current = false;
-            displayPosRef.current = { lat: targetLat, lng: targetLng };
-            fromPosRef.current = { lat: targetLat, lng: targetLng };
-            toPosRef.current = { lat: targetLat, lng: targetLng };
-            setDisplayPos({ lat: targetLat, lng: targetLng });
-            lastUpdateTime.current = Date.now();
-            return;
-        }
-
-        const now = Date.now();
-        const measuredInterval = now - lastUpdateTime.current;
-        updateInterval.current = Math.max(200, Math.min(measuredInterval, 3000));
-        lastUpdateTime.current = now;
-
-        fromPosRef.current = { ...displayPosRef.current };
-        toPosRef.current = { lat: targetLat, lng: targetLng };
-        animStartTime.current = now;
-    }, [targetLat, targetLng]);
-
-    useEffect(() => {
-        if (!isNavigating) {
-            isFirst.current = true;
-        }
-    }, [isNavigating]);
-
-    useEffect(() => {
-        if (!isNavigating) return;
-
-        const interval = setInterval(() => {
-            const elapsed = Date.now() - animStartTime.current;
-            const t = Math.min(1, elapsed / updateInterval.current);
-            const easedT = 1 - (1 - t) * (1 - t);
-
-            const lat = fromPosRef.current.lat + (toPosRef.current.lat - fromPosRef.current.lat) * easedT;
-            const lng = fromPosRef.current.lng + (toPosRef.current.lng - fromPosRef.current.lng) * easedT;
-            displayPosRef.current = { lat, lng };
-            setDisplayPos({ lat, lng });
-
-            const to = toPosRef.current;
-            const distLat = Math.abs(to.lat - lat);
-            const distLng = Math.abs(to.lng - lng);
-            if (distLat > 0.000001 || distLng > 0.000001) {
-                const rawBearing = calcBearing({ lat, lng }, to);
-
-                let diff = rawBearing - smoothHeadingRef.current;
-                if (diff > 180) diff -= 360;
-                if (diff < -180) diff += 360;
-                smoothHeadingRef.current = smoothHeadingRef.current + diff * 0.5;
-                setDisplayHeading(smoothHeadingRef.current);
-            }
-        }, 33); //30fps
-
-        return () => clearInterval(interval);
-    }, [isNavigating]);
-
     if (!isNavigating || !imagesLoaded) return null;
 
     return (
         <MapLibreGL.PointAnnotation
             key={`nav-marker-${renderKey}`}
             id="user-location-marker-nav"
-            coordinate={[displayPos.lng, displayPos.lat]}
+            coordinate={[animatedLng, animatedLat]}
         >
             <View style={{ width: 60, height: 60, alignItems: 'center', justifyContent: 'center' }}>
                 <View style={{
-                    transform: [{ rotate: `${displayHeading}deg` }],
+                    transform: [{ rotate: `${animatedHeading}deg` }],
                     alignItems: 'center',
                     justifyContent: 'center',
                 }}>
@@ -233,83 +163,28 @@ const NavigationMarkerAnimated = memo(({
 });
 NavigationMarkerAnimated.displayName = 'NavigationMarkerAnimated';
 
+
 const AnimatedRouteSource = memo(({
     routeGeoJSON,
-    targetLat,
-    targetLng,
-    isNavigating,
+    animatedLat,
+    animatedLng,
     lineStyle,
 }: {
     routeGeoJSON: any;
-    targetLat: number;
-    targetLng: number;
-    isNavigating: boolean;
+    animatedLat: number;
+    animatedLng: number;
     lineStyle: any;
 }) => {
-    const [animatedGeoJSON, setAnimatedGeoJSON] = useState<any>(routeGeoJSON);
-
-    const displayPosRef = useRef({ lat: targetLat, lng: targetLng });
-    const fromPosRef = useRef({ lat: targetLat, lng: targetLng });
-    const toPosRef = useRef({ lat: targetLat, lng: targetLng });
-    const animStartTime = useRef(Date.now());
-    const updateIntervalRef = useRef(1000);
-    const lastUpdateTime = useRef(Date.now());
-    const isFirst = useRef(true);
-    const currentRouteRef = useRef<any>(routeGeoJSON);
-
-    useEffect(() => {
-        currentRouteRef.current = routeGeoJSON;
-    }, [routeGeoJSON]);
-
-    useEffect(() => {
-        if (isFirst.current) {
-            isFirst.current = false;
-            displayPosRef.current = { lat: targetLat, lng: targetLng };
-            fromPosRef.current = { lat: targetLat, lng: targetLng };
-            toPosRef.current = { lat: targetLat, lng: targetLng };
-            lastUpdateTime.current = Date.now();
-            setAnimatedGeoJSON(routeGeoJSON);
-            return;
-        }
-        const now = Date.now();
-        const measured = now - lastUpdateTime.current;
-        updateIntervalRef.current = Math.max(200, Math.min(measured, 3000));
-        lastUpdateTime.current = now;
-        fromPosRef.current = { ...displayPosRef.current };
-        toPosRef.current = { lat: targetLat, lng: targetLng };
-        animStartTime.current = now;
-    }, [targetLat, targetLng]);
-
-    useEffect(() => {
-        if (!isNavigating) {
-            isFirst.current = true;
-            return;
-        }
-
-        const interval = setInterval(() => {
-            const elapsed = Date.now() - animStartTime.current;
-            const t = Math.min(1, elapsed / updateIntervalRef.current);
-            const easedT = 1 - (1 - t) * (1 - t);
-
-            const lat = fromPosRef.current.lat + (toPosRef.current.lat - fromPosRef.current.lat) * easedT;
-            const lng = fromPosRef.current.lng + (toPosRef.current.lng - fromPosRef.current.lng) * easedT;
-            displayPosRef.current = { lat, lng };
-
-            const route = currentRouteRef.current;
-            if (route?.geometry?.coordinates?.length > 0) {
-                setAnimatedGeoJSON({
-                    ...route,
-                    geometry: {
-                        ...route.geometry,
-
-                        coordinates: [[lng, lat], ...route.geometry.coordinates],
-                    },
-                });
-            }
-        }, 33);
-
-        return () => clearInterval(interval);
-    }, [isNavigating]);
+    const animatedGeoJSON = useMemo(() => {
+        if (!routeGeoJSON?.geometry?.coordinates?.length) return routeGeoJSON;
+        return {
+            ...routeGeoJSON,
+            geometry: {
+                ...routeGeoJSON.geometry,
+                coordinates: [[animatedLng, animatedLat], ...routeGeoJSON.geometry.coordinates],
+            },
+        };
+    }, [routeGeoJSON, animatedLat, animatedLng]);
 
     if (!animatedGeoJSON) return null;
 
@@ -327,98 +202,35 @@ const AnimatedRouteSource = memo(({
 });
 AnimatedRouteSource.displayName = 'AnimatedRouteSource';
 
+
 const AnimatedSegmentedRoutes = memo(({
     segmentedRoutes,
-    targetLat,
-    targetLng,
-    isNavigating,
+    animatedLat,
+    animatedLng,
     currentTaxiSegmentIndex,
 }: {
     segmentedRoutes: Array<{ geoJSON: any; isWalking: boolean; segmentIndex: number }>;
-    targetLat: number;
-    targetLng: number;
-    isNavigating: boolean;
+    animatedLat: number;
+    animatedLng: number;
     currentTaxiSegmentIndex?: number;
 }) => {
-    const [animatedSegments, setAnimatedSegments] = useState(segmentedRoutes);
-
-    const displayPosRef = useRef({ lat: targetLat, lng: targetLng });
-    const fromPosRef = useRef({ lat: targetLat, lng: targetLng });
-    const toPosRef = useRef({ lat: targetLat, lng: targetLng });
-    const animStartTime = useRef(Date.now());
-    const updateIntervalRef = useRef(1000);
-    const lastUpdateTime = useRef(Date.now());
-    const isFirstRef = useRef(true);
-    const currentSegmentsRef = useRef(segmentedRoutes);
-    const currentSegmentIndexRef = useRef(currentTaxiSegmentIndex);
-
-    useEffect(() => {
-        currentSegmentsRef.current = segmentedRoutes;
-    }, [segmentedRoutes]);
-
-    useEffect(() => {
-        currentSegmentIndexRef.current = currentTaxiSegmentIndex;
-    }, [currentTaxiSegmentIndex]);
-
-    useEffect(() => {
-        if (isFirstRef.current) {
-            isFirstRef.current = false;
-            displayPosRef.current = { lat: targetLat, lng: targetLng };
-            fromPosRef.current = { lat: targetLat, lng: targetLng };
-            toPosRef.current = { lat: targetLat, lng: targetLng };
-            lastUpdateTime.current = Date.now();
-            setAnimatedSegments(segmentedRoutes);
-            return;
-        }
-        const now = Date.now();
-        const measured = now - lastUpdateTime.current;
-        updateIntervalRef.current = Math.max(200, Math.min(measured, 3000));
-        lastUpdateTime.current = now;
-        fromPosRef.current = { ...displayPosRef.current };
-        toPosRef.current = { lat: targetLat, lng: targetLng };
-        animStartTime.current = now;
-    }, [targetLat, targetLng]);
-
-    useEffect(() => {
-        if (!isNavigating) {
-            isFirstRef.current = true;
-            return;
-        }
-
-        const interval = setInterval(() => {
-            const elapsed = Date.now() - animStartTime.current;
-            const t = Math.min(1, elapsed / updateIntervalRef.current);
-            const easedT = 1 - (1 - t) * (1 - t);
-
-            const lat = fromPosRef.current.lat + (toPosRef.current.lat - fromPosRef.current.lat) * easedT;
-            const lng = fromPosRef.current.lng + (toPosRef.current.lng - fromPosRef.current.lng) * easedT;
-            displayPosRef.current = { lat, lng };
-
-            const segments = currentSegmentsRef.current;
-            if (segments.length === 0) return;
-
-            const curIdx = currentSegmentIndexRef.current;
-            const animated = segments.map((seg) => {
-                if (seg.segmentIndex !== curIdx) return seg;
-                const coords = seg.geoJSON.geometry.coordinates;
-                if (coords.length === 0) return seg;
-                return {
-                    ...seg,
-                    geoJSON: {
-                        ...seg.geoJSON,
-                        geometry: {
-                            ...seg.geoJSON.geometry,
-                            coordinates: [[lng, lat], ...coords],
-                        },
+    const animatedSegments = useMemo(() => {
+        return segmentedRoutes.map((seg) => {
+            if (seg.segmentIndex !== currentTaxiSegmentIndex) return seg;
+            const coords = seg.geoJSON.geometry.coordinates;
+            if (coords.length === 0) return seg;
+            return {
+                ...seg,
+                geoJSON: {
+                    ...seg.geoJSON,
+                    geometry: {
+                        ...seg.geoJSON.geometry,
+                        coordinates: [[animatedLng, animatedLat], ...coords],
                     },
-                };
-            });
-
-            setAnimatedSegments(animated);
-        }, 33);
-
-        return () => clearInterval(interval);
-    }, [isNavigating]);
+                },
+            };
+        });
+    }, [segmentedRoutes, animatedLat, animatedLng, currentTaxiSegmentIndex]);
 
     return (
         <>
@@ -428,7 +240,7 @@ const AnimatedSegmentedRoutes = memo(({
                 const lineStyle: any = {
                     lineColor: route.isWalking ? '#EF4444' : '#3B82F6',
                     lineWidth: route.isWalking ? 5 : 7,
-                    lineOpacity: currentSegmentIndexRef.current === route.segmentIndex ? 1 : 0.7,
+                    lineOpacity: currentTaxiSegmentIndex === route.segmentIndex ? 1 : 0.7,
                     lineCap: 'round',
                     lineJoin: 'round',
                 };
@@ -453,6 +265,127 @@ const AnimatedSegmentedRoutes = memo(({
     );
 });
 AnimatedSegmentedRoutes.displayName = 'AnimatedSegmentedRoutes';
+
+
+interface AnimatedNavLayerProps {
+    userLocation: { lat: number; lng: number } | null;
+    isNavigating: boolean;
+    routeGeoJSON: any;
+    routeLineStyle: any;
+    segmentedRoutes?: Array<{ geoJSON: any; isWalking: boolean; segmentIndex: number }>;
+    isTaxiNavigation?: boolean;
+    currentTaxiSegmentIndex?: number;
+    imagesLoaded: boolean;
+    renderKey: number;
+}
+
+const AnimatedNavLayer = memo(({
+    userLocation,
+    isNavigating,
+    routeGeoJSON,
+    routeLineStyle,
+    segmentedRoutes,
+    isTaxiNavigation,
+    currentTaxiSegmentIndex,
+    imagesLoaded,
+    renderKey,
+}: AnimatedNavLayerProps) => {
+    const [animatedNavPos, setAnimatedNavPos] = useState({ lat: 0, lng: 0, heading: 0 });
+
+    const animCurRef = useRef({ lat: 0, lng: 0 });
+    const animToRef = useRef({ lat: 0, lng: 0 });
+
+    const velRef = useRef({ lat: 0, lng: 0 });
+    const animFirstRef = useRef(true);
+    const animHeadingRef = useRef(0);
+
+    useEffect(() => {
+        if (!isNavigating || !userLocation) return;
+        if (animFirstRef.current) {
+            animFirstRef.current = false;
+            animCurRef.current = { lat: userLocation.lat, lng: userLocation.lng };
+            animToRef.current = { lat: userLocation.lat, lng: userLocation.lng };
+            velRef.current = { lat: 0, lng: 0 };
+            setAnimatedNavPos({ lat: userLocation.lat, lng: userLocation.lng, heading: 0 });
+            return;
+        }
+        animToRef.current = { lat: userLocation.lat, lng: userLocation.lng };
+    }, [userLocation?.lat, userLocation?.lng, isNavigating]);
+
+    useEffect(() => {
+        if (!isNavigating) {
+            animFirstRef.current = true;
+            velRef.current = { lat: 0, lng: 0 };
+            return;
+        }
+
+        let rafId: number;
+        let lastTime = Date.now();
+
+        const tick = () => {
+            const now = Date.now();
+            const dt = Math.min((now - lastTime) / 1000, 0.05); 
+            lastTime = now;
+
+            const target = animToRef.current;
+            const cur = animCurRef.current;
+
+            const SPRING = 10;
+            const DAMPING = 0.82;
+
+            velRef.current.lat = velRef.current.lat * DAMPING + (target.lat - cur.lat) * SPRING * dt;
+            velRef.current.lng = velRef.current.lng * DAMPING + (target.lng - cur.lng) * SPRING * dt;
+
+            const lat = cur.lat + velRef.current.lat * dt;
+            const lng = cur.lng + velRef.current.lng * dt;
+            animCurRef.current = { lat, lng };
+
+            if (Math.abs(target.lat - lat) > 0.000001 || Math.abs(target.lng - lng) > 0.000001) {
+                const rawBearing = calcBearing({ lat, lng }, target);
+                let diff = rawBearing - animHeadingRef.current;
+                if (diff > 180) diff -= 360;
+                if (diff < -180) diff += 360;
+                animHeadingRef.current += diff * 0.12;
+            }
+
+            setAnimatedNavPos({ lat, lng, heading: animHeadingRef.current });
+            rafId = requestAnimationFrame(tick);
+        };
+
+        rafId = requestAnimationFrame(tick);
+        return () => cancelAnimationFrame(rafId);
+    }, [isNavigating]);
+
+    return (
+        <>
+            {isNavigating && isTaxiNavigation && segmentedRoutes && segmentedRoutes.length > 0 && (
+                <AnimatedSegmentedRoutes
+                    segmentedRoutes={segmentedRoutes}
+                    animatedLat={animatedNavPos.lat}
+                    animatedLng={animatedNavPos.lng}
+                    currentTaxiSegmentIndex={currentTaxiSegmentIndex}
+                />
+            )}
+            {isNavigating && routeGeoJSON && !segmentedRoutes && (
+                <AnimatedRouteSource
+                    routeGeoJSON={routeGeoJSON}
+                    animatedLat={animatedNavPos.lat}
+                    animatedLng={animatedNavPos.lng}
+                    lineStyle={routeLineStyle}
+                />
+            )}
+            <NavigationMarkerAnimated
+                animatedLat={animatedNavPos.lat}
+                animatedLng={animatedNavPos.lng}
+                animatedHeading={animatedNavPos.heading}
+                isNavigating={!!isNavigating && !!userLocation && !!imagesLoaded}
+                imagesLoaded={!!imagesLoaded}
+                renderKey={renderKey}
+            />
+        </>
+    );
+});
+AnimatedNavLayer.displayName = 'AnimatedNavLayer';
 
 
 const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
@@ -839,16 +772,6 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         />
 
 
-                        {isNavigating && isTaxiNavigation && segmentedRoutes && segmentedRoutes.length > 0 && userLocation && (
-                            <AnimatedSegmentedRoutes
-                                segmentedRoutes={segmentedRoutes}
-                                targetLat={userLocation.lat}
-                                targetLng={userLocation.lng}
-                                isNavigating={!!isNavigating}
-                                currentTaxiSegmentIndex={currentTaxiSegmentIndex}
-                            />
-                        )}
-
                         {!(isNavigating && isTaxiNavigation) && segmentedRoutes && segmentedRoutes.length > 0 && segmentedRoutes.map((route) => {
                             if (route.geoJSON.geometry.coordinates.length === 0) return null;
                             const isCurrentSegment = currentTaxiSegmentIndex === route.segmentIndex;
@@ -877,24 +800,6 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         })}
 
 
-                        {isNavigating && routeGeoJSON && !segmentedRoutes && userLocation && (
-                            <AnimatedRouteSource
-                                routeGeoJSON={routeGeoJSON}
-                                targetLat={userLocation.lat}
-                                targetLng={userLocation.lng}
-                                isNavigating={isNavigating}
-                                lineStyle={{
-                                    lineColor: defaultRouteStyle.color,
-                                    lineWidth: routeStyle?.isDotted ? 6 : defaultRouteStyle.width,
-                                    lineOpacity: 0.6,
-                                    lineCap: 'round',
-                                    lineJoin: 'round',
-                                    ...(routeStyle?.isDotted && { lineDasharray: [0, 2] }),
-                                }}
-                            />
-                        )}
-
-          
                         {!isNavigating && routeGeoJSON && !segmentedRoutes && (
                             <MapLibreGL.ShapeSource
                                 key={`route-preview-${routeStyle?.isDotted ? 'dotted' : 'solid'}`}
@@ -926,7 +831,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             };
                             return (
                                 <MapLibreGL.ShapeSource
-                                    key={`taxi-segment-${index}-${Date.now()}`}
+                                    key={`taxi-segment-${index}`}
                                     id={`taxi-segment-${index}-source`}
                                     shape={taxiRouteGeoJSON}
                                 >
@@ -947,14 +852,6 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         {taxiWalkRoutes && taxiWalkRoutes.map((route, index) => {
                             try {
                                 const coords = decodePolyline(route.polyline, 6);
-                                console.log(`[GebetaMap] Rendering walk route ${route.type}:`, {
-                                    index,
-                                    polylineLength: route.polyline.length,
-                                    coordsCount: coords.length,
-                                    firstCoord: coords[0],
-                                    lastCoord: coords[coords.length - 1]
-                                });
-
                                 const mapCoords = coords.map(([lat, lng]) => [lng, lat]);
 
 
@@ -970,7 +867,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                 };
                                 return (
                                     <MapLibreGL.ShapeSource
-                                        key={`taxi-walk-${route.type}-${index}-${Date.now()}`}
+                                        key={`taxi-walk-${route.type}-${index}`}
                                         id={`taxi-walk-${route.type}-${index}-source`}
                                         shape={walkGeoJSON}
                                     >
@@ -992,35 +889,6 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             }
                         })}
 
-                        {taxiRouteSegments && taxiRouteSegments.map((segment, index) => {
-                            const taxiRouteGeoJSON = {
-                                type: 'Feature' as const,
-                                properties: {},
-                                geometry: {
-                                    type: 'LineString' as const,
-                                    coordinates: segment.coordinates
-                                }
-                            };
-                            return (
-                                <MapLibreGL.ShapeSource
-                                    key={`taxi-segment-${index}-${Date.now()}`}
-                                    id={`taxi-segment-${index}-source`}
-                                    shape={taxiRouteGeoJSON}
-                                >
-                                    <MapLibreGL.LineLayer
-                                        id={`taxi-segment-${index}-layer`}
-                                        style={{
-                                            lineColor: colors.primary.main,
-                                            lineWidth: 6,
-                                            lineOpacity: 0.8,
-                                            lineCap: 'round',
-                                            lineJoin: 'round',
-                                        }}
-                                    />
-                                </MapLibreGL.ShapeSource>
-                            );
-                        })}
-
                         {routeGeoJSON && selectedDestination && (() => {
                             const routeCoords = routeGeoJSON.geometry.coordinates;
                             const lastRoutePoint = routeCoords[routeCoords.length - 1];
@@ -1037,7 +905,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
                             return (
                                 <MapLibreGL.ShapeSource
-                                    key={`walking-path-${Date.now()}`}
+                                    key="walking-path"
                                     id="walking-path-source"
                                     shape={walkingPathGeoJSON}
                                 >
@@ -1055,10 +923,21 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             );
                         })()}
 
-                        <NavigationMarkerAnimated
-                            targetLat={userLocation?.lat ?? 0}
-                            targetLng={userLocation?.lng ?? 0}
-                            isNavigating={!!isNavigating && !!userLocation && !!imagesLoaded}
+                        <AnimatedNavLayer
+                            userLocation={userLocation ?? null}
+                            isNavigating={!!isNavigating}
+                            routeGeoJSON={routeGeoJSON ?? null}
+                            routeLineStyle={{
+                                lineColor: defaultRouteStyle.color,
+                                lineWidth: routeStyle?.isDotted ? 6 : defaultRouteStyle.width,
+                                lineOpacity: 0.6,
+                                lineCap: 'round',
+                                lineJoin: 'round',
+                                ...(routeStyle?.isDotted && { lineDasharray: [0, 2] }),
+                            }}
+                            segmentedRoutes={segmentedRoutes}
+                            isTaxiNavigation={!!isTaxiNavigation}
+                            currentTaxiSegmentIndex={currentTaxiSegmentIndex}
                             imagesLoaded={!!imagesLoaded}
                             renderKey={renderKey}
                         />

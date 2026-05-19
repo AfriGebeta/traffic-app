@@ -6,7 +6,40 @@ const LAST_SYNC_KEY = '@navigation_last_sync';
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 class NavigationTrackingService {
+
+    private pendingPoints: Record<string, { points: Record<string, { lat: number; lng: number }>; startTime: number }> = {};
+    private flushTimer: ReturnType<typeof setInterval> | null = null;
+
+    constructor() {
+        this.flushTimer = setInterval(() => {
+            this.flushPendingPoints();
+        }, 30_000);
+    }
+
+    private async flushPendingPoints(): Promise<void> {
+        if (Object.keys(this.pendingPoints).length === 0) return;
+        try {
+            const stored = await AsyncStorage.getItem(STORAGE_KEY);
+            const navigations: StoredNavigation[] = stored ? JSON.parse(stored) : [];
+
+            for (const [navId, pending] of Object.entries(this.pendingPoints)) {
+                const existing = navigations.find(n => n.navigationId === navId);
+                if (existing) {
+                    Object.assign(existing.points, pending.points);
+                } else {
+                    navigations.push({ navigationId: navId, points: pending.points, startTime: pending.startTime });
+                }
+            }
+
+            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(navigations));
+            this.pendingPoints = {};
+        } catch {
+        }
+    }
+
     private async getStoredNavigations(): Promise<StoredNavigation[]> {
+
+        await this.flushPendingPoints();
         try {
             const data = await AsyncStorage.getItem(STORAGE_KEY);
             return data ? JSON.parse(data) : [];
@@ -23,27 +56,17 @@ class NavigationTrackingService {
         }
     }
 
-    async addNavigationPoint(
+    addNavigationPoint(
         navigationId: string,
         lat: number,
         lng: number
-    ): Promise<void> {
-        const navigations = await this.getStoredNavigations();
+    ): void {
         const timestamp = new Date().toISOString();
 
-        const existingNav = navigations.find(n => n.navigationId === navigationId);
-
-        if (existingNav) {
-            existingNav.points[timestamp] = { lat, lng };
-        } else {
-            navigations.push({
-                navigationId,
-                points: { [timestamp]: { lat, lng } },
-                startTime: Date.now(),
-            });
+        if (!this.pendingPoints[navigationId]) {
+            this.pendingPoints[navigationId] = { points: {}, startTime: Date.now() };
         }
-
-        await this.saveStoredNavigations(navigations);
+        this.pendingPoints[navigationId].points[timestamp] = { lat, lng };
     }
 
     async shouldSync(): Promise<boolean> {
@@ -65,6 +88,7 @@ class NavigationTrackingService {
 
     async syncNavigationHistory(): Promise<boolean> {
         try {
+            await this.flushPendingPoints();
             const navigations = await this.getStoredNavigations();
 
             if (navigations.length === 0) {
