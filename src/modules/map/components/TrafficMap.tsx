@@ -92,6 +92,8 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     const {
         selectedDestination,
         setSelectedDestination,
+        waypoints,
+        setWaypoints,
         isNavigating,
         navigationMode,
 
@@ -764,6 +766,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 taxiStations={taxiStations || undefined}
                 taxiWalkRoutes={taxiWalkRoutes || undefined}
                 taxiRouteSegments={taxiRouteSegments || undefined}
+                waypointMarkers={waypoints.length > 0 ? waypoints.map(wp => ({ latitude: wp.latitude, longitude: wp.longitude, name: wp.name })) : undefined}
             />
 
             {activeIncidentAlert && (
@@ -899,16 +902,23 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                         if (mode === 'walking') {
                             setCurrentCosting('pedestrian');
                             if (selectedDestination && userLocation) {
-                                handleNavigate(setUserLocation, selectedDestination, 'pedestrian');
+                                handleNavigate(setUserLocation, selectedDestination, 'pedestrian', waypoints);
                             }
                         } else if (mode === 'driving') {
                             setCurrentCosting('auto');
                             if (selectedDestination && userLocation) {
-                                handleNavigate(setUserLocation, selectedDestination, 'auto');
+                                handleNavigate(setUserLocation, selectedDestination, 'auto', waypoints);
                             }
                         }
                     }}
                     initialMode={isFromTaxiSearch ? 'taxi' : 'driving'}
+                    waypoints={waypoints}
+                    onWaypointsChange={(updated) => {
+                        setWaypoints(updated);
+                        if (selectedDestination && userLocation) {
+                            handleNavigate(setUserLocation, selectedDestination, currentCosting === 'pedestrian' ? 'pedestrian' : 'auto', updated);
+                        }
+                    }}
                 />
             )}
 

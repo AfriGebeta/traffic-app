@@ -22,6 +22,7 @@ export const useNavigation = (
 ) => {
     const { t } = useTranslation();
     const [selectedDestination, setSelectedDestination] = useState<GeocodingPlace | null>(null);
+    const [waypoints, setWaypoints] = useState<GeocodingPlace[]>([]);
     const [isNavigating, setIsNavigating] = useState(false);
     const [navigationMode, setNavigationMode] = useState(false);
     const [showRoutePreview, setShowRoutePreview] = useState(false);
@@ -140,7 +141,7 @@ export const useNavigation = (
         setUserLocation,
     });
 
-    const handleNavigate = async (setUserLocation?: (location: { lat: number; lng: number }) => void, destination?: GeocodingPlace, costingOverride?: 'auto' | 'pedestrian') => {
+    const handleNavigate = async (setUserLocation?: (location: { lat: number; lng: number }) => void, destination?: GeocodingPlace, costingOverride?: 'auto' | 'pedestrian', waypointsOverride?: GeocodingPlace[]) => {
         const targetDestination = destination || selectedDestination;
 
         if (!userLocation || !targetDestination) {
@@ -153,28 +154,49 @@ export const useNavigation = (
             return;
         }
 
+        const activeWaypoints = waypointsOverride ?? waypoints;
+
         setIsNavigating(true);
         try {
             const navigationData = await navigationService.getNavigation({
                 origin: [userLocation.lat, userLocation.lng],
                 destination: [targetDestination.latitude, targetDestination.longitude],
                 costing: costingOverride ?? currentCosting,
+                waypoints: activeWaypoints.length > 0
+                    ? activeWaypoints.map(wp => [wp.latitude, wp.longitude] as [number, number])
+                    : undefined,
             });
 
-            if (!navigationData?.data?.trip?.legs?.[0]) {
+            const legs = navigationData?.data?.trip?.legs;
+            if (!legs || legs.length === 0) {
                 showToast.error('Navigation Error', 'Could not calculate route');
                 setIsNavigating(false);
                 return;
             }
 
-            const leg = navigationData.data.trip.legs[0];
+            const allCoordinates: [number, number][] = [];
+            const allManeuvers: any[] = [];
+            let totalDistance = 0;
+            let totalDuration = 0;
 
-            const decodedCoordinates = decodePolyline(leg.shape, 6);
+            for (let i = 0; i < legs.length; i++) {
+                const leg = legs[i];
+                const decoded = decodePolyline(leg.shape, 6);
+                const legCoords = decoded.map(coord => [coord[1], coord[0]]) as [number, number][];
+                if (i === 0) {
+                    allCoordinates.push(...legCoords);
+                } else {
+                    allCoordinates.push(...legCoords.slice(1));
+                }
+                allManeuvers.push(...leg.maneuvers);
+                totalDistance += leg.summary.length * 1000;
+                totalDuration += leg.summary.time;
+            }
 
-            routeManeuvers.current = leg.maneuvers;
+            routeManeuvers.current = allManeuvers;
 
             //pre fetch audio
-            const instructionTexts = leg.maneuvers
+            const instructionTexts = allManeuvers
                 .map((m: any) => m.instruction)
                 .filter((text: string) => text && text.trim().length > 0);
 
@@ -186,10 +208,10 @@ export const useNavigation = (
             }
 
             const route = {
-                coordinates: decodedCoordinates.map(coord => [coord[1], coord[0]]) as [number, number][],
-                distance: leg.summary.length * 1000,
-                duration: leg.summary.time,
-                instructions: leg.maneuvers.map((maneuver: any) => ({
+                coordinates: allCoordinates,
+                distance: totalDistance,
+                duration: totalDuration,
+                instructions: allManeuvers.map((maneuver: any) => ({
                     type: 'turn' as const,
                     distance: maneuver.length * 1000,
                     text: maneuver.instruction,
@@ -292,16 +314,37 @@ export const useNavigation = (
                 origin: [userLocation.lat, userLocation.lng],
                 destination: [selectedDestination.latitude, selectedDestination.longitude],
                 costing: currentCosting,
+                waypoints: waypoints.length > 0
+                    ? waypoints.map(wp => [wp.latitude, wp.longitude] as [number, number])
+                    : undefined,
             });
 
-            if (!navigationData?.data?.trip?.legs?.[0]) {
+            const legs = navigationData?.data?.trip?.legs;
+            if (!legs || legs.length === 0) {
                 showToast.error('Error', 'Could not calculate route');
                 return;
             }
 
-            const leg = navigationData.data.trip.legs[0];
+            const allCoordinates: [number, number][] = [];
+            const allManeuvers: any[] = [];
+            let totalDistance = 0;
+            let totalDuration = 0;
 
-            const instructionTexts = leg.maneuvers
+            for (let i = 0; i < legs.length; i++) {
+                const leg = legs[i];
+                const decoded = decodePolyline(leg.shape, 6);
+                const legCoords = decoded.map(coord => [coord[1], coord[0]]) as [number, number][];
+                if (i === 0) {
+                    allCoordinates.push(...legCoords);
+                } else {
+                    allCoordinates.push(...legCoords.slice(1));
+                }
+                allManeuvers.push(...leg.maneuvers);
+                totalDistance += leg.summary.length * 1000;
+                totalDuration += leg.summary.time;
+            }
+
+            const instructionTexts = allManeuvers
                 .map((m: any) => m.instruction)
                 .filter((text: string) => text && text.trim().length > 0);
 
@@ -312,12 +355,11 @@ export const useNavigation = (
                 });
             }
 
-            const decodedCoordinates = decodePolyline(leg.shape, 6);
             const route = {
-                coordinates: decodedCoordinates.map(coord => [coord[1], coord[0]]) as [number, number][],
-                distance: leg.summary.length * 1000,
-                duration: leg.summary.time,
-                instructions: leg.maneuvers.map((maneuver: any) => ({
+                coordinates: allCoordinates,
+                distance: totalDistance,
+                duration: totalDuration,
+                instructions: allManeuvers.map((maneuver: any) => ({
                     type: 'turn' as const,
                     distance: maneuver.length * 1000,
                     text: maneuver.instruction,
@@ -491,6 +533,7 @@ export const useNavigation = (
 
         setRouteGeoJSON(null);
         setSelectedDestination(null);
+        setWaypoints([]);
         currentDestination.current = null;
         setCurrentInstruction('');
         setRemainingDistance(0);
@@ -517,6 +560,7 @@ export const useNavigation = (
     const handleClearRoute = () => {
         setRouteGeoJSON(null);
         setSelectedDestination(null);
+        setWaypoints([]);
         setCurrentInstruction('');
         setRemainingDistance(0);
         setRemainingTime(0);
@@ -548,6 +592,8 @@ export const useNavigation = (
     return {
         selectedDestination,
         setSelectedDestination,
+        waypoints,
+        setWaypoints,
 
         isNavigating,
         navigationMode,

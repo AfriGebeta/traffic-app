@@ -10,6 +10,7 @@ import { decodePolyline } from '../../shared/utils/polyline';
 const MAPPIN_IMAGE = require('../../../assets/images/Mappin.png');
 const PIN_NORMAL_IMAGE = require('../../../assets/images/pin-normal.png');
 const RED_PIN_IMAGE = require('../../../assets/images/red-pin.png');
+const WAYPOINT_PIN_IMAGE = require('../../../assets/images/location-pin-2.png');
 const MINIBUS_SELECTED_IMAGE = require('../../../assets/images/minibus-selected.png');
 
 const EXPLORE_IMAGES = {
@@ -103,6 +104,7 @@ interface ExtendedGebetaMapProps extends GebetaMapProps {
         isWalking: boolean;
         segmentIndex: number;
     }>;
+    waypointMarkers?: Array<{ latitude: number; longitude: number; name: string }>;
 }
 
 
@@ -451,10 +453,10 @@ const AnimatedSegmentedRoutes = memo(({
     );
 });
 AnimatedSegmentedRoutes.displayName = 'AnimatedSegmentedRoutes';
-// ---------------------------------------------------------------------------
+
 
 const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
-    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes }, ref) => {
+    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, waypointMarkers }, ref) => {
         const [mapStyleState, setMapStyleState] = useState<Record<string, unknown> | null>(null);
         const [loading, setLoading] = useState(true);
         const cameraRef = useRef<any>(null);
@@ -471,10 +473,11 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         useEffect(() => {
             const preloadImages = async () => {
                 try {
-                    await Promise.all([
+                        await Promise.all([
                         Image.prefetch(Image.resolveAssetSource(MAPPIN_IMAGE).uri),
                         Image.prefetch(Image.resolveAssetSource(PIN_NORMAL_IMAGE).uri),
                         Image.prefetch(Image.resolveAssetSource(RED_PIN_IMAGE).uri),
+                        Image.prefetch(Image.resolveAssetSource(WAYPOINT_PIN_IMAGE).uri),
                         Image.prefetch(Image.resolveAssetSource(MINIBUS_SELECTED_IMAGE).uri),
                         ...Object.values(EXPLORE_IMAGES).map(img =>
                             Image.prefetch(Image.resolveAssetSource(img).uri)
@@ -547,6 +550,12 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 return () => clearTimeout(timer);
             }
         }, [selectedDestination]);
+
+        useEffect(() => {
+            if (imagesLoaded) {
+                setRenderKey(prev => prev + 1);
+            }
+        }, [waypointMarkers]);
 
         useEffect(() => {
             if (imagesLoaded && taxiStations && taxiStations.length > 0) {
@@ -1201,6 +1210,23 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                 </View>
                             </MapLibreGL.PointAnnotation>
                         )}
+
+                        {waypointMarkers && imagesLoaded && waypointMarkers.map((wp, index) => (
+                            <MapLibreGL.PointAnnotation
+                                key={`waypoint-${index}-${wp.latitude}-${wp.longitude}-${renderKey}`}
+                                id={`waypoint-marker-${index}`}
+                                coordinate={[wp.longitude, wp.latitude]}
+                                anchor={{ x: 0.5, y: 1 }}
+                            >
+                                <View style={{ width: 28, height: 28, alignItems: 'center', justifyContent: 'flex-end' }}>
+                                    <Image
+                                        source={WAYPOINT_PIN_IMAGE}
+                                        style={{ width: 28, height: 28 }}
+                                        resizeMode="contain"
+                                    />
+                                </View>
+                            </MapLibreGL.PointAnnotation>
+                        ))}
 
                         {selectedDestination && (
                             <MapLibreGL.PointAnnotation
