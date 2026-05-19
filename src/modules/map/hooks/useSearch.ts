@@ -77,6 +77,11 @@ export const useSearch = () => {
 
         if (searchQuery.trim()) {
             setShowSearchContainer(true);
+
+            import('../../navigation/services/searchLog.service').then(({ searchLogService }) => {
+                searchLogService.setSearchQuery(searchQuery);
+            });
+
             searchTimeoutRef.current = setTimeout(() => {
                 handleSearch(searchQuery);
             }, 500);

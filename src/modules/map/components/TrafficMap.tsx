@@ -157,6 +157,18 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     const { addIncidentMarkers } = useMapMarkers(mapRef, incidents);
 
     const handleSelectPlace = (place: GeocodingPlace, autoNavigate: boolean = true) => {
+        import('../../navigation/services/searchLog.service').then(({ searchLogService }) => {
+            const storedQuery = searchLogService.getAndClearSearchQuery();
+            if (storedQuery) {
+               
+                searchLogService.trackSearch(storedQuery, {
+                    name: place.name,
+                    latitude: place.latitude,
+                    longitude: place.longitude,
+                });
+            }
+        });
+
         if (searchMarkerRef.current) {
             mapRef.current?.clearMarkers();
             addIncidentMarkers();
@@ -306,7 +318,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     };
 
     const handleNavigateToExplorePlace = (place: GeocodingPlace) => {
-
         setIsFromTaxiSearch(false);
         handleSelectPlace(place);
     };
