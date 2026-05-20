@@ -32,18 +32,6 @@ const processRemoteStyle = async (url: string): Promise<Record<string, unknown>>
             });
         }
 
-        if (style.layers && Array.isArray(style.layers)) {
-            style.layers.forEach((layer: any) => {
-                if (layer.layout && layer.layout['text-font']) {
-                    layer.layout['text-font'] = ['Noto Serif Ethiopic'];
-                }
-            });
-        }
-
-        if (style.glyphs) {
-            style.glyphs = 'https://tiles.gebeta.app/fonts/{fontstack}/{range}.pbf';
-        }
-
         const layers = Array.isArray(style.layers) ? style.layers : [];
         if (!layers.some((layer: { type?: string }) => layer.type === 'background')) {
             style.layers = [
