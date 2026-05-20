@@ -3,6 +3,7 @@ import Toast from 'react-native-toast-message';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { MapThemeProvider } from '../modules/map/context/MapThemeContext';
+import { UserLocationProvider } from '../modules/map/context/UserLocationContext';
 import { IncidentFiltersProvider } from '../modules/incidents/context/IncidentFiltersContext';
 import { useEffect } from 'react';
 import * as NavigationBar from 'expo-navigation-bar';
@@ -29,14 +30,16 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <MapThemeProvider>
-          <IncidentFiltersProvider>
-            <Stack
-              screenOptions={{
-                headerShown: false,
-              }}
-            />
-            <Toast />
-          </IncidentFiltersProvider>
+          <UserLocationProvider>
+            <IncidentFiltersProvider>
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                }}
+              />
+              <Toast />
+            </IncidentFiltersProvider>
+          </UserLocationProvider>
         </MapThemeProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>

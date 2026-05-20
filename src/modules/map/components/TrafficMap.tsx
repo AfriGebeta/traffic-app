@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, LogBox, BackHandler, StatusBar } from 'react-native';
+import { View, LogBox, BackHandler, StatusBar, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useFocusEffect, useRouter } from 'expo-router';
 import CustomGebetaMap from '../../../components/GebetaMap';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
@@ -51,8 +51,9 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     const hasProcessedSharedLocation = useRef(false);
     const router = useRouter();
 
-    const [initialCenter] = useState<[number, number]>([38.7463, 9.0223]);
-    const [initialZoom] = useState(12);
+    const USER_LOCATION_ZOOM = 15;
+
+    const initialMapCenterRef = useRef<[number, number] | null>(null);
     const [showReportOptions, setShowReportOptions] = useState(false);
     const [showExploreSheet, setShowExploreSheet] = useState(false);
     const [selectedExploreCategory, setSelectedExploreCategory] = useState<string | null>(null);
@@ -92,6 +93,8 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     const {
         selectedDestination,
         setSelectedDestination,
+        waypoints,
+        setWaypoints,
         isNavigating,
         navigationMode,
 
@@ -157,6 +160,18 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     const { addIncidentMarkers } = useMapMarkers(mapRef, incidents);
 
     const handleSelectPlace = (place: GeocodingPlace, autoNavigate: boolean = true) => {
+        import('../../navigation/services/searchLog.service').then(({ searchLogService }) => {
+            const storedQuery = searchLogService.getAndClearSearchQuery();
+            if (storedQuery) {
+               
+                searchLogService.trackSearch(storedQuery, {
+                    name: place.name,
+                    latitude: place.latitude,
+                    longitude: place.longitude,
+                });
+            }
+        });
+
         if (searchMarkerRef.current) {
             mapRef.current?.clearMarkers();
             addIncidentMarkers();
@@ -306,7 +321,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     };
 
     const handleNavigateToExplorePlace = (place: GeocodingPlace) => {
-
         setIsFromTaxiSearch(false);
         handleSelectPlace(place);
     };
@@ -362,7 +376,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
 
         mapRef.current.flyTo({
             center: [userLocation.lng, userLocation.lat],
-            zoom: 15,
+            zoom: USER_LOCATION_ZOOM,
             duration: 1000,
         });
     };
@@ -394,16 +408,31 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     useBackgroundSync();
 
     useEffect(() => {
-        if (userLocation && mapRef.current && !navigationMode && !hasZoomedToUserLocation.current && !sharedLocation && !selectedDestination) {
-            hasZoomedToUserLocation.current = true;
+        if (userLocation) {
             setShowUserLocationMarker(true);
-            mapRef.current.flyTo({
-                center: [userLocation.lng, userLocation.lat],
-                zoom: 15,
-                duration: 1500,
-            });
         }
-    }, [userLocation?.lat, userLocation?.lng, navigationMode, sharedLocation, selectedDestination]);
+    }, [userLocation?.lat, userLocation?.lng]);
+
+    useEffect(() => {
+        if (
+            !userLocation ||
+            !isMapLoaded ||
+            !mapRef.current ||
+            navigationMode ||
+            hasZoomedToUserLocation.current ||
+            sharedLocation ||
+            selectedDestination
+        ) {
+            return;
+        }
+
+        hasZoomedToUserLocation.current = true;
+        mapRef.current.flyTo({
+            center: [userLocation.lng, userLocation.lat],
+            zoom: USER_LOCATION_ZOOM,
+            duration: 0,
+        });
+    }, [userLocation?.lat, userLocation?.lng, isMapLoaded, navigationMode, sharedLocation, selectedDestination]);
 
     useEffect(() => {
         if (sharedLocation && mapRef.current && isMapLoaded && !hasProcessedSharedLocation.current) {
@@ -717,17 +746,31 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         return () => backHandler.remove();
     }, [navigationMode, handleStopNavigation, showReportOptions, isOnIncidentReportScreen]);
 
+    if (userLocation && !initialMapCenterRef.current) {
+        initialMapCenterRef.current = [userLocation.lng, userLocation.lat];
+    }
+
+    const mapCenter: [number, number] | null = sharedLocation
+        ? [sharedLocation.lng, sharedLocation.lat]
+        : initialMapCenterRef.current;
+
     return (
         <View className="flex-1">
             <StatusBar barStyle="dark-content" backgroundColor="#ffffff" translucent={false} />
+            {!mapCenter ? (
+                <View className="flex-1 items-center justify-center bg-white">
+                    <ActivityIndicator size="large" color="#ffa500" />
+                </View>
+            ) : (
+            <>
             <CustomGebetaMap
                 ref={mapRef}
                 apiKey={process.env.EXPO_PUBLIC_GEBETA_API_KEY!}
                 mapStyleUrl={currentTheme.styleUrl ? `${currentTheme.styleUrl}?apiKey=${process.env.EXPO_PUBLIC_GEBETA_API_KEY}` : undefined}
 
                 mapStyleJson={currentTheme.styleJson}
-                center={initialCenter}
-                zoom={initialZoom}
+                center={mapCenter}
+                zoom={USER_LOCATION_ZOOM}
                 onMapClick={handleMapClick}
                 onMapLoaded={handleMapLoaded}
                 routeGeoJSON={isNavigationMinimized ? undefined : (taxiRouteData ? undefined : routeGeoJSON)}
@@ -753,6 +796,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 taxiStations={taxiStations || undefined}
                 taxiWalkRoutes={taxiWalkRoutes || undefined}
                 taxiRouteSegments={taxiRouteSegments || undefined}
+                waypointMarkers={waypoints.length > 0 ? waypoints.map(wp => ({ latitude: wp.latitude, longitude: wp.longitude, name: wp.name })) : undefined}
             />
 
             {activeIncidentAlert && (
@@ -888,16 +932,23 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                         if (mode === 'walking') {
                             setCurrentCosting('pedestrian');
                             if (selectedDestination && userLocation) {
-                                handleNavigate(setUserLocation, selectedDestination, 'pedestrian');
+                                handleNavigate(setUserLocation, selectedDestination, 'pedestrian', waypoints);
                             }
                         } else if (mode === 'driving') {
                             setCurrentCosting('auto');
                             if (selectedDestination && userLocation) {
-                                handleNavigate(setUserLocation, selectedDestination, 'auto');
+                                handleNavigate(setUserLocation, selectedDestination, 'auto', waypoints);
                             }
                         }
                     }}
                     initialMode={isFromTaxiSearch ? 'taxi' : 'driving'}
+                    waypoints={waypoints}
+                    onWaypointsChange={(updated) => {
+                        setWaypoints(updated);
+                        if (selectedDestination && userLocation) {
+                            handleNavigate(setUserLocation, selectedDestination, currentCosting === 'pedestrian' ? 'pedestrian' : 'auto', updated);
+                        }
+                    }}
                 />
             )}
 
@@ -944,6 +995,8 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 destinationName={selectedDestination?.name}
                 onClose={() => setShowArrivalModal(false)}
             />
+            </>
+            )}
         </View>
     );
 }
