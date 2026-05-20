@@ -1,4 +1,4 @@
-import React, { forwardRef, useState, useImperativeHandle, useRef, useEffect, memo, useMemo } from 'react';
+import React, { forwardRef, useState, useImperativeHandle, useRef, useEffect, memo, useMemo, useCallback } from 'react';
 import { View, StyleSheet, ActivityIndicator, Alert, Text, Animated, Image } from 'react-native';
 import MapLibreGL from '@maplibre/maplibre-react-native';
 import { GebetaMapRef, GebetaMapProps } from '@gebeta/tiles-react-native';
@@ -34,6 +34,27 @@ const INCIDENT_IMAGES = {
     BROKEN_ROAD: require('../../../assets/images/broken-road.png'),
     RADAR: require('../../../assets/images/radar.png'),
     OTHER: require('../../../assets/images/other.png'),
+};
+
+const MAP_TILE_LOADING_BACKGROUND = colors.gray[200];
+
+const ensureStyleBackgroundLayer = (styleJson: Record<string, any>): Record<string, any> => {
+    const layers = Array.isArray(styleJson.layers) ? [...styleJson.layers] : [];
+    const hasBackground = layers.some((layer) => layer.type === 'background');
+    if (hasBackground) {
+        return styleJson;
+    }
+    return {
+        ...styleJson,
+        layers: [
+            {
+                id: 'gebeta-map-background',
+                type: 'background',
+                paint: { 'background-color': MAP_TILE_LOADING_BACKGROUND },
+            },
+            ...layers,
+        ],
+    };
 };
 
 interface ExtendedGebetaMapProps extends GebetaMapProps {
@@ -401,6 +422,47 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         const pulseAnim = useRef(new Animated.Value(1)).current;
         const [imagesLoaded, setImagesLoaded] = useState(false);
         const [renderKey, setRenderKey] = useState(0);
+        const pendingFlyTo = useRef<{
+            center: [number, number];
+            zoom?: number;
+            duration?: number;
+            pitch?: number;
+        } | null>(null);
+
+        const applyFlyTo = useCallback((options: {
+            center: [number, number];
+            zoom?: number;
+            duration?: number;
+            pitch?: number;
+        }) => {
+            const cameraConfig = {
+                centerCoordinate: options.center,
+                zoomLevel: options.zoom,
+                animationMode: 'flyTo' as const,
+                animationDuration: options.duration ?? 1000,
+                pitch: options.pitch ?? 0,
+            };
+
+            if (cameraRef.current) {
+                pendingFlyTo.current = null;
+                cameraRef.current.setCamera(cameraConfig);
+            } else {
+                pendingFlyTo.current = options;
+            }
+        }, []);
+
+        useEffect(() => {
+            if (loading || !mapStyleState || !pendingFlyTo.current) return;
+
+            const pending = pendingFlyTo.current;
+            const frameId = requestAnimationFrame(() => {
+                if (cameraRef.current && pendingFlyTo.current === pending) {
+                    applyFlyTo(pending);
+                }
+            });
+
+            return () => cancelAnimationFrame(frameId);
+        }, [loading, mapStyleState, applyFlyTo]);
 
         // Preload images on mount
         useEffect(() => {
@@ -464,7 +526,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         }, [explorePlaces, exploreCategory, imagesLoaded]);
 
         useEffect(() => {
-            console.log('[GebetaMap] rules changed — count:', rules?.length, 'imagesLoaded:', imagesLoaded, 'isNavigating:', isNavigating, 'mapStyleReady:', !!mapStyleState);
+            console.log('rules changed — count:', rules?.length, 'imagesLoaded:', imagesLoaded, 'isNavigating:', isNavigating, 'mapStyleReady:', !!mapStyleState);
             if (!imagesLoaded || !mapStyleState) return;
             const timer = setTimeout(() => setRenderKey(prev => prev + 1), 200);
             return () => clearTimeout(timer);
@@ -568,15 +630,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
         useImperativeHandle(ref, () => ({
             flyTo: (options: any) => {
-                if (cameraRef.current) {
-                    cameraRef.current.setCamera({
-                        centerCoordinate: options.center,
-                        zoomLevel: options.zoom,
-                        animationMode: 'flyTo',
-                        animationDuration: options.duration || 1000,
-                        pitch: options.pitch,
-                    });
-                }
+                applyFlyTo(options);
             },
             addImageMarker: () => ({ marker: {} }),
             addMarker: () => ({}),
@@ -615,7 +669,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             updateNavigationPosition: () => { },
             getNavigationState: () => null,
             isNavigating: () => false,
-        }), []);
+        }), [applyFlyTo]);
 
         useEffect(() => {
             async function processStyle() {
@@ -647,7 +701,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         }
                     }
 
-                    setMapStyleState(styleJson);
+                    setMapStyleState(ensureStyleBackgroundLayer(styleJson));
                     setLoading(false);
                 } catch (error) {
                     console.error("Error loading style JSON:", error);
@@ -660,6 +714,9 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         }, [apiKey, mapStyleUrl, mapStyleJson]);
 
         const handleMapLoad = () => {
+            if (pendingFlyTo.current) {
+                applyFlyTo(pendingFlyTo.current);
+            }
             onMapLoaded?.();
         };
 
@@ -714,7 +771,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         return (
             <View style={styles.container}>
                 <View
-                    style={styles.map}
+                    style={styles.mapSurface}
                     onTouchStart={() => {
                         if (isNavigating) {
                             setTimeout(() => {
@@ -728,7 +785,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 >
                     <MapLibreGL.MapView
                         ref={mapViewRef}
-                        style={styles.map}
+                        style={styles.mapSurface}
                         mapStyle={mapStyleState}
                         attributionEnabled={false}
                         logoEnabled={false}
@@ -1261,8 +1318,9 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    map: {
+    mapSurface: {
         flex: 1,
+        backgroundColor: MAP_TILE_LOADING_BACKGROUND,
     },
 });
 
