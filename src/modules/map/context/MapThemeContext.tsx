@@ -63,6 +63,13 @@ const processRemoteStyle = async (url: string): Promise<Record<string, unknown>>
     }
 };
 
+const STYLE_URLS: Record<MapThemeId, string> = {
+    standard: 'https://tiles.gebeta.app/styles/standard/style.json',
+    custom3: 'https://tiles.gebeta.app/styles/standard/light.json',
+    dark: 'https://tiles.gebeta.app/styles/standard/dark.json',
+    raster: 'https://tiles.gebeta.app/styles/raster/raster.json',
+};
+
 const BASE_THEMES: (Omit<MapTheme, 'styleJson'> & { styleJson?: Record<string, unknown> })[] = [
     {
         id: 'standard',
@@ -101,42 +108,52 @@ interface MapThemeContextType {
 
 const MapThemeContext = createContext<MapThemeContextType | undefined>(undefined);
 
+const themeWithStyle = (base: (typeof BASE_THEMES)[number], styleJson: Record<string, unknown>): MapTheme => ({
+    ...(base as MapTheme),
+    styleJson,
+});
+
 export const MapThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [currentTheme, setCurrentTheme] = useState<MapTheme>(BASE_THEMES[0] as MapTheme);
+    const [currentTheme, setCurrentTheme] = useState<MapTheme>({
+        ...BASE_THEMES[0],
+        styleUrl: undefined,
+        styleJson: undefined,
+    } as MapTheme);
     const [themes, setThemes] = useState<MapTheme[]>(BASE_THEMES as MapTheme[]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const loadThemes = async () => {
             try {
-                const [lightStyle, darkStyle, rasterStyle] = await Promise.all([
-                    processRemoteStyle('https://tiles.gebeta.app/styles/standard/light.json'),
-                    processRemoteStyle('https://tiles.gebeta.app/styles/standard/dark.json'),
-                    processRemoteStyle('https://tiles.gebeta.app/styles/raster/raster.json'),
-                ]);
+                const savedThemeId = (await AsyncStorage.getItem(STORAGE_KEY)) as MapThemeId | null;
+                const activeThemeId: MapThemeId =
+                    savedThemeId && savedThemeId in STYLE_URLS ? savedThemeId : 'standard';
 
-                const loadedThemes: MapTheme[] = [
-                    BASE_THEMES[0],
-                    { ...BASE_THEMES[1], styleJson: lightStyle },
-                    { ...BASE_THEMES[2], styleJson: darkStyle },
-                    { ...BASE_THEMES[3], styleJson: rasterStyle },
-                ];
+                const activeStyle = await processRemoteStyle(STYLE_URLS[activeThemeId]);
+                const activeBase = BASE_THEMES.find((t) => t.id === activeThemeId) ?? BASE_THEMES[0];
+                const activeTheme = themeWithStyle(activeBase, activeStyle);
+
+                setCurrentTheme(activeTheme);
+                setIsLoading(false);
+
+                const otherIds = (Object.keys(STYLE_URLS) as MapThemeId[]).filter(
+                    (id) => id !== activeThemeId
+                );
+                const otherStyles = await Promise.all(
+                    otherIds.map((id) => processRemoteStyle(STYLE_URLS[id]))
+                );
+
+                const loadedThemes: MapTheme[] = BASE_THEMES.map((base) => {
+                    if (base.id === activeThemeId) {
+                        return activeTheme;
+                    }
+                    const index = otherIds.indexOf(base.id as MapThemeId);
+                    return themeWithStyle(base, otherStyles[index]);
+                });
 
                 setThemes(loadedThemes);
-
-                //load saved 
-                const savedThemeId = await AsyncStorage.getItem(STORAGE_KEY);
-                if (savedThemeId) {
-                    const theme = loadedThemes.find(t => t.id === savedThemeId);
-                    if (theme) {
-                        setCurrentTheme(theme);
-                    }
-                } else {
-                    setCurrentTheme(loadedThemes[0]);
-                }
             } catch (error) {
                 console.error('Failed to load themes:', error);
-            } finally {
                 setIsLoading(false);
             }
         };

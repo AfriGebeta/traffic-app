@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, LogBox, BackHandler, StatusBar, ActivityIndicator } from 'react-native';
+import { View, LogBox, BackHandler, StatusBar } from 'react-native';
 import { useLocalSearchParams, useFocusEffect, useRouter } from 'expo-router';
 import CustomGebetaMap from '../../../components/GebetaMap';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
@@ -47,7 +47,6 @@ interface TrafficMapProps {
 export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMode }: TrafficMapProps) {
     const mapRef = useRef<GebetaMapRef>(null);
     const searchMarkerRef = useRef<any>(null);
-    const hasZoomedToUserLocation = useRef(false);
     const hasProcessedSharedLocation = useRef(false);
     const router = useRouter();
 
@@ -414,27 +413,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     }, [userLocation?.lat, userLocation?.lng]);
 
     useEffect(() => {
-        if (
-            !userLocation ||
-            !isMapLoaded ||
-            !mapRef.current ||
-            navigationMode ||
-            hasZoomedToUserLocation.current ||
-            sharedLocation ||
-            selectedDestination
-        ) {
-            return;
-        }
-
-        hasZoomedToUserLocation.current = true;
-        mapRef.current.flyTo({
-            center: [userLocation.lng, userLocation.lat],
-            zoom: USER_LOCATION_ZOOM,
-            duration: 0,
-        });
-    }, [userLocation?.lat, userLocation?.lng, isMapLoaded, navigationMode, sharedLocation, selectedDestination]);
-
-    useEffect(() => {
         if (sharedLocation && mapRef.current && isMapLoaded && !hasProcessedSharedLocation.current) {
             hasProcessedSharedLocation.current = true;
 
@@ -746,28 +724,27 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         return () => backHandler.remove();
     }, [navigationMode, handleStopNavigation, showReportOptions, isOnIncidentReportScreen]);
 
-    if (userLocation && !initialMapCenterRef.current) {
-        initialMapCenterRef.current = [userLocation.lng, userLocation.lat];
+    if (userLocation) {
+        if (!initialMapCenterRef.current || !isMapLoaded) {
+            initialMapCenterRef.current = [userLocation.lng, userLocation.lat];
+        }
     }
 
-    const mapCenter: [number, number] | null = sharedLocation
+    const mapCenter: [number, number] | undefined = sharedLocation
         ? [sharedLocation.lng, sharedLocation.lat]
-        : initialMapCenterRef.current;
+        : initialMapCenterRef.current ?? undefined;
 
     return (
         <View className="flex-1">
             <StatusBar barStyle="dark-content" backgroundColor="#ffffff" translucent={false} />
-            {!mapCenter ? (
-                <View className="flex-1 items-center justify-center bg-white">
-                    <ActivityIndicator size="large" color="#ffa500" />
-                </View>
-            ) : (
-            <>
             <CustomGebetaMap
                 ref={mapRef}
                 apiKey={process.env.EXPO_PUBLIC_GEBETA_API_KEY!}
-                mapStyleUrl={currentTheme.styleUrl ? `${currentTheme.styleUrl}?apiKey=${process.env.EXPO_PUBLIC_GEBETA_API_KEY}` : undefined}
-
+                mapStyleUrl={
+                    !currentTheme.styleJson && currentTheme.styleUrl
+                        ? `${currentTheme.styleUrl}?apiKey=${process.env.EXPO_PUBLIC_GEBETA_API_KEY}`
+                        : undefined
+                }
                 mapStyleJson={currentTheme.styleJson}
                 center={mapCenter}
                 zoom={USER_LOCATION_ZOOM}
@@ -995,8 +972,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 destinationName={selectedDestination?.name}
                 onClose={() => setShowArrivalModal(false)}
             />
-            </>
-            )}
         </View>
     );
 }

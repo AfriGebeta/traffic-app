@@ -59,6 +59,16 @@ export function UserLocationProvider({ children }: { children: ReactNode }) {
                 });
             };
 
+            try {
+                const lastKnown = await Location.getLastKnownPositionAsync({
+                    maxAge: 10 * 60 * 1000,
+                });
+                if (lastKnown) {
+                    applyLocation(lastKnown.coords);
+                }
+            } catch {
+            }
+
             void Location.getCurrentPositionAsync({
                 accuracy: Location.Accuracy.Lowest,
             })
