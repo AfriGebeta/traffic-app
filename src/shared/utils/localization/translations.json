@@ -610,6 +610,21 @@
         "AM": "ይሂዱ"
     },
     {
+        "key": "start",
+        "EN_US": "Start",
+        "AM": "ጀምር"
+    },
+    {
+        "key": "share",
+        "EN_US": "Share",
+        "AM": "አጋራ"
+    },
+    {
+        "key": "route-unavailable",
+        "EN_US": "Route unavailable",
+        "AM": "መንገድ አይገኝም"
+    },
+    {
         "key": "logout",
         "EN_US": "Logout",
         "AM": "ይውጡ"

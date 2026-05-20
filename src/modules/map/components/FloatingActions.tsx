@@ -13,6 +13,7 @@ interface FloatingActionsProps {
     isProcessingVoice?: boolean;
     userLocation?: { lat: number; lng: number } | null;
     isRoutePreviewActive?: boolean;
+    isPlaceDetailActive?: boolean;
 }
 
 export const FloatingActions: React.FC<FloatingActionsProps> = ({
@@ -24,16 +25,18 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
     isProcessingVoice = false,
     userLocation,
     isRoutePreviewActive = false,
+    isPlaceDetailActive = false,
 }) => {
     const bottomPosition = useRef(new Animated.Value(180)).current;
 
     useEffect(() => {
+        const targetBottom = isRoutePreviewActive || isPlaceDetailActive ? 450 : 180;
         Animated.timing(bottomPosition, {
-            toValue: isRoutePreviewActive ? 450 : 180,
+            toValue: targetBottom,
             duration: 250,
             useNativeDriver: false,
         }).start();
-    }, [isRoutePreviewActive]);
+    }, [isRoutePreviewActive, isPlaceDetailActive]);
 
     return (
         <Animated.View className="absolute right-4 gap-3" style={{ bottom: bottomPosition }}>

@@ -9,9 +9,9 @@ import { IncidentAlert } from './IncidentAlert';
 import { RuleAlert } from './RuleAlert';
 import { MapOverlay } from './MapOverlay';
 import { IncidentReportSheet } from './IncidentReportSheet';
-import { PlaceDetailsSheet } from './PlaceDetailsSheet';
 import { ExploreSheet } from '../../explore/components/ExploreSheet';
 import { RoutePreview } from '../../navigation/components/RoutePreview';
+import { PlaceDetailPreview } from '../../navigation/components/PlaceDetailPreview';
 import { ArrivalModal } from '../../navigation/components/ArrivalModal';
 import { NavigationOptionsModal } from '../../navigation/components/NavigationOptionsModal';
 import { VoiceNavigationModal } from '../../navigation/components/VoiceNavigationModal';
@@ -56,7 +56,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     const [showReportOptions, setShowReportOptions] = useState(false);
     const [showExploreSheet, setShowExploreSheet] = useState(false);
     const [selectedExploreCategory, setSelectedExploreCategory] = useState<string | null>(null);
-    const [selectedExplorePlace, setSelectedExplorePlace] = useState<GeocodingPlace | null>(null);
     const [showUserLocationMarker, setShowUserLocationMarker] = useState(false);
     const [clickedLocation, setClickedLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [isNavigationMinimized, setIsNavigationMinimized] = useState(false);
@@ -68,6 +67,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     const [taxiWalkRoutes, setTaxiWalkRoutes] = useState<Array<{ type: 'origin' | 'transfer' | 'destination'; polyline: string }> | null>(null);
     const [taxiRouteSegments, setTaxiRouteSegments] = useState<Array<{ coordinates: Array<[number, number]>; cost: number; from: string; to: string }> | null>(null);
     const [isFromTaxiSearch, setIsFromTaxiSearch] = useState(false);
+    const [showPlaceDetail, setShowPlaceDetail] = useState(false);
 
     const { t } = useTranslation();
     const params = useLocalSearchParams();
@@ -158,7 +158,44 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     const activeRuleAlert = useRuleAlerts(userLocation, nearbyRules, navigationMode, routeCoordinates);
     const { addIncidentMarkers } = useMapMarkers(mapRef, incidents);
 
-    const handleSelectPlace = (place: GeocodingPlace, autoNavigate: boolean = true) => {
+    const clearSearchMarker = () => {
+        if (searchMarkerRef.current) {
+            mapRef.current?.clearMarkers();
+            addIncidentMarkers();
+            searchMarkerRef.current = null;
+        }
+    };
+
+    const handleClosePlaceDetail = () => {
+        setShowPlaceDetail(false);
+        setSelectedDestination(null);
+        clearSearchMarker();
+    };
+
+    const handleDirectionsFromPlaceDetail = () => {
+        setShowPlaceDetail(false);
+        setIsFromTaxiSearch(false);
+        setTaxiRouteData(null);
+        if (selectedDestination) {
+            handleNavigate(setUserLocation, selectedDestination);
+        }
+    };
+
+    const handleTaxiFromPlaceDetail = () => {
+        setShowPlaceDetail(false);
+        setTaxiRouteData(null);
+        setIsFromTaxiSearch(true);
+        if (selectedDestination) {
+            handleNavigate(setUserLocation, selectedDestination);
+        }
+    };
+
+    const handleStartFromPlaceDetail = () => {
+        setShowPlaceDetail(false);
+        handleStartNavigation(setUserLocation);
+    };
+
+    const handleSelectPlace = (place: GeocodingPlace, autoNavigate: boolean = false) => {
         import('../../navigation/services/searchLog.service').then(({ searchLogService }) => {
             const storedQuery = searchLogService.getAndClearSearchQuery();
             if (storedQuery) {
@@ -171,10 +208,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
             }
         });
 
-        if (searchMarkerRef.current) {
-            mapRef.current?.clearMarkers();
-            addIncidentMarkers();
-        }
+        clearSearchMarker();
 
         const marker = mapRef.current?.addImageMarker(
             [place.longitude, place.latitude],
@@ -204,9 +238,18 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         setIsFromTaxiSearch(false);
 
         if (autoNavigate) {
+            setShowPlaceDetail(false);
             setTimeout(() => {
                 handleNavigate(setUserLocation, place);
             }, 300);
+        } else {
+            setShowPlaceDetail(true);
+            setShowRoutePreview(false);
+            mapRef.current?.flyTo({
+                center: [place.longitude, place.latitude],
+                zoom: 15,
+                duration: 1000,
+            });
         }
     };
 
@@ -317,11 +360,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
             showToast.error(t('search-failed'), t('please-try-again'));
             setSelectedExploreCategory(null);
         }
-    };
-
-    const handleNavigateToExplorePlace = (place: GeocodingPlace) => {
-        setIsFromTaxiSearch(false);
-        handleSelectPlace(place);
     };
 
     useEffect(() => {
@@ -769,7 +807,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 clickedLocation={clickedLocation}
                 explorePlaces={exploreResults}
                 exploreCategory={selectedExploreCategory}
-                onExplorePlacePress={(place) => setSelectedExplorePlace(place)}
+                onExplorePlacePress={(place) => handleSelectPlace(place)}
                 taxiStations={taxiStations || undefined}
                 taxiWalkRoutes={taxiWalkRoutes || undefined}
                 taxiRouteSegments={taxiRouteSegments || undefined}
@@ -868,6 +906,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     isRecording={isRecording}
                     isProcessingVoice={isProcessingVoice}
                     showRoutePreview={showRoutePreview}
+                    showPlaceDetail={showPlaceDetail}
                     voiceNavigationData={voiceNavigationData}
                     onExploreCategory={handleExploreCategory}
                     isExploring={isExploring}
@@ -875,6 +914,17 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     isNavigationMinimized={isNavigationMinimized}
                     onRestoreNavigation={() => setIsNavigationMinimized(false)}
                     navigationDestination={navigationMode ? selectedDestination : null}
+                />
+            )}
+
+            {showPlaceDetail && selectedDestination && !showRoutePreview && !navigationMode && (
+                <PlaceDetailPreview
+                    place={selectedDestination}
+                    userLocation={userLocation}
+                    onDirections={handleDirectionsFromPlaceDetail}
+                    onStart={handleStartFromPlaceDetail}
+                    onTaxi={handleTaxiFromPlaceDetail}
+                    onClose={handleClosePlaceDetail}
                 />
             )}
 
@@ -897,6 +947,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     }}
                     onCancel={() => {
                         setShowRoutePreview(false);
+                        setShowPlaceDetail(false);
                         handleClearRoute();
                         setClickedLocation(null);
                         setTaxiRouteData(null);
@@ -935,12 +986,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 userLocation={userLocation}
                 isNavigating={navigationMode}
                 onNavigateToReport={() => setIsOnIncidentReportScreen(true)}
-            />
-
-            <PlaceDetailsSheet
-                place={selectedExplorePlace}
-                onClose={() => setSelectedExplorePlace(null)}
-                onNavigate={handleNavigateToExplorePlace}
             />
 
             <ExploreSheet
