@@ -37,6 +37,8 @@ import { useRulePreferences } from '../../rules/hooks/useRulePreferences';
 import type { SharedLocation } from '../../../shared/utils/deepLinking';
 import { decodePolyline } from '../../../shared/utils/polyline';
 import type { TaxiNavigationResponse } from '../../taxi/types/taxi.types';
+import { setNavigationPreviewData } from '../../navigation/services/navigationPreviewCache';
+import { buildPreviewSteps } from '../../navigation/utils/navigationPreviewUtils';
 
 interface TrafficMapProps {
     sharedLocation?: SharedLocation | null;
@@ -112,6 +114,10 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         setShowArrivalModal,
 
         routeGeoJSON,
+        routeOrigin,
+        setRouteOrigin,
+        routeManeuversList,
+        routeLegs,
         handleNavigate,
 
         handleStartNavigation,
@@ -176,6 +182,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         setShowPlaceDetail(false);
         setIsFromTaxiSearch(false);
         setTaxiRouteData(null);
+        setRouteOrigin(null);
         if (selectedDestination) {
             handleNavigate(setUserLocation, selectedDestination);
         }
@@ -188,6 +195,45 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         if (selectedDestination) {
             handleNavigate(setUserLocation, selectedDestination);
         }
+    };
+
+    const handleOriginChange = (place: GeocodingPlace | null) => {
+        setIsFromTaxiSearch(false);
+        setTaxiRouteData(null);
+        if (selectedDestination) {
+            handleNavigate(
+                setUserLocation,
+                selectedDestination,
+                currentCosting === 'pedestrian' ? 'pedestrian' : 'auto',
+                waypoints,
+                place
+            );
+        }
+    };
+
+    const handleOpenRoutePreview = () => {
+        if (!selectedDestination || !routeGeoJSON || routeLegs.length === 0) {
+            showToast.error(t('route-unavailable'));
+            return;
+        }
+
+        const previewSteps = buildPreviewSteps(routeLegs);
+        if (previewSteps.length === 0) {
+            showToast.error(t('route-unavailable'));
+            return;
+        }
+
+        setNavigationPreviewData({
+            routeGeoJSON,
+            previewSteps,
+            destination: selectedDestination,
+            origin: routeOrigin,
+            distance: remainingDistance,
+            duration: remainingTime,
+            waypoints,
+        });
+
+        router.push('/navigation/route-preview');
     };
 
     const handleStartFromPlaceDetail = () => {
@@ -236,6 +282,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
 
         //reset taxi search
         setIsFromTaxiSearch(false);
+        setRouteOrigin(null);
 
         if (autoNavigate) {
             setShowPlaceDetail(false);
@@ -801,7 +848,12 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 onUserInteraction={() => setHasUserZoomedOut(true)}
 
                 userHeading={currentHeading}
-                showUserLocationMarker={showUserLocationMarker}
+                showUserLocationMarker={showUserLocationMarker && !routeOrigin}
+                routeOrigin={routeOrigin ? {
+                    latitude: routeOrigin.latitude,
+                    longitude: routeOrigin.longitude,
+                    name: routeOrigin.name,
+                } : null}
                 incidents={incidents}
                 rules={nearbyRules}
                 clickedLocation={clickedLocation}
@@ -977,6 +1029,10 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                             handleNavigate(setUserLocation, selectedDestination, currentCosting === 'pedestrian' ? 'pedestrian' : 'auto', updated);
                         }
                     }}
+                    origin={routeOrigin}
+                    onOriginChange={handleOriginChange}
+                    maneuvers={routeManeuversList}
+                    onPreviewPress={handleOpenRoutePreview}
                 />
             )}
 

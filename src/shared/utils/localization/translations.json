@@ -610,6 +610,46 @@
         "AM": "ይሂዱ"
     },
     {
+        "key": "preview",
+        "EN_US": "Preview",
+        "AM": "ቅድመ እይታ"
+    },
+    {
+        "key": "close-preview",
+        "EN_US": "Close preview",
+        "AM": "ቅድመ እይታ ዝጋ"
+    },
+    {
+        "key": "show-all-steps",
+        "EN_US": "Show all steps",
+        "AM": "ሁሉንም ደረጃዎች ይዝጉ"
+    },
+    {
+        "key": "hide-steps",
+        "EN_US": "Hide steps",
+        "AM": "አቅጣጫ ይደብቁ"
+    },
+    {
+        "key": "set-starting-point",
+        "EN_US": "Set starting point",
+        "AM": "መነሻ ያስተካክሉ"
+    },
+    {
+        "key": "change-start",
+        "EN_US": "Change start",
+        "AM": "መነሻ ለውጥ"
+    },
+    {
+        "key": "search-starting-point",
+        "EN_US": "Search starting point",
+        "AM": "መነሻ ይፈልጉ"
+    },
+    {
+        "key": "previous",
+        "EN_US": "Previous",
+        "AM": "ቀዳሚ"
+    },
+    {
         "key": "start",
         "EN_US": "Start",
         "AM": "ይጀምሩ"
