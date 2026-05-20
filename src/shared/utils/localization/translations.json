@@ -612,17 +612,17 @@
     {
         "key": "start",
         "EN_US": "Start",
-        "AM": "ጀምር"
+        "AM": "ይጀምሩ"
     },
     {
         "key": "share",
         "EN_US": "Share",
-        "AM": "አጋራ"
+        "AM": "ያጋሩ"
     },
     {
         "key": "route-unavailable",
         "EN_US": "Route unavailable",
-        "AM": "መንገድ አይገኝም"
+        "AM": "መንገድ አልተገኘም"
     },
     {
         "key": "logout",
