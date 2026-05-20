@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Image } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Image, Modal, TextInput, KeyboardAvoidingView, Platform, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -28,6 +28,8 @@ interface RoutePreviewProps {
     onTaxiRouteChange?: (taxiRoute: TaxiNavigationResponse | null) => void;
     initialMode?: 'driving' | 'taxi' | 'walking';
     onModeChange?: (mode: 'driving' | 'taxi' | 'walking') => void;
+    waypoints?: GeocodingPlace[];
+    onWaypointsChange?: (waypoints: GeocodingPlace[]) => void;
 }
 
 const formatDistance = (meters: number): string => {
@@ -71,6 +73,8 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
     onTaxiRouteChange,
     initialMode = 'driving',
     onModeChange,
+    waypoints = [],
+    onWaypointsChange,
 }) => {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
@@ -83,6 +87,12 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
     const [taxiRouteError, setTaxiRouteError] = useState<string | null>(null);
     const [walkingRoute, setWalkingRoute] = useState<{ distance: number; duration: number } | null>(null);
     const [loadingWalkingRoute, setLoadingWalkingRoute] = useState(false);
+
+    const [showStopSearch, setShowStopSearch] = useState(false);
+    const [stopSearchQuery, setStopSearchQuery] = useState('');
+    const [stopSearchResults, setStopSearchResults] = useState<GeocodingPlace[]>([]);
+    const [isSearchingStop, setIsSearchingStop] = useState(false);
+    const stopSearchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         checkIfSaved();
@@ -210,6 +220,39 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
             showToast.error(t('failed-to-remove-place'));
             console.error('Error removing place:', error);
         }
+    };
+
+    const handleStopSearchChange = (query: string) => {
+        setStopSearchQuery(query);
+        if (stopSearchDebounce.current) clearTimeout(stopSearchDebounce.current);
+        if (query.length < 2) {
+            setStopSearchResults([]);
+            return;
+        }
+        stopSearchDebounce.current = setTimeout(async () => {
+            setIsSearchingStop(true);
+            try {
+                const results = await navigationService.geocodePlace(query);
+                setStopSearchResults(results);
+            } catch {
+                setStopSearchResults([]);
+            } finally {
+                setIsSearchingStop(false);
+            }
+        }, 350);
+    };
+
+    const handleAddStop = (place: GeocodingPlace) => {
+        const updated = [...waypoints, place];
+        onWaypointsChange?.(updated);
+        setShowStopSearch(false);
+        setStopSearchQuery('');
+        setStopSearchResults([]);
+    };
+
+    const handleRemoveStop = (index: number) => {
+        const updated = waypoints.filter((_, i) => i !== index);
+        onWaypointsChange?.(updated);
     };
 
     const handleStartNavigation = () => {
@@ -494,15 +537,73 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                         ) : (
                             <View className="px-6 py-3">
                                 <View className="bg-gray-200 rounded-2xl p-4">
-                                    <View className="flex-row items-start mb-3">
+                                    <View className="flex-row items-start mb-1">
                                         <View className="w-8 items-center pt-1">
                                             <View className="w-3 h-3 rounded-full bg-blue-500" />
-                                            <View className="w-0.5 h-8 bg-gray-400 my-1" />
+                                            <View className="w-0.5 bg-gray-400 my-1" style={{ height: waypoints.length > 0 ? 24 : 24 }} />
                                         </View>
-                                        <View className="flex-1 ml-3">
+                                        <View className="flex-1 ml-3 pb-2">
                                             <Text className="text-gray-600 text-sm">{t('your-location')}</Text>
                                         </View>
                                     </View>
+
+                                    {waypoints.map((wp, index) => (
+                                        <View key={index}>
+                                           
+                                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                <View style={{ width: 32, alignItems: 'center' }}>
+                                                    <Image
+                                                        source={require('../../../../assets/images/location-pin-2.png')}
+                                                        style={{ width: 20, height: 20 }}
+                                                        resizeMode="contain"
+                                                    />
+                                                </View>
+                                                <View style={{ flex: 1, marginLeft: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <Text style={{ fontSize: 14, fontWeight: '500', color: '#1F2937', flex: 1 }} numberOfLines={1}>
+                                                        {wp.name}
+                                                    </Text>
+                                                    <TouchableOpacity
+                                                        onPress={() => handleRemoveStop(index)}
+                                                        style={{ marginLeft: 8, padding: 4 }}
+                                                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                                    >
+                                                        <Ionicons name="close-circle" size={18} color="#9CA3AF" />
+                                                    </TouchableOpacity>
+                                                </View>
+                                            </View>
+                                        
+                                            <View style={{ flexDirection: 'row', height: 14 }}>
+                                                <View style={{ width: 32, alignItems: 'center' }}>
+                                                    <View style={{ width: 1, flex: 1, backgroundColor: '#9CA3AF' }} />
+                                                </View>
+                                            </View>
+                                        </View>
+                                    ))}
+
+                                    {transportMode !== 'taxi' && (
+                                        <View>
+                                            <TouchableOpacity
+                                                style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 2 }}
+                                                onPress={() => setShowStopSearch(true)}
+                                                activeOpacity={0.7}
+                                            >
+                                                <View style={{ width: 32, alignItems: 'center' }}>
+                                                    <View style={{ width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: `${colors.primary.main}20` }}>
+                                                        <Ionicons name="add" size={14} color={colors.primary.main} />
+                                                    </View>
+                                                </View>
+                                                <Text style={{ marginLeft: 12, fontSize: 14, fontWeight: '500', color: colors.primary.main }}>
+                                                    Add stop
+                                                </Text>
+                                            </TouchableOpacity>
+                                       
+                                            <View style={{ flexDirection: 'row', height: 14 }}>
+                                                <View style={{ width: 32, alignItems: 'center' }}>
+                                                    <View style={{ width: 1, flex: 1, backgroundColor: '#9CA3AF' }} />
+                                                </View>
+                                            </View>
+                                        </View>
+                                    )}
 
                                     <View className="flex-row items-start">
                                         <View className="w-8 items-center pt-1">
@@ -606,6 +707,86 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                     )}
                 </View>
             </BlurView>
+
+            <Modal
+                visible={showStopSearch}
+                animationType="slide"
+                transparent
+                onRequestClose={() => setShowStopSearch(false)}
+            >
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={{ flex: 1 }}
+                >
+                    <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' }}>
+                        <View style={{ backgroundColor: 'white', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: insets.bottom + 16 }}>
+                            {/* Header */}
+                            <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 }}>
+                                <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827', flex: 1 }}>Add a stop</Text>
+                                <TouchableOpacity
+                                    onPress={() => { setShowStopSearch(false); setStopSearchQuery(''); setStopSearchResults([]); }}
+                                    style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' }}
+                                >
+                                    <Ionicons name="close" size={20} color="#374151" />
+                                </TouchableOpacity>
+                            </View>
+
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginBottom: 8, backgroundColor: '#F3F4F6', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10 }}>
+                                <Ionicons name="search" size={18} color="#9CA3AF" />
+                                <TextInput
+                                    autoFocus
+                                    placeholder="Search for a place..."
+                                    placeholderTextColor="#9CA3AF"
+                                    value={stopSearchQuery}
+                                    onChangeText={handleStopSearchChange}
+                                    style={{ flex: 1, marginLeft: 10, fontSize: 15, color: '#111827' }}
+                                    returnKeyType="search"
+                                />
+                                {stopSearchQuery.length > 0 && (
+                                    <TouchableOpacity onPress={() => { setStopSearchQuery(''); setStopSearchResults([]); }}>
+                                        <Ionicons name="close-circle" size={18} color="#9CA3AF" />
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+
+                            {isSearchingStop ? (
+                                <View style={{ paddingVertical: 32, alignItems: 'center' }}>
+                                    <ActivityIndicator size="small" color={colors.primary.main} />
+                                </View>
+                            ) : (
+                                <FlatList
+                                    data={stopSearchResults}
+                                    keyExtractor={(_, i) => i.toString()}
+                                    style={{ maxHeight: 320 }}
+                                    keyboardShouldPersistTaps="handled"
+                                    ListEmptyComponent={
+                                        stopSearchQuery.length >= 2 ? (
+                                            <View style={{ paddingVertical: 24, alignItems: 'center' }}>
+                                                <Text style={{ color: '#9CA3AF', fontSize: 14 }}>No results found</Text>
+                                            </View>
+                                        ) : null
+                                    }
+                                    renderItem={({ item }) => (
+                                        <TouchableOpacity
+                                            onPress={() => handleAddStop(item)}
+                                            style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderTopWidth: 1, borderTopColor: '#F3F4F6' }}
+                                            activeOpacity={0.7}
+                                        >
+                                            <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: `${colors.primary.main}15`, alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
+                                                <Ionicons name="location-outline" size={18} color={colors.primary.main} />
+                                            </View>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }} numberOfLines={1}>{item.name}</Text>
+                                                <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }} numberOfLines={1}>{[item.City, item.Country].filter(Boolean).join(', ')}</Text>
+                                            </View>
+                                        </TouchableOpacity>
+                                    )}
+                                />
+                            )}
+                        </View>
+                    </View>
+                </KeyboardAvoidingView>
+            </Modal>
         </View>
     );
 };

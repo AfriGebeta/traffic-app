@@ -19,6 +19,7 @@ export interface NavigationRequest {
     origin: [number, number];
     destination: [number, number];
     costing?: Costing;
+    waypoints?: [number, number][];
 }
 
 export interface Maneuver {

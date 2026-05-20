@@ -44,6 +44,18 @@ const processRemoteStyle = async (url: string): Promise<Record<string, unknown>>
             style.glyphs = 'https://tiles.gebeta.app/fonts/{fontstack}/{range}.pbf';
         }
 
+        const layers = Array.isArray(style.layers) ? style.layers : [];
+        if (!layers.some((layer: { type?: string }) => layer.type === 'background')) {
+            style.layers = [
+                {
+                    id: 'gebeta-map-background',
+                    type: 'background',
+                    paint: { 'background-color': '#E5E7EB' },
+                },
+                ...layers,
+            ];
+        }
+
         return style as Record<string, unknown>;
     } catch (error) {
         console.error('Failed to fetch and process style:', error);

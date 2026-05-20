@@ -108,8 +108,6 @@ export const useLocationTracking = ({
                     let closestIndex = lastClosestIndex.current;
                     let distanceFromRoute = Infinity;
 
-                    console.log('[useLocationTracking] Raw GPS:', { latitude, longitude }, 'isNavigating:', isNavigatingRef.current);
-
                     if (isNavigatingRef.current && routeCoordinates.current.length > 0) {
 
                         let minDistance = Infinity;
@@ -320,7 +318,6 @@ export const useLocationTracking = ({
                                 } else {
                                     setSegmentedRoutes(updatedSegments);
                                     if (setUserLocation) {
-                                        console.log('[useLocationTracking] Setting snapped location:', { lat: displayLat, lng: displayLng });
                                         setUserLocation({ lat: displayLat, lng: displayLng });
                                     }
                                 }
@@ -336,7 +333,6 @@ export const useLocationTracking = ({
                                 };
 
                                 if (setUserLocation) {
-                                    console.log('[useLocationTracking] Setting snapped location:', { lat: displayLat, lng: displayLng });
                                     setUserLocation({ lat: displayLat, lng: displayLng });
                                 }
                                 setRouteGeoJSON(remainingGeoJSON);
@@ -370,7 +366,6 @@ export const useLocationTracking = ({
                         }
                     } else {
                         if (setUserLocation) {
-                            console.log('[useLocationTracking] Setting raw GPS location:', { lat: displayLat, lng: displayLng });
                             setUserLocation({ lat: displayLat, lng: displayLng });
                         }
                     }

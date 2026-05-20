@@ -70,11 +70,15 @@ export const navigationService = {
     },
 
     async getNavigation(request: NavigationRequest): Promise<NavigationResponse | null> {
-        const payload = {
+        const payload: Record<string, any> = {
             origin: request.origin,
             destination: request.destination,
-            costing: request.costing || 'auto', 
+            costing: request.costing || 'auto',
         };
+
+        if (request.waypoints && request.waypoints.length > 0) {
+            payload.waypoints = request.waypoints;
+        }
 
         const response = await apiService.post<NavigationResponse>('/api/navigation/request-navigation', payload);
 

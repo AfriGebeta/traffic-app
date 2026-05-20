@@ -61,7 +61,7 @@ export default function TaxiSearchScreen() {
 
         setLoading(true);
         try {
-   
+
             const matchingStation = stations.find(
                 s => s.name.toLowerCase() === destinationName.trim().toLowerCase()
             );
@@ -74,7 +74,7 @@ export default function TaxiSearchScreen() {
                     destination: [matchingStation.lat, matchingStation.lng] as [number, number],
                 };
             } else {
-              
+
                 Alert.alert(
                     t('error'),
                     'Please select a destination from the available stations list'
