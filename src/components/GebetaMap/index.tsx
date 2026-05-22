@@ -522,7 +522,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 setRenderKey(prev => prev + 1);
                 setTimeout(() => setRenderKey(prev => prev + 1), 100);
             }
-        }, [imagesLoaded, showUserLocationMarker, isNavigating]);
+        }, [imagesLoaded, showUserLocationMarker, isNavigating, userLocation?.lat, userLocation?.lng]);
 
         useEffect(() => {
             if (imagesLoaded && mapStyleState) {
@@ -750,7 +750,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             };
         }, [center?.[0], center?.[1], zoom, isNavigating, mapStyleState, applyInitialCamera, externalCameraControl]);
 
-        const handleMapLoad = () => {
+        const handleMapLoad = useCallback(() => {
             if (!externalCameraControl) {
                 applyInitialCamera();
             }
@@ -758,7 +758,22 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 applyFlyTo(pendingFlyTo.current);
             }
             onMapLoaded?.();
-        };
+
+            if (userLocation && showUserLocationMarker && !isNavigating && !routeOrigin) {
+                setRenderKey(prev => prev + 1);
+                setTimeout(() => setRenderKey(prev => prev + 1), 100);
+                setTimeout(() => setRenderKey(prev => prev + 1), 300);
+            }
+        }, [
+            externalCameraControl,
+            applyInitialCamera,
+            applyFlyTo,
+            onMapLoaded,
+            userLocation,
+            showUserLocationMarker,
+            isNavigating,
+            routeOrigin,
+        ]);
 
         useEffect(() => {
             if (isNavigating && userLocation && cameraRef.current) {
@@ -1107,9 +1122,10 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
                         {!isNavigating && !routeOrigin && showUserLocationMarker && userLocation && imagesLoaded && (
                             <MapLibreGL.PointAnnotation
-                                key={`user-location-${renderKey}`}
+                                key={`user-location-${userLocation.lng}-${userLocation.lat}-${renderKey}`}
                                 id="user-location-marker-static"
                                 coordinate={[userLocation.lng, userLocation.lat]}
+                                anchor={{ x: 0.5, y: 1 }}
                             >
                                 <View style={{
                                     width: 50,

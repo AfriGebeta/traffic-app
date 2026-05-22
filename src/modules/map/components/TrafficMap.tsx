@@ -58,7 +58,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     const [showReportOptions, setShowReportOptions] = useState(false);
     const [showExploreSheet, setShowExploreSheet] = useState(false);
     const [selectedExploreCategory, setSelectedExploreCategory] = useState<string | null>(null);
-    const [showUserLocationMarker, setShowUserLocationMarker] = useState(false);
     const [clickedLocation, setClickedLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [isNavigationMinimized, setIsNavigationMinimized] = useState(false);
     const [hasUserZoomedOut, setHasUserZoomedOut] = useState(false);
@@ -456,8 +455,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
             return;
         }
 
-        setShowUserLocationMarker(true);
-
         mapRef.current.flyTo({
             center: [userLocation.lng, userLocation.lat],
             zoom: USER_LOCATION_ZOOM,
@@ -490,12 +487,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     });
 
     useBackgroundSync();
-
-    useEffect(() => {
-        if (userLocation) {
-            setShowUserLocationMarker(true);
-        }
-    }, [userLocation?.lat, userLocation?.lng]);
 
     useEffect(() => {
         if (sharedLocation && mapRef.current && isMapLoaded && !hasProcessedSharedLocation.current) {
@@ -848,7 +839,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 onUserInteraction={() => setHasUserZoomedOut(true)}
 
                 userHeading={currentHeading}
-                showUserLocationMarker={showUserLocationMarker && !routeOrigin}
+                showUserLocationMarker={!routeOrigin}
                 routeOrigin={routeOrigin ? {
                     latitude: routeOrigin.latitude,
                     longitude: routeOrigin.longitude,
