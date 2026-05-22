@@ -83,11 +83,20 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         setSearchQuery,
         searchResults,
         setSearchResults,
+        recentSearches,
         isSearching,
         showSearchContainer,
         setShowSearchContainer,
+        showRecentSearches,
         skipSearchRef,
         clearSearch,
+        handleSearchFocus,
+        handleSearchBlur,
+        prepareSearchSelection,
+        dismissSearchPanel,
+        recordRecentSearch,
+        removeRecentSearch,
+        clearRecentSearches,
     } = useSearch();
 
     const {
@@ -142,7 +151,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         }
     }, []);
 
-    // Read directly from storage — never rely on hook's async initial state
     useEffect(() => {
         let cancelled = false;
         import('../../rules/services/preferences.service').then(({ rulePreferencesService }) => {
@@ -240,11 +248,12 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         handleStartNavigation(setUserLocation);
     };
 
-    const handleSelectPlace = (place: GeocodingPlace, autoNavigate: boolean = false) => {
+    const handleSelectPlace = (place: GeocodingPlace, autoNavigate: boolean = false, saveToRecents: boolean = false) => {
+        const queryForRecent = searchQuery.trim() || undefined;
+
         import('../../navigation/services/searchLog.service').then(({ searchLogService }) => {
             const storedQuery = searchLogService.getAndClearSearchQuery();
             if (storedQuery) {
-               
                 searchLogService.trackSearch(storedQuery, {
                     name: place.name,
                     latitude: place.latitude,
@@ -252,6 +261,10 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 });
             }
         });
+
+        if (saveToRecents) {
+            void recordRecentSearch(place, queryForRecent);
+        }
 
         clearSearchMarker();
 
@@ -266,8 +279,8 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         searchMarkerRef.current = marker;
 
         // clear search result
+        dismissSearchPanel();
         setSearchResults([]);
-        setShowSearchContainer(false);
 
         // clearing old route
         if (showRoutePreview || routeGeoJSON) {
@@ -911,16 +924,23 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     searchQuery={searchQuery}
                     onSearchChange={setSearchQuery}
                     onSearchClear={clearSearch}
+                    onSearchFocus={handleSearchFocus}
+                    onSearchBlur={handleSearchBlur}
 
                     searchResults={searchResults}
+                    recentSearches={recentSearches}
                     isSearching={isSearching}
                     showSearchContainer={showSearchContainer}
-                    onSelectPlace={handleSelectPlace}
+                    showRecentSearches={showRecentSearches}
+                    onSelectPlace={(place) => handleSelectPlace(place, false, true)}
+                    onPrepareSearchSelect={prepareSearchSelection}
+                    onRemoveRecentSearch={removeRecentSearch}
+                    onClearRecentSearches={clearRecentSearches}
 
                     onCloseSearch={() => {
+                        dismissSearchPanel();
                         setSearchResults([]);
                         setSearchQuery('');
-                        setShowSearchContainer(false);
                         setSelectedExploreCategory(null);
                         clearExploreResults();
                         setClickedLocation(null);

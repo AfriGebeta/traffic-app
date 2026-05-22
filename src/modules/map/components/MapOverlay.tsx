@@ -12,6 +12,7 @@ import { BottomNavigation } from './BottomNavigation';
 import { MapThemeSelector } from './MapThemeSelector';
 import { showToast } from '../../../shared/utils/toast';
 import { colors } from '../../../shared/theme/colors';
+import type { RecentSearch } from '../../navigation/services/recentSearch.service';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 
@@ -19,10 +20,17 @@ interface MapOverlayProps {
     searchQuery: string;
     onSearchChange: (text: string) => void;
     onSearchClear: () => void;
+    onSearchFocus?: () => void;
+    onSearchBlur?: () => void;
     searchResults: GeocodingPlace[];
+    recentSearches?: RecentSearch[];
     isSearching: boolean;
     showSearchContainer: boolean;
+    showRecentSearches?: boolean;
     onSelectPlace: (place: GeocodingPlace) => void;
+    onPrepareSearchSelect?: () => void;
+    onRemoveRecentSearch?: (place: GeocodingPlace) => void;
+    onClearRecentSearches?: () => void;
     onCloseSearch: () => void;
     selectedDestination: GeocodingPlace | null;
     isNavigating: boolean;
@@ -55,10 +63,17 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
     searchQuery,
     onSearchChange,
     onSearchClear,
+    onSearchFocus,
+    onSearchBlur,
     searchResults,
+    recentSearches = [],
     isSearching,
     showSearchContainer,
+    showRecentSearches = false,
     onSelectPlace,
+    onPrepareSearchSelect,
+    onRemoveRecentSearch,
+    onClearRecentSearches,
     onCloseSearch,
     selectedDestination,
     isNavigating,
@@ -102,6 +117,8 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                     value={searchQuery}
                     onChangeText={onSearchChange}
                     onClear={onSearchClear}
+                    onFocus={onSearchFocus}
+                    onBlur={onSearchBlur}
                     placeholder={t('where-to-go')}
                     onProfilePress={handleProfilePress}
                     isLoading={isExploring}
@@ -115,10 +132,14 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
 
                 <SearchResults
                     results={searchResults}
+                    recentSearches={recentSearches}
                     onSelectPlace={onSelectPlace}
-                    onClose={onCloseSearch}
+                    onPrepareSelect={onPrepareSearchSelect}
+                    onRemoveRecent={onRemoveRecentSearch}
+                    onClearRecent={onClearRecentSearches}
                     isLoading={isSearching}
                     showContainer={showSearchContainer}
+                    showRecentSearches={showRecentSearches}
                 />
 
             </View>

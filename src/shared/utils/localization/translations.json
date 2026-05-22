@@ -35,6 +35,31 @@
         "AM": "ወዴት እንሂድ?"
     },
     {
+        "key": "recent-searches",
+        "EN_US": "Recent searches",
+        "AM": "የቅርብ ጊዜ ፍለጋዎች"
+    },
+    {
+        "key": "clear-recent",
+        "EN_US": "Clear",
+        "AM": "ያፅዱ"
+    },
+    {
+        "key": "no-recent-searches",
+        "EN_US": "No recent searches",
+        "AM": "የቅርብ ጊዜ ፍለጋ የለም"
+    },
+    {
+        "key": "searching",
+        "EN_US": "Searching...",
+        "AM": "በመፈለግ ላይ..."
+    },
+    {
+        "key": "no-results-found",
+        "EN_US": "No results found",
+        "AM": "ምንም ውጤት አልተገኘም"
+    },
+    {
         "key": "share-what-you-see",
         "EN_US": "Share what you see",
         "AM": "በመንገድዎ ያዩትን ያጋሩ"
