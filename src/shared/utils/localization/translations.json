@@ -1875,6 +1875,26 @@
         "AM": "የአገልግሎት ሰዓት ያስገቡ"
     },
     {
+        "key": "individual-times-per-route",
+        "EN_US": "Individual Times Per Route",
+        "AM": "ለእያንዳንዱ መስመር የተለየ ሰዓት"
+    },
+    {
+        "key": "each-route-has-its-own-time",
+        "EN_US": "Each route has its own time",
+        "AM": "እያንዳንዱ መስመር የራሱ ሰዓት አለው"
+    },
+    {
+        "key": "all-routes-share-same-time",
+        "EN_US": "All routes share the same time",
+        "AM": "ሁሉም መስመሮች አንድ ሰዓት ይጋራሉ"
+    },
+    {
+        "key": "set-individual-times-for-each-route",
+        "EN_US": "Set individual times for each route",
+        "AM": "ለእያንዳንዱ መስመር የተለየ ሰዓት ያስገቡ"
+    },
+    {
         "key": "edge",
         "EN_US": "Edge",
         "AM": "ክፍል"

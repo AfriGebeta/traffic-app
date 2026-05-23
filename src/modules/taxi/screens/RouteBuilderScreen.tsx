@@ -41,6 +41,9 @@ export default function RouteBuilderScreen() {
     const [nearbyStations, setNearbyStations] = useState<(TaxiNode & { distance: number })[]>([]);
     const [loadingNearby, setLoadingNearby] = useState(false);
     const [selectedExisting, setSelectedExisting] = useState<TaxiNode | null>(null);
+    const [startStationType, setStartStationType] = useState<'station' | 'stop'>('station');
+    const [endStationType, setEndStationType] = useState<'station' | 'stop'>('station');
+    const [intermediateStopType, setIntermediateStopType] = useState<'station' | 'stop'>('stop');
 
     useEffect(() => {
         if (pendingStop && pickType) {
@@ -156,12 +159,14 @@ export default function RouteBuilderScreen() {
             return;
         }
 
+        const stopType = type === 'start' ? startStationType : type === 'end' ? endStationType : intermediateStopType;
+
         const newStop: RouteStop = {
             id: selectedExisting ? selectedExisting.id.toString() : Date.now().toString(),
             name: name.trim(),
             lat: selectedExisting ? selectedExisting.lat : userLocation.lat,
             lng: selectedExisting ? selectedExisting.lng : userLocation.lng,
-            type: type === 'intermediate' ? 'stop' : 'station',
+            type: selectedExisting ? (selectedExisting.nodeType as 'station' | 'stop') : stopType,
             existingNodeId: selectedExisting?.id,
             isExisting: !!selectedExisting,
         };
@@ -331,6 +336,30 @@ export default function RouteBuilderScreen() {
                                     <Text className="text-gray-500 text-xs mb-3">{t('loading-nearby-stations')}</Text>
                                 )}
 
+                                {!selectedExisting && (
+                                    <View className="mb-3">
+                                        <Text className="text-gray-700 font-semibold mb-2">{t('type')}</Text>
+                                        <View className="flex-row gap-3">
+                                            <TouchableOpacity
+                                                className={`flex-1 py-3 rounded-xl border-2 ${startStationType === 'station' ? 'bg-orange-50 border-orange-500' : 'bg-gray-50 border-gray-200'}`}
+                                                onPress={() => setStartStationType('station')}
+                                            >
+                                                <Text className={`text-center font-semibold ${startStationType === 'station' ? 'text-orange-500' : 'text-gray-600'}`}>
+                                                    {t('station')}
+                                                </Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                className={`flex-1 py-3 rounded-xl border-2 ${startStationType === 'stop' ? 'bg-orange-50 border-orange-500' : 'bg-gray-50 border-gray-200'}`}
+                                                onPress={() => setStartStationType('stop')}
+                                            >
+                                                <Text className={`text-center font-semibold ${startStationType === 'stop' ? 'text-orange-500' : 'text-gray-600'}`}>
+                                                    {t('stop')}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                )}
+
                                 <View className="flex-row gap-2">
                                     <TouchableOpacity
                                         className="flex-1 bg-gray-200 py-2 rounded-lg"
@@ -451,6 +480,30 @@ export default function RouteBuilderScreen() {
                                     <Text className="text-gray-500 text-xs mb-3">{t('loading-nearby-stations')}</Text>
                                 )}
 
+                                {!selectedExisting && (
+                                    <View className="mb-3">
+                                        <Text className="text-gray-700 font-semibold mb-2">{t('type')}</Text>
+                                        <View className="flex-row gap-3">
+                                            <TouchableOpacity
+                                                className={`flex-1 py-3 rounded-xl border-2 ${intermediateStopType === 'station' ? 'bg-orange-50 border-orange-500' : 'bg-gray-50 border-gray-200'}`}
+                                                onPress={() => setIntermediateStopType('station')}
+                                            >
+                                                <Text className={`text-center font-semibold ${intermediateStopType === 'station' ? 'text-orange-500' : 'text-gray-600'}`}>
+                                                    {t('station')}
+                                                </Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                className={`flex-1 py-3 rounded-xl border-2 ${intermediateStopType === 'stop' ? 'bg-orange-50 border-orange-500' : 'bg-gray-50 border-gray-200'}`}
+                                                onPress={() => setIntermediateStopType('stop')}
+                                            >
+                                                <Text className={`text-center font-semibold ${intermediateStopType === 'stop' ? 'text-orange-500' : 'text-gray-600'}`}>
+                                                    {t('stop')}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                )}
+
                                 <View className="flex-row gap-2">
                                     <TouchableOpacity
                                         className="flex-1 bg-gray-200 py-2 rounded-lg"
@@ -566,6 +619,30 @@ export default function RouteBuilderScreen() {
 
                                 {loadingNearby && (
                                     <Text className="text-gray-500 text-xs mb-3">{t('loading-nearby-stations')}</Text>
+                                )}
+
+                                {!selectedExisting && (
+                                    <View className="mb-3">
+                                        <Text className="text-gray-700 font-semibold mb-2">{t('type')}</Text>
+                                        <View className="flex-row gap-3">
+                                            <TouchableOpacity
+                                                className={`flex-1 py-3 rounded-xl border-2 ${endStationType === 'station' ? 'bg-orange-50 border-orange-500' : 'bg-gray-50 border-gray-200'}`}
+                                                onPress={() => setEndStationType('station')}
+                                            >
+                                                <Text className={`text-center font-semibold ${endStationType === 'station' ? 'text-orange-500' : 'text-gray-600'}`}>
+                                                    {t('station')}
+                                                </Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                className={`flex-1 py-3 rounded-xl border-2 ${endStationType === 'stop' ? 'bg-orange-50 border-orange-500' : 'bg-gray-50 border-gray-200'}`}
+                                                onPress={() => setEndStationType('stop')}
+                                            >
+                                                <Text className={`text-center font-semibold ${endStationType === 'stop' ? 'text-orange-500' : 'text-gray-600'}`}>
+                                                    {t('stop')}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
                                 )}
 
                                 <View className="flex-row gap-2">
