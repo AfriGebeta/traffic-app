@@ -30,9 +30,10 @@ export default function SetAvailabilityScreen() {
     const [timeWindows, setTimeWindows] = useState<TimeWindow[]>([]);
     const [loading, setLoading] = useState(false);
     const [showTimePicker, setShowTimePicker] = useState(false);
-    const [editingTime, setEditingTime] = useState<{ windowIndex: number; field: 'start' | 'end' } | null>(null);
+    const [editingTime, setEditingTime] = useState<{ windowIndex: number; field: 'start' | 'end'; edgeIndex?: number } | null>(null);
     const [tempHour, setTempHour] = useState('');
     const [tempMinute, setTempMinute] = useState('');
+    const [individualTimes, setIndividualTimes] = useState(false);
 
     useEffect(() => {
         if (params.edges) {
@@ -47,13 +48,31 @@ export default function SetAvailabilityScreen() {
         }
     }, [params.edges]);
 
+    useEffect(() => {
+        if (individualTimes && edges.length > 0) {
+            const newTimeWindows = edges.map(() => ({
+                startMinutes: 300,
+                endMinutes: 1320, 
+                isAvailable: true,
+            }));
+            setTimeWindows(newTimeWindows);
+        } else if (!individualTimes && edges.length > 0) {
+
+            setTimeWindows([timeWindows[0] || {
+                startMinutes: 300,
+                endMinutes: 1320,
+                isAvailable: true,
+            }]);
+        }
+    }, [individualTimes]);
+
     const formatTime = (minutes: number): string => {
         const hours = Math.floor(minutes / 60);
         const mins = minutes % 60;
         return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
     };
 
-    const openTimePicker = (windowIndex: number, field: 'start' | 'end') => {
+    const openTimePicker = (windowIndex: number, field: 'start' | 'end', edgeIndex?: number) => {
         const window = timeWindows[windowIndex];
         const minutes = field === 'start' ? window.startMinutes : window.endMinutes;
         const hours = Math.floor(minutes / 60);
@@ -61,7 +80,7 @@ export default function SetAvailabilityScreen() {
 
         setTempHour(hours.toString());
         setTempMinute(mins.toString());
-        setEditingTime({ windowIndex, field });
+        setEditingTime({ windowIndex, field, edgeIndex });
         setShowTimePicker(true);
     };
 
@@ -119,20 +138,35 @@ export default function SetAvailabilityScreen() {
 
         setLoading(true);
         try {
-
             console.log(`[Availability] Creating windows for ${edges.length} edges`);
 
-            for (const edge of edges) {
+            if (individualTimes) {
+                for (let i = 0; i < edges.length; i++) {
+                    const edge = edges[i];
+                    const window = timeWindows[i];
+                    await taxiService.createAvailabilityWindow({
+                        edgeStartId: edge.startNodeId,
+                        edgeEndId: edge.endNodeId,
+                        dayOfWeek: null,
+                        startMinutes: window.startMinutes,
+                        endMinutes: window.endMinutes,
+                        isAvailable: window.isAvailable,
+                    });
+                    
+                }
+            } else {
                 const window = timeWindows[0];
-                await taxiService.createAvailabilityWindow({
-                    edgeStartId: edge.startNodeId,
-                    edgeEndId: edge.endNodeId,
-                    dayOfWeek: null,
-                    startMinutes: window.startMinutes,
-                    endMinutes: window.endMinutes,
-                    isAvailable: window.isAvailable,
-                });
-                console.log(`[Availability] Created windows for edge: ${edge.fromName} → ${edge.toName}`);
+                for (const edge of edges) {
+                    await taxiService.createAvailabilityWindow({
+                        edgeStartId: edge.startNodeId,
+                        edgeEndId: edge.endNodeId,
+                        dayOfWeek: null,
+                        startMinutes: window.startMinutes,
+                        endMinutes: window.endMinutes,
+                        isAvailable: window.isAvailable,
+                    });
+                   
+                }
             }
 
             Alert.alert(t('success'), t('availability-windows-created-successfully'), [
@@ -180,63 +214,134 @@ export default function SetAvailabilityScreen() {
                         {params.routeName}
                     </Text>
                     <Text className="text-gray-600 text-sm mb-4">
-                        {t('these-hours-will-apply-to-all-edges')} ({edges.length} {t('edges')})
+                        {individualTimes
+                            ? t('set-individual-times-for-each-route')
+                            : `${t('these-hours-will-apply-to-all-edges')} (${edges.length} ${t('edges')})`
+                        }
                     </Text>
 
-
-                    <View className="mb-4 p-3 bg-gray-50 rounded-xl">
-                        <Text className="text-gray-700 font-semibold mb-2">{t('affected-routes')}:</Text>
-                        {edges.map((edge, index) => (
-                            <Text key={index} className="text-gray-600 text-sm">
-                                • {edge.fromName} → {edge.toName}
-                            </Text>
-                        ))}
-                    </View>
-
-                    {timeWindows.map((window, index) => (
-                        <View key={index} className="mb-6 p-4 bg-gray-50 rounded-xl">
-                            <View className="flex-row items-center justify-between mb-4">
-                                <Text className="text-gray-900 font-semibold">
-                                    {t('operating-hours')}
+                    <View className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-xl">
+                        <View className="flex-row items-center justify-between">
+                            <View className="flex-1 mr-3">
+                                <Text className="text-gray-900 font-semibold mb-1">
+                                    {t('individual-times-per-route')}
+                                </Text>
+                                <Text className="text-gray-600 text-xs">
+                                    {individualTimes
+                                        ? t('each-route-has-its-own-time')
+                                        : t('all-routes-share-same-time')
+                                    }
                                 </Text>
                             </View>
-
-                            <View className="flex-row items-center justify-between mb-4">
-                                <View className="flex-1 mr-2">
-                                    <Text className="text-gray-700 font-medium mb-2">{t('start-time')}</Text>
-                                    <TouchableOpacity
-                                        className="bg-white border border-gray-300 rounded-lg p-3"
-                                        onPress={() => openTimePicker(index, 'start')}
-                                    >
-                                        <Text className="text-gray-900 text-center font-mono text-lg">
-                                            {formatTime(window.startMinutes)}
-                                        </Text>
-                                    </TouchableOpacity>
-                                </View>
-                                <View className="flex-1 ml-2">
-                                    <Text className="text-gray-700 font-medium mb-2">{t('end-time')}</Text>
-                                    <TouchableOpacity
-                                        className="bg-white border border-gray-300 rounded-lg p-3"
-                                        onPress={() => openTimePicker(index, 'end')}
-                                    >
-                                        <Text className="text-gray-900 text-center font-mono text-lg">
-                                            {formatTime(window.endMinutes)}
-                                        </Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-
-                            <View className="flex-row items-center justify-between bg-white p-3 rounded-lg">
-                                <Text className="text-gray-700 font-medium">{t('is-available')}</Text>
-                                <Switch
-                                    value={window.isAvailable}
-                                    onValueChange={(value) => updateTimeWindow(index, 'isAvailable', value)}
-                                    trackColor={{ false: colors.gray[200], true: colors.primary.light }}
-                                    thumbColor={window.isAvailable ? colors.primary.main : colors.gray[100]}
-                                />
-                            </View>
+                            <Switch
+                                value={individualTimes}
+                                onValueChange={setIndividualTimes}
+                                trackColor={{ false: colors.gray[200], true: colors.primary.light }}
+                                thumbColor={individualTimes ? colors.primary.main : colors.gray[100]}
+                            />
                         </View>
-                    ))}
+                    </View>
+
+                    {!individualTimes && (
+                        <View className="mb-4 p-3 bg-gray-50 rounded-xl">
+                            <Text className="text-gray-700 font-semibold mb-2">{t('affected-routes')}:</Text>
+                            {edges.map((edge, index) => (
+                                <Text key={index} className="text-gray-600 text-sm">
+                                    • {edge.fromName} → {edge.toName}
+                                </Text>
+                            ))}
+                        </View>
+                    )}
+
+                    {individualTimes ? (
+                        edges.map((edge, edgeIndex) => (
+                            <View key={edgeIndex} className="mb-6 p-4 bg-gray-50 rounded-xl border-2 border-gray-200">
+                                <Text className="text-gray-900 font-bold mb-3">
+                                    {edge.fromName} → {edge.toName}
+                                </Text>
+
+                                <View className="flex-row items-center justify-between mb-4">
+                                    <View className="flex-1 mr-2">
+                                        <Text className="text-gray-700 font-medium mb-2">{t('start-time')}</Text>
+                                        <TouchableOpacity
+                                            className="bg-white border border-gray-300 rounded-lg p-3"
+                                            onPress={() => openTimePicker(edgeIndex, 'start', edgeIndex)}
+                                        >
+                                            <Text className="text-gray-900 text-center font-mono text-lg">
+                                                {formatTime(timeWindows[edgeIndex]?.startMinutes || 300)}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                    <View className="flex-1 ml-2">
+                                        <Text className="text-gray-700 font-medium mb-2">{t('end-time')}</Text>
+                                        <TouchableOpacity
+                                            className="bg-white border border-gray-300 rounded-lg p-3"
+                                            onPress={() => openTimePicker(edgeIndex, 'end', edgeIndex)}
+                                        >
+                                            <Text className="text-gray-900 text-center font-mono text-lg">
+                                                {formatTime(timeWindows[edgeIndex]?.endMinutes || 1320)}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+
+                                <View className="flex-row items-center justify-between bg-white p-3 rounded-lg">
+                                    <Text className="text-gray-700 font-medium">{t('is-available')}</Text>
+                                    <Switch
+                                        value={timeWindows[edgeIndex]?.isAvailable ?? true}
+                                        onValueChange={(value) => updateTimeWindow(edgeIndex, 'isAvailable', value)}
+                                        trackColor={{ false: colors.gray[200], true: colors.primary.light }}
+                                        thumbColor={timeWindows[edgeIndex]?.isAvailable ? colors.primary.main : colors.gray[100]}
+                                    />
+                                </View>
+                            </View>
+                        ))
+                    ) : (
+                        timeWindows.map((window, index) => (
+                            <View key={index} className="mb-6 p-4 bg-gray-50 rounded-xl">
+                                <View className="flex-row items-center justify-between mb-4">
+                                    <Text className="text-gray-900 font-semibold">
+                                        {t('operating-hours')}
+                                    </Text>
+                                </View>
+
+                                <View className="flex-row items-center justify-between mb-4">
+                                    <View className="flex-1 mr-2">
+                                        <Text className="text-gray-700 font-medium mb-2">{t('start-time')}</Text>
+                                        <TouchableOpacity
+                                            className="bg-white border border-gray-300 rounded-lg p-3"
+                                            onPress={() => openTimePicker(index, 'start')}
+                                        >
+                                            <Text className="text-gray-900 text-center font-mono text-lg">
+                                                {formatTime(window.startMinutes)}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                    <View className="flex-1 ml-2">
+                                        <Text className="text-gray-700 font-medium mb-2">{t('end-time')}</Text>
+                                        <TouchableOpacity
+                                            className="bg-white border border-gray-300 rounded-lg p-3"
+                                            onPress={() => openTimePicker(index, 'end')}
+                                        >
+                                            <Text className="text-gray-900 text-center font-mono text-lg">
+                                                {formatTime(window.endMinutes)}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+
+                                <View className="flex-row items-center justify-between bg-white p-3 rounded-lg">
+                                    <Text className="text-gray-700 font-medium">{t('is-available')}</Text>
+                                    <Switch
+                                        value={window.isAvailable}
+                                        onValueChange={(value) => updateTimeWindow(index, 'isAvailable', value)}
+                                        trackColor={{ false: colors.gray[200], true: colors.primary.light }}
+                                        thumbColor={window.isAvailable ? colors.primary.main : colors.gray[100]}
+                                    />
+                                </View>
+                            </View>
+                        ))
+                    )}
 
                     <View className="flex-row space-x-2">
                         <TouchableOpacity
@@ -250,7 +355,7 @@ export default function SetAvailabilityScreen() {
                                 <ActivityIndicator color="white" />
                             ) : (
                                 <Text className="text-white text-center font-bold text-lg">
-                                    {t('apply-to-all-routes')}
+                                    {individualTimes ? t('submit') : t('apply-to-all-routes')}
                                 </Text>
                             )}
                         </TouchableOpacity>

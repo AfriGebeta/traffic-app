@@ -35,6 +35,31 @@
         "AM": "ወዴት እንሂድ?"
     },
     {
+        "key": "recent-searches",
+        "EN_US": "Recent searches",
+        "AM": "የቅርብ ጊዜ ፍለጋዎች"
+    },
+    {
+        "key": "clear-recent",
+        "EN_US": "Clear",
+        "AM": "ያፅዱ"
+    },
+    {
+        "key": "no-recent-searches",
+        "EN_US": "No recent searches",
+        "AM": "የቅርብ ጊዜ ፍለጋ የለም"
+    },
+    {
+        "key": "searching",
+        "EN_US": "Searching...",
+        "AM": "በመፈለግ ላይ..."
+    },
+    {
+        "key": "no-results-found",
+        "EN_US": "No results found",
+        "AM": "ምንም ውጤት አልተገኘም"
+    },
+    {
         "key": "share-what-you-see",
         "EN_US": "Share what you see",
         "AM": "በመንገድዎ ያዩትን ያጋሩ"
@@ -608,6 +633,61 @@
         "key": "go",
         "EN_US": "Go",
         "AM": "ይሂዱ"
+    },
+    {
+        "key": "preview",
+        "EN_US": "Preview",
+        "AM": "ቅድመ እይታ"
+    },
+    {
+        "key": "close-preview",
+        "EN_US": "Close preview",
+        "AM": "ቅድመ እይታ ዝጋ"
+    },
+    {
+        "key": "show-all-steps",
+        "EN_US": "Show all steps",
+        "AM": "ሁሉንም ደረጃዎች ይዝጉ"
+    },
+    {
+        "key": "hide-steps",
+        "EN_US": "Hide steps",
+        "AM": "አቅጣጫ ይደብቁ"
+    },
+    {
+        "key": "set-starting-point",
+        "EN_US": "Set starting point",
+        "AM": "መነሻ ያስተካክሉ"
+    },
+    {
+        "key": "change-start",
+        "EN_US": "Change start",
+        "AM": "መነሻ ለውጥ"
+    },
+    {
+        "key": "search-starting-point",
+        "EN_US": "Search starting point",
+        "AM": "መነሻ ይፈልጉ"
+    },
+    {
+        "key": "previous",
+        "EN_US": "Previous",
+        "AM": "ቀዳሚ"
+    },
+    {
+        "key": "start",
+        "EN_US": "Start",
+        "AM": "ይጀምሩ"
+    },
+    {
+        "key": "share",
+        "EN_US": "Share",
+        "AM": "ያጋሩ"
+    },
+    {
+        "key": "route-unavailable",
+        "EN_US": "Route unavailable",
+        "AM": "መንገድ አልተገኘም"
     },
     {
         "key": "logout",
@@ -1793,6 +1873,26 @@
         "key": "set-availability",
         "EN_US": "Set Availability",
         "AM": "የአገልግሎት ሰዓት ያስገቡ"
+    },
+    {
+        "key": "individual-times-per-route",
+        "EN_US": "Individual Times Per Route",
+        "AM": "ለእያንዳንዱ መስመር የተለየ ሰዓት"
+    },
+    {
+        "key": "each-route-has-its-own-time",
+        "EN_US": "Each route has its own time",
+        "AM": "እያንዳንዱ መስመር የራሱ ሰዓት አለው"
+    },
+    {
+        "key": "all-routes-share-same-time",
+        "EN_US": "All routes share the same time",
+        "AM": "ሁሉም መስመሮች አንድ ሰዓት ይጋራሉ"
+    },
+    {
+        "key": "set-individual-times-for-each-route",
+        "EN_US": "Set individual times for each route",
+        "AM": "ለእያንዳንዱ መስመር የተለየ ሰዓት ያስገቡ"
     },
     {
         "key": "edge",
