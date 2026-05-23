@@ -6,6 +6,8 @@ interface SearchBarProps {
     value: string;
     onChangeText: (text: string) => void;
     onClear: () => void;
+    onFocus?: () => void;
+    onBlur?: () => void;
     placeholder?: string;
     onProfilePress?: () => void;
     isLoading?: boolean;
@@ -15,6 +17,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     value,
     onChangeText,
     onClear,
+    onFocus,
+    onBlur,
     placeholder = 'Search Location...',
     onProfilePress,
     isLoading = false,
@@ -37,6 +41,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                     placeholderTextColor="#9CA3AF"
                     value={value}
                     onChangeText={onChangeText}
+                    onFocus={onFocus}
+                    onBlur={onBlur}
                     style={{ paddingVertical: 8 }}
                 />
                 {isLoading && (

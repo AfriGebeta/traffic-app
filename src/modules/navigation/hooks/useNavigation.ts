@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import * as Location from 'expo-location';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
-import type { GeocodingPlace } from '../types/navigation.types';
+import type { GeocodingPlace, Leg, Maneuver } from '../types/navigation.types';
 import { showToast } from '../../../shared/utils/toast';
 import { navigationService } from '../services/navigation.service';
 import { voiceNavigationService } from '../services/voice-navigation.service';
@@ -37,6 +37,9 @@ export const useNavigation = (
     const [fullRouteCoordinates, setFullRouteCoordinates] = useState<[number, number][]>([]);
     const [showArrivalModal, setShowArrivalModal] = useState(false);
     const [currentCosting, setCurrentCosting] = useState<'auto' | 'pedestrian'>('auto');
+    const [routeOrigin, setRouteOrigin] = useState<GeocodingPlace | null>(null);
+    const [routeManeuversList, setRouteManeuversList] = useState<Maneuver[]>([]);
+    const [routeLegs, setRouteLegs] = useState<Leg[]>([]);
 
     const routeCoordinates = useRef<[number, number][]>([]);
     const isNavigatingRef = useRef(false);
@@ -141,11 +144,29 @@ export const useNavigation = (
         setUserLocation,
     });
 
-    const handleNavigate = async (setUserLocation?: (location: { lat: number; lng: number }) => void, destination?: GeocodingPlace, costingOverride?: 'auto' | 'pedestrian', waypointsOverride?: GeocodingPlace[]) => {
+    const handleNavigate = async (
+        setUserLocation?: (location: { lat: number; lng: number }) => void,
+        destination?: GeocodingPlace,
+        costingOverride?: 'auto' | 'pedestrian',
+        waypointsOverride?: GeocodingPlace[],
+        originOverride?: GeocodingPlace | null
+    ) => {
         const targetDestination = destination || selectedDestination;
 
-        if (!userLocation || !targetDestination) {
-            showToast.error('Navigation Error', 'User location or destination not available');
+        if (originOverride !== undefined) {
+            setRouteOrigin(originOverride);
+        }
+
+        const effectiveOrigin = originOverride !== undefined ? originOverride : routeOrigin;
+
+        const originCoords: [number, number] | null = effectiveOrigin
+            ? [effectiveOrigin.latitude, effectiveOrigin.longitude]
+            : userLocation
+                ? [userLocation.lat, userLocation.lng]
+                : null;
+
+        if (!originCoords || !targetDestination) {
+            showToast.error('Navigation Error', 'Origin or destination not available');
             return;
         }
 
@@ -159,7 +180,7 @@ export const useNavigation = (
         setIsNavigating(true);
         try {
             const navigationData = await navigationService.getNavigation({
-                origin: [userLocation.lat, userLocation.lng],
+                origin: originCoords,
                 destination: [targetDestination.latitude, targetDestination.longitude],
                 costing: costingOverride ?? currentCosting,
                 waypoints: activeWaypoints.length > 0
@@ -194,6 +215,8 @@ export const useNavigation = (
             }
 
             routeManeuvers.current = allManeuvers;
+            setRouteManeuversList(allManeuvers);
+            setRouteLegs(legs);
 
             //pre fetch audio
             const instructionTexts = allManeuvers
@@ -561,11 +584,15 @@ export const useNavigation = (
         setRouteGeoJSON(null);
         setSelectedDestination(null);
         setWaypoints([]);
+        setRouteOrigin(null);
+        setRouteManeuversList([]);
+        setRouteLegs([]);
+        routeManeuvers.current = [];
         setCurrentInstruction('');
         setRemainingDistance(0);
         setRemainingTime(0);
         setShowRoutePreview(false);
-        setCurrentCosting('auto'); 
+        setCurrentCosting('auto');
     };
     const simulateOffRoute = (setUserLocation: (location: { lat: number; lng: number }) => void) => {
         simulateOffRouteInternal(
@@ -614,6 +641,10 @@ export const useNavigation = (
 
         routeCoordinates: routeCoordinates.current,
         routeGeoJSON,
+        routeOrigin,
+        setRouteOrigin,
+        routeManeuversList,
+        routeLegs,
         handleNavigate,
         handleStartNavigation,
         handleStopNavigation,

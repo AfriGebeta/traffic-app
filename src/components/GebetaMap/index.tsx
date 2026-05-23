@@ -1,5 +1,5 @@
-import React, { forwardRef, useState, useImperativeHandle, useRef, useEffect, memo, useMemo, useCallback } from 'react';
-import { View, StyleSheet, ActivityIndicator, Alert, Text, Animated, Image } from 'react-native';
+import React, { forwardRef, useState, useImperativeHandle, useRef, useEffect, useLayoutEffect, memo, useMemo, useCallback } from 'react';
+import { View, StyleSheet, Alert, Text, Animated, Image } from 'react-native';
 import MapLibreGL from '@maplibre/maplibre-react-native';
 import { GebetaMapRef, GebetaMapProps } from '@gebeta/tiles-react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -57,7 +57,8 @@ const ensureStyleBackgroundLayer = (styleJson: Record<string, any>): Record<stri
     };
 };
 
-interface ExtendedGebetaMapProps extends GebetaMapProps {
+interface ExtendedGebetaMapProps extends Omit<GebetaMapProps, 'center'> {
+    center?: [number, number];
     routeGeoJSON?: any;
     routeStyle?: {
         color?: string;
@@ -93,6 +94,7 @@ interface ExtendedGebetaMapProps extends GebetaMapProps {
     selectedLocation?: { lat: number; lng: number } | null;
     clickedLocation?: { lat: number; lng: number } | null;
     selectedDestination?: { latitude: number; longitude: number; name: string } | null;
+    routeOrigin?: { latitude: number; longitude: number; name: string } | null;
     explorePlaces?: Array<{
         name: string;
         latitude: number;
@@ -126,6 +128,9 @@ interface ExtendedGebetaMapProps extends GebetaMapProps {
         segmentIndex: number;
     }>;
     waypointMarkers?: Array<{ latitude: number; longitude: number; name: string }>;
+    activeSegmentGeoJSON?: any;
+    previewStepLocation?: { lng: number; lat: number } | null;
+    externalCameraControl?: boolean;
 }
 
 
@@ -410,9 +415,10 @@ AnimatedNavLayer.displayName = 'AnimatedNavLayer';
 
 
 const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
-    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, waypointMarkers }, ref) => {
-        const [mapStyleState, setMapStyleState] = useState<Record<string, unknown> | null>(null);
-        const [loading, setLoading] = useState(true);
+    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl }, ref) => {
+        const [mapStyleState, setMapStyleState] = useState<Record<string, unknown> | null>(() =>
+            mapStyleJson ? ensureStyleBackgroundLayer(mapStyleJson as Record<string, any>) : null
+        );
         const cameraRef = useRef<any>(null);
         const mapViewRef = useRef<any>(null);
         const hasStartedNavigating = useRef(false);
@@ -428,6 +434,16 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             duration?: number;
             pitch?: number;
         } | null>(null);
+        const applyInitialCamera = useCallback(() => {
+            if (!center || isNavigating || !cameraRef.current) return;
+
+            cameraRef.current.setCamera({
+                centerCoordinate: center,
+                zoomLevel: zoom ?? 15,
+                animationDuration: 0,
+                animationMode: 'moveTo',
+            });
+        }, [center, zoom, isNavigating]);
 
         const applyFlyTo = useCallback((options: {
             center: [number, number];
@@ -452,7 +468,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         }, []);
 
         useEffect(() => {
-            if (loading || !mapStyleState || !pendingFlyTo.current) return;
+            if (!mapStyleState || !pendingFlyTo.current) return;
 
             const pending = pendingFlyTo.current;
             const frameId = requestAnimationFrame(() => {
@@ -462,7 +478,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             });
 
             return () => cancelAnimationFrame(frameId);
-        }, [loading, mapStyleState, applyFlyTo]);
+        }, [mapStyleState, applyFlyTo]);
 
         // Preload images on mount
         useEffect(() => {
@@ -506,7 +522,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 setRenderKey(prev => prev + 1);
                 setTimeout(() => setRenderKey(prev => prev + 1), 100);
             }
-        }, [imagesLoaded, showUserLocationMarker, isNavigating]);
+        }, [imagesLoaded, showUserLocationMarker, isNavigating, userLocation?.lat, userLocation?.lng]);
 
         useEffect(() => {
             if (imagesLoaded && mapStyleState) {
@@ -545,6 +561,13 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 return () => clearTimeout(timer);
             }
         }, [selectedDestination]);
+
+        useEffect(() => {
+            if (routeOrigin) {
+                const timer = setTimeout(() => setRenderKey(prev => prev + 1), 150);
+                return () => clearTimeout(timer);
+            }
+        }, [routeOrigin]);
 
         useEffect(() => {
             if (imagesLoaded) {
@@ -672,13 +695,16 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         }), [applyFlyTo]);
 
         useEffect(() => {
+            if (mapStyleJson) {
+                setMapStyleState(ensureStyleBackgroundLayer(mapStyleJson as Record<string, any>));
+                return;
+            }
+
             async function processStyle() {
                 try {
                     let styleJson: any;
 
-                    if (mapStyleJson) {
-                        styleJson = mapStyleJson;
-                    } else if (mapStyleUrl) {
+                    if (mapStyleUrl) {
                         const response = await fetch(mapStyleUrl);
                         if (!response.ok) throw new Error(`Failed to fetch style JSON: ${response.status}`);
                         styleJson = await response.json();
@@ -702,23 +728,52 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                     }
 
                     setMapStyleState(ensureStyleBackgroundLayer(styleJson));
-                    setLoading(false);
                 } catch (error) {
                     console.error("Error loading style JSON:", error);
                     Alert.alert("Map Style Load Error", String(error));
-                    setLoading(false);
                 }
             }
 
             processStyle();
         }, [apiKey, mapStyleUrl, mapStyleJson]);
 
-        const handleMapLoad = () => {
+        useLayoutEffect(() => {
+            if (!center || isNavigating || !mapStyleState || externalCameraControl) return;
+
+            applyInitialCamera();
+            const frameId = requestAnimationFrame(applyInitialCamera);
+            const retryId = setTimeout(applyInitialCamera, 150);
+
+            return () => {
+                cancelAnimationFrame(frameId);
+                clearTimeout(retryId);
+            };
+        }, [center?.[0], center?.[1], zoom, isNavigating, mapStyleState, applyInitialCamera, externalCameraControl]);
+
+        const handleMapLoad = useCallback(() => {
+            if (!externalCameraControl) {
+                applyInitialCamera();
+            }
             if (pendingFlyTo.current) {
                 applyFlyTo(pendingFlyTo.current);
             }
             onMapLoaded?.();
-        };
+
+            if (userLocation && showUserLocationMarker && !isNavigating && !routeOrigin) {
+                setRenderKey(prev => prev + 1);
+                setTimeout(() => setRenderKey(prev => prev + 1), 100);
+                setTimeout(() => setRenderKey(prev => prev + 1), 300);
+            }
+        }, [
+            externalCameraControl,
+            applyInitialCamera,
+            applyFlyTo,
+            onMapLoaded,
+            userLocation,
+            showUserLocationMarker,
+            isNavigating,
+            routeOrigin,
+        ]);
 
         useEffect(() => {
             if (isNavigating && userLocation && cameraRef.current) {
@@ -760,11 +815,9 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             }
         }, [isNavigating, userLocation?.lat, userLocation?.lng, userHeading]);
 
-        if (loading || !mapStyleState) {
+        if (!mapStyleState || !center) {
             return (
-                <View style={[styles.container, styles.loaderContainer]}>
-                    <ActivityIndicator size="large" color="#000" />
-                </View>
+                <View style={[styles.container, { backgroundColor: MAP_TILE_LOADING_BACKGROUND }]} />
             );
         }
 
@@ -815,16 +868,20 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                     >
                         <MapLibreGL.Camera
                             ref={cameraRef}
-                            centerCoordinate={center}
-                            zoomLevel={zoom}
+                            {...(externalCameraControl
+                                ? {}
+                                : {
+                                      centerCoordinate: center,
+                                      zoomLevel: zoom ?? 15,
+                                      animationMode: 'moveTo' as const,
+                                      animationDuration: 0,
+                                  })}
                             pitch={0}
                             heading={0}
-                            animationMode="flyTo"
-                            animationDuration={800}
                             maxBounds={undefined}
                             defaultSettings={{
                                 centerCoordinate: center,
-                                zoomLevel: zoom,
+                                zoomLevel: zoom ?? 15,
                             }}
                         />
 
@@ -868,13 +925,55 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                     style={{
                                         lineColor: defaultRouteStyle.color,
                                         lineWidth: routeStyle?.isDotted ? 6 : defaultRouteStyle.width,
-                                        lineOpacity: routeStyle?.isDotted ? 1 : defaultRouteStyle.opacity,
+                                        lineOpacity: activeSegmentGeoJSON ? 0.35 : (routeStyle?.isDotted ? 1 : defaultRouteStyle.opacity),
                                         lineCap: 'round',
                                         lineJoin: 'round',
                                         ...(routeStyle?.isDotted && { lineDasharray: [0, 2] }),
                                     }}
                                 />
                             </MapLibreGL.ShapeSource>
+                        )}
+
+                        {!isNavigating && activeSegmentGeoJSON && (
+                            <MapLibreGL.ShapeSource
+                                key="route-active-segment-source"
+                                id="route-active-segment-source"
+                                shape={activeSegmentGeoJSON}
+                            >
+                                <MapLibreGL.LineLayer
+                                    id="route-active-segment-layer"
+                                    style={{
+                                        lineColor: '#2563EB',
+                                        lineWidth: 10,
+                                        lineOpacity: 1,
+                                        lineCap: 'round',
+                                        lineJoin: 'round',
+                                    }}
+                                />
+                            </MapLibreGL.ShapeSource>
+                        )}
+
+                        {!isNavigating && previewStepLocation && imagesLoaded && (
+                            <MapLibreGL.PointAnnotation
+                                key={`preview-step-${previewStepLocation.lng}-${previewStepLocation.lat}-${renderKey}`}
+                                id="preview-step-marker"
+                                coordinate={[previewStepLocation.lng, previewStepLocation.lat]}
+                                anchor={{ x: 0.5, y: 0.5 }}
+                            >
+                                <View style={{
+                                    width: 20,
+                                    height: 20,
+                                    borderRadius: 10,
+                                    backgroundColor: '#2563EB',
+                                    borderWidth: 3,
+                                    borderColor: '#FFFFFF',
+                                    shadowColor: '#000',
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowOpacity: 0.3,
+                                    shadowRadius: 4,
+                                    elevation: 6,
+                                }} />
+                            </MapLibreGL.PointAnnotation>
                         )}
 
                         {taxiRouteSegments && taxiRouteSegments.map((segment, index) => {
@@ -999,11 +1098,34 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             renderKey={renderKey}
                         />
 
-                        {!isNavigating && showUserLocationMarker && userLocation && imagesLoaded && (
+                        {!isNavigating && routeOrigin && imagesLoaded && (
                             <MapLibreGL.PointAnnotation
-                                key={`user-location-${renderKey}`}
+                                key={`route-origin-${routeOrigin.latitude}-${routeOrigin.longitude}-${renderKey}`}
+                                id="route-origin-marker"
+                                coordinate={[routeOrigin.longitude, routeOrigin.latitude]}
+                                anchor={{ x: 0.5, y: 1 }}
+                            >
+                                <View style={{
+                                    width: 50,
+                                    height: 50,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}>
+                                    <Image
+                                        source={PIN_NORMAL_IMAGE}
+                                        style={{ width: 40, height: 40 }}
+                                        resizeMode="contain"
+                                    />
+                                </View>
+                            </MapLibreGL.PointAnnotation>
+                        )}
+
+                        {!isNavigating && !routeOrigin && showUserLocationMarker && userLocation && imagesLoaded && (
+                            <MapLibreGL.PointAnnotation
+                                key={`user-location-${userLocation.lng}-${userLocation.lat}-${renderKey}`}
                                 id="user-location-marker-static"
                                 coordinate={[userLocation.lng, userLocation.lat]}
+                                anchor={{ x: 0.5, y: 1 }}
                             >
                                 <View style={{
                                     width: 50,
@@ -1313,10 +1435,6 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-    },
-    loaderContainer: {
-        justifyContent: 'center',
-        alignItems: 'center',
     },
     mapSurface: {
         flex: 1,

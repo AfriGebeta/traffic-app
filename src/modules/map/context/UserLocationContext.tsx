@@ -38,7 +38,10 @@ export function UserLocationProvider({ children }: { children: ReactNode }) {
     const startLocationTracking = useCallback(async () => {
         if (isTrackingActive.current) {
             isBackgroundTrackingActive.current = true;
-            return;
+            if (locationSubscription.current) {
+                return;
+            }
+            isTrackingActive.current = false;
         }
 
         try {
@@ -59,17 +62,30 @@ export function UserLocationProvider({ children }: { children: ReactNode }) {
                 });
             };
 
-            void Location.getCurrentPositionAsync({
-                accuracy: Location.Accuracy.Lowest,
-            })
-                .then((location) => applyLocation(location.coords))
-                .catch(() => {});
+            try {
+                const lastKnown = await Location.getLastKnownPositionAsync({
+                    maxAge: 10 * 60 * 1000,
+                });
+                if (lastKnown) {
+                    applyLocation(lastKnown.coords);
+                }
+            } catch {
+            }
 
-            void Location.getCurrentPositionAsync({
-                accuracy: Location.Accuracy.Balanced,
-            })
-                .then((location) => applyLocation(location.coords))
-                .catch(() => {});
+            try {
+                const current = await Location.getCurrentPositionAsync({
+                    accuracy: Location.Accuracy.Balanced,
+                });
+                applyLocation(current.coords);
+            } catch {
+                try {
+                    const current = await Location.getCurrentPositionAsync({
+                        accuracy: Location.Accuracy.Lowest,
+                    });
+                    applyLocation(current.coords);
+                } catch {
+                }
+            }
 
             locationSubscription.current = await Location.watchPositionAsync(
                 {
