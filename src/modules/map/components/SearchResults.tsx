@@ -44,7 +44,7 @@ const PlaceListItem = ({
         <View className="border-b border-gray-100 flex-row items-center">
             <TouchableOpacity
                 className="flex-1 p-4 flex-row items-center active:bg-gray-50"
-                onPressIn={handleSelect}
+                onPress={handleSelect}
                 activeOpacity={0.7}
             >
                 <View className={`w-10 h-10 rounded-full items-center justify-center mr-3 ${iconBgClass}`}>
