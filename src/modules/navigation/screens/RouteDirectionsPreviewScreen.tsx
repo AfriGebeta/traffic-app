@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Image } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useKeepAwake } from 'expo-keep-awake';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -70,6 +71,7 @@ const fitBoundsToCoords = (coords: [number, number][]) => {
 };
 
 export default function RouteDirectionsPreviewScreen() {
+    useKeepAwake();
     const router = useRouter();
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();

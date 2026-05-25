@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useKeepAwake } from 'expo-keep-awake';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 
 interface NavigationOverlayProps {
@@ -39,6 +40,7 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
     showRecenterButton,
     onRecenter,
 }) => {
+    useKeepAwake();
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
 
