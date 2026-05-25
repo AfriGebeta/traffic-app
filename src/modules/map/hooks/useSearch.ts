@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { navigationService } from '../../navigation/services/navigation.service';
 import { recentSearchService, type RecentSearch } from '../../navigation/services/recentSearch.service';
+import { placeService } from '../../places/services/place.service';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
+import type { SavedPlace } from '../../places/types/place.types';
 import { showToast } from '../../../shared/utils/toast';
 
 const parseCoordinates = (query: string): { lat: number; lng: number } | null => {
@@ -30,6 +32,7 @@ export const useSearch = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<GeocodingPlace[]>([]);
     const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
+    const [savedPlaces, setSavedPlaces] = useState<SavedPlace[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [showSearchContainer, setShowSearchContainer] = useState(false);
     const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -46,9 +49,18 @@ export const useSearch = () => {
         return recents;
     }, []);
 
+    const loadSavedPlaces = useCallback(async () => {
+        try {
+            const places = await placeService.getSavedPlaces();
+            setSavedPlaces(places);
+        } catch {
+        }
+    }, []);
+
     useEffect(() => {
         void loadRecentSearches();
-    }, [loadRecentSearches]);
+        void loadSavedPlaces();
+    }, [loadRecentSearches, loadSavedPlaces]);
 
     const handleSearch = async (query: string) => {
         if (!query.trim()) {
@@ -145,7 +157,8 @@ export const useSearch = () => {
         setIsSearchFocused(true);
         updateSearchContainerVisibility(true, searchQuery);
         void loadRecentSearches();
-    }, [loadRecentSearches, searchQuery, updateSearchContainerVisibility]);
+        void loadSavedPlaces();
+    }, [loadRecentSearches, loadSavedPlaces, searchQuery, updateSearchContainerVisibility]);
 
     const handleSearchBlur = useCallback(() => {
         blurTimeoutRef.current = setTimeout(() => {
@@ -200,6 +213,7 @@ export const useSearch = () => {
         searchResults,
         setSearchResults,
         recentSearches,
+        savedPlaces,
         isSearching,
         showSearchContainer,
         setShowSearchContainer,

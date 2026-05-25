@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useKeepAwake } from 'expo-keep-awake';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import GebetaMap from '../../../components/GebetaMap';
@@ -18,6 +19,7 @@ import { ArrivalModal } from '../../navigation/components/ArrivalModal';
 import { decodePolyline } from '../../../shared/utils/polyline';
 
 export default function TaxiNavigationScreen() {
+    useKeepAwake();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();

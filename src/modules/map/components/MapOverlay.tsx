@@ -14,6 +14,7 @@ import { showToast } from '../../../shared/utils/toast';
 import { colors } from '../../../shared/theme/colors';
 import type { RecentSearch } from '../../navigation/services/recentSearch.service';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
+import type { SavedPlace } from '../../places/types/place.types';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 
 interface MapOverlayProps {
@@ -24,6 +25,7 @@ interface MapOverlayProps {
     onSearchBlur?: () => void;
     searchResults: GeocodingPlace[];
     recentSearches?: RecentSearch[];
+    savedPlaces?: SavedPlace[];
     isSearching: boolean;
     showSearchContainer: boolean;
     showRecentSearches?: boolean;
@@ -67,6 +69,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
     onSearchBlur,
     searchResults,
     recentSearches = [],
+    savedPlaces = [],
     isSearching,
     showSearchContainer,
     showRecentSearches = false,
@@ -133,6 +136,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                 <SearchResults
                     results={searchResults}
                     recentSearches={recentSearches}
+                    savedPlaces={savedPlaces}
                     onSelectPlace={onSelectPlace}
                     onPrepareSelect={onPrepareSearchSelect}
                     onRemoveRecent={onRemoveRecentSearch}
