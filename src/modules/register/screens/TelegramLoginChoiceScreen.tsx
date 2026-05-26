@@ -1,30 +1,28 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image, StatusBar, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, Image, StatusBar, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../../shared/theme/colors';
 import { useTranslation } from 'react-i18next';
 import { LanguageSwitcher } from '../../../shared/components/LanguageSwitcher';
-
-const TELEGRAM_LOGIN_URL = process.env.EXPO_PUBLIC_TELEGRAM_LOGIN_URL!;
+import { TelegramAuthCompletionWebView } from '../components/TelegramAuthCompletionWebView';
+import { TelegramAuthWebView } from '../components/TelegramAuthWebView';
+import { useTelegramLogin } from '../hooks/useTelegramLogin';
 
 export default function TelegramLoginChoiceScreen() {
     const { t } = useTranslation();
     const router = useRouter();
-
-    const handleTelegramLogin = async () => {
-        if (!TELEGRAM_LOGIN_URL) {
-            console.error('TELEGRAM_LOGIN_URL is not configured');
-            return;
-        }
-
-        try {
-
-            await Linking.openURL(TELEGRAM_LOGIN_URL);
-        } catch (error) {
-            console.error('Error opening Telegram login:', error);
-        }
-    };
+    const {
+        loginWithTelegram,
+        finishLogin,
+        closeAuthWebView,
+        handleAuthWebViewError,
+        handleAuthWebViewOnboard,
+        handleCompletionError,
+        completionUrl,
+        showAuthWebView,
+        isLoading,
+    } = useTelegramLogin();
 
     const handleNoTelegram = () => {
         router.push('/login');
@@ -56,11 +54,16 @@ export default function TelegramLoginChoiceScreen() {
                 <View className="space-y-4">
                     <TouchableOpacity
                         className="rounded-xl py-4 items-center flex-row justify-center border-2"
-                        style={{ borderColor: '#0088cc' }}
-                        onPress={handleTelegramLogin}
+                        style={{ borderColor: '#0088cc', opacity: isLoading ? 0.7 : 1 }}
+                        onPress={loginWithTelegram}
                         activeOpacity={0.8}
+                        disabled={isLoading || !!completionUrl || showAuthWebView}
                     >
-                        <Ionicons name="paper-plane-outline" size={20} color="#0088cc" style={{ marginRight: 8 }} />
+                        {isLoading ? (
+                            <ActivityIndicator size="small" color="#0088cc" style={{ marginRight: 8 }} />
+                        ) : (
+                            <Ionicons name="paper-plane-outline" size={20} color="#0088cc" style={{ marginRight: 8 }} />
+                        )}
                         <Text
                             className="text-base font-medium"
                             style={{ color: '#0088cc' }}
@@ -74,6 +77,7 @@ export default function TelegramLoginChoiceScreen() {
                         style={{ borderColor: colors.primary.main }}
                         onPress={handleNoTelegram}
                         activeOpacity={0.8}
+                        disabled={isLoading || !!completionUrl || showAuthWebView}
                     >
                         <Text className="text-base font-medium" style={{ color: colors.primary.main }}>
                             {t('i-dont-have-telegram') || "I don't have Telegram"}
@@ -104,6 +108,23 @@ export default function TelegramLoginChoiceScreen() {
                     </Text>
                 </View>
             </View>
+
+            <TelegramAuthWebView
+                visible={showAuthWebView}
+                onSuccess={finishLogin}
+                onError={handleAuthWebViewError}
+                onClose={closeAuthWebView}
+                onOnboardRedirect={handleAuthWebViewOnboard}
+            />
+
+            {completionUrl ? (
+                <TelegramAuthCompletionWebView
+                    visible
+                    completionUrl={completionUrl}
+                    onSuccess={finishLogin}
+                    onError={handleCompletionError}
+                />
+            ) : null}
         </View>
     );
 }
