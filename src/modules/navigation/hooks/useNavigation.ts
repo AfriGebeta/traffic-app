@@ -111,6 +111,8 @@ export const useNavigation = (
         rerouteTimeout,
         totalRouteDistance: totalRouteDistance.current,
         totalRouteDuration: totalRouteDuration.current,
+        routeManeuversRef: routeManeuvers,
+        currentManeuverIndexRef: currentManeuverIndex,
     });
 
     const { recalculateRoute } = useRouteRecalculation({
