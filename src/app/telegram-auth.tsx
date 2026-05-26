@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import TelegramAuthService from '../shared/services/telegram-auth.service';
+import { getTelegramAuthConfig } from '../shared/config/telegram-auth.config';
 import { showToast } from '../shared/utils/toast';
 
 export default function TelegramAuth() {
@@ -15,10 +16,10 @@ export default function TelegramAuth() {
     const handleAuth = async () => {
         try {
             const queryString = new URLSearchParams(params as Record<string, string>).toString();
-            const url = `trafficapp://telegram-auth?${queryString}`;
-
-            console.log('Telegram Auth - URL:', url);
-            console.log('Telegram Auth - Params:', params);
+            const config = getTelegramAuthConfig();
+            const url = params.id_token
+                ? `${config.redirectUri}?${queryString}`
+                : `trafficapp://telegram-auth?${queryString}`;
 
             const success = await TelegramAuthService.handleCallback(url);
 
@@ -26,7 +27,6 @@ export default function TelegramAuth() {
                 showToast.success('Login successful');
                 router.replace('/');
             } else {
-                console.error('Telegram authentication failed - success was false');
                 showToast.error('Telegram authentication failed');
                 router.replace('/telegram-login');
             }

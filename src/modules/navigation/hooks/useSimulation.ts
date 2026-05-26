@@ -1,7 +1,7 @@
 import { useRef, useCallback } from 'react';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 import { showToast } from '../../../shared/utils/toast';
-import { calculateBearing } from '../utils/navigationUtils';
+import { calculateBearing, calculateDistance } from '../utils/navigationUtils';
 
 interface UseSimulationProps {
     routeCoordinates: React.MutableRefObject<[number, number][]>;
@@ -35,6 +35,10 @@ export const useSimulation = ({
     totalRouteDuration,
 }: UseSimulationProps) => {
     const simulationInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+    const smoothingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const simInterpolateFromRef = useRef<{ lat: number; lng: number } | null>(null);
+    const simInterpolateToRef = useRef<{ lat: number; lng: number } | null>(null);
+    const simTickStartRef = useRef<number>(0);
     const currentRouteIndex = useRef(0);
 
     const stopSimulation = useCallback(() => {
@@ -42,12 +46,24 @@ export const useSimulation = ({
             clearInterval(simulationInterval.current);
             simulationInterval.current = null;
         }
+        if (smoothingIntervalRef.current) {
+            clearInterval(smoothingIntervalRef.current);
+            smoothingIntervalRef.current = null;
+        }
+        simInterpolateFromRef.current = null;
+        simInterpolateToRef.current = null;
     }, []);
 
     const startSimulation = useCallback(() => {
         if (simulationInterval.current) {
             clearInterval(simulationInterval.current);
         }
+        if (smoothingIntervalRef.current) {
+            clearInterval(smoothingIntervalRef.current);
+        }
+        simInterpolateFromRef.current = null;
+        simInterpolateToRef.current = null;
+        simTickStartRef.current = 0;
 
         currentRouteIndex.current = 0;
 
@@ -92,7 +108,7 @@ export const useSimulation = ({
                     let snappedLng = inaccurateLng;
 
                     const SEARCH_WINDOW = 20;
-                    const startIndex = Math.max(0, currentRouteIndex.current - SEARCH_WINDOW);
+                    const startIndex = currentRouteIndex.current; // never snap behind current progress
                     const endIndex = Math.min(routeCoordinates.current.length - 1, currentRouteIndex.current + SEARCH_WINDOW);
 
                     for (let i = startIndex; i < endIndex; i++) {
@@ -198,8 +214,49 @@ export const useSimulation = ({
                 setRemainingTime(estimatedTime);
             }
 
-            currentRouteIndex.current += 1;
-        }, 2000);
+            const avgSpeedMps = totalRouteDistance > 0 && totalRouteDuration > 0
+                ? totalRouteDistance / totalRouteDuration
+                : 14;
+            const targetAdvanceMeters = avgSpeedMps * 5;
+
+            let accumulated = 0;
+            let nextIndex = currentRouteIndex.current + 1;
+            while (nextIndex < routeCoordinates.current.length - 1 && accumulated < targetAdvanceMeters) {
+                const [lng1, lat1] = routeCoordinates.current[nextIndex - 1];
+                const [lng2, lat2] = routeCoordinates.current[nextIndex];
+                accumulated += calculateDistance(lat1, lng1, lat2, lng2);
+                nextIndex++;
+            }
+            currentRouteIndex.current = Math.min(nextIndex, routeCoordinates.current.length - 1);
+
+            simInterpolateFromRef.current = { lat: displayLat, lng: displayLng };
+            simTickStartRef.current = Date.now();
+
+            let predAccumulated = 0;
+            let predIndex = currentRouteIndex.current;
+            while (predIndex < routeCoordinates.current.length - 1 && predAccumulated < targetAdvanceMeters) {
+                const [lng1, lat1] = routeCoordinates.current[predIndex];
+                const [lng2, lat2] = routeCoordinates.current[predIndex + 1];
+                predAccumulated += calculateDistance(lat1, lng1, lat2, lng2);
+                predIndex++;
+            }
+            const [predLng, predLat] = routeCoordinates.current[Math.min(predIndex, routeCoordinates.current.length - 1)];
+            simInterpolateToRef.current = { lat: predLat, lng: predLng };
+        }, 5000);
+
+        if (smoothingIntervalRef.current) {
+            clearInterval(smoothingIntervalRef.current);
+        }
+        smoothingIntervalRef.current = setInterval(() => {
+            if (!isNavigatingRef.current || !simInterpolateFromRef.current || !simInterpolateToRef.current) return;
+            const elapsed = Date.now() - simTickStartRef.current;
+            const progress = Math.min(elapsed / 5000, 1);
+            const interpLat = simInterpolateFromRef.current.lat + (simInterpolateToRef.current.lat - simInterpolateFromRef.current.lat) * progress;
+            const interpLng = simInterpolateFromRef.current.lng + (simInterpolateToRef.current.lng - simInterpolateFromRef.current.lng) * progress;
+            if (setUserLocation) {
+                setUserLocation({ lat: interpLat, lng: interpLng });
+            }
+        }, 1000);
     }, [
         routeCoordinates,
         isNavigatingRef,

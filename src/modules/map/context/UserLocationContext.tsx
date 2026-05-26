@@ -90,7 +90,7 @@ export function UserLocationProvider({ children }: { children: ReactNode }) {
             locationSubscription.current = await Location.watchPositionAsync(
                 {
                     accuracy: Location.Accuracy.Balanced,
-                    timeInterval: 1000,
+                    timeInterval: 5000,
                     distanceInterval: 0,
                 },
                 (location) => applyLocation(location.coords)

@@ -84,6 +84,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         searchResults,
         setSearchResults,
         recentSearches,
+        savedPlaces,
         isSearching,
         showSearchContainer,
         setShowSearchContainer,
@@ -929,6 +930,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
 
                     searchResults={searchResults}
                     recentSearches={recentSearches}
+                    savedPlaces={savedPlaces}
                     isSearching={isSearching}
                     showSearchContainer={showSearchContainer}
                     showRecentSearches={showRecentSearches}

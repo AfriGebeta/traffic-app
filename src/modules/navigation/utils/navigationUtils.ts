@@ -78,8 +78,8 @@ export const updateInstructionBasedOnPosition = (
 
     const nextManeuver = routeManeuvers[closestManeuverIndex];
 
-    const TURN_APPROACH_DISTANCE = 50;
-    const ADVANCE_THRESHOLD = 20;
+    const TURN_APPROACH_DISTANCE = 200;
+    const ADVANCE_THRESHOLD = 60;
 
     if (minDistance < ADVANCE_THRESHOLD && closestManeuverIndex < routeManeuvers.length - 1) {
         const newManeuverIndex = closestManeuverIndex + 1;

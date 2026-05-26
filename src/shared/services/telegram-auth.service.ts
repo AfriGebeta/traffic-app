@@ -1,56 +1,79 @@
-import * as Linking from 'expo-linking';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { telegramService } from '../../modules/register/services/telegram.service';
-import { TelegramAuthPayload } from '../../modules/register/types/telegram.types';
+import {
+    extractIdTokenFromUrl,
+    extractLegacyTelegramParams,
+    extractTelegramAuthErrorFromUrl,
+} from '../utils/telegram-auth-url';
+import { telegramAuthLog } from '../utils/telegram-auth-logger';
 
 const TOKEN_STORAGE_KEY = '@traffic_app_token';
 const USER_STORAGE_KEY = '@traffic_app_user';
 
 class TelegramAuthService {
-    async handleCallback(url: string): Promise<boolean> {
-        try {
-            console.log('TelegramAuthService - Handling callback URL:', url);
+    private async storeAuthResponse(
+        response: Awaited<ReturnType<typeof telegramService.loginWithTelegram>>
+    ): Promise<boolean> {
+        telegramAuthLog.info('backend response received', {
+            hasData: !!response.data,
+            hasError: !!response.error,
+            message: response.message,
+            userId: response.data?.user?.id,
+            hasToken: !!response.data?.token,
+        });
 
-            const { queryParams } = Linking.parse(url);
-            console.log('TelegramAuthService - Parsed params:', queryParams);
-
-            if (!queryParams?.id || !queryParams?.hash) {
-                console.error('TelegramAuthService - Missing required params (id or hash)');
-                throw new Error('Invalid Telegram payload');
-            }
-
-            const payload: TelegramAuthPayload = {
-                id: String(queryParams.id),
-                auth_date: String(queryParams.auth_date),
-                hash: String(queryParams.hash),
-                first_name: String(queryParams.first_name ?? ''),
-                username: queryParams.username ? String(queryParams.username) : undefined,
-                photo_url: queryParams.photo_url ? String(queryParams.photo_url) : undefined,
-            };
-
-            console.log('TelegramAuthService - Sending payload to API:', payload);
-
-            const response = await telegramService.loginWithTelegram(payload);
-            console.log('TelegramAuthService - API response:', response);
-
-
-            if (response.data) {
-                // Store both token and user data
-                await AsyncStorage.setItem(TOKEN_STORAGE_KEY, response.data.token);
-
-                // Store user data
-                await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(response.data.user));
-
-                console.log('TelegramAuthService - Auth successful, data stored');
-                return true;
-            }
-
-            console.error('TelegramAuthService - No data in response');
-            return false;
-        } catch (error) {
-            console.error('TelegramAuthService - Error:', error);
+        if (!response.data) {
             return false;
         }
+
+        await AsyncStorage.setItem(TOKEN_STORAGE_KEY, response.data.token);
+        await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(response.data.user));
+
+        telegramAuthLog.info('session stored in AsyncStorage');
+        return true;
+    }
+
+    async loginWithIdToken(idToken: string): Promise<boolean> {
+        telegramAuthLog.info('loginWithIdToken called', {
+            idTokenPreview: `${idToken.slice(0, 12)}... (${idToken.length} chars)`,
+        });
+
+        try {
+            const response = await telegramService.loginWithTelegram({ id_token: idToken });
+            return this.storeAuthResponse(response);
+        } catch (error) {
+            telegramAuthLog.error('loginWithIdToken failed', error);
+            return false;
+        }
+    }
+
+    async handleAuthRedirect(url: string): Promise<{ success: boolean; error?: string }> {
+        telegramAuthLog.url('handleAuthRedirect', url);
+
+        const authError = extractTelegramAuthErrorFromUrl(url);
+        if (authError) {
+            telegramAuthLog.warn('auth error found in redirect URL', { authError });
+            return { success: false, error: authError };
+        }
+
+        const legacyParams = extractLegacyTelegramParams(url);
+        if (legacyParams) {
+            telegramAuthLog.warn('legacy Telegram params detected (id/hash), backend expects id_token', legacyParams);
+        }
+
+        const idToken = extractIdTokenFromUrl(url);
+        if (!idToken) {
+            telegramAuthLog.warn('no id_token found in redirect URL');
+            return { success: false };
+        }
+
+        const success = await this.loginWithIdToken(idToken);
+        return success ? { success: true } : { success: false, error: 'Telegram authentication failed' };
+    }
+
+    async handleCallback(url: string): Promise<boolean> {
+        const result = await this.handleAuthRedirect(url);
+        return result.success;
     }
 }
 

@@ -18,6 +18,14 @@ const SAVED_PLACE_CONFIG: Record<SavedPlaceType, { icon: keyof typeof Ionicons.g
 
 const CHIP_ORDER: SavedPlaceType[] = ['HOME', 'WORK', 'FAVORITE'];
 
+const normalizeSavedPlaceType = (type: string): SavedPlaceType | null => {
+    const normalized = type.toUpperCase();
+    if (normalized === 'HOME' || normalized === 'WORK' || normalized === 'FAVORITE') {
+        return normalized;
+    }
+    return null;
+};
+
 const savedPlaceToGeocodingPlace = (place: SavedPlace): GeocodingPlace => ({
     name: place.label,
     latitude: place.lat,
@@ -109,8 +117,10 @@ const SavedPlaceChips = ({
     const placesByType = React.useMemo(() => {
         const map: Partial<Record<SavedPlaceType, SavedPlace[]>> = {};
         for (const p of savedPlaces) {
-            if (!map[p.type]) map[p.type] = [];
-            map[p.type]!.push(p);
+            const type = normalizeSavedPlaceType(p.type);
+            if (!type) continue;
+            if (!map[type]) map[type] = [];
+            map[type]!.push(p);
         }
         return map;
     }, [savedPlaces]);
@@ -139,7 +149,6 @@ const SavedPlaceChips = ({
             <View style={{ flexDirection: 'row', paddingHorizontal: 12, paddingTop: 12, paddingBottom: 8, gap: 8 }}>
                 {CHIP_ORDER.map((type) => {
                     const config = SAVED_PLACE_CONFIG[type];
-                    const hasSaved = !!(placesByType[type]?.length);
                     const isExpanded = selectedType === type;
 
                     return (
@@ -160,27 +169,22 @@ const SavedPlaceChips = ({
                         >
                             <View style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center', marginBottom: 5 }}>
                                 <Ionicons
-                                    name={hasSaved ? config.icon : 'add'}
+                                    name={config.icon}
                                     size={22}
-                                    color={hasSaved ? colors.primary.main : colors.gray[500]}
+                                    color={colors.primary.main}
                                 />
                             </View>
                             <Text
                                 style={{
                                     fontSize: 12,
                                     fontWeight: '600',
-                                    color: hasSaved ? colors.primary.dark : colors.gray[500],
+                                    color: colors.primary.dark,
                                     textAlign: 'center',
                                 }}
                                 numberOfLines={1}
                             >
                                 {config.label}
                             </Text>
-                            {!hasSaved && (
-                                <Text style={{ fontSize: 10, color: colors.gray[200], marginTop: 1 }}>
-                                    Not set
-                                </Text>
-                            )}
                         </TouchableOpacity>
                     );
                 })}

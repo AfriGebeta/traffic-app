@@ -1,10 +1,5 @@
 export interface TelegramAuthPayload {
-    id: string;
-    auth_date: string;
-    hash: string;
-    first_name: string;
-    username?: string;
-    photo_url?: string;
+    id_token: string;
 }
 
 export interface TelegramAuthResponse {
