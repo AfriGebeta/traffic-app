@@ -4,6 +4,7 @@ import {
     extractIdTokenFromUrl,
     extractLegacyTelegramParams,
     extractTelegramAuthErrorFromUrl,
+    summarizeTelegramIdTokenClaims,
 } from '../utils/telegram-auth-url';
 import { telegramAuthLog } from '../utils/telegram-auth-logger';
 
@@ -40,6 +41,15 @@ class TelegramAuthService {
 
         try {
             const response = await telegramService.loginWithTelegram({ id_token: idToken });
+
+            if (response.data?.user) {
+                const picture = summarizeTelegramIdTokenClaims(idToken)?.picture;
+
+                if (!response.data.user.profileImage && typeof picture === 'string') {
+                    response.data.user.profileImage = picture;
+                }
+            }
+
             return this.storeAuthResponse(response);
         } catch (error) {
             telegramAuthLog.error('loginWithIdToken failed', error);

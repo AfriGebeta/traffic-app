@@ -7,6 +7,8 @@ export interface TelegramAuthResponse {
         id: string;
         phoneNumber?: string;
         name: string;
+        username?: string;
+        profileImage?: string | null;
         points: number;
         createdAt: string;
         updatedAt: string;

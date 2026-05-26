@@ -161,11 +161,26 @@ export const ProfileScreen = () => {
             <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
                 <View className="px-6">
                     <View className="items-center mb-8 mt-4">
-                        <View className="rounded-full w-20 h-20 items-center justify-center mb-4" style={{ backgroundColor: colors.primary.main }}>
-                            <Text className="text-white text-3xl font-bold">
-                                {getInitial(user.name)}
-                            </Text>
-                        </View>
+                        {user.profileImage ? (
+                            <Image
+                                source={{ uri: user.profileImage }}
+                                style={{
+                                    width: 80,
+                                    height: 80,
+                                    borderRadius: 40,
+                                    marginBottom: 16,
+                                }}
+                            />
+                        ) : (
+                            <View
+                                className="rounded-full w-20 h-20 items-center justify-center mb-4"
+                                style={{ backgroundColor: colors.primary.main }}
+                            >
+                                <Text className="text-white text-3xl font-bold">
+                                    {getInitial(user.name)}
+                                </Text>
+                            </View>
+                        )}
                         <Text className="text-2xl font-bold text-gray-900 mb-1">
                             {user.name}
                         </Text>
