@@ -29,6 +29,7 @@ export const useNavigation = (
     const [currentHeading, setCurrentHeading] = useState(0);
     const [simulateMovement, setSimulateMovement] = useState(false);
     const [currentInstruction, setCurrentInstruction] = useState<string>('');
+    const [nextInstruction, setNextInstruction] = useState<string>('');
     const [remainingDistance, setRemainingDistance] = useState<number>(0);
     const [remainingTime, setRemainingTime] = useState<number>(0);
     const [isOffRoute, setIsOffRoute] = useState(false);
@@ -68,6 +69,14 @@ export const useNavigation = (
         );
         setCurrentInstruction(result.instruction);
         currentManeuverIndex.current = result.newManeuverIndex;
+
+        const nextIndex = result.newManeuverIndex + 1;
+        if (nextIndex < routeManeuvers.current.length) {
+            const nextManeuver = routeManeuvers.current[nextIndex];
+            setNextInstruction(nextManeuver.instruction || '');
+        } else {
+            setNextInstruction('');
+        }
     };
 
     //simulation hook
@@ -565,7 +574,7 @@ export const useNavigation = (
         setRemainingTime(0);
         setIsOffRoute(false);
         setIsRecalculating(false);
-        setCurrentCosting('auto'); 
+        setCurrentCosting('auto');
 
         if (startBackgroundTracking) {
             startBackgroundTracking();
@@ -632,6 +641,7 @@ export const useNavigation = (
         simulateMovement,
         setSimulateMovement,
         currentInstruction,
+        nextInstruction,
         remainingDistance,
         remainingTime,
         isOffRoute,
