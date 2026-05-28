@@ -412,11 +412,8 @@ export default function TaxiNavigationScreen() {
                     <View
                         style={{
                             backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                            borderTopLeftRadius: 24,
-                            borderTopRightRadius: 24,
-                            borderBottomLeftRadius: 24,
-                            borderBottomRightRadius: 0,
-                            padding: 16,
+                            borderRadius: 20,
+                            padding: 20,
                             shadowColor: '#000',
                             shadowOffset: { width: 0, height: 2 },
                             shadowOpacity: 0.1,
@@ -424,82 +421,40 @@ export default function TaxiNavigationScreen() {
                             elevation: 5,
                         }}
                     >
-                        <View className="flex-row items-start justify-between">
+                        <View className="flex-row items-start justify-between mb-3">
                             <View className="flex-1">
-                                <View className="flex-row items-baseline gap-2 mb-1">
-                                    <Text className="text-gray-900 text-2xl font-extrabold">
-                                        {formatDistance(remainingDistance)}
-                                    </Text>
-                                    <Text className="text-gray-600 text-base font-bold">
-                                        • {formatTime(remainingTime)}
-                                    </Text>
-                                </View>
-
-                                <Text className="text-gray-600 text-sm font-semibold mb-2" numberOfLines={1}>
-                                    {endNode.name}
+                                <Text className="text-gray-900 text-3xl font-bold mb-1">
+                                    {currentInstruction || (isOnTaxi ? 'Stay on taxi' : 'Walk to station')}
                                 </Text>
-
-                                <View className="flex-row items-center gap-3">
-                                    <View className="flex-row items-center">
-                                        <View
-                                            className="w-6 h-6 rounded-full items-center justify-center"
-                                            style={{ backgroundColor: isOnTaxi ? colors.primary.main : '#3B82F6' }}
-                                        >
-                                            <Ionicons
-                                                name={isOnTaxi ? 'car' : 'walk'}
-                                                size={14}
-                                                color="white"
-                                            />
-                                        </View>
-                                        <Text className="text-gray-700 text-xs font-semibold ml-1.5">
-                                            {isOnTaxi ? 'On Taxi' : 'Walking'}
-                                        </Text>
-                                    </View>
-                                    <View className="flex-row items-center">
-                                        <Ionicons name="cash" size={14} color={colors.primary.main} />
-                                        <Text className="font-bold ml-1 text-sm" style={{ color: colors.primary.main }}>
-                                            {totalFare} {currency}
-                                        </Text>
-                                    </View>
-                                </View>
+                                <Text className="text-gray-500 text-base">
+                                    for {formatDistance(remainingDistance)}
+                                </Text>
                             </View>
-
-                            <TouchableOpacity
-                                className="bg-gray-100 rounded-full p-3"
-                                onPress={handleStopNavigation}
-                            >
-                                <Ionicons name="close" size={24} color="#374151" />
-                            </TouchableOpacity>
                         </View>
 
-                        {currentInstruction && (
-                            <View className="absolute -bottom-10 -right-0.5">
+                        <View className="flex-row items-center gap-3">
+                            <View className="flex-row items-center">
                                 <View
-                                    className="px-3 py-2 flex-row items-center gap-2"
-                                    style={{
-                                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                        borderTopLeftRadius: 0,
-                                        borderTopRightRadius: 0,
-                                        borderBottomLeftRadius: 12,
-                                        borderBottomRightRadius: 12,
-                                        shadowColor: '#000',
-                                        shadowOffset: { width: 0, height: 2 },
-                                        shadowOpacity: 0.1,
-                                        shadowRadius: 8,
-                                        elevation: 4,
-                                    }}
+                                    className="w-6 h-6 rounded-full items-center justify-center"
+                                    style={{ backgroundColor: isOnTaxi ? colors.primary.main : '#3B82F6' }}
                                 >
                                     <Ionicons
                                         name={isOnTaxi ? 'car' : 'walk'}
-                                        size={18}
-                                        color={colors.primary.main}
+                                        size={14}
+                                        color="white"
                                     />
-                                    <Text className="text-gray-700 text-xs font-bold" numberOfLines={1} style={{ maxWidth: 150 }}>
-                                        {currentInstruction}
-                                    </Text>
                                 </View>
+                                <Text className="text-gray-700 text-xs font-semibold ml-1.5">
+                                    {isOnTaxi ? 'On Taxi' : 'Walking'}
+                                </Text>
                             </View>
-                        )}
+                            <View className="flex-row items-center">
+                                <Ionicons name="cash" size={14} color={colors.primary.main} />
+                                <Text className="font-bold ml-1 text-sm" style={{ color: colors.primary.main }}>
+                                    {totalFare} {currency}
+                                </Text>
+                            </View>
+                        </View>
                     </View>
                 </View>
 
@@ -518,23 +473,35 @@ export default function TaxiNavigationScreen() {
                             elevation: 5,
                         }}
                     >
-                        <View className="mb-3">
-                            <SegmentProgressBar
-                                segments={progressSegments}
-                                currentIndex={currentSegmentIndex}
-                            />
-                        </View>
-
-                        {currentSegment && (
-                            <View className="bg-gray-50 rounded-xl p-3">
-                                <Text className="text-gray-500 text-xs mb-1">
-                                    {isOnTaxi ? 'Exit at' : 'Heading to'}
+                    
+                        <View className="flex-row items-center justify-between mb-3">
+                            <View className="flex-1">
+                                <Text className="text-gray-900 text-2xl font-bold">
+                                    {formatTime(remainingTime)}
                                 </Text>
-                                <Text className="text-gray-900 font-semibold">
-                                    {currentSegment.toNode?.name || 'Destination'}
+                                <Text className="text-gray-500 text-xs mt-0.5">
+                                    ETA {new Date(Date.now() + remainingTime * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                                </Text>
+                                <Text className="text-gray-900 text-sm font-semibold mt-1" numberOfLines={1}>
+                                    {endNode.name}
                                 </Text>
                             </View>
-                        )}
+
+                            <TouchableOpacity
+                                className="rounded-xl px-6 py-3"
+                                style={{ backgroundColor: colors.primary.main }}
+                                onPress={handleStopNavigation}
+                            >
+                                <Text className="text-white text-sm font-bold">
+                                    Exit
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <SegmentProgressBar
+                            segments={progressSegments}
+                            currentIndex={currentSegmentIndex}
+                        />
                     </View>
                 </View>
 
