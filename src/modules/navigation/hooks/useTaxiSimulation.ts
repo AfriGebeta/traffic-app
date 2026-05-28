@@ -1,9 +1,7 @@
 import { useRef, useCallback } from 'react';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 import { showToast } from '../../../shared/utils/toast';
-import { calculateBearing, calculateDistance } from '../utils/navigationUtils';
-import { decodePolyline } from '../../../shared/utils/polyline';
-import { TaxiNavigationResponse } from '../../taxi/types/taxi.types';
+import { buildSegmentedRoutesFromPosition, calculateBearing, calculateDistance } from '../utils/navigationUtils';
 
 interface UseTaxiSimulationProps {
     routeCoordinates: React.MutableRefObject<[number, number][]>;
@@ -18,7 +16,6 @@ interface UseTaxiSimulationProps {
     onArrival?: () => void;
     totalRouteDistance: number;
     totalRouteDuration: number;
-    // Taxi-specific
     taxiSegments?: Array<{
         polyline: string;
         type: string;
@@ -48,6 +45,12 @@ export const useTaxiSimulation = ({
     setSegmentedRoutes,
 }: UseTaxiSimulationProps) => {
     const simulationInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+    const smoothingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const simInterpolateFromRef = useRef<{ lat: number; lng: number } | null>(null);
+    const simInterpolateToRef = useRef<{ lat: number; lng: number } | null>(null);
+    const simFromIndexRef = useRef<number>(0);
+    const simToIndexRef = useRef<number>(0);
+    const simTickStartRef = useRef<number>(0);
     const currentRouteIndex = useRef(0);
 
     const stopSimulation = useCallback(() => {
@@ -55,16 +58,26 @@ export const useTaxiSimulation = ({
             clearInterval(simulationInterval.current);
             simulationInterval.current = null;
         }
-        console.log('[Taxi Simulation] Stopped');
+        if (smoothingIntervalRef.current) {
+            clearInterval(smoothingIntervalRef.current);
+            smoothingIntervalRef.current = null;
+        }
+        simInterpolateFromRef.current = null;
+        simInterpolateToRef.current = null;
     }, []);
 
     const startSimulation = useCallback(() => {
         if (simulationInterval.current) {
             clearInterval(simulationInterval.current);
         }
+        if (smoothingIntervalRef.current) {
+            clearInterval(smoothingIntervalRef.current);
+        }
+        simInterpolateFromRef.current = null;
+        simInterpolateToRef.current = null;
+        simTickStartRef.current = 0;
 
         currentRouteIndex.current = 0;
-        console.log('[Taxi Simulation] Starting with', routeCoordinates.current.length, 'points');
         showToast.info('Simulation Started', 'GPS simulation is running for testing');
 
         simulationInterval.current = setInterval(() => {
@@ -77,8 +90,6 @@ export const useTaxiSimulation = ({
 
             const [lng, lat] = routeCoordinates.current[currentRouteIndex.current];
 
-            console.log('[Taxi Simulation] Step', currentRouteIndex.current, '/', routeCoordinates.current.length, 'at', { lat, lng });
-
             const offsetMeters = 3 + Math.random() * 5;
             const offsetAngle = Math.random() * 2 * Math.PI;
             const offsetLat = (offsetMeters / 111320) * Math.cos(offsetAngle);
@@ -86,8 +97,6 @@ export const useTaxiSimulation = ({
 
             const inaccurateLat = lat + offsetLat;
             const inaccurateLng = lng + offsetLng;
-
-            console.log('[Taxi Simulation] Inaccurate GPS:', { lat: inaccurateLat, lng: inaccurateLng }, 'offset:', offsetMeters.toFixed(1), 'm');
 
             let bearing = 0;
             if (currentRouteIndex.current < routeCoordinates.current.length - 1) {
@@ -101,143 +110,91 @@ export const useTaxiSimulation = ({
 
             let displayLat = inaccurateLat;
             let displayLng = inaccurateLng;
+            let closestIndex = currentRouteIndex.current;
 
-            if (setUserLocation) {
-                if (routeCoordinates.current.length > 0) {
-                    let minDistance = Infinity;
-                    let snappedLat = inaccurateLat;
-                    let snappedLng = inaccurateLng;
+            if (routeCoordinates.current.length > 0) {
+                let minDistance = Infinity;
+                let snappedLat = inaccurateLat;
+                let snappedLng = inaccurateLng;
 
-                    const SEARCH_WINDOW = 50;
-                    const startIndex = Math.max(0, currentRouteIndex.current - SEARCH_WINDOW);
-                    const endIndex = Math.min(routeCoordinates.current.length - 1, currentRouteIndex.current + SEARCH_WINDOW);
+                const SEARCH_WINDOW = 20;
+                const startIndex = currentRouteIndex.current;
+                const endIndex = Math.min(routeCoordinates.current.length - 1, currentRouteIndex.current + SEARCH_WINDOW);
 
-                    for (let i = startIndex; i < endIndex; i++) {
-                        const [lng1, lat1] = routeCoordinates.current[i];
-                        const [lng2, lat2] = routeCoordinates.current[i + 1];
+                for (let i = startIndex; i < endIndex; i++) {
+                    const [lng1, lat1] = routeCoordinates.current[i];
+                    const [lng2, lat2] = routeCoordinates.current[i + 1];
 
-                        const dx = lng2 - lng1;
-                        const dy = lat2 - lat1;
+                    const dx = lng2 - lng1;
+                    const dy = lat2 - lat1;
 
-                        if (dx === 0 && dy === 0) {
-                            const dist = calculateDistance(inaccurateLat, inaccurateLng, lat1, lng1);
-                            if (dist < minDistance) {
-                                minDistance = dist;
-                                snappedLat = lat1;
-                                snappedLng = lng1;
-                            }
-                            continue;
-                        }
-
-                        const t = Math.max(0, Math.min(1,
-                            ((inaccurateLng - lng1) * dx + (inaccurateLat - lat1) * dy) / (dx * dx + dy * dy)
-                        ));
-
-                        const projLat = lat1 + t * dy;
-                        const projLng = lng1 + t * dx;
-
-                        const dist = calculateDistance(inaccurateLat, inaccurateLng, projLat, projLng);
-
+                    if (dx === 0 && dy === 0) {
+                        const dist = calculateDistance(inaccurateLat, inaccurateLng, lat1, lng1);
                         if (dist < minDistance) {
                             minDistance = dist;
-                            snappedLat = projLat;
-                            snappedLng = projLng;
+                            closestIndex = i;
+                            snappedLat = lat1;
+                            snappedLng = lng1;
                         }
+                        continue;
                     }
 
-                    displayLat = snappedLat;
-                    displayLng = snappedLng;
+                    const t = Math.max(0, Math.min(1,
+                        ((inaccurateLng - lng1) * dx + (inaccurateLat - lat1) * dy) / (dx * dx + dy * dy)
+                    ));
 
-                    console.log('[Taxi Simulation] Snapped:', { lat: snappedLat, lng: snappedLng }, 'distance from route:', minDistance.toFixed(2), 'm');
+                    const projLat = lat1 + t * dy;
+                    const projLng = lng1 + t * dx;
+
+                    const dist = calculateDistance(inaccurateLat, inaccurateLng, projLat, projLng);
+
+                    if (dist < minDistance) {
+                        minDistance = dist;
+                        closestIndex = i;
+                        snappedLat = projLat;
+                        snappedLng = projLng;
+                    }
                 }
+
+                displayLat = snappedLat;
+                displayLng = snappedLng;
+                simFromIndexRef.current = closestIndex;
             }
 
-            const remainingCoords = routeCoordinates.current.slice(currentRouteIndex.current + 1);
+            if (setUserLocation) {
+                setUserLocation({ lat: displayLat, lng: displayLng });
+            }
+
+            const remainingCoords = routeCoordinates.current.slice(closestIndex + 1);
             if (remainingCoords.length > 0) {
                 const routeWithSnappedStart = [[displayLng, displayLat] as [number, number], ...remainingCoords];
 
                 if (taxiSegments && setSegmentedRoutes) {
-                    let coordCount = 0;
-                    let currentSegIdx = 0;
-                    let positionInSegment = currentRouteIndex.current;
-
-                    for (let i = 0; i < taxiSegments.length; i++) {
-                        const decoded = decodePolyline(taxiSegments[i].polyline, 6);
-                        if (currentRouteIndex.current < coordCount + decoded.length) {
-                            currentSegIdx = i;
-                            positionInSegment = currentRouteIndex.current - coordCount;
-                            break;
-                        }
-                        coordCount += decoded.length;
-                    }
-
-                    const updatedSegments = taxiSegments.map((seg, idx) => {
-                        const decoded = decodePolyline(seg.polyline, 6);
-                        let coordinates = decoded.map(([lat, lng]: [number, number]) => [lng, lat] as [number, number]);
-
-                        if (idx === currentSegIdx) {
-                            const remaining = coordinates.slice(positionInSegment + 1);
-                           
-                            coordinates = [[displayLng, displayLat], ...remaining];
-                        } else if (idx < currentSegIdx) {
-                            coordinates = [];
-                        }
-
-                        return {
-                            geoJSON: {
-                                type: 'Feature' as const,
-                                properties: {
-                                    segmentIndex: idx,
-                                    markerLat: displayLat,
-                                    markerLng: displayLng,
-                                },
-                                geometry: {
-                                    type: 'LineString' as const,
-                                    coordinates
-                                }
-                            },
-                            isWalking: seg.type === 'walk' || seg.mode === 'pedestrian',
-                            segmentIndex: idx
-                        };
-                    });
-
-                    setSegmentedRoutes(updatedSegments);
-                    if (setUserLocation) {
-                        console.log('[Taxi Simulation] Setting user location:', { lat: displayLat, lng: displayLng });
-                        setUserLocation({ lat: displayLat, lng: displayLng });
-                    }
-
-                    console.log('[Taxi Simulation] Updated segments:', {
-                        currentSegIdx,
-                        positionInSegment,
-                        currentRouteIndex: currentRouteIndex.current,
-                        markerPos: { lat: displayLat, lng: displayLng },
-                        routeStart: updatedSegments[currentSegIdx]?.geoJSON.geometry.coordinates[0]
-                    });
+                    setSegmentedRoutes(
+                        buildSegmentedRoutesFromPosition(
+                            taxiSegments,
+                            closestIndex,
+                            displayLat,
+                            displayLng,
+                            true
+                        )
+                    );
                 } else {
-                    const remainingGeoJSON = {
+                    setRouteGeoJSON({
                         type: 'Feature',
                         properties: {},
                         geometry: {
                             type: 'LineString',
                             coordinates: routeWithSnappedStart,
-                        }
-                    };
-                    if (setUserLocation) {
-                        console.log('[Taxi Simulation] Setting user location:', { lat: displayLat, lng: displayLng });
-                        setUserLocation({ lat: displayLat, lng: displayLng });
-                    }
-                    if (setRouteGeoJSON) {
-                        setRouteGeoJSON(remainingGeoJSON);
-                    }
+                        },
+                    });
                 }
 
                 let totalDistance = 0;
                 for (let i = 0; i < routeWithSnappedStart.length - 1; i++) {
                     const [lng1, lat1] = routeWithSnappedStart[i];
                     const [lng2, lat2] = routeWithSnappedStart[i + 1];
-                    const dist = calculateDistance(lat1, lng1, lat2, lng2);
-                    totalDistance += dist;
+                    totalDistance += calculateDistance(lat1, lng1, lat2, lng2);
                 }
 
                 setRemainingDistance(totalDistance);
@@ -245,12 +202,87 @@ export const useTaxiSimulation = ({
                 const averageSpeedMps = totalRouteDistance > 0 && totalRouteDuration > 0
                     ? totalRouteDistance / totalRouteDuration
                     : (25 * 1000) / 3600;
-                const estimatedTime = totalDistance / averageSpeedMps;
-                setRemainingTime(estimatedTime);
+                setRemainingTime(totalDistance / averageSpeedMps);
             }
 
-            currentRouteIndex.current += 1;
-        }, 2000);
+            const avgSpeedMps = totalRouteDistance > 0 && totalRouteDuration > 0
+                ? totalRouteDistance / totalRouteDuration
+                : 14;
+            const targetAdvanceMeters = avgSpeedMps * 5;
+
+            let accumulated = 0;
+            let nextIndex = currentRouteIndex.current + 1;
+            while (nextIndex < routeCoordinates.current.length - 1 && accumulated < targetAdvanceMeters) {
+                const [lng1, lat1] = routeCoordinates.current[nextIndex - 1];
+                const [lng2, lat2] = routeCoordinates.current[nextIndex];
+                accumulated += calculateDistance(lat1, lng1, lat2, lng2);
+                nextIndex++;
+            }
+            currentRouteIndex.current = Math.min(nextIndex, routeCoordinates.current.length - 1);
+
+            simInterpolateFromRef.current = { lat: displayLat, lng: displayLng };
+            simTickStartRef.current = Date.now();
+
+            let predAccumulated = 0;
+            let predIndex = currentRouteIndex.current;
+            while (predIndex < routeCoordinates.current.length - 1 && predAccumulated < targetAdvanceMeters) {
+                const [lng1, lat1] = routeCoordinates.current[predIndex];
+                const [lng2, lat2] = routeCoordinates.current[predIndex + 1];
+                predAccumulated += calculateDistance(lat1, lng1, lat2, lng2);
+                predIndex++;
+            }
+            const clampedPredIndex = Math.min(predIndex, routeCoordinates.current.length - 1);
+            const [predLng, predLat] = routeCoordinates.current[clampedPredIndex];
+            simInterpolateToRef.current = { lat: predLat, lng: predLng };
+            simToIndexRef.current = clampedPredIndex;
+        }, 5000);
+
+        if (smoothingIntervalRef.current) {
+            clearInterval(smoothingIntervalRef.current);
+        }
+        smoothingIntervalRef.current = setInterval(() => {
+            if (!isNavigatingRef.current || !simInterpolateFromRef.current || !simInterpolateToRef.current) return;
+
+            const elapsed = Date.now() - simTickStartRef.current;
+            const progress = Math.min(elapsed / 5000, 1);
+            const interpLat = simInterpolateFromRef.current.lat + (simInterpolateToRef.current.lat - simInterpolateFromRef.current.lat) * progress;
+            const interpLng = simInterpolateFromRef.current.lng + (simInterpolateToRef.current.lng - simInterpolateFromRef.current.lng) * progress;
+
+            if (setUserLocation) {
+                setUserLocation({ lat: interpLat, lng: interpLng });
+            }
+
+            const fromIdx = simFromIndexRef.current;
+            const toIdx = simToIndexRef.current;
+            const estimatedIdx = Math.min(
+                Math.round(fromIdx + progress * (toIdx - fromIdx)),
+                routeCoordinates.current.length - 2
+            );
+
+            if (taxiSegments && setSegmentedRoutes) {
+                setSegmentedRoutes(
+                    buildSegmentedRoutesFromPosition(
+                        taxiSegments,
+                        estimatedIdx,
+                        interpLat,
+                        interpLng,
+                        true
+                    )
+                );
+            } else {
+                const remainingCoords = routeCoordinates.current.slice(estimatedIdx + 1);
+                if (remainingCoords.length > 0) {
+                    setRouteGeoJSON({
+                        type: 'Feature',
+                        properties: {},
+                        geometry: {
+                            type: 'LineString',
+                            coordinates: [[interpLng, interpLat] as [number, number], ...remainingCoords],
+                        },
+                    });
+                }
+            }
+        }, 1000);
     }, [
         routeCoordinates,
         isNavigatingRef,
@@ -265,6 +297,8 @@ export const useTaxiSimulation = ({
         stopSimulation,
         totalRouteDistance,
         totalRouteDuration,
+        taxiSegments,
+        setSegmentedRoutes,
     ]);
 
     const simulateOffRoute = useCallback(() => {
@@ -281,6 +315,10 @@ export const useTaxiSimulation = ({
             clearInterval(simulationInterval.current);
             simulationInterval.current = null;
         }
+        if (smoothingIntervalRef.current) {
+            clearInterval(smoothingIntervalRef.current);
+            smoothingIntervalRef.current = null;
+        }
 
         const [currentLng, currentLat] = routeCoordinates.current[currentIndex];
         const offsetLat = currentLat + 0.00045;
@@ -294,9 +332,7 @@ export const useTaxiSimulation = ({
             'Testing Off-Route',
             'Moved ~50m away. Simulation paused. Watch for detection!'
         );
-
-        console.log('[Taxi Simulation] Simulated off-route');
-    }, [setUserLocation, simulationInterval, routeCoordinates, currentRouteIndex]);
+    }, [setUserLocation, routeCoordinates]);
 
     return {
         startSimulation,

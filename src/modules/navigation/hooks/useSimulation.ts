@@ -38,6 +38,8 @@ export const useSimulation = ({
     const smoothingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const simInterpolateFromRef = useRef<{ lat: number; lng: number } | null>(null);
     const simInterpolateToRef = useRef<{ lat: number; lng: number } | null>(null);
+    const simFromIndexRef = useRef<number>(0);
+    const simToIndexRef = useRef<number>(0);
     const simTickStartRef = useRef<number>(0);
     const currentRouteIndex = useRef(0);
 
@@ -168,6 +170,7 @@ export const useSimulation = ({
 
                     displayLat = snappedLat;
                     displayLng = snappedLng;
+                    simFromIndexRef.current = closestIndex;
                 }
 
                 setUserLocation({ lat: displayLat, lng: displayLng });
@@ -240,8 +243,10 @@ export const useSimulation = ({
                 predAccumulated += calculateDistance(lat1, lng1, lat2, lng2);
                 predIndex++;
             }
-            const [predLng, predLat] = routeCoordinates.current[Math.min(predIndex, routeCoordinates.current.length - 1)];
+            const clampedPredIndex = Math.min(predIndex, routeCoordinates.current.length - 1);
+            const [predLng, predLat] = routeCoordinates.current[clampedPredIndex];
             simInterpolateToRef.current = { lat: predLat, lng: predLng };
+            simToIndexRef.current = clampedPredIndex;
         }, 5000);
 
         if (smoothingIntervalRef.current) {
@@ -253,8 +258,27 @@ export const useSimulation = ({
             const progress = Math.min(elapsed / 5000, 1);
             const interpLat = simInterpolateFromRef.current.lat + (simInterpolateToRef.current.lat - simInterpolateFromRef.current.lat) * progress;
             const interpLng = simInterpolateFromRef.current.lng + (simInterpolateToRef.current.lng - simInterpolateFromRef.current.lng) * progress;
+
             if (setUserLocation) {
                 setUserLocation({ lat: interpLat, lng: interpLng });
+            }
+
+            const fromIdx = simFromIndexRef.current;
+            const toIdx = simToIndexRef.current;
+            const estimatedIdx = Math.min(
+                Math.round(fromIdx + progress * (toIdx - fromIdx)),
+                routeCoordinates.current.length - 2
+            );
+            const remainingCoords = routeCoordinates.current.slice(estimatedIdx + 1);
+            if (remainingCoords.length > 0) {
+                setRouteGeoJSON({
+                    type: 'Feature',
+                    properties: {},
+                    geometry: {
+                        type: 'LineString',
+                        coordinates: [[interpLng, interpLat] as [number, number], ...remainingCoords],
+                    },
+                });
             }
         }, 1000);
     }, [

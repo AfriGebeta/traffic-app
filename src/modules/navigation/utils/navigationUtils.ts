@@ -1,5 +1,78 @@
+import { decodePolyline } from '../../../shared/utils/polyline';
+
+export type TaxiSegmentInput = {
+    polyline: string;
+    type: string;
+    mode: string;
+};
+
+export type SegmentedRouteOutput = {
+    geoJSON: {
+        type: 'Feature';
+        properties: { segmentIndex: number; markerLat?: number; markerLng?: number };
+        geometry: { type: 'LineString'; coordinates: [number, number][] };
+    };
+    isWalking: boolean;
+    segmentIndex: number;
+};
+
+export const buildSegmentedRoutesFromPosition = (
+    taxiSegments: TaxiSegmentInput[],
+    closestIndex: number,
+    displayLat: number,
+    displayLng: number,
+    includeMarkerInProps = false
+): SegmentedRouteOutput[] => {
+    let coordCount = 0;
+    let currentSegIdx = 0;
+    let positionInSegment = closestIndex;
+
+    for (let i = 0; i < taxiSegments.length; i++) {
+        const decoded = decodePolyline(taxiSegments[i].polyline, 6);
+        if (closestIndex < coordCount + decoded.length) {
+            currentSegIdx = i;
+            positionInSegment = closestIndex - coordCount;
+            break;
+        }
+        coordCount += decoded.length;
+    }
+
+    return taxiSegments.map((seg, idx) => {
+        const decoded = decodePolyline(seg.polyline, 6);
+        let coordinates = decoded.map(([lat, lng]: [number, number]) => [lng, lat] as [number, number]);
+
+        if (idx === currentSegIdx) {
+            const remaining = coordinates.slice(positionInSegment + 1);
+            coordinates = [[displayLng, displayLat], ...remaining];
+        } else if (idx < currentSegIdx) {
+            coordinates = [];
+        }
+
+        const properties: { segmentIndex: number; markerLat?: number; markerLng?: number } = {
+            segmentIndex: idx,
+        };
+        if (includeMarkerInProps) {
+            properties.markerLat = displayLat;
+            properties.markerLng = displayLng;
+        }
+
+        return {
+            geoJSON: {
+                type: 'Feature' as const,
+                properties,
+                geometry: {
+                    type: 'LineString' as const,
+                    coordinates,
+                },
+            },
+            isWalking: seg.type === 'walk' || seg.mode === 'pedestrian',
+            segmentIndex: idx,
+        };
+    });
+};
+
 /**
- * Calculate bearing from one coordinate to another
+
  * @param from - Starting coordinate [longitude, latitude]
  * @param to - Ending coordinate [longitude, latitude]
  * @returns Bearing in degrees (0-360)

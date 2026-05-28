@@ -114,6 +114,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         simulateMovement,
         setSimulateMovement,
         currentInstruction,
+        nextInstruction,
         remainingDistance,
         remainingTime,
         isOffRoute,
@@ -902,6 +903,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                         simulateMovement={simulateMovement}
                         userLocation={userLocation}
                         currentInstruction={currentInstruction}
+                        nextInstruction={nextInstruction}
                         remainingDistance={remainingDistance}
                         remainingTime={remainingTime}
                         hasIncidentAlert={!!activeIncidentAlert}
@@ -909,8 +911,10 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     <NavigationOverlay
                         remainingTime={remainingTime}
                         remainingDistance={remainingDistance}
+                        destination={selectedDestination.name}
                         onReportPress={() => setShowReportOptions(true)}
                         onVoiceReportPress={() => showToast.info(t('coming-soon'), 'Voice Report')}
+                        onExitPress={handleStopNavigation}
                         isOffRoute={isOffRoute}
                         isRecalculating={isRecalculating}
                         onTestOffRoute={() => simulateOffRoute(setUserLocation)}

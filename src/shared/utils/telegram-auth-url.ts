@@ -230,6 +230,28 @@ export function extractIdTokenFromUrl(url: string): string | null {
     return null;
 }
 
+export function summarizeTelegramIdTokenClaims(idToken: string) {
+    try {
+        const segments = idToken.split('.');
+        if (segments.length < 2) {
+            return null;
+        }
+
+        const payload = JSON.parse(decodeBase64ToUtf8(segments[1])) as Record<string, unknown>;
+
+        return {
+            claimKeys: Object.keys(payload),
+            sub: payload.sub,
+            name: payload.name,
+            preferred_username: payload.preferred_username,
+            picture: payload.picture,
+            phone_number: payload.phone_number,
+        };
+    } catch {
+        return null;
+    }
+}
+
 export function extractTelegramAuthErrorFromUrl(url: string): string | null {
     const { queryParams } = Linking.parse(url);
 

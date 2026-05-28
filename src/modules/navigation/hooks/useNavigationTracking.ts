@@ -13,12 +13,13 @@ export const useNavigationTracking = ({
 }: UseNavigationTrackingProps) => {
     const navigationIdRef = useRef<string | null>(null);
     const trackingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const previousNavigatingRef = useRef<boolean>(false);
 
     useEffect(() => {
         if (isNavigating && userLocation) {
             if (!navigationIdRef.current) {
                 navigationIdRef.current = `nav_${Date.now()}`;
-                console.log('started tracking navigation:', navigationIdRef.current);
+                console.log('[Tracking] Started tracking navigation:', navigationIdRef.current);
             }
 
             trackingIntervalRef.current = setInterval(() => {
@@ -36,11 +37,21 @@ export const useNavigationTracking = ({
                 trackingIntervalRef.current = null;
             }
 
-            if (navigationIdRef.current) {
-                console.log('stopped tracking navigation:', navigationIdRef.current);
+            if (navigationIdRef.current && previousNavigatingRef.current) {
+                const navId = navigationIdRef.current;
+                console.log(' trackomg: navigation ended, syncing immediately:', navId);
+                navigationTrackingService.endNavigationAndSync(navId).then((success) => {
+                    if (success) {
+                        console.log('tracking: navigation data synced successfully');
+                    } else {
+                        console.log('track: Failed to sync navigation data');
+                    }
+                });
                 navigationIdRef.current = null;
             }
         }
+
+        previousNavigatingRef.current = isNavigating;
 
         return () => {
             if (trackingIntervalRef.current) {
@@ -57,8 +68,6 @@ export const useNavigationTracking = ({
         };
 
         const subscription = AppState.addEventListener('change', handleAppStateChange);
-
-        navigationTrackingService.checkAndSync();
 
         return () => {
             subscription.remove();

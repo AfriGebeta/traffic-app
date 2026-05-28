@@ -53,7 +53,7 @@ export default function TaxiNavigationScreen() {
     const [isOffRoute, setIsOffRoute] = useState(false);
     const [isRecalculating, setIsRecalculating] = useState(false);
 
-    
+
     const [navigationState, setNavigationState] = useState<{
         userLocation: { lat: number; lng: number } | null;
         segmentedRoutes: Array<{
@@ -284,7 +284,7 @@ export default function TaxiNavigationScreen() {
         totalRouteDuration: totalDuration.current,
         taxiSegments: activeRoute.segments,
         setSegmentedRoutes,
-        updateNavigationState, 
+        updateNavigationState,
     });
 
     const {
@@ -388,16 +388,21 @@ export default function TaxiNavigationScreen() {
 
                 {(isOffRoute || isRecalculating) && (
                     <View
-                        className="absolute right-4 rounded-2xl px-4 py-2 shadow-lg flex-row items-center border border-orange-500/50"
+                        className="absolute right-4 rounded-2xl px-4 py-2 shadow-lg flex-row items-center"
                         style={{
                             top: insets.top + 16,
-                            backgroundColor: 'rgba(249, 115, 22, 0.9)'
+                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.1,
+                            shadowRadius: 8,
+                            elevation: 4,
                         }}
                     >
                         {isRecalculating && (
-                            <ActivityIndicator size="small" color="white" style={{ marginRight: 8 }} />
+                            <ActivityIndicator size="small" color="#F97316" style={{ marginRight: 8 }} />
                         )}
-                        <Text className="text-white font-semibold">
+                        <Text className="text-orange-600 font-semibold">
                             {isRecalculating ? 'Recalculating...' : 'Off Route'}
                         </Text>
                     </View>
@@ -405,28 +410,32 @@ export default function TaxiNavigationScreen() {
 
                 <View className="absolute left-4 right-4" style={{ top: insets.top + 18 }}>
                     <View
-                        className="border border-white/10"
                         style={{
-                            backgroundColor: 'rgba(55, 65, 81, 0.75)',
+                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
                             borderTopLeftRadius: 24,
                             borderTopRightRadius: 24,
                             borderBottomLeftRadius: 24,
                             borderBottomRightRadius: 0,
                             padding: 16,
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.1,
+                            shadowRadius: 12,
+                            elevation: 5,
                         }}
                     >
                         <View className="flex-row items-start justify-between">
                             <View className="flex-1">
                                 <View className="flex-row items-baseline gap-2 mb-1">
-                                    <Text className="text-white text-2xl font-extrabold">
+                                    <Text className="text-gray-900 text-2xl font-extrabold">
                                         {formatDistance(remainingDistance)}
                                     </Text>
-                                    <Text className="text-gray-300 text-base font-bold">
+                                    <Text className="text-gray-600 text-base font-bold">
                                         • {formatTime(remainingTime)}
                                     </Text>
                                 </View>
 
-                                <Text className="text-gray-300 text-sm font-semibold mb-2" numberOfLines={1}>
+                                <Text className="text-gray-600 text-sm font-semibold mb-2" numberOfLines={1}>
                                     {endNode.name}
                                 </Text>
 
@@ -442,7 +451,7 @@ export default function TaxiNavigationScreen() {
                                                 color="white"
                                             />
                                         </View>
-                                        <Text className="text-gray-300 text-xs font-semibold ml-1.5">
+                                        <Text className="text-gray-700 text-xs font-semibold ml-1.5">
                                             {isOnTaxi ? 'On Taxi' : 'Walking'}
                                         </Text>
                                     </View>
@@ -456,24 +465,28 @@ export default function TaxiNavigationScreen() {
                             </View>
 
                             <TouchableOpacity
-                                className="bg-white/10 rounded-full p-3"
+                                className="bg-gray-100 rounded-full p-3"
                                 onPress={handleStopNavigation}
-                                style={{ borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.15)' }}
                             >
-                                <Ionicons name="close" size={24} color="#FFFFFF" />
+                                <Ionicons name="close" size={24} color="#374151" />
                             </TouchableOpacity>
                         </View>
 
                         {currentInstruction && (
                             <View className="absolute -bottom-10 -right-0.5">
                                 <View
-                                    className="px-3 py-2 flex-row items-center gap-2 border border-white/10"
+                                    className="px-3 py-2 flex-row items-center gap-2"
                                     style={{
-                                        backgroundColor: 'rgba(55, 65, 81, 0.75)',
+                                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
                                         borderTopLeftRadius: 0,
                                         borderTopRightRadius: 0,
                                         borderBottomLeftRadius: 12,
                                         borderBottomRightRadius: 12,
+                                        shadowColor: '#000',
+                                        shadowOffset: { width: 0, height: 2 },
+                                        shadowOpacity: 0.1,
+                                        shadowRadius: 8,
+                                        elevation: 4,
                                     }}
                                 >
                                     <Ionicons
@@ -481,7 +494,7 @@ export default function TaxiNavigationScreen() {
                                         size={18}
                                         color={colors.primary.main}
                                     />
-                                    <Text className="text-white text-xs font-bold" numberOfLines={1} style={{ maxWidth: 150 }}>
+                                    <Text className="text-gray-700 text-xs font-bold" numberOfLines={1} style={{ maxWidth: 150 }}>
                                         {currentInstruction}
                                     </Text>
                                 </View>
@@ -495,8 +508,15 @@ export default function TaxiNavigationScreen() {
                     style={{ bottom: insets.bottom + 24 }}
                 >
                     <View
-                        className="rounded-3xl p-4 border border-white/10"
-                        style={{ backgroundColor: 'rgba(55, 65, 81, 0.75)' }}
+                        className="rounded-3xl p-4"
+                        style={{
+                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.1,
+                            shadowRadius: 12,
+                            elevation: 5,
+                        }}
                     >
                         <View className="mb-3">
                             <SegmentProgressBar
@@ -506,11 +526,11 @@ export default function TaxiNavigationScreen() {
                         </View>
 
                         {currentSegment && (
-                            <View className="bg-white/10 rounded-xl p-3 border border-white/10">
-                                <Text className="text-gray-400 text-xs mb-1">
+                            <View className="bg-gray-50 rounded-xl p-3">
+                                <Text className="text-gray-500 text-xs mb-1">
                                     {isOnTaxi ? 'Exit at' : 'Heading to'}
                                 </Text>
-                                <Text className="text-white font-semibold">
+                                <Text className="text-gray-900 font-semibold">
                                     {currentSegment.toNode?.name || 'Destination'}
                                 </Text>
                             </View>
