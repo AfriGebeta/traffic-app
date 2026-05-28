@@ -2,9 +2,7 @@ import { useRef, useCallback } from 'react';
 import * as Location from 'expo-location';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 import { showToast } from '../../../shared/utils/toast';
-import { calculateBearing, calculateDistance } from '../utils/navigationUtils';
-import { decodePolyline } from '../../../shared/utils/polyline';
-
+import { buildSegmentedRoutesFromPosition, calculateBearing, calculateDistance } from '../utils/navigationUtils';
 interface UseLocationTrackingProps {
     routeCoordinates: React.MutableRefObject<[number, number][]>;
     isNavigatingRef: React.MutableRefObject<boolean>;
@@ -278,54 +276,13 @@ export const useLocationTracking = ({
 
 
                             if (taxiSegments && setSegmentedRoutes) {
-
-                                let coordCount = 0;
-                                let currentSegIdx = 0;
-                                let positionInSegment = closestIndex;
-
-                                for (let i = 0; i < taxiSegments.length; i++) {
-                                    const decoded = decodePolyline(taxiSegments[i].polyline, 6);
-                                    if (closestIndex < coordCount + decoded.length) {
-                                        currentSegIdx = i;
-                                        positionInSegment = closestIndex - coordCount;
-                                        break;
-                                    }
-                                    coordCount += decoded.length;
-                                }
-
-
-                                const updatedSegments = taxiSegments.map((seg, idx) => {
-                                    const decoded = decodePolyline(seg.polyline, 6);
-                                    let coordinates = decoded.map(([lat, lng]: [number, number]) => [lng, lat] as [number, number]);
-
-
-                                    if (idx === currentSegIdx) {
-                                        const remaining = coordinates.slice(positionInSegment + 1);
-
-                                        coordinates = [[displayLng, displayLat], ...remaining];
-                                    } else if (idx < currentSegIdx) {
-                                        coordinates = [];
-                                    }
-
-                                    return {
-                                        geoJSON: {
-                                            type: 'Feature' as const,
-                                            properties: {
-                                                segmentIndex: idx,
-                                                
-                                                markerLat: displayLat,
-                                                markerLng: displayLng,
-                                            },
-                                            geometry: {
-                                                type: 'LineString' as const,
-                                                coordinates
-                                            }
-                                        },
-                                        isWalking: seg.type === 'walk' || seg.mode === 'pedestrian',
-                                        segmentIndex: idx
-                                    };
-                                });
-
+                                const updatedSegments = buildSegmentedRoutesFromPosition(
+                                    taxiSegments,
+                                    closestIndex,
+                                    displayLat,
+                                    displayLng,
+                                    true
+                                );
 
                                 if (updateNavigationState) {
                                     updateNavigationState({ lat: displayLat, lng: displayLng }, updatedSegments);
@@ -445,6 +402,41 @@ export const useLocationTracking = ({
                     setUserLocation({ lat: estimatedLat, lng: estimatedLng });
                 }
 
+                let drAccumulated = 0;
+                let drIndex = lastClosestIndex.current;
+                while (drIndex < routeCoordinates.current.length - 1 && drAccumulated < distanceMoved) {
+                    const [lng1, lat1] = routeCoordinates.current[drIndex];
+                    const [lng2, lat2] = routeCoordinates.current[drIndex + 1];
+                    drAccumulated += calculateDistance(lat1, lng1, lat2, lng2);
+                    drIndex++;
+                }
+
+                if (taxiSegments && setSegmentedRoutes) {
+                    const updatedSegments = buildSegmentedRoutesFromPosition(
+                        taxiSegments,
+                        drIndex,
+                        estimatedLat,
+                        estimatedLng,
+                        true
+                    );
+                    if (updateNavigationState) {
+                        updateNavigationState({ lat: estimatedLat, lng: estimatedLng }, updatedSegments);
+                    } else {
+                        setSegmentedRoutes(updatedSegments);
+                    }
+                } else {
+                    const drRemaining = routeCoordinates.current.slice(drIndex + 1);
+                    if (drRemaining.length > 0) {
+                        setRouteGeoJSON({
+                            type: 'Feature',
+                            properties: {},
+                            geometry: {
+                                type: 'LineString',
+                                coordinates: [[estimatedLng, estimatedLat] as [number, number], ...drRemaining],
+                            },
+                        });
+                    }
+                }
 
                 if (routeManeuversRef && currentManeuverIndexRef) {
                     const maneuvers = routeManeuversRef.current;
@@ -482,6 +474,9 @@ export const useLocationTracking = ({
 
         totalRouteDistance,
         totalRouteDuration,
+        taxiSegments,
+        setSegmentedRoutes,
+        updateNavigationState,
     ]);
 
     return {

@@ -2,6 +2,8 @@ export interface User {
     id: string;
     phoneNumber: string;
     name: string;
+    username?: string;
+    profileImage?: string | null;
     password?: string;
     points: number;
     createdAt: string;

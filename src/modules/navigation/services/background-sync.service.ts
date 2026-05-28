@@ -6,7 +6,7 @@ const BACKGROUND_SYNC_TASK = 'navigation-background-sync';
 
 TaskManager.defineTask(BACKGROUND_SYNC_TASK, async () => {
     try {
-        console.log('[bg: Running background sync task...');
+        console.log('bg: Running background sync task...');
         await navigationTrackingService.checkAndSync();
 
         console.log('bg: Background sync completed');
@@ -29,12 +29,12 @@ export const backgroundSyncService = {
             }
 
             await BackgroundFetch.registerTaskAsync(BACKGROUND_SYNC_TASK, {
-                minimumInterval: 60 * 60 * 24,
+                minimumInterval: 60 * 15,
                 stopOnTerminate: false,
                 startOnBoot: true,
             });
 
-            console.log('[bg] background sync registered successfully');
+            console.log('bg: background sync registered successfully (15 min intervals as fallback)');
         } catch (error) {
             console.error('[bg]: failed to register background sync:', error);
         }
