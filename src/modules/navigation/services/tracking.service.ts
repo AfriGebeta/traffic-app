@@ -52,7 +52,7 @@ class NavigationTrackingService {
         try {
             await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(navigations));
         } catch (error) {
-           
+
         }
     }
 
@@ -71,16 +71,9 @@ class NavigationTrackingService {
 
     async shouldSync(): Promise<boolean> {
         try {
-            const lastSync = await AsyncStorage.getItem(LAST_SYNC_KEY);
-            if (!lastSync) {
-                return true;
-            }
-
-            const lastSyncTime = parseInt(lastSync, 10);
-            const now = Date.now();
-            const hoursSinceSync = (now - lastSyncTime) / (1000 * 60 * 60);
-
-            return hoursSinceSync >= 24;
+            await this.flushPendingPoints();
+            const navigations = await this.getStoredNavigations();
+            return navigations.length > 0;
         } catch (error) {
             return false;
         }
@@ -134,6 +127,17 @@ class NavigationTrackingService {
         const shouldSync = await this.shouldSync();
         if (shouldSync) {
             await this.syncNavigationHistory();
+        }
+    }
+
+    async endNavigationAndSync(navigationId: string): Promise<boolean> {
+        try {
+            await this.flushPendingPoints();
+            console.log(`track: ending navigation ${navigationId} and syncing immediately`);
+            return await this.syncNavigationHistory();
+        } catch (error) {
+            console.error('tracking: Failed to end navigation and sync:', error);
+            return false;
         }
     }
 }
