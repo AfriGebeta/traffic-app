@@ -104,7 +104,7 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                             onPress={onReportPress}
                         >
                             <Text className="text-gray-700 text-xs font-semibold">
-                                {t('share-what-you-see') || 'Report What You See'}
+                                {t('share-what-you-see')}
                             </Text>
                         </TouchableOpacity>
 

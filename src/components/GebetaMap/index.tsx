@@ -203,14 +203,9 @@ const AnimatedRouteSource = memo(({
 }) => {
     const animatedGeoJSON = useMemo(() => {
         if (!routeGeoJSON?.geometry?.coordinates?.length) return routeGeoJSON;
-        return {
-            ...routeGeoJSON,
-            geometry: {
-                ...routeGeoJSON.geometry,
-                coordinates: [[animatedLng, animatedLat], ...routeGeoJSON.geometry.coordinates],
-            },
-        };
-    }, [routeGeoJSON, animatedLat, animatedLng]);
+
+        return routeGeoJSON;
+    }, [routeGeoJSON]);
 
     if (!animatedGeoJSON) return null;
 
@@ -350,7 +345,7 @@ const AnimatedNavLayer = memo(({
 
         const tick = () => {
             const now = Date.now();
-            const dt = Math.min((now - lastTime) / 1000, 0.05); 
+            const dt = Math.min((now - lastTime) / 1000, 0.05);
             lastTime = now;
 
             const target = animToRef.current;
@@ -484,7 +479,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         useEffect(() => {
             const preloadImages = async () => {
                 try {
-                        await Promise.all([
+                    await Promise.all([
                         Image.prefetch(Image.resolveAssetSource(MAPPIN_IMAGE).uri),
                         Image.prefetch(Image.resolveAssetSource(PIN_NORMAL_IMAGE).uri),
                         Image.prefetch(Image.resolveAssetSource(RED_PIN_IMAGE).uri),
@@ -871,11 +866,11 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             {...(externalCameraControl
                                 ? {}
                                 : {
-                                      centerCoordinate: center,
-                                      zoomLevel: zoom ?? 15,
-                                      animationMode: 'moveTo' as const,
-                                      animationDuration: 0,
-                                  })}
+                                    centerCoordinate: center,
+                                    zoomLevel: zoom ?? 15,
+                                    animationMode: 'moveTo' as const,
+                                    animationDuration: 0,
+                                })}
                             pitch={0}
                             heading={0}
                             maxBounds={undefined}

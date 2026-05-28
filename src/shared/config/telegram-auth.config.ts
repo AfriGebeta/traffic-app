@@ -286,6 +286,27 @@ export const TELEGRAM_WEBVIEW_INJECTED_JS = `
   );
 
   scanLocation();
+
+  // auto-click "open telegram" button after page loads
+  function autoClickOpenTelegram() {
+    try {
+      // Wait a bit for the page to fully render
+      setTimeout(function() {
+        // Try multiple selectors that Telegram might use
+        var button = document.querySelector('button[class*="open"]') ||
+                     document.querySelector('a[href^="tg://"]') ||
+                     document.querySelector('a[href^="telegram://"]') ||
+                     document.querySelector('button') ||
+                     document.querySelector('a[class*="button"]');
+        
+        if (button) {
+          button.click();
+        }
+      }, 1500);
+    } catch (e) {}
+  }
+
+  autoClickOpenTelegram();
 })();
 true;
 `;
