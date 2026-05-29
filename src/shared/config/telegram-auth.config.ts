@@ -91,13 +91,13 @@ export function isTelegramAuthCallbackUrl(url: string): boolean {
         return true;
     }
 
-    const config = getTelegramAuthConfig();
+  const config = getTelegramAuthConfig();
 
-    return (
-        url.startsWith('trafficapp://') ||
-        url.includes('-login.tg.dev') ||
-        url.includes(new URL(config.webRedirectUri).host)
-    );
+  return (
+    url.startsWith('trafficapp://') ||
+    url.includes('-login.tg.dev') ||
+    url.includes(new URL(config.webRedirectUri).host)
+  );
 }
 
 export const TELEGRAM_WEBVIEW_INJECTED_JS = `
@@ -290,17 +290,23 @@ export const TELEGRAM_WEBVIEW_INJECTED_JS = `
   // auto-click "open telegram" button after page loads
   function autoClickOpenTelegram() {
     try {
-      // Wait a bit for the page to fully render
       setTimeout(function() {
-        // Try multiple selectors that Telegram might use
-        var button = document.querySelector('button[class*="open"]') ||
-                     document.querySelector('a[href^="tg://"]') ||
-                     document.querySelector('a[href^="telegram://"]') ||
-                     document.querySelector('button') ||
-                     document.querySelector('a[class*="button"]');
+
+        var buttons = document.querySelectorAll('button, a, div[role="button"]');
+        var openTelegramButton = null;
         
-        if (button) {
-          button.click();
+        for (var i = 0; i < buttons.length; i++) {
+          var btn = buttons[i];
+          var text = (btn.textContent || btn.innerText || '').trim().toLowerCase();
+          
+          if (text.indexOf('open telegram') !== -1 || text === 'open telegram') {
+            openTelegramButton = btn;
+            break;
+          }
+        }
+        
+        if (openTelegramButton) {
+          openTelegramButton.click();
         }
       }, 1500);
     } catch (e) {}

@@ -102,7 +102,7 @@ export const useLocationTracking = ({
         try {
             const { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') {
-                showToast.error('Permission Denied', 'Location permission is required for navigation');
+                showToast.error('Location permission is required for navigation', 'Permission Denied');
                 return;
             }
 
@@ -111,24 +111,63 @@ export const useLocationTracking = ({
             }
 
             locationCallbackRef.current = (location: Location.LocationObject) => {
-                    const { latitude, longitude, heading, speed } = location.coords;
+                const { latitude, longitude, heading, speed } = location.coords;
 
-                    let displayLat = latitude;
-                    let displayLng = longitude;
-                    let closestIndex = lastClosestIndex.current;
-                    let distanceFromRoute = Infinity;
+                let displayLat = latitude;
+                let displayLng = longitude;
+                let closestIndex = lastClosestIndex.current;
+                let distanceFromRoute = Infinity;
 
-                    if (isNavigatingRef.current && routeCoordinates.current.length > 0) {
+                if (isNavigatingRef.current && routeCoordinates.current.length > 0) {
 
-                        let minDistance = Infinity;
-                        let snappedLat = latitude;
-                        let snappedLng = longitude;
+                    let minDistance = Infinity;
+                    let snappedLat = latitude;
+                    let snappedLng = longitude;
 
-                        const SEARCH_WINDOW = 50;
-                        const startIndex = Math.max(0, lastClosestIndex.current - SEARCH_WINDOW);
-                        const endIndex = Math.min(routeCoordinates.current.length - 1, lastClosestIndex.current + SEARCH_WINDOW);
+                    const SEARCH_WINDOW = 50;
+                    const startIndex = Math.max(0, lastClosestIndex.current - SEARCH_WINDOW);
+                    const endIndex = Math.min(routeCoordinates.current.length - 1, lastClosestIndex.current + SEARCH_WINDOW);
 
-                        for (let i = startIndex; i < endIndex; i++) {
+                    for (let i = startIndex; i < endIndex; i++) {
+                        const [lng1, lat1] = routeCoordinates.current[i];
+                        const [lng2, lat2] = routeCoordinates.current[i + 1];
+
+                        const dx = lng2 - lng1;
+                        const dy = lat2 - lat1;
+
+                        if (dx === 0 && dy === 0) {
+                            const dist = calculateDistance(latitude, longitude, lat1, lng1);
+                            if (dist < minDistance) {
+                                minDistance = dist;
+                                closestIndex = i;
+                                snappedLat = lat1;
+                                snappedLng = lng1;
+                            }
+
+                            continue;
+                        }
+                        const t = Math.max(0, Math.min(1,
+                            ((longitude - lng1) * dx + (latitude - lat1) * dy) / (dx * dx + dy * dy)
+                        ));
+
+                        const projLat = lat1 + t * dy;
+                        const projLng = lng1 + t * dx;
+
+                        const dist = calculateDistance(latitude, longitude, projLat, projLng);
+
+                        if (dist < minDistance) {
+                            minDistance = dist;
+                            closestIndex = i;
+                            snappedLat = projLat;
+                            snappedLng = projLng;
+                        }
+
+                    }
+
+                    if (minDistance > 100) {
+                        for (let i = 0; i < routeCoordinates.current.length - 1; i++) {
+                            if (i >= startIndex && i < endIndex) continue;
+
                             const [lng1, lat1] = routeCoordinates.current[i];
                             const [lng2, lat2] = routeCoordinates.current[i + 1];
 
@@ -143,16 +182,15 @@ export const useLocationTracking = ({
                                     snappedLat = lat1;
                                     snappedLng = lng1;
                                 }
-
                                 continue;
                             }
+
                             const t = Math.max(0, Math.min(1,
                                 ((longitude - lng1) * dx + (latitude - lat1) * dy) / (dx * dx + dy * dy)
                             ));
 
                             const projLat = lat1 + t * dy;
                             const projLng = lng1 + t * dx;
-
                             const dist = calculateDistance(latitude, longitude, projLat, projLng);
 
                             if (dist < minDistance) {
@@ -161,191 +199,152 @@ export const useLocationTracking = ({
                                 snappedLat = projLat;
                                 snappedLng = projLng;
                             }
-
                         }
+                    }
+                    lastClosestIndex.current = closestIndex;
+                    distanceFromRoute = minDistance;
 
-                        if (minDistance > 100) {
-                            for (let i = 0; i < routeCoordinates.current.length - 1; i++) {
-                                if (i >= startIndex && i < endIndex) continue;
+                    displayLat = snappedLat;
+                    displayLng = snappedLng;
 
-                                const [lng1, lat1] = routeCoordinates.current[i];
-                                const [lng2, lat2] = routeCoordinates.current[i + 1];
+                    const OFF_ROUTE_THRESHOLD = 80;
+                    const OFF_ROUTE_DELAY = 3000;
 
-                                const dx = lng2 - lng1;
-                                const dy = lat2 - lat1;
+                    if (distanceFromRoute > OFF_ROUTE_THRESHOLD) {
+                        lastOffRoutePosition.current = { lat: latitude, lng: longitude };
 
-                                if (dx === 0 && dy === 0) {
-                                    const dist = calculateDistance(latitude, longitude, lat1, lng1);
-                                    if (dist < minDistance) {
-                                        minDistance = dist;
-                                        closestIndex = i;
-                                        snappedLat = lat1;
-                                        snappedLng = lng1;
-                                    }
-                                    continue;
-                                }
+                        if (!isOffRouteRef.current) {
 
-                                const t = Math.max(0, Math.min(1,
-                                    ((longitude - lng1) * dx + (latitude - lat1) * dy) / (dx * dx + dy * dy)
-                                ));
-
-                                const projLat = lat1 + t * dy;
-                                const projLng = lng1 + t * dx;
-                                const dist = calculateDistance(latitude, longitude, projLat, projLng);
-
-                                if (dist < minDistance) {
-                                    minDistance = dist;
-                                    closestIndex = i;
-                                    snappedLat = projLat;
-                                    snappedLng = projLng;
-                                }
-                            }
-                        }
-                        lastClosestIndex.current = closestIndex;
-                        distanceFromRoute = minDistance;
-
-                        displayLat = snappedLat;
-                        displayLng = snappedLng;
-
-                        const OFF_ROUTE_THRESHOLD = 80;
-                        const OFF_ROUTE_DELAY = 3000;
-
-                        if (distanceFromRoute > OFF_ROUTE_THRESHOLD) {
-                            lastOffRoutePosition.current = { lat: latitude, lng: longitude };
-
-                            if (!isOffRouteRef.current) {
-
-                                isOffRouteRef.current = true;
-                                offRouteStartTime.current = Date.now();
-                                setIsOffRoute(true);
-                                showToast.info('Off Route', `You are ${distanceFromRoute.toFixed(0)}m off the planned route`);
+                            isOffRouteRef.current = true;
+                            offRouteStartTime.current = Date.now();
+                            setIsOffRoute(true);
+                            showToast.info('Off Route', `You are ${distanceFromRoute.toFixed(0)}m off the planned route`);
 
 
-                                if (rerouteTimeout.current) {
-                                    clearTimeout(rerouteTimeout.current);
-                                }
-                            } else {
-
-                                const timeOffRoute = Date.now() - (offRouteStartTime.current || 0);
-
-                                if (timeOffRoute >= OFF_ROUTE_DELAY && !rerouteTimeout.current) {
-
-                                    console.log('triggering recalculation - offroute for', timeOffRoute, 'ms');
-                                    setIsRecalculating(true);
-
-                                    rerouteTimeout.current = setTimeout(() => {
-                                        if (isNavigatingRef.current && lastOffRoutePosition.current) {
-                                            recalculateRoute(lastOffRoutePosition.current);
-                                        }
-                                        rerouteTimeout.current = null;
-                                    }, 100);
-                                }
+                            if (rerouteTimeout.current) {
+                                clearTimeout(rerouteTimeout.current);
                             }
                         } else {
-                            if (isOffRouteRef.current) {
 
-                                isOffRouteRef.current = false;
-                                offRouteStartTime.current = null;
-                                lastOffRoutePosition.current = null;
-                                setIsOffRoute(false);
-                                setIsRecalculating(false);
+                            const timeOffRoute = Date.now() - (offRouteStartTime.current || 0);
 
-                                if (rerouteTimeout.current) {
-                                    clearTimeout(rerouteTimeout.current);
+                            if (timeOffRoute >= OFF_ROUTE_DELAY && !rerouteTimeout.current) {
+
+                                console.log('triggering recalculation - offroute for', timeOffRoute, 'ms');
+                                setIsRecalculating(true);
+
+                                rerouteTimeout.current = setTimeout(() => {
+                                    if (isNavigatingRef.current && lastOffRoutePosition.current) {
+                                        recalculateRoute(lastOffRoutePosition.current);
+                                    }
                                     rerouteTimeout.current = null;
-                                }
-
-                                showToast.success('back on Route', 'you are back on the planned route');
+                                }, 100);
                             }
-                        }
-
-                        if (closestIndex < routeCoordinates.current.length - 1) {
-                            const currentPoint: [number, number] = [displayLng, displayLat];
-                            const nextPoint = routeCoordinates.current[closestIndex + 1];
-                            const bearing = calculateBearing(currentPoint, nextPoint);
-                            setCurrentHeading(bearing);
-                            lastHeadingForDRRef.current = bearing;
-                        } else if (heading !== null && heading !== undefined) {
-                            setCurrentHeading(heading);
-                            lastHeadingForDRRef.current = heading;
-                        }
-
-                        const remainingCoords = routeCoordinates.current.slice(closestIndex + 1);
-                        if (remainingCoords.length > 0) {
-                            const routeWithSnappedStart = [[displayLng, displayLat] as [number, number], ...remainingCoords];
-
-
-                            if (taxiSegments && setSegmentedRoutes) {
-                                const updatedSegments = buildSegmentedRoutesFromPosition(
-                                    taxiSegments,
-                                    closestIndex,
-                                    displayLat,
-                                    displayLng,
-                                    true
-                                );
-
-                                if (updateNavigationState) {
-                                    updateNavigationState({ lat: displayLat, lng: displayLng }, updatedSegments);
-                                } else {
-                                    setSegmentedRoutes(updatedSegments);
-                                    if (setUserLocation) {
-                                        setUserLocation({ lat: displayLat, lng: displayLng });
-                                    }
-                                }
-                            } else {
-
-                                const remainingGeoJSON = {
-                                    type: 'Feature',
-                                    properties: {},
-                                    geometry: {
-                                        type: 'LineString',
-                                        coordinates: routeWithSnappedStart,
-                                    }
-                                };
-
-                                if (setUserLocation) {
-                                    setUserLocation({ lat: displayLat, lng: displayLng });
-                                }
-                                setRouteGeoJSON(remainingGeoJSON);
-                            }
-
-                            let totalDistance = 0;
-                            for (let i = 0; i < routeWithSnappedStart.length - 1; i++) {
-                                const [lng1, lat1] = routeWithSnappedStart[i];
-                                const [lng2, lat2] = routeWithSnappedStart[i + 1];
-
-                                const R = 6371000;
-                                const dLat = (lat2 - lat1) * Math.PI / 180;
-                                const dLng = (lng2 - lng1) * Math.PI / 180;
-                                const a =
-                                    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                                    Math.cos(lat1 * Math.PI / 180) *
-                                    Math.cos(lat2 * Math.PI / 180) *
-                                    Math.sin(dLng / 2) *
-                                    Math.sin(dLng / 2);
-                                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                                totalDistance += R * c;
-                            }
-
-                            setRemainingDistance(totalDistance);
-
-                            const averageSpeedMps = totalRouteDistance > 0 && totalRouteDuration > 0
-                                ? totalRouteDistance / totalRouteDuration
-                                : (25 * 1000) / 3600;
-                            const estimatedTime = totalDistance / averageSpeedMps;
-                            setRemainingTime(estimatedTime);
                         }
                     } else {
-                        if (setUserLocation) {
-                            setUserLocation({ lat: displayLat, lng: displayLng });
+                        if (isOffRouteRef.current) {
+
+                            isOffRouteRef.current = false;
+                            offRouteStartTime.current = null;
+                            lastOffRoutePosition.current = null;
+                            setIsOffRoute(false);
+                            setIsRecalculating(false);
+
+                            if (rerouteTimeout.current) {
+                                clearTimeout(rerouteTimeout.current);
+                                rerouteTimeout.current = null;
+                            }
+
+                            showToast.success('back on Route', 'you are back on the planned route');
                         }
                     }
 
-                    lastSnappedPositionRef.current = { lat: displayLat, lng: displayLng };
-                    lastSpeedRef.current = speed ?? 0;
-                    lastFixTimeRef.current = Date.now();
+                    if (closestIndex < routeCoordinates.current.length - 1) {
+                        const currentPoint: [number, number] = [displayLng, displayLat];
+                        const nextPoint = routeCoordinates.current[closestIndex + 1];
+                        const bearing = calculateBearing(currentPoint, nextPoint);
+                        setCurrentHeading(bearing);
+                        lastHeadingForDRRef.current = bearing;
+                    } else if (heading !== null && heading !== undefined) {
+                        setCurrentHeading(heading);
+                        lastHeadingForDRRef.current = heading;
+                    }
 
-                    updateInstructionBasedOnPosition(displayLat, displayLng);
+                    const remainingCoords = routeCoordinates.current.slice(closestIndex + 1);
+                    if (remainingCoords.length > 0) {
+                        const routeFromMarker = [[displayLng, displayLat] as [number, number], ...remainingCoords];
+
+                        if (taxiSegments && setSegmentedRoutes) {
+                            const updatedSegments = buildSegmentedRoutesFromPosition(
+                                taxiSegments,
+                                closestIndex,
+                                displayLat,
+                                displayLng,
+                                true
+                            );
+
+                            if (updateNavigationState) {
+                                updateNavigationState({ lat: displayLat, lng: displayLng }, updatedSegments);
+                            } else {
+                                setSegmentedRoutes(updatedSegments);
+                                if (setUserLocation) {
+                                    setUserLocation({ lat: displayLat, lng: displayLng });
+                                }
+                            }
+                        } else {
+
+                            const remainingGeoJSON = {
+                                type: 'Feature',
+                                properties: {},
+                                geometry: {
+                                    type: 'LineString',
+                                    coordinates: routeFromMarker,
+                                }
+                            };
+
+                            if (setUserLocation) {
+                                setUserLocation({ lat: displayLat, lng: displayLng });
+                            }
+                            setRouteGeoJSON(remainingGeoJSON);
+                        }
+
+                        let totalDistance = 0;
+                        for (let i = 0; i < routeFromMarker.length - 1; i++) {
+                            const [lng1, lat1] = routeFromMarker[i];
+                            const [lng2, lat2] = routeFromMarker[i + 1];
+
+                            const R = 6371000;
+                            const dLat = (lat2 - lat1) * Math.PI / 180;
+                            const dLng = (lng2 - lng1) * Math.PI / 180;
+                            const a =
+                                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                                Math.cos(lat1 * Math.PI / 180) *
+                                Math.cos(lat2 * Math.PI / 180) *
+                                Math.sin(dLng / 2) *
+                                Math.sin(dLng / 2);
+                            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                            totalDistance += R * c;
+                        }
+
+                        setRemainingDistance(totalDistance);
+
+                        const averageSpeedMps = totalRouteDistance > 0 && totalRouteDuration > 0
+                            ? totalRouteDistance / totalRouteDuration
+                            : (25 * 1000) / 3600;
+                        const estimatedTime = totalDistance / averageSpeedMps;
+                        setRemainingTime(estimatedTime);
+                    }
+                } else {
+                    if (setUserLocation) {
+                        setUserLocation({ lat: displayLat, lng: displayLng });
+                    }
+                }
+
+                lastSnappedPositionRef.current = { lat: displayLat, lng: displayLng };
+                lastSpeedRef.current = speed ?? 0;
+                lastFixTimeRef.current = Date.now();
+
+                updateInstructionBasedOnPosition(displayLat, displayLng);
             };
 
             const restartAtInterval = async (newInterval: number) => {
@@ -364,7 +363,8 @@ export const useLocationTracking = ({
                         },
                         (loc) => locationCallbackRef.current?.(loc)
                     );
-                } catch {}
+                } catch (error) {
+                }
             };
 
             locationSubscription.current = await Location.watchPositionAsync(
@@ -427,12 +427,13 @@ export const useLocationTracking = ({
                 } else {
                     const drRemaining = routeCoordinates.current.slice(drIndex + 1);
                     if (drRemaining.length > 0) {
+                        const routeFromEstimated = [[estimatedLng, estimatedLat] as [number, number], ...drRemaining];
                         setRouteGeoJSON({
                             type: 'Feature',
                             properties: {},
                             geometry: {
                                 type: 'LineString',
-                                coordinates: [[estimatedLng, estimatedLat] as [number, number], ...drRemaining],
+                                coordinates: routeFromEstimated,
                             },
                         });
                     }
@@ -458,7 +459,7 @@ export const useLocationTracking = ({
             }, 1000);
         } catch (error) {
             console.error('Error starting location tracking:', error);
-            showToast.error('Location Error', 'Could not start location tracking');
+            showToast.error('Could not start location tracking', 'Location Error');
         }
     }, [
         isOffRoute,
