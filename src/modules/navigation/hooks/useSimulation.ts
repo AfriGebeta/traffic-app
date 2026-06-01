@@ -138,7 +138,7 @@ export const useSimulation = ({
 
             updateInstructionBasedOnPosition(inaccurateLat, inaccurateLng);
 
-            let displayLat = lat;  
+            let displayLat = lat;
             let displayLng = lng;
             let closestIndex = currentRouteIndex.current;
 
@@ -193,7 +193,7 @@ export const useSimulation = ({
 
             const avgSpeedMps = totalRouteDistance > 0 && totalRouteDuration > 0
                 ? totalRouteDistance / totalRouteDuration
-                : 11.1; 
+                : 11.1;
 
             const targetAdvanceMeters = avgSpeedMps * 5;
 
@@ -328,7 +328,7 @@ export const useSimulation = ({
                 setRemainingDistance(0);
                 setRemainingTime(0);
             }
-        }, 1000); 
+        }, 1000);
     }, [
         routeCoordinates,
         isNavigatingRef,

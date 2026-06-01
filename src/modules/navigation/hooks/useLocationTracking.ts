@@ -78,7 +78,7 @@ export const useLocationTracking = ({
     const lastFixTimeRef = useRef<number>(0);
     const currentGPSIntervalRef = useRef<number>(5000);
     const locationCallbackRef = useRef<((location: Location.LocationObject) => void) | null>(null);
-    const lastRenderedMarkerRef = useRef<{ lat: number; lng: number } | null>(null); 
+    const lastRenderedMarkerRef = useRef<{ lat: number; lng: number } | null>(null);
 
     const stopLocationTracking = useCallback(() => {
         if (locationSubscription.current) {
@@ -215,7 +215,7 @@ export const useLocationTracking = ({
                     displayLat = snappedLat;
                     displayLng = snappedLng;
 
-                    const OFF_ROUTE_THRESHOLD = 50; 
+                    const OFF_ROUTE_THRESHOLD = 50;
                     const OFF_ROUTE_DELAY = 2000;
 
                     if (distanceFromRoute > OFF_ROUTE_THRESHOLD) {
