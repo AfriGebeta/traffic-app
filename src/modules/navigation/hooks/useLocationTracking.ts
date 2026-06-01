@@ -78,6 +78,7 @@ export const useLocationTracking = ({
     const lastFixTimeRef = useRef<number>(0);
     const currentGPSIntervalRef = useRef<number>(5000);
     const locationCallbackRef = useRef<((location: Location.LocationObject) => void) | null>(null);
+    const lastRenderedMarkerRef = useRef<{ lat: number; lng: number } | null>(null); 
 
     const stopLocationTracking = useCallback(() => {
         if (locationSubscription.current) {
@@ -201,14 +202,21 @@ export const useLocationTracking = ({
                             }
                         }
                     }
-                    lastClosestIndex.current = closestIndex;
+
+                    if (closestIndex >= lastClosestIndex.current) {
+                        lastClosestIndex.current = closestIndex;
+                    } else {
+
+                        closestIndex = lastClosestIndex.current;
+                    }
+
                     distanceFromRoute = minDistance;
 
                     displayLat = snappedLat;
                     displayLng = snappedLng;
 
-                    const OFF_ROUTE_THRESHOLD = 80;
-                    const OFF_ROUTE_DELAY = 3000;
+                    const OFF_ROUTE_THRESHOLD = 50; 
+                    const OFF_ROUTE_DELAY = 2000;
 
                     if (distanceFromRoute > OFF_ROUTE_THRESHOLD) {
                         lastOffRoutePosition.current = { lat: latitude, lng: longitude };
@@ -283,6 +291,8 @@ export const useLocationTracking = ({
                                 true
                             );
 
+                            lastRenderedMarkerRef.current = { lat: displayLat, lng: displayLng };
+
                             if (updateNavigationState) {
                                 updateNavigationState({ lat: displayLat, lng: displayLng }, updatedSegments);
                             } else {
@@ -301,6 +311,8 @@ export const useLocationTracking = ({
                                     coordinates: routeFromMarker,
                                 }
                             };
+
+                            lastRenderedMarkerRef.current = { lat: displayLat, lng: displayLng };
 
                             if (setUserLocation) {
                                 setUserLocation({ lat: displayLat, lng: displayLng });
@@ -398,46 +410,14 @@ export const useLocationTracking = ({
                 const estimatedLng = lng + (distanceMoved / (111320 * Math.cos(lat * Math.PI / 180))) * Math.sin(headingRad);
 
                 updateInstructionBasedOnPosition(estimatedLat, estimatedLng);
+
+                lastRenderedMarkerRef.current = { lat: estimatedLat, lng: estimatedLng };
+
                 if (setUserLocation) {
                     setUserLocation({ lat: estimatedLat, lng: estimatedLng });
                 }
 
-                let drAccumulated = 0;
-                let drIndex = lastClosestIndex.current;
-                while (drIndex < routeCoordinates.current.length - 1 && drAccumulated < distanceMoved) {
-                    const [lng1, lat1] = routeCoordinates.current[drIndex];
-                    const [lng2, lat2] = routeCoordinates.current[drIndex + 1];
-                    drAccumulated += calculateDistance(lat1, lng1, lat2, lng2);
-                    drIndex++;
-                }
 
-                if (taxiSegments && setSegmentedRoutes) {
-                    const updatedSegments = buildSegmentedRoutesFromPosition(
-                        taxiSegments,
-                        drIndex,
-                        estimatedLat,
-                        estimatedLng,
-                        true
-                    );
-                    if (updateNavigationState) {
-                        updateNavigationState({ lat: estimatedLat, lng: estimatedLng }, updatedSegments);
-                    } else {
-                        setSegmentedRoutes(updatedSegments);
-                    }
-                } else {
-                    const drRemaining = routeCoordinates.current.slice(drIndex + 1);
-                    if (drRemaining.length > 0) {
-                        const routeFromEstimated = [[estimatedLng, estimatedLat] as [number, number], ...drRemaining];
-                        setRouteGeoJSON({
-                            type: 'Feature',
-                            properties: {},
-                            geometry: {
-                                type: 'LineString',
-                                coordinates: routeFromEstimated,
-                            },
-                        });
-                    }
-                }
 
                 if (routeManeuversRef && currentManeuverIndexRef) {
                     const maneuvers = routeManeuversRef.current;

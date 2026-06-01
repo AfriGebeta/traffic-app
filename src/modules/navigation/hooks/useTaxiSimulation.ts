@@ -26,6 +26,14 @@ interface UseTaxiSimulationProps {
         isWalking: boolean;
         segmentIndex: number;
     }>) => void;
+    updateNavigationState?: (
+        location: { lat: number; lng: number },
+        routes: Array<{
+            geoJSON: any;
+            isWalking: boolean;
+            segmentIndex: number;
+        }>
+    ) => void;
 }
 
 export const useTaxiSimulation = ({
@@ -43,6 +51,7 @@ export const useTaxiSimulation = ({
     totalRouteDuration,
     taxiSegments,
     setSegmentedRoutes,
+    updateNavigationState,
 }: UseTaxiSimulationProps) => {
     const simulationInterval = useRef<ReturnType<typeof setInterval> | null>(null);
     const smoothingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -170,15 +179,19 @@ export const useTaxiSimulation = ({
                 const routeWithSnappedStart = [[displayLng, displayLat] as [number, number], ...remainingCoords];
 
                 if (taxiSegments && setSegmentedRoutes) {
-                    setSegmentedRoutes(
-                        buildSegmentedRoutesFromPosition(
-                            taxiSegments,
-                            closestIndex,
-                            displayLat,
-                            displayLng,
-                            true
-                        )
+                    const updatedSegments = buildSegmentedRoutesFromPosition(
+                        taxiSegments,
+                        closestIndex,
+                        displayLat,
+                        displayLng,
+                        true
                     );
+
+                    if (updateNavigationState) {
+                        updateNavigationState({ lat: displayLat, lng: displayLng }, updatedSegments);
+                    } else {
+                        setSegmentedRoutes(updatedSegments);
+                    }
                 } else {
                     setRouteGeoJSON({
                         type: 'Feature',
@@ -207,7 +220,7 @@ export const useTaxiSimulation = ({
 
             const avgSpeedMps = totalRouteDistance > 0 && totalRouteDuration > 0
                 ? totalRouteDistance / totalRouteDuration
-                : 14;
+                : 11.1; 
             const targetAdvanceMeters = avgSpeedMps * 5;
 
             let accumulated = 0;
@@ -248,9 +261,11 @@ export const useTaxiSimulation = ({
             const interpLat = simInterpolateFromRef.current.lat + (simInterpolateToRef.current.lat - simInterpolateFromRef.current.lat) * progress;
             const interpLng = simInterpolateFromRef.current.lng + (simInterpolateToRef.current.lng - simInterpolateFromRef.current.lng) * progress;
 
+            //update maraker
             if (setUserLocation) {
                 setUserLocation({ lat: interpLat, lng: interpLng });
             }
+
 
             const fromIdx = simFromIndexRef.current;
             const toIdx = simToIndexRef.current;
@@ -259,19 +274,23 @@ export const useTaxiSimulation = ({
                 routeCoordinates.current.length - 2
             );
 
-            if (taxiSegments && setSegmentedRoutes) {
-                setSegmentedRoutes(
-                    buildSegmentedRoutesFromPosition(
+            const remainingCoords = routeCoordinates.current.slice(estimatedIdx + 1);
+            if (remainingCoords.length > 0) {
+                if (taxiSegments && setSegmentedRoutes) {
+                    const updatedSegments = buildSegmentedRoutesFromPosition(
                         taxiSegments,
                         estimatedIdx,
                         interpLat,
                         interpLng,
                         true
-                    )
-                );
-            } else {
-                const remainingCoords = routeCoordinates.current.slice(estimatedIdx + 1);
-                if (remainingCoords.length > 0) {
+                    );
+
+                    if (updateNavigationState) {
+                        updateNavigationState({ lat: interpLat, lng: interpLng }, updatedSegments);
+                    } else {
+                        setSegmentedRoutes(updatedSegments);
+                    }
+                } else {
                     setRouteGeoJSON({
                         type: 'Feature',
                         properties: {},
@@ -299,6 +318,7 @@ export const useTaxiSimulation = ({
         totalRouteDuration,
         taxiSegments,
         setSegmentedRoutes,
+        updateNavigationState,
     ]);
 
     const simulateOffRoute = useCallback(() => {
