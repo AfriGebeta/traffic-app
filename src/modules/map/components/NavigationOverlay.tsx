@@ -29,6 +29,9 @@ const formatDistance = (meters: number): string => {
 
 const formatTime = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
+    if (minutes < 1) {
+        return '< 1 min';
+    }
     return `${minutes} min`;
 };
 
