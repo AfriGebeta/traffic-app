@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { routeCacheService, CachedRouteData } from '../services/route-cache.service';
 
 interface RouteStop {
     id: string;
@@ -15,6 +16,9 @@ interface RouteBuilderContextType {
     setPendingStop: (stop: RouteStop | null) => void;
     pickType: 'start' | 'end' | 'intermediate' | null;
     setPickType: (type: 'start' | 'end' | 'intermediate' | null) => void;
+    cachedRoute: CachedRouteData | null;
+    loadCachedRoute: () => Promise<void>;
+    clearCache: () => Promise<void>;
 }
 
 const RouteBuilderContext = createContext<RouteBuilderContextType | undefined>(undefined);
@@ -22,9 +26,34 @@ const RouteBuilderContext = createContext<RouteBuilderContextType | undefined>(u
 export function RouteBuilderProvider({ children }: { children: ReactNode }) {
     const [pendingStop, setPendingStop] = useState<RouteStop | null>(null);
     const [pickType, setPickType] = useState<'start' | 'end' | 'intermediate' | null>(null);
+    const [cachedRoute, setCachedRoute] = useState<CachedRouteData | null>(null);
+
+    const loadCachedRoute = async () => {
+        const cached = await routeCacheService.getRouteCache();
+        setCachedRoute(cached);
+    };
+
+    const clearCache = async () => {
+        await routeCacheService.clearRouteCache();
+        setCachedRoute(null);
+    };
+
+    useEffect(() => {
+        loadCachedRoute();
+    }, []);
 
     return (
-        <RouteBuilderContext.Provider value={{ pendingStop, setPendingStop, pickType, setPickType }}>
+        <RouteBuilderContext.Provider
+            value={{
+                pendingStop,
+                setPendingStop,
+                pickType,
+                setPickType,
+                cachedRoute,
+                loadCachedRoute,
+                clearCache
+            }}
+        >
             {children}
         </RouteBuilderContext.Provider>
     );

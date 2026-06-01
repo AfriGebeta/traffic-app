@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { taxiService } from '../services/taxi.service';
 import { colors } from '../../../shared/theme/colors';
+import { routeCacheService } from '../services/route-cache.service';
 
 interface EdgeInfo {
     startNodeId: number;
@@ -52,7 +53,7 @@ export default function SetAvailabilityScreen() {
         if (individualTimes && edges.length > 0) {
             const newTimeWindows = edges.map(() => ({
                 startMinutes: 300,
-                endMinutes: 1320, 
+                endMinutes: 1320,
                 isAvailable: true,
             }));
             setTimeWindows(newTimeWindows);
@@ -152,7 +153,7 @@ export default function SetAvailabilityScreen() {
                         endMinutes: window.endMinutes,
                         isAvailable: window.isAvailable,
                     });
-                    
+
                 }
             } else {
                 const window = timeWindows[0];
@@ -165,14 +166,15 @@ export default function SetAvailabilityScreen() {
                         endMinutes: window.endMinutes,
                         isAvailable: window.isAvailable,
                     });
-                   
+
                 }
             }
 
             Alert.alert(t('success'), t('availability-windows-created-successfully'), [
                 {
                     text: t('ok'),
-                    onPress: () => {
+                    onPress: async () => {
+                        await routeCacheService.clearRouteCache();
                         router.back();
                         router.back();
                         router.back();
