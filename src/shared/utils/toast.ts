@@ -8,7 +8,7 @@ export const showToast = {
             text2: message,
             position: 'top',
             visibilityTime: 3000,
-            topOffset: 60,
+            topOffset: 120,
         });
     },
 
@@ -19,7 +19,7 @@ export const showToast = {
             text2: message,
             position: 'top',
             visibilityTime: 4000,
-            topOffset: 60,
+            topOffset: 120,
         });
     },
 
@@ -30,7 +30,7 @@ export const showToast = {
             text2: message,
             position: 'top',
             visibilityTime: 3000,
-            topOffset: 60,
+            topOffset: 120,
         });
     },
 };

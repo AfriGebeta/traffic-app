@@ -10,6 +10,7 @@ import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { showToast } from '../../../shared/utils/toast';
 import { taxiService } from '../services/taxi.service';
 import { TaxiNode } from '../types/taxi.types';
+import { routeCacheService } from '../services/route-cache.service';
 
 interface RouteStop {
     id: string;
@@ -25,7 +26,18 @@ export default function RouteBuilderScreen() {
     const router = useRouter();
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
-    const { pendingStop, setPendingStop, pickType, setPickType } = useRouteBuilder();
+    const {
+        pendingStop,
+        setPendingStop,
+        pickType,
+        setPickType,
+        cachedRoute,
+        clearCache,
+        setIsCollecting,
+        setCurrentRouteName,
+        isCollecting,
+        endCollectorTracking,
+    } = useRouteBuilder();
     const { userLocation } = useUserLocation();
 
     const [routeName, setRouteName] = useState('');
@@ -44,6 +56,67 @@ export default function RouteBuilderScreen() {
     const [startStationType, setStartStationType] = useState<'station' | 'stop'>('station');
     const [endStationType, setEndStationType] = useState<'station' | 'stop'>('station');
     const [intermediateStopType, setIntermediateStopType] = useState<'station' | 'stop'>('stop');
+    const [showRestorePrompt, setShowRestorePrompt] = useState(false);
+
+    useEffect(() => {
+        if (startStation && !isCollecting) {
+            setIsCollecting(true);
+            if (routeName) {
+                setCurrentRouteName(routeName);
+            }
+            
+        }
+    }, [startStation, isCollecting, setIsCollecting, routeName, setCurrentRouteName]);
+
+
+    useEffect(() => {
+        return () => {
+            if (isCollecting) {
+                endCollectorTracking();
+                setIsCollecting(false);
+            }
+        };
+    }, [isCollecting, endCollectorTracking, setIsCollecting]);
+
+    useEffect(() => {
+        if (cachedRoute && cachedRoute.currentStep === 'builder') {
+            setShowRestorePrompt(true);
+        }
+    }, [cachedRoute]);
+
+    const restoreCachedRoute = () => {
+        if (cachedRoute) {
+            setRouteName(cachedRoute.routeName);
+            setStartStation(cachedRoute.startStation);
+            setEndStation(cachedRoute.endStation);
+            setIntermediateStops(cachedRoute.intermediateStops);
+            setShowRestorePrompt(false);
+            showToast.success(t('restored'), t('route-progress-restored'));
+        }
+    };
+
+    const dismissRestorePrompt = async () => {
+        setShowRestorePrompt(false);
+        await clearCache();
+    };
+
+    useEffect(() => {
+        const saveProgress = async () => {
+            if (routeName || startStation || endStation || intermediateStops.length > 0) {
+                await routeCacheService.saveRouteCache({
+                    routeName,
+                    startStation,
+                    endStation,
+                    intermediateStops,
+                    currentStep: 'builder',
+                    timestamp: Date.now(),
+                });
+            }
+        };
+
+        const timeoutId = setTimeout(saveProgress, 500);
+        return () => clearTimeout(timeoutId);
+    }, [routeName, startStation, endStation, intermediateStops]);
 
     useEffect(() => {
         if (pendingStop && pickType) {
@@ -244,6 +317,39 @@ export default function RouteBuilderScreen() {
                 </View>
                 <Text className="text-gray-600 mt-2">{t('create-route-with-stops')}</Text>
             </View>
+
+            {showRestorePrompt && cachedRoute && (
+                <View className="mx-4 mt-4 bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                    <View className="flex-row items-start mb-3">
+                        <Ionicons name="information-circle" size={24} color={colors.primary.main} />
+                        <View className="flex-1 ml-3">
+                            <Text className="text-gray-900 font-semibold text-base mb-1">
+                                {t('unfinished-route-found')}
+                            </Text>
+                            <Text className="text-gray-700 text-sm">
+                                {t('restore-route-description')}: "{cachedRoute.routeName}"
+                            </Text>
+                        </View>
+                    </View>
+                    <View className="flex-row gap-2">
+                        <TouchableOpacity
+                            className="flex-1 bg-gray-100 py-3 rounded-lg"
+                            onPress={dismissRestorePrompt}
+                        >
+                            <Text className="text-gray-700 text-center font-semibold">
+                                {t('start-new')}
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            className="flex-1 py-3 rounded-lg"
+                            style={{ backgroundColor: colors.primary.main }}
+                            onPress={restoreCachedRoute}
+                        >
+                            <Text className="text-white text-center font-semibold">{t('restore')}</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            )}
 
             <ScrollView className="flex-1 p-4" contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}>
                 <View className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">

@@ -29,6 +29,9 @@ const formatDistance = (meters: number): string => {
 
 const formatTime = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
+    if (minutes < 1) {
+        return '< 1 min';
+    }
     return `${minutes} min`;
 };
 
@@ -104,7 +107,7 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                             onPress={onReportPress}
                         >
                             <Text className="text-gray-700 text-xs font-semibold">
-                                {t('share-what-you-see') || 'Report What You See'}
+                                {t('share-what-you-see')}
                             </Text>
                         </TouchableOpacity>
 

@@ -6,6 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { taxiService } from '../services/taxi.service';
 import { colors } from '../../../shared/theme/colors';
+import { routeCacheService } from '../services/route-cache.service';
+import { showToast } from '../../../shared/utils/toast';
 
 interface RouteStop {
     id: string;
@@ -37,35 +39,66 @@ export default function SetPricingScreen() {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        if (params.stops && params.routeName) {
-            const parsedStops = JSON.parse(params.stops as string);
-            setStops(parsedStops);
-            setRouteName(params.routeName as string);
+        const loadRouteData = async () => {
+            if (params.stops && params.routeName) {
+                const parsedStops = JSON.parse(params.stops as string);
+                setStops(parsedStops);
+                setRouteName(params.routeName as string);
 
-            const edges: EdgePrice[] = [];
-            for (let i = 0; i < parsedStops.length; i++) {
-                for (let j = i + 1; j < parsedStops.length; j++) {
-                    edges.push({
-                        from: i,
-                        to: j,
-                        fromName: parsedStops[i].name,
-                        toName: parsedStops[j].name,
-                        cost: '',
-                    });
+                const edges: EdgePrice[] = [];
+                for (let i = 0; i < parsedStops.length; i++) {
+                    for (let j = i + 1; j < parsedStops.length; j++) {
+                        edges.push({
+                            from: i,
+                            to: j,
+                            fromName: parsedStops[i].name,
+                            toName: parsedStops[j].name,
+                            cost: '',
+                        });
+                    }
+                }
+
+                edges.sort((a, b) => {
+                    const isMainA = a.from === 0 && a.to === parsedStops.length - 1;
+                    const isMainB = b.from === 0 && b.to === parsedStops.length - 1;
+                    if (isMainA) return -1;
+                    if (isMainB) return 1;
+                    return 0;
+                });
+
+                setEdgePrices(edges);
+            } else {
+                const cached = await routeCacheService.getRouteCache();
+                if (cached && cached.currentStep === 'pricing' && cached.edgePrices) {
+                    setRouteName(cached.routeName);
+                    setStops([cached.startStation!, ...cached.intermediateStops, cached.endStation!].filter(Boolean));
+                    setEdgePrices(cached.edgePrices);
+                    showToast.success(t('restored'), t('pricing-progress-restored'));
                 }
             }
+        };
 
-            edges.sort((a, b) => {
-                const isMainA = a.from === 0 && a.to === parsedStops.length - 1;
-                const isMainB = b.from === 0 && b.to === parsedStops.length - 1;
-                if (isMainA) return -1;
-                if (isMainB) return 1;
-                return 0;
-            });
-
-            setEdgePrices(edges);
-        }
+        loadRouteData();
     }, [params.stops, params.routeName]);
+
+    useEffect(() => {
+        const saveProgress = async () => {
+            if (stops.length > 0 && routeName) {
+                await routeCacheService.saveRouteCache({
+                    routeName,
+                    startStation: stops[0],
+                    endStation: stops[stops.length - 1],
+                    intermediateStops: stops.slice(1, -1),
+                    edgePrices,
+                    currentStep: 'pricing',
+                    timestamp: Date.now(),
+                });
+            }
+        };
+
+        const timeoutId = setTimeout(saveProgress, 500);
+        return () => clearTimeout(timeoutId);
+    }, [edgePrices, stops, routeName]);
 
     const updateEdgePrice = (index: number, cost: string) => {
         const updated = [...edgePrices];

@@ -42,8 +42,8 @@ export const buildSegmentedRoutesFromPosition = (
         let coordinates = decoded.map(([lat, lng]: [number, number]) => [lng, lat] as [number, number]);
 
         if (idx === currentSegIdx) {
-            const remaining = coordinates.slice(positionInSegment + 1);
-            coordinates = [[displayLng, displayLat], ...remaining];
+            // Start from the next point on the route, not from user's off-road position
+            coordinates = coordinates.slice(positionInSegment + 1);
         } else if (idx < currentSegIdx) {
             coordinates = [];
         }

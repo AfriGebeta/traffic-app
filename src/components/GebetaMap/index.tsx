@@ -203,11 +203,14 @@ const AnimatedRouteSource = memo(({
 }) => {
     const animatedGeoJSON = useMemo(() => {
         if (!routeGeoJSON?.geometry?.coordinates?.length) return routeGeoJSON;
+
+        const coords = routeGeoJSON.geometry.coordinates;
+
         return {
             ...routeGeoJSON,
             geometry: {
                 ...routeGeoJSON.geometry,
-                coordinates: [[animatedLng, animatedLat], ...routeGeoJSON.geometry.coordinates],
+                coordinates: [[animatedLng, animatedLat], ...coords.slice(1)],
             },
         };
     }, [routeGeoJSON, animatedLat, animatedLng]);
@@ -320,28 +323,27 @@ const AnimatedNavLayer = memo(({
 
     const animCurRef = useRef({ lat: 0, lng: 0 });
     const animToRef = useRef({ lat: 0, lng: 0 });
-
-    const velRef = useRef({ lat: 0, lng: 0 });
     const animFirstRef = useRef(true);
     const animHeadingRef = useRef(0);
 
     useEffect(() => {
         if (!isNavigating || !userLocation) return;
+
         if (animFirstRef.current) {
             animFirstRef.current = false;
             animCurRef.current = { lat: userLocation.lat, lng: userLocation.lng };
             animToRef.current = { lat: userLocation.lat, lng: userLocation.lng };
-            velRef.current = { lat: 0, lng: 0 };
             setAnimatedNavPos({ lat: userLocation.lat, lng: userLocation.lng, heading: 0 });
             return;
         }
+
+        //setting new target
         animToRef.current = { lat: userLocation.lat, lng: userLocation.lng };
     }, [userLocation?.lat, userLocation?.lng, isNavigating]);
 
     useEffect(() => {
         if (!isNavigating) {
             animFirstRef.current = true;
-            velRef.current = { lat: 0, lng: 0 };
             return;
         }
 
@@ -350,20 +352,18 @@ const AnimatedNavLayer = memo(({
 
         const tick = () => {
             const now = Date.now();
-            const dt = Math.min((now - lastTime) / 1000, 0.05); 
+            const dt = Math.min((now - lastTime) / 1000, 0.05);
             lastTime = now;
 
             const target = animToRef.current;
             const cur = animCurRef.current;
 
-            const SPRING = 10;
-            const DAMPING = 0.82;
 
-            velRef.current.lat = velRef.current.lat * DAMPING + (target.lat - cur.lat) * SPRING * dt;
-            velRef.current.lng = velRef.current.lng * DAMPING + (target.lng - cur.lng) * SPRING * dt;
+            const ALPHA = 0.2;
 
-            const lat = cur.lat + velRef.current.lat * dt;
-            const lng = cur.lng + velRef.current.lng * dt;
+            const lat = cur.lat + (target.lat - cur.lat) * ALPHA;
+            const lng = cur.lng + (target.lng - cur.lng) * ALPHA;
+
             animCurRef.current = { lat, lng };
 
             if (Math.abs(target.lat - lat) > 0.000001 || Math.abs(target.lng - lng) > 0.000001) {
@@ -371,7 +371,7 @@ const AnimatedNavLayer = memo(({
                 let diff = rawBearing - animHeadingRef.current;
                 if (diff > 180) diff -= 360;
                 if (diff < -180) diff += 360;
-                animHeadingRef.current += diff * 0.12;
+                animHeadingRef.current += diff * 0.15;
             }
 
             setAnimatedNavPos({ lat, lng, heading: animHeadingRef.current });
@@ -484,7 +484,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         useEffect(() => {
             const preloadImages = async () => {
                 try {
-                        await Promise.all([
+                    await Promise.all([
                         Image.prefetch(Image.resolveAssetSource(MAPPIN_IMAGE).uri),
                         Image.prefetch(Image.resolveAssetSource(PIN_NORMAL_IMAGE).uri),
                         Image.prefetch(Image.resolveAssetSource(RED_PIN_IMAGE).uri),
@@ -871,11 +871,11 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             {...(externalCameraControl
                                 ? {}
                                 : {
-                                      centerCoordinate: center,
-                                      zoomLevel: zoom ?? 15,
-                                      animationMode: 'moveTo' as const,
-                                      animationDuration: 0,
-                                  })}
+                                    centerCoordinate: center,
+                                    zoomLevel: zoom ?? 15,
+                                    animationMode: 'moveTo' as const,
+                                    animationDuration: 0,
+                                })}
                             pitch={0}
                             heading={0}
                             maxBounds={undefined}

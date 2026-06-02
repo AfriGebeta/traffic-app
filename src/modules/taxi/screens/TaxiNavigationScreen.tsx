@@ -213,6 +213,7 @@ export default function TaxiNavigationScreen() {
         totalRouteDuration: totalDuration.current,
         taxiSegments: activeRoute.segments,
         setSegmentedRoutes,
+        updateNavigationState,
     });
 
     const { startLocationTracking, stopLocationTracking } = useLocationTracking({
@@ -473,7 +474,7 @@ export default function TaxiNavigationScreen() {
                             elevation: 5,
                         }}
                     >
-                    
+
                         <View className="flex-row items-center justify-between mb-3">
                             <View className="flex-1">
                                 <Text className="text-gray-900 text-2xl font-bold">

@@ -86,9 +86,11 @@ export const NavigationOptionsModal: React.FC<NavigationOptionsModalProps> = ({
                                     <Text className="text-base font-medium text-gray-900">
                                         {option.name}
                                     </Text>
-                                    <Text className="text-sm text-gray-500 mt-1">
-                                        {option.lat.toFixed(6)}, {option.lng.toFixed(6)}
-                                    </Text>
+                                    {option.lat != null && option.lng != null && (
+                                        <Text className="text-sm text-gray-500 mt-1">
+                                            {option.lat.toFixed(6)}, {option.lng.toFixed(6)}
+                                        </Text>
+                                    )}
                                 </View>
                                 <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
                             </TouchableOpacity>
