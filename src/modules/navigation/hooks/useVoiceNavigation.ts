@@ -156,8 +156,11 @@ export const useVoiceNavigation = ({
                 showToast.success('Understood', userTranscription);
 
                 if (response.navigationData?.options && response.navigationData.options.length > 1) {
+                    
                     setOptions(response.navigationData.options);
                     setShowOptions(true);
+
+                    setShowVoiceModal(false);
 
                     let ttsMessage = response.navigationData.message;
                     if (!ttsMessage && response.navigationData.options.length > 0) {
@@ -166,10 +169,9 @@ export const useVoiceNavigation = ({
                     }
 
                     if (ttsMessage) {
-                        await playTTS(ttsMessage);
+                        playTTS(ttsMessage);
                     }
 
-                    setShowVoiceModal(false);
                     return;
                 }
 
@@ -177,13 +179,36 @@ export const useVoiceNavigation = ({
 
                 if (response.navigationData?.destination) {
                     const dest = response.navigationData.destination;
+
+                    const lat = Number(dest.latitude);
+                    const lng = Number(dest.longitude);
+
+                    if (isNaN(lat) || isNaN(lng)) {
+                        console.error('Invalid destination coordinates:', { lat: dest.latitude, lng: dest.longitude });
+                        showToast.error('Invalid location', 'Could not get coordinates for this place');
+                        return;
+                    }
+
                     const geocodingPlace: GeocodingPlace = {
                         name: dest.name,
-                        latitude: dest.latitude,
-                        longitude: dest.longitude,
-                        Country: dest.Country,
-                        City: dest.City,
-                        type: dest.type,
+                        latitude: lat,
+                        longitude: lng,
+                        location: {
+                            lat,
+                            lng,
+                        },
+                        Country: dest.Country || '',
+                        City: dest.City || '',
+                        type: dest.type || 'place',
+                        
+                        id: `voice-destination`,
+                        display_name: dest.name,
+                        category: dest.type || 'place',
+                        address: {
+                            city: dest.City || '',
+                            country: dest.Country || '',
+                            country_code: '',
+                        },
                     };
 
                     if (onDestinationFound) {
@@ -194,10 +219,11 @@ export const useVoiceNavigation = ({
                     const durationMin = Math.round((response.navigationData.route?.trip?.legs?.[0]?.summary?.time || 0) / 60);
                     showToast.success('Route Found', `${distanceKm} km • ${durationMin} min`);
                 } else {
+                   
 
                     showToast.error(
-                        'Destination not found',
-                        userTranscription ? `You said: "${userTranscription}"` : 'Could not find a route to this destination'
+                        'Location not recognized',
+                        userTranscription ? `Couldn't find "${userTranscription}". Try saying it differently or be more specific.` : 'Could not find this location'
                     );
                 }
             } catch (error) {
@@ -238,28 +264,39 @@ export const useVoiceNavigation = ({
         setShowOptions(false);
 
         const selectedOption = options.find(opt => opt.id === optionId);
+      
+
         if (!selectedOption) {
             showToast.error('Invalid selection', 'Please try again');
             return;
         }
 
-        const geocodingPlace: GeocodingPlace = {
-            name: selectedOption.name,
-            latitude: selectedOption.lat,
-            longitude: selectedOption.lng,
-            Country: '',
-            City: '',
-            type: 'place',
-        };
+        try {
+            showToast.info('Finding location', 'Please wait...');
 
-        setOptions([]);
-        setTranscription('');
+            const { navigationService } = await import('../../navigation/services/navigation.service');
+            const geocodedPlaces = await navigationService.geocodePlace(selectedOption.name);
 
-        if (onDestinationFound) {
-            onDestinationFound(geocodingPlace);
+            if (!geocodedPlaces || geocodedPlaces.length === 0) {
+                showToast.error('Location not found', 'Could not find coordinates for this place');
+                return;
+            }
+
+            const place = geocodedPlaces[0];
+
+
+            setOptions([]);
+            setTranscription('');
+
+            if (onDestinationFound) {
+                onDestinationFound(place);
+            }
+
+
+        } catch (error) {
+            console.error('Error geocoding place:', error);
+            showToast.error('Search failed', 'Could not find this location');
         }
-
-        showToast.success('Destination selected', selectedOption.name);
     };
 
     return {
