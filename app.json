@@ -13,7 +13,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.trafficapp",
+      "bundleIdentifier": "com.gebetamaps.maps.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -25,7 +25,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.trafficapp",
+      "package": "com.gebetamaps.maps.app",
       "softwareKeyboardLayoutMode": "resize",
       "permissions": [
         "RECORD_AUDIO"
