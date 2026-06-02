@@ -2023,5 +2023,40 @@
         "key": "apply-to-all-routes",
         "EN_US": "Apply to all routes",
         "AM": "ያስገቡ"
+    },
+    {
+        "key": "unfinished-route-found",
+        "EN_US": "Unfinished Route Found",
+        "AM": "ያልተጠናቀቀ መስመር ተገኝቷል"
+    },
+    {
+        "key": "restore-route-description",
+        "EN_US": "You have an unfinished route",
+        "AM": "ያልተጠናቀቀ መስመር አለዎት"
+    },
+    {
+        "key": "start-new",
+        "EN_US": "Start New",
+        "AM": "አዲስ ይጀምሩ"
+    },
+    {
+        "key": "restore",
+        "EN_US": "Restore",
+        "AM": "መልስ"
+    },
+    {
+        "key": "restored",
+        "EN_US": "Restored",
+        "AM": "ተመልሷል"
+    },
+    {
+        "key": "route-progress-restored",
+        "EN_US": "Your route progress has been restored",
+        "AM": "የመስመር ታሪክዎ ተመልሷል"
+    },
+    {
+        "key": "pricing-progress-restored",
+        "EN_US": "Your pricing progress has been restored",
+        "AM": "የዋጋ ታሪክዎ ተመልሷል"
     }
 ]

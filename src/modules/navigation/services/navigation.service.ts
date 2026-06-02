@@ -12,7 +12,7 @@ const WALKING_END_THRESHOLD = 20; // 20 meters
 
 export const navigationService = {
     async geocodePlace(placeName: string): Promise<GeocodingPlace[]> {
-        const response = await apiService.post<{ response: GeocodingPlace[] }>('/api/navigation/request-geocoding', {
+        const response = await apiService.post<{ response: any[] }>('/api/navigation/request-geocoding', {
             placeName
         });
 
@@ -21,7 +21,20 @@ export const navigationService = {
         }
 
         const results = response.data.response || [];
-        return results;
+
+        return results.map(place => ({
+            id: place.id,
+            name: place.name,
+            display_name: place.display_name,
+            category: place.category,
+            location: place.location,
+            address: place.address,
+            latitude: place.location.lat,
+            longitude: place.location.lng,
+            Country: place.address.country || '',
+            City: place.address.city || '',
+            type: place.category || 'location',
+        }));
     },
 
     async reverseGeocode(lat: number, lng: number): Promise<GeocodingPlace> {
@@ -38,19 +51,35 @@ export const navigationService = {
             const LANDMARK_THRESHOLD = 0.0005;
 
             for (const place of results) {
-                if (place.name && place.latitude && place.longitude) {
+                const placeLat = place.location?.lat || place.latitude;
+                const placeLng = place.location?.lng || place.longitude;
+
+                if (place.name && placeLat && placeLng) {
                     const distance = Math.sqrt(
-                        Math.pow(place.latitude - lat, 2) + Math.pow(place.longitude - lng, 2)
+                        Math.pow(placeLat - lat, 2) + Math.pow(placeLng - lng, 2)
                     );
 
                     if (distance < LANDMARK_THRESHOLD) {
                         return {
+                            id: place.id || '',
                             name: place.name,
+                            display_name: place.display_name || place.name,
+                            category: place.category || 'location',
+                            location: {
+                                lat: lat,
+                                lng: lng
+                            },
+                            address: {
+                                city: place.address?.city || place.City || '',
+                                country: place.address?.country || place.Country || '',
+                                country_code: place.address?.country_code || ''
+                            },
+                            // Legacy fields
                             latitude: lat,
                             longitude: lng,
-                            Country: place.Country || '',
-                            City: place.City || '',
-                            type: place.type || 'location'
+                            Country: place.address?.country || place.Country || '',
+                            City: place.address?.city || place.City || '',
+                            type: place.category || place.type || 'location'
                         };
                     }
                 }
@@ -60,7 +89,19 @@ export const navigationService = {
         }
 
         return {
+            id: '',
             name: `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+            display_name: `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+            category: 'coordinates',
+            location: {
+                lat: lat,
+                lng: lng
+            },
+            address: {
+                city: '',
+                country: '',
+                country_code: ''
+            },
             latitude: lat,
             longitude: lng,
             Country: '',

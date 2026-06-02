@@ -1,5 +1,17 @@
 export interface GeocodingPlace {
+    id: string;
     name: string;
+    display_name: string;
+    category: string;
+    location: {
+        lat: number;
+        lng: number;
+    };
+    address: {
+        city?: string;
+        country: string;
+        country_code: string;
+    };
     latitude: number;
     longitude: number;
     Country: string;

@@ -15,7 +15,11 @@ class LeaderboardService {
                 return [];
             }
 
-            return response.data;
+            // Clean up undefined last names
+            return response.data.map(entry => ({
+                ...entry,
+                name: entry.name.replace(/\s+undefined$/i, '').trim()
+            }));
         } catch (error) {
             console.error('Error fetching leaderboard:', error);
             return [];
@@ -24,7 +28,7 @@ class LeaderboardService {
 
     async getUserStats(userId: string): Promise<LeaderboardEntry | null> {
         try {
-            
+
             const leaderboard = await this.getLeaderboard('global');
             const userEntry = leaderboard.find(entry => entry.id === userId);
             return userEntry || null;

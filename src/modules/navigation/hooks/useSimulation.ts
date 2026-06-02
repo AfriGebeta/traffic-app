@@ -42,6 +42,7 @@ export const useSimulation = ({
     const simToIndexRef = useRef<number>(0);
     const simTickStartRef = useRef<number>(0);
     const currentRouteIndex = useRef(0);
+    const lastRenderedMarkerRef = useRef<{ lat: number; lng: number } | null>(null);
 
     const stopSimulation = useCallback(() => {
         if (simulationInterval.current) {
@@ -68,6 +69,44 @@ export const useSimulation = ({
         simTickStartRef.current = 0;
 
         currentRouteIndex.current = 0;
+
+        const [initialLng, initialLat] = routeCoordinates.current[0];
+        if (setUserLocation) {
+            setUserLocation({ lat: initialLat, lng: initialLng });
+        }
+        const initialRemaining = routeCoordinates.current.slice(1);
+        if (initialRemaining.length > 0) {
+            setRouteGeoJSON({
+                type: 'Feature',
+                properties: {},
+                geometry: {
+                    type: 'LineString',
+                    coordinates: [[initialLng, initialLat] as [number, number], ...initialRemaining],
+                },
+            });
+        }
+
+        simFromIndexRef.current = 0;
+        simInterpolateFromRef.current = { lat: initialLat, lng: initialLng };
+        simTickStartRef.current = Date.now();
+
+        const avgSpeedMps = totalRouteDistance > 0 && totalRouteDuration > 0
+            ? totalRouteDistance / totalRouteDuration
+            : 11.1;
+        const targetAdvanceMeters = avgSpeedMps * 5;
+
+        let accumulated = 0;
+        let targetIndex = 1;
+        while (targetIndex < routeCoordinates.current.length - 1 && accumulated < targetAdvanceMeters) {
+            const [lng1, lat1] = routeCoordinates.current[targetIndex - 1];
+            const [lng2, lat2] = routeCoordinates.current[targetIndex];
+            accumulated += calculateDistance(lat1, lng1, lat2, lng2);
+            targetIndex++;
+        }
+        const initialTargetIndex = Math.min(targetIndex, routeCoordinates.current.length - 1);
+        const [targetLng, targetLat] = routeCoordinates.current[initialTargetIndex];
+        simInterpolateToRef.current = { lat: targetLat, lng: targetLng };
+        simToIndexRef.current = initialTargetIndex;
 
         simulationInterval.current = setInterval(() => {
             if (currentRouteIndex.current >= routeCoordinates.current.length) {
@@ -99,127 +138,63 @@ export const useSimulation = ({
 
             updateInstructionBasedOnPosition(inaccurateLat, inaccurateLng);
 
-            let displayLat = inaccurateLat;
-            let displayLng = inaccurateLng;
+            let displayLat = lat;
+            let displayLng = lng;
+            let closestIndex = currentRouteIndex.current;
 
-            if (setUserLocation) {
-                if (routeCoordinates.current.length > 0) {
-                    let closestIndex = currentRouteIndex.current;
-                    let minDistance = Infinity;
-                    let snappedLat = inaccurateLat;
-                    let snappedLng = inaccurateLng;
 
-                    const SEARCH_WINDOW = 20;
-                    const startIndex = currentRouteIndex.current; // never snap behind current progress
-                    const endIndex = Math.min(routeCoordinates.current.length - 1, currentRouteIndex.current + SEARCH_WINDOW);
+            if (routeCoordinates.current.length > 0) {
+                let minDistance = Infinity;
+                let snappedLat = lat;
+                let snappedLng = lng;
 
-                    for (let i = startIndex; i < endIndex; i++) {
-                        const [lng1, lat1] = routeCoordinates.current[i];
-                        const [lng2, lat2] = routeCoordinates.current[i + 1];
-                        const dx = lng2 - lng1;
-                        const dy = lat2 - lat1;
+                const SEARCH_WINDOW = 20;
+                const startIndex = currentRouteIndex.current;
+                const endIndex = Math.min(routeCoordinates.current.length - 1, currentRouteIndex.current + SEARCH_WINDOW);
 
-                        if (dx === 0 && dy === 0) {
-                            const R = 6371000;
-                            const dLat = (inaccurateLat - lat1) * Math.PI / 180;
-                            const dLng = (inaccurateLng - lng1) * Math.PI / 180;
-                            const a =
-                                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                                Math.cos(lat1 * Math.PI / 180) *
-                                Math.cos(inaccurateLat * Math.PI / 180) *
-                                Math.sin(dLng / 2) *
-                                Math.sin(dLng / 2);
-                            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                            const dist = R * c;
-                            if (dist < minDistance) {
-                                minDistance = dist;
-                                closestIndex = i;
-                                snappedLat = lat1;
-                                snappedLng = lng1;
-                            }
-                            continue;
-                        }
+                for (let i = startIndex; i < endIndex; i++) {
+                    const [lng1, lat1] = routeCoordinates.current[i];
+                    const [lng2, lat2] = routeCoordinates.current[i + 1];
+                    const dx = lng2 - lng1;
+                    const dy = lat2 - lat1;
 
-                        const t = Math.max(0, Math.min(1,
-                            ((inaccurateLng - lng1) * dx + (inaccurateLat - lat1) * dy) / (dx * dx + dy * dy)
-                        ));
-
-                        const projLat = lat1 + t * dy;
-                        const projLng = lng1 + t * dx;
-
-                        //haversine formula
-                        const R = 6371000;
-                        const dLat = (inaccurateLat - projLat) * Math.PI / 180;
-                        const dLng = (inaccurateLng - projLng) * Math.PI / 180;
-                        const a =
-                            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                            Math.cos(projLat * Math.PI / 180) *
-                            Math.cos(inaccurateLat * Math.PI / 180) *
-                            Math.sin(dLng / 2) *
-                            Math.sin(dLng / 2);
-                        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                        const dist = R * c;
-
+                    if (dx === 0 && dy === 0) {
+                        const dist = calculateDistance(inaccurateLat, inaccurateLng, lat1, lng1);
                         if (dist < minDistance) {
                             minDistance = dist;
                             closestIndex = i;
-                            snappedLat = projLat;
-                            snappedLng = projLng;
+                            snappedLat = lat1;
+                            snappedLng = lng1;
                         }
+                        continue;
                     }
 
-                    displayLat = snappedLat;
-                    displayLng = snappedLng;
-                    simFromIndexRef.current = closestIndex;
-                }
+                    const t = Math.max(0, Math.min(1,
+                        ((inaccurateLng - lng1) * dx + (inaccurateLat - lat1) * dy) / (dx * dx + dy * dy)
+                    ));
 
-                setUserLocation({ lat: displayLat, lng: displayLng });
-            }
+                    const projLat = lat1 + t * dy;
+                    const projLng = lng1 + t * dx;
+                    const dist = calculateDistance(inaccurateLat, inaccurateLng, projLat, projLng);
 
-            const remainingCoords = routeCoordinates.current.slice(currentRouteIndex.current + 1);
-            if (remainingCoords.length > 0) {
-                const routeWithSnappedStart = [[displayLng, displayLat] as [number, number], ...remainingCoords];
-
-                const remainingGeoJSON = {
-                    type: 'Feature',
-                    properties: {},
-                    geometry: {
-                        type: 'LineString',
-                        coordinates: routeWithSnappedStart,
+                    if (dist < minDistance) {
+                        minDistance = dist;
+                        closestIndex = i;
+                        snappedLat = projLat;
+                        snappedLng = projLng;
                     }
-                };
-                setRouteGeoJSON(remainingGeoJSON);
-
-                let totalDistance = 0;
-                for (let i = 0; i < routeWithSnappedStart.length - 1; i++) {
-                    const [lng1, lat1] = routeWithSnappedStart[i];
-                    const [lng2, lat2] = routeWithSnappedStart[i + 1];
-
-                    const R = 6371000;
-                    const dLat = (lat2 - lat1) * Math.PI / 180;
-                    const dLng = (lng2 - lng1) * Math.PI / 180;
-                    const a =
-                        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                        Math.cos(lat1 * Math.PI / 180) *
-                        Math.cos(lat2 * Math.PI / 180) *
-                        Math.sin(dLng / 2) *
-                        Math.sin(dLng / 2);
-                    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                    totalDistance += R * c;
                 }
 
-                setRemainingDistance(totalDistance);
-
-                const averageSpeedMps = totalRouteDistance > 0 && totalRouteDuration > 0
-                    ? totalRouteDistance / totalRouteDuration
-                    : (25 * 1000) / 3600;
-                const estimatedTime = totalDistance / averageSpeedMps;
-                setRemainingTime(estimatedTime);
+                displayLat = snappedLat;
+                displayLng = snappedLng;
+                simFromIndexRef.current = closestIndex;
             }
+
 
             const avgSpeedMps = totalRouteDistance > 0 && totalRouteDuration > 0
                 ? totalRouteDistance / totalRouteDuration
-                : 14;
+                : 11.1;
+
             const targetAdvanceMeters = avgSpeedMps * 5;
 
             let accumulated = 0;
@@ -232,7 +207,13 @@ export const useSimulation = ({
             }
             currentRouteIndex.current = Math.min(nextIndex, routeCoordinates.current.length - 1);
 
-            simInterpolateFromRef.current = { lat: displayLat, lng: displayLng };
+            const fromIdx = currentRouteIndex.current;
+
+            const fromLat = lastRenderedMarkerRef.current?.lat ?? displayLat;
+            const fromLng = lastRenderedMarkerRef.current?.lng ?? displayLng;
+
+            simFromIndexRef.current = fromIdx;
+            simInterpolateFromRef.current = { lat: fromLat, lng: fromLng };
             simTickStartRef.current = Date.now();
 
             let predAccumulated = 0;
@@ -247,38 +228,105 @@ export const useSimulation = ({
             const [predLng, predLat] = routeCoordinates.current[clampedPredIndex];
             simInterpolateToRef.current = { lat: predLat, lng: predLng };
             simToIndexRef.current = clampedPredIndex;
+
         }, 5000);
 
         if (smoothingIntervalRef.current) {
             clearInterval(smoothingIntervalRef.current);
         }
+
         smoothingIntervalRef.current = setInterval(() => {
-            if (!isNavigatingRef.current || !simInterpolateFromRef.current || !simInterpolateToRef.current) return;
+            if (!isNavigatingRef.current) return;
+
+            if (!simInterpolateFromRef.current || !simInterpolateToRef.current) return;
+
+            if (simTickStartRef.current === 0) return;
+
             const elapsed = Date.now() - simTickStartRef.current;
             const progress = Math.min(elapsed / 5000, 1);
-            const interpLat = simInterpolateFromRef.current.lat + (simInterpolateToRef.current.lat - simInterpolateFromRef.current.lat) * progress;
-            const interpLng = simInterpolateFromRef.current.lng + (simInterpolateToRef.current.lng - simInterpolateFromRef.current.lng) * progress;
-
-            if (setUserLocation) {
-                setUserLocation({ lat: interpLat, lng: interpLng });
-            }
 
             const fromIdx = simFromIndexRef.current;
             const toIdx = simToIndexRef.current;
+
+            const fractionalIdx = fromIdx + progress * (toIdx - fromIdx);
+
+
             const estimatedIdx = Math.min(
-                Math.round(fromIdx + progress * (toIdx - fromIdx)),
+                Math.floor(fractionalIdx),
                 routeCoordinates.current.length - 2
             );
+
+            let markerLat: number;
+            let markerLng: number;
+
+            if (estimatedIdx < routeCoordinates.current.length - 1) {
+                const [lng1, lat1] = routeCoordinates.current[estimatedIdx];
+                const [lng2, lat2] = routeCoordinates.current[estimatedIdx + 1];
+
+                const indexProgress = fractionalIdx - estimatedIdx;
+                const t = Math.max(0, Math.min(1, indexProgress));
+
+                markerLat = lat1 + t * (lat2 - lat1);
+                markerLng = lng1 + t * (lng2 - lng1);
+
+            } else {
+                const [lng, lat] = routeCoordinates.current[estimatedIdx];
+                markerLat = lat;
+                markerLng = lng;
+            }
+
             const remainingCoords = routeCoordinates.current.slice(estimatedIdx + 1);
+
             if (remainingCoords.length > 0) {
-                setRouteGeoJSON({
+                const routeGeoJSON = {
                     type: 'Feature',
                     properties: {},
                     geometry: {
                         type: 'LineString',
-                        coordinates: [[interpLng, interpLat] as [number, number], ...remainingCoords],
+                        coordinates: [[markerLng, markerLat] as [number, number], ...remainingCoords],
                     },
-                });
+                };
+
+                let totalDistance = 0;
+                const routeWithMarker = [[markerLng, markerLat] as [number, number], ...remainingCoords];
+                for (let i = 0; i < routeWithMarker.length - 1; i++) {
+                    const [lng1, lat1] = routeWithMarker[i];
+                    const [lng2, lat2] = routeWithMarker[i + 1];
+                    const R = 6371000;
+                    const dLat = (lat2 - lat1) * Math.PI / 180;
+                    const dLng = (lng2 - lng1) * Math.PI / 180;
+                    const a =
+                        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                        Math.cos(lat1 * Math.PI / 180) *
+                        Math.cos(lat2 * Math.PI / 180) *
+                        Math.sin(dLng / 2) *
+                        Math.sin(dLng / 2);
+                    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                    totalDistance += R * c;
+                }
+
+                lastRenderedMarkerRef.current = { lat: markerLat, lng: markerLng };
+
+                if (setUserLocation) {
+                    setUserLocation({ lat: markerLat, lng: markerLng });
+                }
+                setRouteGeoJSON(routeGeoJSON);
+                setRemainingDistance(totalDistance);
+
+                const averageSpeedMps = totalRouteDistance > 0 && totalRouteDuration > 0
+                    ? totalRouteDistance / totalRouteDuration
+                    : (25 * 1000) / 3600;
+                const estimatedTime = totalDistance / averageSpeedMps;
+                setRemainingTime(estimatedTime);
+            } else {
+
+                lastRenderedMarkerRef.current = { lat: markerLat, lng: markerLng };
+
+                if (setUserLocation) {
+                    setUserLocation({ lat: markerLat, lng: markerLng });
+                }
+                setRemainingDistance(0);
+                setRemainingTime(0);
             }
         }, 1000);
     }, [
