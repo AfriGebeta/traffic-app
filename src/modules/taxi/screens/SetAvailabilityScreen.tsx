@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { taxiService } from '../services/taxi.service';
 import { colors } from '../../../shared/theme/colors';
 import { routeCacheService } from '../services/route-cache.service';
+import { useRouteBuilder } from '../contexts/RouteBuilderContext';
 
 interface EdgeInfo {
     startNodeId: number;
@@ -26,6 +27,7 @@ export default function SetAvailabilityScreen() {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
+    const { endCollectorTracking, setIsCollecting } = useRouteBuilder();
 
     const [edges, setEdges] = useState<EdgeInfo[]>([]);
     const [timeWindows, setTimeWindows] = useState<TimeWindow[]>([]);
@@ -174,7 +176,13 @@ export default function SetAvailabilityScreen() {
                 {
                     text: t('ok'),
                     onPress: async () => {
+
+                        console.log('[SetAvailability] Ending collector tracking...');
+                        await endCollectorTracking();
+                        setIsCollecting(false);
+
                         await routeCacheService.clearRouteCache();
+
                         router.back();
                         router.back();
                         router.back();

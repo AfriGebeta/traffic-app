@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { routeCacheService, CachedRouteData } from '../services/route-cache.service';
+import { useCollectorTracking } from '../hooks/useCollectorTracking';
 
 interface RouteStop {
     id: string;
@@ -19,6 +20,11 @@ interface RouteBuilderContextType {
     cachedRoute: CachedRouteData | null;
     loadCachedRoute: () => Promise<void>;
     clearCache: () => Promise<void>;
+    isCollecting: boolean;
+    setIsCollecting: (value: boolean) => void;
+    currentRouteName: string;
+    setCurrentRouteName: (name: string) => void;
+    endCollectorTracking: () => Promise<boolean>;
 }
 
 const RouteBuilderContext = createContext<RouteBuilderContextType | undefined>(undefined);
@@ -27,6 +33,13 @@ export function RouteBuilderProvider({ children }: { children: ReactNode }) {
     const [pendingStop, setPendingStop] = useState<RouteStop | null>(null);
     const [pickType, setPickType] = useState<'start' | 'end' | 'intermediate' | null>(null);
     const [cachedRoute, setCachedRoute] = useState<CachedRouteData | null>(null);
+    const [isCollecting, setIsCollecting] = useState<boolean>(false);
+    const [currentRouteName, setCurrentRouteName] = useState<string>('');
+
+    const { endTracking } = useCollectorTracking({
+        isCollecting,
+        routeName: currentRouteName,
+    });
 
     const loadCachedRoute = async () => {
         const cached = await routeCacheService.getRouteCache();
@@ -51,7 +64,12 @@ export function RouteBuilderProvider({ children }: { children: ReactNode }) {
                 setPickType,
                 cachedRoute,
                 loadCachedRoute,
-                clearCache
+                clearCache,
+                isCollecting,
+                setIsCollecting,
+                currentRouteName,
+                setCurrentRouteName,
+                endCollectorTracking: endTracking,
             }}
         >
             {children}

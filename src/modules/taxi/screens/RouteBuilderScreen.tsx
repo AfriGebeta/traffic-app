@@ -26,7 +26,18 @@ export default function RouteBuilderScreen() {
     const router = useRouter();
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
-    const { pendingStop, setPendingStop, pickType, setPickType, cachedRoute, clearCache } = useRouteBuilder();
+    const {
+        pendingStop,
+        setPendingStop,
+        pickType,
+        setPickType,
+        cachedRoute,
+        clearCache,
+        setIsCollecting,
+        setCurrentRouteName,
+        isCollecting,
+        endCollectorTracking,
+    } = useRouteBuilder();
     const { userLocation } = useUserLocation();
 
     const [routeName, setRouteName] = useState('');
@@ -46,6 +57,26 @@ export default function RouteBuilderScreen() {
     const [endStationType, setEndStationType] = useState<'station' | 'stop'>('station');
     const [intermediateStopType, setIntermediateStopType] = useState<'station' | 'stop'>('stop');
     const [showRestorePrompt, setShowRestorePrompt] = useState(false);
+
+    useEffect(() => {
+        if (startStation && !isCollecting) {
+            setIsCollecting(true);
+            if (routeName) {
+                setCurrentRouteName(routeName);
+            }
+            
+        }
+    }, [startStation, isCollecting, setIsCollecting, routeName, setCurrentRouteName]);
+
+
+    useEffect(() => {
+        return () => {
+            if (isCollecting) {
+                endCollectorTracking();
+                setIsCollecting(false);
+            }
+        };
+    }, [isCollecting, endCollectorTracking, setIsCollecting]);
 
     useEffect(() => {
         if (cachedRoute && cachedRoute.currentStep === 'builder') {
