@@ -852,16 +852,25 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             }
                         }}
                         onRegionIsChanging={(e: any) => {
-                            if (isNavigating && e.properties?.zoom !== undefined) {
-                                const currentZoom = e.properties.zoom;
-                                if (Math.abs(currentZoom - lastSetZoom.current) > 0.5) {
-                                    if (!userHasZoomedOut.current) {
-                                        userHasZoomedOut.current = true;
-                                        if (onUserInteraction) {
-                                            onUserInteraction();
+                            // console.log('event properties:', JSON.stringify(e.properties));
+                            // console.log('event geometry:', JSON.stringify(e.geometry));
+
+                            if (e.properties?.zoom !== undefined) {
+                                const zoomLevel = e.properties.zoom;
+                                // console.log('zoom level:', zoomLevel.toFixed(1));
+
+                                if (isNavigating) {
+                                    if (Math.abs(zoomLevel - lastSetZoom.current) > 0.5) {
+                                        if (!userHasZoomedOut.current) {
+                                            userHasZoomedOut.current = true;
+                                            if (onUserInteraction) {
+                                                onUserInteraction();
+                                            }
                                         }
                                     }
                                 }
+                            } else {
+                                // console.log('zoom not found in event properties');
                             }
                         }}
                         onDidFinishLoadingMap={handleMapLoad}
