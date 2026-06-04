@@ -447,7 +447,7 @@ export const useNavigation = (
                         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
                         const distanceToDestination = R * c;
 
-                        if (distanceToDestination <= 10) {
+                        if (distanceToDestination <= 50) {
                             setShowArrivalModal(true);
                             handleStopNavigation();
                             return;
