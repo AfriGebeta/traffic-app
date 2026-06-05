@@ -508,7 +508,19 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
             hasProcessedSharedLocation.current = true;
 
             const place: GeocodingPlace = {
+                id: `shared-${sharedLocation.lat}-${sharedLocation.lng}`,
                 name: sharedLocation.name || 'Shared Location',
+                display_name: sharedLocation.name || 'Shared Location',
+                category: sharedLocation.type || 'location',
+                location: {
+                    lat: sharedLocation.lat,
+                    lng: sharedLocation.lng,
+                },
+                address: {
+                    city: sharedLocation.city,
+                    country: sharedLocation.country || '',
+                    country_code: '',
+                },
                 latitude: sharedLocation.lat,
                 longitude: sharedLocation.lng,
                 type: sharedLocation.type || 'location',
@@ -533,7 +545,19 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     useEffect(() => {
         if (taxiDestination && userLocation && isMapLoaded) {
             const place: GeocodingPlace = {
+                id: `taxi-dest-${taxiDestination.lat}-${taxiDestination.lng}`,
                 name: taxiDestination.name,
+                display_name: taxiDestination.name,
+                category: 'destination',
+                location: {
+                    lat: taxiDestination.lat,
+                    lng: taxiDestination.lng,
+                },
+                address: {
+                    city: '',
+                    country: '',
+                    country_code: '',
+                },
                 latitude: taxiDestination.lat,
                 longitude: taxiDestination.lng,
                 type: 'destination',
@@ -870,6 +894,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 taxiWalkRoutes={taxiWalkRoutes || undefined}
                 taxiRouteSegments={taxiRouteSegments || undefined}
                 waypointMarkers={waypoints.length > 0 ? waypoints.map(wp => ({ latitude: wp.latitude, longitude: wp.longitude, name: wp.name })) : undefined}
+                externalCameraControl={!navigationMode}
             />
 
             {activeIncidentAlert && (
