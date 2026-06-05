@@ -131,6 +131,12 @@ interface ExtendedGebetaMapProps extends Omit<GebetaMapProps, 'center'> {
     activeSegmentGeoJSON?: any;
     previewStepLocation?: { lng: number; lat: number } | null;
     externalCameraControl?: boolean;
+    boundingBox?: {
+        north: number;
+        south: number;
+        east: number;
+        west: number;
+    } | null;
 }
 
 
@@ -415,7 +421,7 @@ AnimatedNavLayer.displayName = 'AnimatedNavLayer';
 
 
 const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
-    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl }, ref) => {
+    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, boundingBox }, ref) => {
         const [mapStyleState, setMapStyleState] = useState<Record<string, unknown> | null>(() =>
             mapStyleJson ? ensureStyleBackgroundLayer(mapStyleJson as Record<string, any>) : null
         );
@@ -1082,6 +1088,48 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                             lineOpacity: isNavigating ? 0.8 : 0.7,
                                             lineDasharray: [0.5, 2],
                                             lineCap: 'round',
+                                        }}
+                                    />
+                                </MapLibreGL.ShapeSource>
+                            );
+                        })()}
+
+                        {/* bounding box for neighborhood */}
+                        {boundingBox && (() => {
+                            const boxGeoJSON = {
+                                type: 'Feature' as const,
+                                properties: {},
+                                geometry: {
+                                    type: 'Polygon' as const,
+                                    coordinates: [[
+                                        [boundingBox.west, boundingBox.north],
+                                        [boundingBox.east, boundingBox.north],
+                                        [boundingBox.east, boundingBox.south],
+                                        [boundingBox.west, boundingBox.south],
+                                        [boundingBox.west, boundingBox.north],
+                                    ]]
+                                }
+                            };
+
+                            return (
+                                <MapLibreGL.ShapeSource
+                                    key="bounding-box"
+                                    id="bounding-box-source"
+                                    shape={boxGeoJSON}
+                                >
+                                    <MapLibreGL.FillLayer
+                                        id="bounding-box-fill"
+                                        style={{
+                                            fillColor: colors.primary.main,
+                                            fillOpacity: 0.15,
+                                        }}
+                                    />
+                                    <MapLibreGL.LineLayer
+                                        id="bounding-box-line"
+                                        style={{
+                                            lineColor: colors.primary.main,
+                                            lineWidth: 2,
+                                            lineOpacity: 1,
                                         }}
                                     />
                                 </MapLibreGL.ShapeSource>
