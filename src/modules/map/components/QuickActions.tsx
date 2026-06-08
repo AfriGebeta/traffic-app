@@ -64,7 +64,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
                         >
                             <View
                                 className={`px-4 py-2 flex-row items-center rounded-full  ${selectedCategory === category.id
-                                    ? 'bg-orange-500'
+                                    ? 'bg-orange-400'
                                     : 'bg-white/90'
                                     }`}
                                 style={{
