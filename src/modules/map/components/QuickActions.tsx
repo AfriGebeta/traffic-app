@@ -1,6 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Animated } from 'react-native';
-// import { BlurView } from 'expo-blur';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
@@ -34,10 +33,6 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
 }) => {
     const { t } = useTranslation();
     const [internalSelectedCategory, setInternalSelectedCategory] = useState<string | null>(null);
-    const scrollX = useRef(new Animated.Value(0)).current;
-    const [isScrolling, setIsScrolling] = useState(false);
-    const [scrollViewWidth, setScrollViewWidth] = useState(0);
-    const [contentWidth, setContentWidth] = useState(0);
 
     const selectedCategory = externalSelectedCategory !== undefined
         ? externalSelectedCategory
@@ -51,34 +46,12 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
         onSelectCategory?.(categoryId);
     };
 
-    const handleScroll = Animated.event(
-        [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-        {
-            useNativeDriver: false,
-        }
-    );
-
-    const handleScrollEnd = () => {
-        setIsScrolling(false);
-    };
-
-    const maxScroll = Math.max(0, contentWidth - scrollViewWidth);
-    const indicatorWidth = 60;
-    const maxIndicatorTranslate = scrollViewWidth - indicatorWidth - 32;
-
     return (
         <View className="mt-1.5 -mx-4">
             <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={{ paddingLeft: 14, paddingRight: 14, paddingBottom: 8 }}
-                onScroll={handleScroll}
-                onScrollBeginDrag={() => setIsScrolling(true)}
-                onScrollEndDrag={handleScrollEnd}
-                onMomentumScrollEnd={handleScrollEnd}
-                scrollEventThrottle={1}
-                onLayout={(e) => setScrollViewWidth(e.nativeEvent.layout.width)}
-                onContentSizeChange={(width) => setContentWidth(width)}
             >
                 {categories.map((category, index) => (
                     <View
@@ -113,24 +86,6 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
                     </View>
                 ))}
             </ScrollView>
-            {isScrolling && maxScroll > 0 && (
-                <View className="absolute bottom-0 left-4 right-4 h-1 bg-gray-300 rounded-full">
-                    <Animated.View
-                        className="h-full rounded-full"
-                        style={{
-                            width: indicatorWidth,
-                            backgroundColor: '#F59E0B',
-                            transform: [{
-                                translateX: scrollX.interpolate({
-                                    inputRange: [0, maxScroll],
-                                    outputRange: [0, maxIndicatorTranslate],
-                                    extrapolate: 'clamp'
-                                })
-                            }]
-                        }}
-                    />
-                </View>
-            )}
         </View>
     );
 };
