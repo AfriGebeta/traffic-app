@@ -571,7 +571,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
 
 
             const globalTaxiRoute = (globalThis as any).__taxiRouteData;
-            
+
             if (globalTaxiRoute && globalTaxiRoute.timestamp) {
                 setTaxiRouteData(globalTaxiRoute);
                 setShowRoutePreview(true);
@@ -585,13 +585,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     }, [taxiDestination, userLocation]);
 
     useEffect(() => {
-        console.log('[Taxi Route] Effect triggered:', {
-            hasTaxiData: !!taxiRouteData,
-            isMapLoaded
-        });
-
         if (!taxiRouteData) {
-            console.log('[Taxi Route] No taxi data, clearing stations');
             setTaxiStations(null);
             setTaxiWalkRoutes(null);
             setTaxiRouteSegments(null);
@@ -599,14 +593,11 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         }
 
         if (!taxiRouteData.startNode || !taxiRouteData.endNode || !taxiRouteData.origin || !taxiRouteData.destination) {
-            console.log('[Taxi Route] Invalid taxi route data - missing required nodes');
             setTaxiStations(null);
             setTaxiWalkRoutes(null);
             setTaxiRouteSegments(null);
             return;
         }
-
-        console.log('[Taxi Route] Setting taxi stations:', taxiRouteData);
 
         const fetchIntermediateNodes = async () => {
             const stations: Array<{ id: number; name: string; lat: number; lng: number; type: 'start' | 'end' | 'intermediate' }> = [
@@ -621,7 +612,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
 
             if (taxiRouteData.path && taxiRouteData.path.length > 2) {
                 const intermediateIds = taxiRouteData.path.slice(1, -1);
-                console.log('[Taxi Route] Fetching intermediate nodes:', intermediateIds);
 
                 try {
                     const { taxiService } = await import('../../taxi/services/taxi.service');
@@ -630,8 +620,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     const intermediateNodes = allNodes.filter((node: any) =>
                         intermediateIds.includes(node.id)
                     );
-
-                    console.log('[Taxi Route] Found intermediate nodes:', intermediateNodes.length);
 
                     intermediateIds.forEach((id: number) => {
                         const node = intermediateNodes.find((n: any) => n.id === id);
@@ -667,13 +655,11 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
             const walkRoutes: Array<{ type: 'origin' | 'transfer' | 'destination'; polyline: string }> = [];
 
             if (taxiRouteData.segments && taxiRouteData.segments.length > 0) {
-                console.log('[Taxi Route] Processing segments array:', taxiRouteData.segments.length);
                 taxiRouteData.segments.forEach((segment: any, index: number) => {
                     if ((segment.type === 'walk' || segment.mode === 'pedestrian') && segment.polyline) {
                         const type = index === 0 ? 'origin' :
                             index === taxiRouteData.segments.length - 1 ? 'destination' :
                                 'transfer';
-                        console.log(`[Taxi Route] Found walk segment ${index}:`, type, 'polyline length:', segment.polyline.length);
                         walkRoutes.push({ type, polyline: segment.polyline });
                     }
                 });
@@ -684,11 +670,9 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 }
 
                 if (taxiRouteData.path && taxiRouteData.path.length > 2) {
-                    console.log('[Taxi Route] Checking path for transfer walks:', taxiRouteData.path);
                     try {
                         const { taxiService } = await import('../../taxi/services/taxi.service');
                         const allEdges = await taxiService.getAllEdges();
-                        console.log('[Taxi Route] Total edges available:', allEdges.length);
 
                         for (let i = 0; i < taxiRouteData.path.length - 1; i++) {
                             const startNodeId = taxiRouteData.path[i];
@@ -698,16 +682,12 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                                 (e: any) => e.start_node_id === startNodeId && e.end_node_id === endNodeId
                             );
 
-                            console.log(`[Taxi Route] Edge ${startNodeId} → ${endNodeId}:`, edge ? `connection=${edge.connection}` : 'not found');
-
                             if (edge && edge.connection === 'walk') {
                                 const allNodes = await taxiService.getAllNodes();
                                 const startNode = allNodes.find((n: any) => n.id === startNodeId);
                                 const endNode = allNodes.find((n: any) => n.id === endNodeId);
 
                                 if (startNode && endNode) {
-                                    console.log('[Taxi Route] Found transfer walk:', startNode.name, '→', endNode.name);
-
                                     const { navigationService } = await import('../../navigation/services/navigation.service');
                                     const walkRoute = await navigationService.getNavigation({
                                         origin: [startNode.lat, startNode.lng],
@@ -715,7 +695,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                                     });
 
                                     if (walkRoute?.data?.trip?.legs?.[0]?.shape) {
-                                        console.log('[Taxi Route] Transfer walk polyline fetched, length:', walkRoute.data.trip.legs[0].shape.length);
                                         walkRoutes.push({
                                             type: 'transfer',
                                             polyline: walkRoute.data.trip.legs[0].shape
@@ -727,8 +706,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     } catch (error) {
                         console.error('[Taxi Route] Error fetching transfer walks:', error);
                     }
-                } else {
-                    console.log('[Taxi Route] No intermediate nodes to check for transfers (path length:', taxiRouteData.path?.length, ')');
                 }
 
                 const destShape = taxiRouteData.destinationWalkRoute?.trip.legs[0]?.shape;
@@ -736,13 +713,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     walkRoutes.push({ type: 'destination', polyline: destShape });
                 }
             }
-
-            console.log('[Taxi Route] Walking routes:', {
-                total: walkRoutes.length,
-                origin: walkRoutes.filter(r => r.type === 'origin').length,
-                transfers: walkRoutes.filter(r => r.type === 'transfer').length,
-                destination: walkRoutes.filter(r => r.type === 'destination').length,
-            });
 
             setTaxiWalkRoutes(walkRoutes);
         };
@@ -761,12 +731,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 if (routeData?.data?.trip?.legs?.[0]?.shape) {
                     const decodedCoords = decodePolyline(routeData.data.trip.legs[0].shape, 6);
                     const mapCoords: [number, number][] = decodedCoords.map(([lat, lng]) => [lng, lat] as [number, number]);
-                    console.log('[Taxi Route] Driving route decoded:', {
-                        coordsCount: decodedCoords.length,
-                        firstCoord: decodedCoords[0],
-                        lastCoord: decodedCoords[decodedCoords.length - 1],
-                        firstMapCoord: mapCoords[0],
-                    });
                     setTaxiRouteSegments([{
                         coordinates: mapCoords,
                         cost: taxiRouteData.summary.estimatedFare,
@@ -774,7 +738,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                         to: taxiRouteData.endNode.name
                     }]);
                 } else {
-                    console.log('[Taxi Route] No driving route, using straight line');
                     if (taxiRouteData.startNode && taxiRouteData.endNode && taxiRouteData.summary) {
                         setTaxiRouteSegments([{
                             coordinates: [
@@ -823,7 +786,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
             const centerLng = (minLng + maxLng) / 2;
             const centerLat = (minLat + maxLat) / 2;
 
-            console.log('[Taxi Route] Flying to center:', [centerLng, centerLat]);
             setTimeout(() => {
                 mapRef.current?.flyTo({
                     center: [centerLng, centerLat],

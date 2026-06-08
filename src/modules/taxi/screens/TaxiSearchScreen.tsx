@@ -106,8 +106,6 @@ export default function TaxiSearchScreen() {
 
             const result: any = await taxiService.requestTaxiNavigation(requestData);
 
-            console.log('[TaxiSearch] API result:', JSON.stringify(result, null, 2));
-
             if (result.success === false) {
                 throw new Error(result.message || 'No route found');
             }

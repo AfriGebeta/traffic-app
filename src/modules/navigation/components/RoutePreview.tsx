@@ -164,7 +164,6 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                 origin: [coords.lat, coords.lng],
                 destination: [destination.latitude, destination.longitude],
             });
-            console.log('[RoutePreview] Taxi route fetched:', result);
 
             if (!result.startNode || !result.endNode) {
                 setTaxiRouteError(t('taxi-route-unavailable'));
@@ -173,7 +172,6 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
             } else {
                 setTaxiRoute(result);
                 setTaxiRouteError(null);
-                console.log('[RoutePreview] Calling onTaxiRouteChange with:', result);
                 onTaxiRouteChange?.(result);
             }
         } catch (error: any) {

@@ -1890,6 +1890,11 @@
         "AM": "ለእያንዳንዱ መስመር የተለየ ሰዓት"
     },
     {
+        "key": "quick-access",
+        "EN_US": "Quick Access",
+        "AM": "ፈጣን መዳረሻ"
+    },
+    {
         "key": "each-route-has-its-own-time",
         "EN_US": "Each route has its own time",
         "AM": "እያንዳንዱ መስመር የራሱ ሰዓት አለው"

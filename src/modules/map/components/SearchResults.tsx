@@ -11,9 +11,9 @@ import { colors } from '../../../shared/theme/colors';
 const Text = RNText;
 
 const SAVED_PLACE_CONFIG: Record<SavedPlaceType, { icon: keyof typeof Ionicons.glyphMap; label: string }> = {
-    HOME:     { icon: 'home',      label: 'Home' },
-    WORK:     { icon: 'briefcase', label: 'Work' },
-    FAVORITE: { icon: 'heart',     label: 'Favorite' },
+    HOME: { icon: 'home', label: 'Home' },
+    WORK: { icon: 'briefcase', label: 'Work' },
+    FAVORITE: { icon: 'heart', label: 'Favorite' },
 };
 
 const CHIP_ORDER: SavedPlaceType[] = ['HOME', 'WORK', 'FAVORITE'];
@@ -27,7 +27,19 @@ const normalizeSavedPlaceType = (type: string): SavedPlaceType | null => {
 };
 
 const savedPlaceToGeocodingPlace = (place: SavedPlace): GeocodingPlace => ({
+    id: `saved-${place.id}`,
     name: place.label,
+    display_name: place.label,
+    category: place.type,
+    location: {
+        lat: place.lat,
+        lng: place.lng,
+    },
+    address: {
+        city: '',
+        country: '',
+        country_code: '',
+    },
     latitude: place.lat,
     longitude: place.lng,
     Country: '',
@@ -46,6 +58,7 @@ interface SearchResultsProps {
     isLoading?: boolean;
     showContainer?: boolean;
     showRecentSearches?: boolean;
+    onClose?: () => void;
 }
 
 const PlaceListItem = ({
@@ -235,6 +248,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     isLoading = false,
     showContainer = false,
     showRecentSearches = false,
+    onClose,
 }) => {
     const { t } = useTranslation();
 
@@ -251,43 +265,58 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
                     <Text className="text-gray-500 mt-2">{t('searching')}</Text>
                 </View>
             ) : showRecents ? (
-                <ScrollView className="max-h-80" keyboardShouldPersistTaps="always">
-                    <SavedPlaceChips
-                        savedPlaces={savedPlaces}
-                        onSelectPlace={onSelectPlace}
-                        onPrepareSelect={onPrepareSelect}
-                    />
-
-                    {hasRecentSearches ? (
-                        <>
-                            <View className="px-4 pb-2 flex-row items-center justify-between">
-                                <Text className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                                    {t('recent-searches')}
-                                </Text>
-                                {onClearRecent && (
-                                    <TouchableOpacity onPress={onClearRecent} activeOpacity={0.7}>
-                                        <Text className="text-sm font-medium text-amber-600">{t('clear-recent')}</Text>
-                                    </TouchableOpacity>
-                                )}
-                            </View>
-                            {recentSearches.map((place) => (
-                                <PlaceListItem
-                                    key={`${place.latitude}-${place.longitude}-${place.searchedAt}`}
-                                    place={place}
-                                    icon="time-outline"
-                                    iconBgClass="bg-gray-100"
-                                    onSelectPlace={onSelectPlace}
-                                    onPrepareSelect={onPrepareSelect}
-                                    onRemoveRecent={onRemoveRecent}
-                                />
-                            ))}
-                        </>
-                    ) : (
-                        <View className="px-4 pb-6 items-center">
-                            <Text className="text-gray-400 text-sm">{t('no-recent-searches')}</Text>
+                <>
+                    {onClose && (
+                        <View className="px-4 pt-3 pb-2 flex-row items-center justify-between border-b border-gray-100">
+                            <Text className="text-sm font-semibold text-gray-700">{t('quick-access') || 'Quick Access'}</Text>
+                            <TouchableOpacity
+                                onPress={onClose}
+                                activeOpacity={0.7}
+                                className="p-1"
+                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            >
+                                <Ionicons name="close" size={22} color="#6B7280" />
+                            </TouchableOpacity>
                         </View>
                     )}
-                </ScrollView>
+                    <ScrollView className="max-h-80" keyboardShouldPersistTaps="always">
+                        <SavedPlaceChips
+                            savedPlaces={savedPlaces}
+                            onSelectPlace={onSelectPlace}
+                            onPrepareSelect={onPrepareSelect}
+                        />
+
+                        {hasRecentSearches ? (
+                            <>
+                                <View className="px-4 pb-2 flex-row items-center justify-between">
+                                    <Text className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                                        {t('recent-searches')}
+                                    </Text>
+                                    {onClearRecent && (
+                                        <TouchableOpacity onPress={onClearRecent} activeOpacity={0.7}>
+                                            <Text className="text-sm font-medium text-amber-600">{t('clear-recent')}</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+                                {recentSearches.map((place) => (
+                                    <PlaceListItem
+                                        key={`${place.latitude}-${place.longitude}-${place.searchedAt}`}
+                                        place={place}
+                                        icon="time-outline"
+                                        iconBgClass="bg-gray-100"
+                                        onSelectPlace={onSelectPlace}
+                                        onPrepareSelect={onPrepareSelect}
+                                        onRemoveRecent={onRemoveRecent}
+                                    />
+                                ))}
+                            </>
+                        ) : (
+                            <View className="px-4 pb-6 items-center">
+                                <Text className="text-gray-400 text-sm">{t('no-recent-searches')}</Text>
+                            </View>
+                        )}
+                    </ScrollView>
+                </>
             ) : results.length === 0 ? (
                 <View className="p-8 items-center justify-center">
                     <Ionicons name="search-outline" size={48} color="#D1D5DB" />

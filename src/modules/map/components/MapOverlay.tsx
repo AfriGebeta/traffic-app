@@ -117,7 +117,16 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
 
     return (
         <>
-            <View className="absolute left-4 right-4" style={{ top: insets.top + 10 }}>
+            {showSearchContainer && showRecentSearches && (
+                <TouchableOpacity
+                    activeOpacity={1}
+                    onPress={onCloseSearch}
+                    className="absolute inset-0 bg-black/20"
+                    style={{ zIndex: 10 }}
+                />
+            )}
+
+            <View className="absolute left-4 right-4" style={{ top: insets.top + 10, zIndex: 20 }}>
                 <SearchBar
                     value={searchQuery}
                     onChangeText={onSearchChange}
@@ -146,6 +155,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                     isLoading={isSearching}
                     showContainer={showSearchContainer}
                     showRecentSearches={showRecentSearches}
+                    onClose={onCloseSearch}
                 />
 
             </View>
