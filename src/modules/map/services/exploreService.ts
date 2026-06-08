@@ -16,14 +16,14 @@ interface ExploreParams {
     coordinate: { lat: number; lng: number };
     type: string;
     cursor?: number;
-    limit?: number;
+    size?: number;
 }
 
 export const exploreService = {
     async searchNearby(
         categoryId: string,
         userLocation: { lat: number; lng: number },
-        limit: number = 20
+        size: number = 5
     ): Promise<GeocodingPlace[]> {
         const type = CATEGORY_TYPE_MAP[categoryId];
         if (!type) {
@@ -37,32 +37,61 @@ export const exploreService = {
             },
             type,
             cursor: 0,
-            limit,
+            size,
         };
+
+
+        const requestBody = JSON.stringify(params);
+
 
         const response = await fetch(`${API_URL}/api/navigation/request-revgeocoding`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(params),
+            body: requestBody,
         });
 
         if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`[Map Explore] HTTP error ${response.status}:`, errorText);
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
 
-        const rawResults = data.response || data.results || data.data || [];
+        let rawResults: any[] = [];
+        if (data.response?.results && Array.isArray(data.response.results)) {
+            rawResults = data.response.results;
+        } else if (data.data?.results && Array.isArray(data.data.results)) {
+            rawResults = data.data.results;
+        } else if (Array.isArray(data.data)) {
+            rawResults = data.data;
+        } else if (Array.isArray(data.response)) {
+            rawResults = data.response;
+        } else if (Array.isArray(data.results)) {
+            rawResults = data.results;
+        }
 
         const places: GeocodingPlace[] = rawResults.map((item: any) => ({
+            id: item.id || '',
             name: item.name || 'Unknown',
-            latitude: item.latitude || 0,
-            longitude: item.longitude || 0,
-            type: item.type || type,
-            Country: item.Country || '',
-            City: item.City || '',
+            display_name: item.display_name || item.name || 'Unknown',
+            category: item.category || type,
+            location: {
+                lat: item.location?.lat || item.latitude || 0,
+                lng: item.location?.lng || item.longitude || 0,
+            },
+            address: {
+                city: item.address?.city || item.City || '',
+                country: item.address?.country || item.Country || '',
+                country_code: item.address?.country_code || '',
+            },
+            latitude: item.location?.lat || item.latitude || 0,
+            longitude: item.location?.lng || item.longitude || 0,
+            type: item.category || item.type || type,
+            Country: item.address?.country || item.Country || '',
+            City: item.address?.city || item.City || '',
             image: item.image || item.photo || item.imageUrl || undefined,
         }));
 
@@ -78,7 +107,7 @@ export const exploreService = {
             body: JSON.stringify({
                 coordinate: { lat, lng },
                 cursor: 0,
-                limit: 10,
+                size: 10,
             }),
         });
 
@@ -87,16 +116,30 @@ export const exploreService = {
         }
 
         const data = await response.json();
-        const results = data.response || data.results || data.data || [];
+
+        let results: any[] = [];
+        if (data.response?.results && Array.isArray(data.response.results)) {
+            results = data.response.results;
+        } else if (data.data?.results && Array.isArray(data.data.results)) {
+            results = data.data.results;
+        } else if (Array.isArray(data.data)) {
+            results = data.data;
+        } else if (Array.isArray(data.response)) {
+            results = data.response;
+        } else if (Array.isArray(data.results)) {
+            results = data.results;
+        }
 
         if (results.length > 0) {
             let closestPlace = results[0];
             let minDistance = Number.MAX_VALUE;
 
             for (const place of results) {
-                if (place.name && place.latitude && place.longitude) {
+                const placeLat = place.location?.lat || place.latitude;
+                const placeLng = place.location?.lng || place.longitude;
+                if (place.name && placeLat && placeLng) {
                     const distance = Math.sqrt(
-                        Math.pow(place.latitude - lat, 2) + Math.pow(place.longitude - lng, 2)
+                        Math.pow(placeLat - lat, 2) + Math.pow(placeLng - lng, 2)
                     );
                     if (distance < minDistance) {
                         minDistance = distance;
@@ -107,12 +150,24 @@ export const exploreService = {
 
             if (closestPlace.name) {
                 return {
+                    id: closestPlace.id || '',
                     name: closestPlace.name,
-                    latitude: closestPlace.latitude || lat,
-                    longitude: closestPlace.longitude || lng,
-                    type: closestPlace.type || 'place',
-                    Country: closestPlace.Country || '',
-                    City: closestPlace.City || '',
+                    display_name: closestPlace.display_name || closestPlace.name,
+                    category: closestPlace.category || 'place',
+                    location: {
+                        lat: closestPlace.location?.lat || closestPlace.latitude || lat,
+                        lng: closestPlace.location?.lng || closestPlace.longitude || lng,
+                    },
+                    address: {
+                        city: closestPlace.address?.city || closestPlace.City || '',
+                        country: closestPlace.address?.country || closestPlace.Country || '',
+                        country_code: closestPlace.address?.country_code || '',
+                    },
+                    latitude: closestPlace.location?.lat || closestPlace.latitude || lat,
+                    longitude: closestPlace.location?.lng || closestPlace.longitude || lng,
+                    type: closestPlace.category || closestPlace.type || 'place',
+                    Country: closestPlace.address?.country || closestPlace.Country || '',
+                    City: closestPlace.address?.city || closestPlace.City || '',
                     image: closestPlace.image || closestPlace.photo || closestPlace.imageUrl || undefined,
                 };
             }

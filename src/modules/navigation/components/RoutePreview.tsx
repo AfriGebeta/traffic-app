@@ -13,6 +13,7 @@ import type { SavedPlaceType, SavedPlace } from '../../places/types/place.types'
 import { taxiService } from '../../taxi/services/taxi.service';
 import { navigationService } from '../services/navigation.service';
 import type { TaxiNavigationResponse } from '../../taxi/types/taxi.types';
+import { useRouter } from 'expo-router';
 
 interface RoutePreviewProps {
     distance: number;
@@ -86,6 +87,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
 }) => {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
+    const router = useRouter();
     const [showSaveModal, setShowSaveModal] = useState(false);
     const [savedPlace, setSavedPlace] = useState<SavedPlace | null>(null);
 
@@ -114,6 +116,33 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
     useEffect(() => {
         checkIfSaved();
     }, [destination]);
+
+    useEffect(() => {
+        const checkMapPickerData = () => {
+            const data = (globalThis as any).__mapPickerData;
+            if (data && data.timestamp) {
+
+                const age = Date.now() - data.timestamp;
+                if (age < 2000) {
+
+                    if (data.mode === 'origin') {
+                        onOriginChange?.(data.place);
+                    } else {
+                        const updated = [...waypoints, data.place];
+                        onWaypointsChange?.(updated);
+                    }
+
+                    delete (globalThis as any).__mapPickerData;
+                }
+            }
+        };
+
+        checkMapPickerData();
+
+        const interval = setInterval(checkMapPickerData, 200);
+
+        return () => clearInterval(interval);
+    }, [waypoints, onOriginChange, onWaypointsChange]);
 
     useEffect(() => {
         const coords = getOriginCoords();
@@ -605,7 +634,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
 
                                     {waypoints.map((wp, index) => (
                                         <View key={index}>
-                                           
+
                                             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                                 <View style={{ width: 32, alignItems: 'center' }}>
                                                     <Image
@@ -627,7 +656,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                                     </TouchableOpacity>
                                                 </View>
                                             </View>
-                                        
+
                                             <View style={{ flexDirection: 'row', height: 14 }}>
                                                 <View style={{ width: 32, alignItems: 'center' }}>
                                                     <View style={{ width: 1, flex: 1, backgroundColor: '#9CA3AF' }} />
@@ -652,7 +681,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                                     Add stop
                                                 </Text>
                                             </TouchableOpacity>
-                                       
+
                                             <View style={{ flexDirection: 'row', height: 14 }}>
                                                 <View style={{ width: 32, alignItems: 'center' }}>
                                                     <View style={{ width: 1, flex: 1, backgroundColor: '#9CA3AF' }} />
@@ -779,12 +808,12 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                 onRequestClose={closePlaceSearch}
             >
                 <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    behavior={Platform.OS === 'ios' ? 'position' : undefined}
                     style={{ flex: 1 }}
+                    keyboardVerticalOffset={0}
                 >
                     <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' }}>
-                        <View style={{ backgroundColor: 'white', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: insets.bottom + 16 }}>
-                            {/* Header */}
+                        <View style={{ backgroundColor: 'white', borderTopLeftRadius: 24, borderTopRightRadius: 24, borderBottomLeftRadius: 24, borderBottomRightRadius: 24, paddingBottom: 16, overflow: 'hidden', marginHorizontal: 16, marginBottom: insets.bottom > 0 ? insets.bottom : 16 }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 }}>
                                 <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827', flex: 1 }}>
                                     {placeSearchMode === 'origin' ? t('set-starting-point') : 'Add a stop'}
@@ -823,6 +852,39 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                     </Text>
                                 </TouchableOpacity>
                             )}
+
+                            <TouchableOpacity
+                                onPress={() => {
+                                    closePlaceSearch();
+                                    router.push({
+                                        pathname: '/places/map-picker',
+                                        params: {
+                                            mode: placeSearchMode,
+                                        }
+                                    });
+                                }}
+                                style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    marginHorizontal: 20,
+                                    marginBottom: 8,
+                                    paddingVertical: 14,
+                                    borderBottomWidth: 1,
+                                    borderBottomColor: '#F3F4F6',
+                                }}
+                                activeOpacity={0.7}
+                            >
+                                <View style={{
+                                    width: 36, height: 36, borderRadius: 18,
+                                    backgroundColor: `${colors.primary.main}15`,
+                                    alignItems: 'center', justifyContent: 'center', marginRight: 14,
+                                }}>
+                                    <Ionicons name="map-outline" size={18} color={colors.primary.main} />
+                                </View>
+                                <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
+                                    {placeSearchMode === 'origin' ? t('pick-on-map') : t('pick-stop-on-map')}
+                                </Text>
+                            </TouchableOpacity>
 
                             <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginBottom: 8, backgroundColor: '#F3F4F6', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10 }}>
                                 <Ionicons name="search" size={18} color="#9CA3AF" />

@@ -1545,6 +1545,16 @@
         "AM": "በካርታ ላይ ይምረጡ"
     },
     {
+        "key": "pick-stop-on-map",
+        "EN_US": "Pick stop on map",
+        "AM": "በካርታ ላይ ማቆሚያ ይምረጡ"
+    },
+    {
+        "key": "tap-to-select-start",
+        "EN_US": "Tap on the map to select starting point",
+        "AM": "መነሻ ቦታ ለመምረጥ ካርታውን ይንኩ"
+    },
+    {
         "key": "add-stop",
         "EN_US": "Add Stop",
         "AM": "ማቆሚያ ያክሉ"

@@ -12,5 +12,5 @@ export interface ExploreParams {
     coordinate: { lat: number; lng: number };
     type: string;
     cursor?: number;
-    limit?: number;
+    size?: number;
 }
