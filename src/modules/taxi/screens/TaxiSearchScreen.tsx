@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,10 +19,24 @@ export default function TaxiSearchScreen() {
     const [filteredStations, setFilteredStations] = useState<TaxiNode[]>([]);
     const [loading, setLoading] = useState(false);
     const [loadingStations, setLoadingStations] = useState(true);
+    const [selectedCoords, setSelectedCoords] = useState<{ lat: number; lng: number } | null>(null);
+    const lastProcessedTimestamp = useRef<number>(0);
 
     useEffect(() => {
         fetchStations();
     }, []);
+
+    useFocusEffect(
+        React.useCallback(() => {
+            const coords = (globalThis as any).__taxiDestinationCoords;
+            if (coords && coords.timestamp && coords.timestamp !== lastProcessedTimestamp.current) {
+                setSelectedCoords({ lat: coords.lat, lng: coords.lng });
+                setDestinationName(`${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`);
+                lastProcessedTimestamp.current = coords.timestamp;
+                delete (globalThis as any).__taxiDestinationCoords;
+            }
+        }, [])
+    );
 
     useEffect(() => {
         if (destinationName.trim()) {
@@ -61,29 +75,34 @@ export default function TaxiSearchScreen() {
 
         setLoading(true);
         try {
+            let requestData;
+            let matchingStation = null;
 
-            const matchingStation = stations.find(
-                s => s.name.toLowerCase() === destinationName.trim().toLowerCase()
-            );
-
-            let requestData: TaxiNavigationRequest;
-
-            if (matchingStation) {
+            if (selectedCoords) {
                 requestData = {
                     origin: [userLocation.lat, userLocation.lng] as [number, number],
-                    destination: [matchingStation.lat, matchingStation.lng] as [number, number],
+                    destination: [selectedCoords.lat, selectedCoords.lng] as [number, number],
                 };
             } else {
-
-                Alert.alert(
-                    t('error'),
-                    'Please select a destination from the available stations list'
+                matchingStation = stations.find(
+                    s => s.name.toLowerCase() === destinationName.trim().toLowerCase()
                 );
-                setLoading(false);
-                return;
+
+                if (matchingStation) {
+                    requestData = {
+                        origin: [userLocation.lat, userLocation.lng] as [number, number],
+                        destination: [matchingStation.lat, matchingStation.lng] as [number, number],
+                    };
+                } else {
+                    Alert.alert(
+                        t('error'),
+                        'Please select a destination from the available stations list'
+                    );
+                    setLoading(false);
+                    return;
+                }
             }
 
-            console.log('[TaxiSearch] Sending request:', requestData);
 
             const result: any = await taxiService.requestTaxiNavigation(requestData);
 
@@ -98,8 +117,8 @@ export default function TaxiSearchScreen() {
             }
 
             const destinationCoords = result.destination || {
-                lat: matchingStation.lat,
-                lng: matchingStation.lng
+                lat: selectedCoords?.lat || matchingStation?.lat,
+                lng: selectedCoords?.lng || matchingStation?.lng
             };
 
             const destination = {
@@ -109,6 +128,10 @@ export default function TaxiSearchScreen() {
                 type: 'destination' as const,
                 City: '',
                 Country: '',
+            };
+            (globalThis as any).__taxiRouteData = {
+                ...result,
+                timestamp: Date.now(),
             };
 
             router.back();

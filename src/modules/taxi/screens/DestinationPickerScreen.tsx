@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,48 +7,33 @@ import { useTranslation } from 'react-i18next';
 import GebetaMap from '../../../components/GebetaMap';
 import { colors } from '../../../shared/theme/colors';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
-import { useMapTheme } from '../../map/context/MapThemeContext';
-import { taxiService } from '../services/taxi.service';
 
 export default function DestinationPickerScreen() {
     const router = useRouter();
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { userLocation } = useUserLocation();
-    const { currentTheme } = useMapTheme();
 
-    const [mapReady, setMapReady] = useState(false);
     const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
-    const [loading, setLoading] = useState(false);
 
     const handleMapClick = (lngLat: [number, number]) => {
         const [lng, lat] = lngLat;
         setSelectedLocation({ lat, lng });
     };
 
-    const handleConfirm = async () => {
+    const handleConfirm = () => {
         if (!selectedLocation) {
             Alert.alert(t('error'), t('please-select-location-on-map'));
             return;
         }
 
-        if (!userLocation) {
-            Alert.alert(t('error'), t('location-unavailable'));
-            return;
-        }
+        (globalThis as any).__taxiDestinationCoords = {
+            lat: selectedLocation.lat,
+            lng: selectedLocation.lng,
+            timestamp: Date.now(),
+        };
 
-        
-        router.back(); 
-        router.back(); 
-
-        setTimeout(() => {
-            router.setParams({
-                taxiDestLat: selectedLocation.lat.toString(),
-                taxiDestLng: selectedLocation.lng.toString(),
-                taxiDestName: `${selectedLocation.lat.toFixed(4)}, ${selectedLocation.lng.toFixed(4)}`,
-                showTaxiMode: 'true',
-            });
-        }, 100);
+        router.back();
     };
 
     return (
@@ -56,20 +41,12 @@ export default function DestinationPickerScreen() {
             <View className="flex-1">
                 <GebetaMap
                     apiKey={process.env.EXPO_PUBLIC_GEBETA_API_KEY || ''}
-                    mapStyleUrl={currentTheme.styleUrl ? `${currentTheme.styleUrl}?apiKey=${process.env.EXPO_PUBLIC_GEBETA_API_KEY}` : undefined}
-                    mapStyleJson={currentTheme.styleJson}
-                    center={userLocation ? [userLocation.lng, userLocation.lat] : [38.74, 9.03]}
+                    mapStyleUrl={`https://tiles.gebeta.app/styles/standard/style.json?apiKey=${process.env.EXPO_PUBLIC_GEBETA_API_KEY}`}
+                    center={userLocation ? [userLocation.lng, userLocation.lat] : [38.7463, 9.0223]}
                     zoom={13}
-                    onMapLoaded={() => setMapReady(true)}
                     onMapClick={handleMapClick}
                     clickedLocation={selectedLocation}
                 />
-
-                {!mapReady && (
-                    <View className="absolute inset-0 items-center justify-center bg-gray-100">
-                        <ActivityIndicator size="large" color={colors.primary.main} />
-                    </View>
-                )}
 
                 <View
                     className="absolute left-4 bg-white rounded-full shadow-lg"
@@ -123,18 +100,13 @@ export default function DestinationPickerScreen() {
 
                     <TouchableOpacity
                         onPress={handleConfirm}
-                        disabled={loading}
                         className="rounded-xl py-3"
                         style={{ backgroundColor: colors.primary.main }}
                         activeOpacity={0.8}
                     >
-                        {loading ? (
-                            <ActivityIndicator color="white" />
-                        ) : (
-                            <Text className="text-white text-center font-bold text-base">
-                                {t('find-taxi-route')}
-                            </Text>
-                        )}
+                        <Text className="text-white text-center font-bold text-base">
+                            {t('confirm')}
+                        </Text>
                     </TouchableOpacity>
                 </View>
             )}

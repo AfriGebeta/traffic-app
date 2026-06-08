@@ -543,7 +543,8 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     }, [sharedLocation, isMapLoaded]);
 
     useEffect(() => {
-        if (taxiDestination && userLocation && isMapLoaded) {
+
+        if (taxiDestination && userLocation) {
             const place: GeocodingPlace = {
                 id: `taxi-dest-${taxiDestination.lat}-${taxiDestination.lng}`,
                 name: taxiDestination.name,
@@ -566,14 +567,22 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
             };
 
             setSelectedDestination(place);
-
             setIsFromTaxiSearch(true);
 
-            setTimeout(() => {
-                handleNavigate(setUserLocation, place);
-            }, 100);
+
+            const globalTaxiRoute = (globalThis as any).__taxiRouteData;
+            
+            if (globalTaxiRoute && globalTaxiRoute.timestamp) {
+                setTaxiRouteData(globalTaxiRoute);
+                setShowRoutePreview(true);
+                delete (globalThis as any).__taxiRouteData;
+            } else {
+                setTimeout(() => {
+                    handleNavigate(setUserLocation, place);
+                }, 100);
+            }
         }
-    }, [taxiDestination, userLocation, isMapLoaded]);
+    }, [taxiDestination, userLocation]);
 
     useEffect(() => {
         console.log('[Taxi Route] Effect triggered:', {
@@ -1047,6 +1056,13 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                         setClickedLocation(null);
                         setTaxiRouteData(null);
                         setIsFromTaxiSearch(false);
+
+                        router.setParams({
+                            taxiDestLat: undefined,
+                            taxiDestLng: undefined,
+                            taxiDestName: undefined,
+                            showTaxiMode: undefined,
+                        });
                     }}
                     destination={selectedDestination}
                     userLocation={userLocation}
