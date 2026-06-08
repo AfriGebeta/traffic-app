@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, TouchableOpacity, ActivityIndicator, Animated } from 'react-native';
+import { View, TouchableOpacity, ActivityIndicator, Animated, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../../shared/theme/colors';
 import { ShareLocationButton } from '../../../shared/components/ShareLocationButton';
@@ -9,6 +9,7 @@ interface FloatingActionsProps {
     onThemePress?: () => void;
     onVoicePressIn?: () => void;
     onVoicePressOut?: () => void;
+    onTaxiPress?: () => void;
     isRecording?: boolean;
     isProcessingVoice?: boolean;
     userLocation?: { lat: number; lng: number } | null;
@@ -21,6 +22,7 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
     onThemePress,
     onVoicePressIn,
     onVoicePressOut,
+    onTaxiPress,
     isRecording = false,
     isProcessingVoice = false,
     userLocation,
@@ -64,6 +66,17 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
                 className="bg-white rounded-full p-3 shadow-lg"
             >
                 <Ionicons name="layers-outline" size={24} color="#6B7280" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+                onPress={onTaxiPress}
+                className="bg-white rounded-full p-3 shadow-lg"
+            >
+                <Image
+                    source={require('../../../../assets/images/minibus-unselected.png')}
+                    style={{ width: 24, height: 24 }}
+                    resizeMode="contain"
+                />
             </TouchableOpacity>
 
             <TouchableOpacity

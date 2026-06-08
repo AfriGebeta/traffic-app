@@ -10,7 +10,6 @@ interface Category {
 }
 
 const categories: Category[] = [
-    { id: 'taxi', nameKey: 'taxi', icon: 'car' },
     { id: 'restaurants', nameKey: 'restaurants', icon: 'restaurant' },
     { id: 'gas', nameKey: 'gas-station', icon: 'water' },
     { id: 'parking', nameKey: 'parking', icon: 'car' },

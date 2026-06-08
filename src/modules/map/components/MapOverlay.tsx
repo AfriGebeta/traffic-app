@@ -46,6 +46,7 @@ interface MapOverlayProps {
     onAddPlacePress: () => void;
     onExplorePress: () => void;
     onLocationPress?: () => void;
+    onTaxiPress?: () => void;
     onVoicePress?: () => void;
     onVoiceRelease?: () => void;
     isRecording?: boolean;
@@ -90,6 +91,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
     onAddPlacePress,
     onExplorePress,
     onLocationPress,
+    onTaxiPress,
     onVoicePress,
     onVoiceRelease,
     isRecording,
@@ -150,6 +152,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
 
             <FloatingActions
                 onLocationPress={onLocationPress}
+                onTaxiPress={onTaxiPress}
                 onThemePress={() => setShowThemeSelector(true)}
                 onVoicePressIn={onVoicePress}
                 onVoicePressOut={onVoiceRelease}

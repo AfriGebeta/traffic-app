@@ -994,6 +994,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     onAddPlacePress={() => router.push('/contribution')}
                     onExplorePress={() => setShowExploreSheet(true)}
                     onLocationPress={handleLocationPress}
+                    onTaxiPress={() => router.push('/taxi/search')}
                     onVoicePress={handleVoicePress}
 
                     onVoiceRelease={handleVoiceStop}

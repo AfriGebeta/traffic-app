@@ -128,7 +128,7 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
         const placeType = (place.type || place.category || '').toLowerCase();
 
 
-        if (placeType.includes('restaurant') || placeType.includes('hotel') || placeType.includes('cafe') || placeType.includes('food') || placeType.includes('coffee') || placeType.includes('teahouse') ) {
+        if (placeType.includes('restaurant') || placeType.includes('hotel') || placeType.includes('cafe') || placeType.includes('food') || placeType.includes('coffee') || placeType.includes('teahouse')) {
             return require('../../../../assets/images/restaurant-detail.png');
         }
         if (placeType.includes('bank')) {
@@ -210,11 +210,6 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
                             icon="play"
                             label={t('start')}
                             onPress={onStart}
-                        />
-                        <ActionPill
-                            imageSource={require('../../../../assets/images/minibus-selected.png')}
-                            label={t('taxi')}
-                            onPress={onTaxi}
                         />
                         <ActionPill
                             icon={savedPlace ? 'bookmark' : 'bookmark-outline'}
