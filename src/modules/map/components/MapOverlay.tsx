@@ -60,6 +60,7 @@ interface MapOverlayProps {
     navigationDestination?: GeocodingPlace | null;
     showRoutePreview?: boolean;
     showPlaceDetail?: boolean;
+    isCenteredOnUser?: boolean;
 }
 
 export const MapOverlay: React.FC<MapOverlayProps> = ({
@@ -105,6 +106,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
     navigationDestination,
     showRoutePreview = false,
     showPlaceDetail = false,
+    isCenteredOnUser = false,
 }) => {
     const { t } = useTranslation();
     const router = useRouter();
@@ -171,6 +173,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                 userLocation={userLocation}
                 isRoutePreviewActive={showRoutePreview}
                 isPlaceDetailActive={showPlaceDetail}
+                isCenteredOnUser={isCenteredOnUser}
             />
 
             {isNavigationMinimized && navigationDestination && onRestoreNavigation && (

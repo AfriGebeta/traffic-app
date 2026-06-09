@@ -69,6 +69,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     const [taxiRouteSegments, setTaxiRouteSegments] = useState<Array<{ coordinates: Array<[number, number]>; cost: number; from: string; to: string }> | null>(null);
     const [isFromTaxiSearch, setIsFromTaxiSearch] = useState(false);
     const [showPlaceDetail, setShowPlaceDetail] = useState(false);
+    const [isCenteredOnUser, setIsCenteredOnUser] = useState(false);
 
     const { t } = useTranslation();
     const params = useLocalSearchParams();
@@ -168,6 +169,37 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         });
         return () => { cancelled = true; };
     }, [navigationMode, fetchRules]);
+
+    useEffect(() => {
+        if (!userLocation || !isMapLoaded || navigationMode || showRoutePreview || showPlaceDetail) {
+            return;
+        }
+
+        const checkInterval = setInterval(async () => {
+            try {
+                const mapInstance = mapRef.current?.getMapInstance?.() as any;
+                if (!mapInstance?._map) return;
+
+                const camera = await mapInstance._map.getCamera();
+                const center = camera?.center;
+
+                if (!center) return;
+
+                const latDiff = Math.abs(center[1] - userLocation.lat);
+                const lngDiff = Math.abs(center[0] - userLocation.lng);
+                const threshold = 0.001; 
+
+                const isNearUserLocation = latDiff < threshold && lngDiff < threshold;
+
+                if (isNearUserLocation !== isCenteredOnUser) {
+                    setIsCenteredOnUser(isNearUserLocation);
+                }
+            } catch (error) {
+            }
+        }, 1000);
+
+        return () => clearInterval(checkInterval);
+    }, [userLocation, isMapLoaded, navigationMode, showRoutePreview, showPlaceDetail, isCenteredOnUser]);
 
     const { activeAlert: activeIncidentAlert, dismissAlert: dismissIncidentAlert } = useIncidentAlerts(userLocation, incidents, navigationMode, routeCoordinates);
     const activeRuleAlert = useRuleAlerts(userLocation, nearbyRules, navigationMode, routeCoordinates);
@@ -457,6 +489,10 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         setTimeout(() => {
             addIncidentMarkers();
         }, 1000);
+
+        if (!sharedLocation && userLocation) {
+            setIsCenteredOnUser(true);
+        }
     };
 
     const handleLocationPress = () => {
@@ -475,6 +511,8 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
             zoom: USER_LOCATION_ZOOM,
             duration: 1000,
         });
+
+        setIsCenteredOnUser(true);
     };
 
     const handleRecenter = () => {
@@ -846,7 +884,10 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 isNavigating={navigationMode && !isNavigationMinimized}
                 userLocation={userLocation}
                 selectedDestination={selectedDestination}
-                onUserInteraction={() => setHasUserZoomedOut(true)}
+                onUserInteraction={() => {
+                    setHasUserZoomedOut(true);
+                    setIsCenteredOnUser(false);
+                }}
 
                 userHeading={currentHeading}
                 showUserLocationMarker={!routeOrigin}
@@ -980,6 +1021,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     isNavigationMinimized={isNavigationMinimized}
                     onRestoreNavigation={() => setIsNavigationMinimized(false)}
                     navigationDestination={navigationMode ? selectedDestination : null}
+                    isCenteredOnUser={isCenteredOnUser}
                 />
             )}
 

@@ -832,12 +832,12 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 <View
                     style={styles.mapSurface}
                     onTouchStart={() => {
+                        if (onUserInteraction) {
+                            onUserInteraction();
+                        }
                         if (isNavigating) {
                             setTimeout(() => {
                                 userHasZoomedOut.current = true;
-                                if (onUserInteraction) {
-                                    onUserInteraction();
-                                }
                             }, 500);
                         }
                     }}

@@ -15,6 +15,7 @@ interface FloatingActionsProps {
     userLocation?: { lat: number; lng: number } | null;
     isRoutePreviewActive?: boolean;
     isPlaceDetailActive?: boolean;
+    isCenteredOnUser?: boolean;
 }
 
 export const FloatingActions: React.FC<FloatingActionsProps> = ({
@@ -28,11 +29,17 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
     userLocation,
     isRoutePreviewActive = false,
     isPlaceDetailActive = false,
+    isCenteredOnUser = false,
 }) => {
     const bottomPosition = useRef(new Animated.Value(180)).current;
 
     useEffect(() => {
-        const targetBottom = isRoutePreviewActive || isPlaceDetailActive ? 450 : 180;
+        let targetBottom = 180;
+        if (isRoutePreviewActive) {
+            targetBottom = 480;
+        } else if (isPlaceDetailActive) {
+            targetBottom = 345;
+        }
         Animated.timing(bottomPosition, {
             toValue: targetBottom,
             duration: 250,
@@ -49,7 +56,7 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
                 <Ionicons name="locate" size={24} color="#F59E0B" />
             </TouchableOpacity>
 
-            {userLocation && (
+            {!isPlaceDetailActive && !isRoutePreviewActive && isCenteredOnUser && userLocation && (
                 <ShareLocationButton
                     location={{
                         lat: userLocation.lat,
@@ -68,37 +75,41 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
                 <Ionicons name="layers-outline" size={24} color="#6B7280" />
             </TouchableOpacity>
 
-            <TouchableOpacity
-                onPress={onTaxiPress}
-                className="bg-white rounded-full p-3 shadow-lg"
-            >
-                <Image
-                    source={require('../../../../assets/images/minibus-unselected.png')}
-                    style={{ width: 24, height: 24 }}
-                    resizeMode="contain"
-                />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-                onPressIn={onVoicePressIn}
-                onPressOut={onVoicePressOut}
-                disabled={isProcessingVoice}
-                style={{
-                    backgroundColor: isRecording || isProcessingVoice ? colors.primary.main : '#FFFFFF',
-                }}
-                className="rounded-full p-3 shadow-lg"
-                activeOpacity={0.7}
-            >
-                {isProcessingVoice ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                    <Ionicons
-                        name={isRecording ? 'mic' : 'mic-outline'}
-                        size={24}
-                        color={isRecording ? '#FFFFFF' : '#6B7280'}
+            {!isRoutePreviewActive && (
+                <TouchableOpacity
+                    onPress={onTaxiPress}
+                    className="bg-white rounded-full p-3 shadow-lg"
+                >
+                    <Image
+                        source={require('../../../../assets/images/minibus-unselected.png')}
+                        style={{ width: 24, height: 24 }}
+                        resizeMode="contain"
                     />
-                )}
-            </TouchableOpacity>
+                </TouchableOpacity>
+            )}
+
+            {!isPlaceDetailActive && !isRoutePreviewActive && (
+                <TouchableOpacity
+                    onPressIn={onVoicePressIn}
+                    onPressOut={onVoicePressOut}
+                    disabled={isProcessingVoice}
+                    style={{
+                        backgroundColor: isRecording || isProcessingVoice ? colors.primary.main : '#FFFFFF',
+                    }}
+                    className="rounded-full p-3 shadow-lg"
+                    activeOpacity={0.7}
+                >
+                    {isProcessingVoice ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                        <Ionicons
+                            name={isRecording ? 'mic' : 'mic-outline'}
+                            size={24}
+                            color={isRecording ? '#FFFFFF' : '#6B7280'}
+                        />
+                    )}
+                </TouchableOpacity>
+            )}
         </Animated.View>
     );
 };

@@ -207,9 +207,9 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
                             primary
                         />
                         <ActionPill
-                            icon="play"
-                            label={t('start')}
-                            onPress={onStart}
+                            icon="car-outline"
+                            label={t('taxi')}
+                            onPress={onTaxi}
                         />
                         <ActionPill
                             icon={savedPlace ? 'bookmark' : 'bookmark-outline'}
