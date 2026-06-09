@@ -128,39 +128,41 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                 />
             )}
 
-            <View className="absolute left-4 right-4" style={{ top: insets.top + 10, zIndex: 20 }}>
-                <SearchBar
-                    value={searchQuery}
-                    onChangeText={onSearchChange}
-                    onClear={onSearchClear}
-                    onFocus={onSearchFocus}
-                    onBlur={onSearchBlur}
-                    placeholder={t('where-to-go')}
-                    onProfilePress={handleProfilePress}
-                    isLoading={isExploring}
-                />
+            {!showRoutePreview && (
+                <View className="absolute left-4 right-4" style={{ top: insets.top + 10, zIndex: 20 }}>
+                    <SearchBar
+                        value={searchQuery}
+                        onChangeText={onSearchChange}
+                        onClear={onSearchClear}
+                        onFocus={onSearchFocus}
+                        onBlur={onSearchBlur}
+                        placeholder={t('where-to-go')}
+                        onProfilePress={handleProfilePress}
+                        isLoading={isExploring}
+                    />
 
-                <QuickActions
-                    onSelectCategory={onExploreCategory}
-                    isLoading={isExploring}
-                    selectedCategory={selectedExploreCategory}
-                />
+                    <QuickActions
+                        onSelectCategory={onExploreCategory}
+                        isLoading={isExploring}
+                        selectedCategory={selectedExploreCategory}
+                    />
 
-                <SearchResults
-                    results={searchResults}
-                    recentSearches={recentSearches}
-                    savedPlaces={savedPlaces}
-                    onSelectPlace={onSelectPlace}
-                    onPrepareSelect={onPrepareSearchSelect}
-                    onRemoveRecent={onRemoveRecentSearch}
-                    onClearRecent={onClearRecentSearches}
-                    isLoading={isSearching}
-                    showContainer={showSearchContainer}
-                    showRecentSearches={showRecentSearches}
-                    onClose={onCloseSearch}
-                />
+                    <SearchResults
+                        results={searchResults}
+                        recentSearches={recentSearches}
+                        savedPlaces={savedPlaces}
+                        onSelectPlace={onSelectPlace}
+                        onPrepareSelect={onPrepareSearchSelect}
+                        onRemoveRecent={onRemoveRecentSearch}
+                        onClearRecent={onClearRecentSearches}
+                        isLoading={isSearching}
+                        showContainer={showSearchContainer}
+                        showRecentSearches={showRecentSearches}
+                        onClose={onCloseSearch}
+                    />
 
-            </View>
+                </View>
+            )}
 
             <FloatingActions
                 onLocationPress={onLocationPress}
