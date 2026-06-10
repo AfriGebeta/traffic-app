@@ -187,7 +187,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
 
                 const latDiff = Math.abs(center[1] - userLocation.lat);
                 const lngDiff = Math.abs(center[0] - userLocation.lng);
-                const threshold = 0.001; 
+                const threshold = 0.001;
 
                 const isNearUserLocation = latDiff < threshold && lngDiff < threshold;
 
@@ -1022,6 +1022,17 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     onRestoreNavigation={() => setIsNavigationMinimized(false)}
                     navigationDestination={navigationMode ? selectedDestination : null}
                     isCenteredOnUser={isCenteredOnUser}
+                    routeOrigin={routeOrigin}
+                    routeWaypoints={waypoints}
+                    routeDestination={selectedDestination}
+                    onRouteOriginChange={handleOriginChange}
+                    onRouteWaypointsChange={(updated) => {
+                        setWaypoints(updated);
+                        if (selectedDestination && userLocation) {
+                            handleNavigate(setUserLocation, selectedDestination, currentCosting === 'pedestrian' ? 'pedestrian' : 'auto', updated);
+                        }
+                    }}
+                    routeTransportMode={currentCosting === 'pedestrian' ? 'walking' : isFromTaxiSearch ? 'taxi' : 'driving'}
                 />
             )}
 

@@ -10,6 +10,7 @@ import { DestinationCard } from './DestinationCard';
 import { FloatingActions } from './FloatingActions';
 import { BottomNavigation } from './BottomNavigation';
 import { MapThemeSelector } from './MapThemeSelector';
+import { RoutePointsBar } from '../../navigation/components/RoutePointsBar';
 import { showToast } from '../../../shared/utils/toast';
 import { colors } from '../../../shared/theme/colors';
 import type { RecentSearch } from '../../navigation/services/recentSearch.service';
@@ -61,6 +62,12 @@ interface MapOverlayProps {
     showRoutePreview?: boolean;
     showPlaceDetail?: boolean;
     isCenteredOnUser?: boolean;
+    routeOrigin?: GeocodingPlace | null;
+    routeWaypoints?: GeocodingPlace[];
+    routeDestination?: GeocodingPlace | null;
+    onRouteOriginChange?: (place: GeocodingPlace | null) => void;
+    onRouteWaypointsChange?: (waypoints: GeocodingPlace[]) => void;
+    routeTransportMode?: 'driving' | 'taxi' | 'walking';
 }
 
 export const MapOverlay: React.FC<MapOverlayProps> = ({
@@ -107,6 +114,12 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
     showRoutePreview = false,
     showPlaceDetail = false,
     isCenteredOnUser = false,
+    routeOrigin,
+    routeWaypoints = [],
+    routeDestination,
+    onRouteOriginChange,
+    onRouteWaypointsChange,
+    routeTransportMode = 'driving',
 }) => {
     const { t } = useTranslation();
     const router = useRouter();
@@ -161,6 +174,20 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                         onClose={onCloseSearch}
                     />
 
+                </View>
+            )}
+
+            {showRoutePreview && routeDestination && (
+                <View className="absolute left-4 right-4" style={{ top: insets.top + 10, zIndex: 20 }}>
+                    <RoutePointsBar
+                        origin={routeOrigin || null}
+                        waypoints={routeWaypoints}
+                        destination={routeDestination}
+                        onOriginChange={onRouteOriginChange}
+                        onWaypointsChange={onRouteWaypointsChange}
+                        onClose={onClearRoute}
+                        transportMode={routeTransportMode}
+                    />
                 </View>
             )}
 

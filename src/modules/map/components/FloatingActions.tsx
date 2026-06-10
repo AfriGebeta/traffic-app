@@ -36,7 +36,7 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
     useEffect(() => {
         let targetBottom = 180;
         if (isRoutePreviewActive) {
-            targetBottom = 480;
+            targetBottom = 340;
         } else if (isPlaceDetailActive) {
             targetBottom = 345;
         }

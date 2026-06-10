@@ -1557,7 +1557,17 @@
     {
         "key": "add-stop",
         "EN_US": "Add Stop",
-        "AM": "ማቆሚያ ያክሉ"
+        "AM": "ማቆሚያ ይጨምሩ"
+    },
+    {
+        "key": "add-a-stop",
+        "EN_US": "Add a stop",
+        "AM": "ማቆሚያ ይጨምሩ"
+    },
+    {
+        "key": "search-for-a-place",
+        "EN_US": "Search for a place...",
+        "AM": "ቦታ ይፈልጉ..."
     },
     {
         "key": "total-cost-start-to-end",
