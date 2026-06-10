@@ -665,6 +665,26 @@
         "AM": "መነሻ ለውጥ"
     },
     {
+        "key": "change",
+        "EN_US": "Change",
+        "AM": "ይቀይሩ"
+    },
+    {
+        "key": "use-my-location",
+        "EN_US": "Use my location",
+        "AM": "የኔን አካባቢ ይጠቀሙ"
+    },
+    {
+        "key": "enter-origin-station",
+        "EN_US": "Enter origin station",
+        "AM": "የመነሻ ጣቢያ ያስገቡ"
+    },
+    {
+        "key": "preview-route",
+        "EN_US": "Preview Route",
+        "AM": "መንገድ ይመልከቱ"
+    },
+    {
         "key": "search-starting-point",
         "EN_US": "Search starting point",
         "AM": "መነሻ ይፈልጉ"

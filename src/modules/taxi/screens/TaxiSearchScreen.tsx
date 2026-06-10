@@ -14,12 +14,16 @@ export default function TaxiSearchScreen() {
     const insets = useSafeAreaInsets();
     const { userLocation } = useUserLocation();
 
+    const [originName, setOriginName] = useState('');
     const [destinationName, setDestinationName] = useState('');
     const [stations, setStations] = useState<TaxiNode[]>([]);
+    const [filteredOriginStations, setFilteredOriginStations] = useState<TaxiNode[]>([]);
     const [filteredStations, setFilteredStations] = useState<TaxiNode[]>([]);
     const [loading, setLoading] = useState(false);
     const [loadingStations, setLoadingStations] = useState(true);
+    const [selectedOriginCoords, setSelectedOriginCoords] = useState<{ lat: number; lng: number } | null>(null);
     const [selectedCoords, setSelectedCoords] = useState<{ lat: number; lng: number } | null>(null);
+    const [isSelectingOrigin, setIsSelectingOrigin] = useState(false);
     const lastProcessedTimestamp = useRef<number>(0);
 
     useEffect(() => {
@@ -37,6 +41,18 @@ export default function TaxiSearchScreen() {
             }
         }, [])
     );
+
+    useEffect(() => {
+        if (originName.trim()) {
+            const filtered = stations.filter((station) =>
+                station.name.toLowerCase().includes(originName.toLowerCase()) ||
+                station.routeName?.toLowerCase().includes(originName.toLowerCase())
+            );
+            setFilteredOriginStations(filtered);
+        } else {
+            setFilteredOriginStations([]);
+        }
+    }, [originName, stations]);
 
     useEffect(() => {
         if (destinationName.trim()) {
@@ -63,7 +79,9 @@ export default function TaxiSearchScreen() {
     };
 
     const handleSearch = async () => {
-        if (!userLocation) {
+        const hasCustomOrigin = selectedOriginCoords !== null;
+
+        if (!hasCustomOrigin && !userLocation) {
             Alert.alert(t('error'), t('location-unavailable'));
             return;
         }
@@ -78,9 +96,17 @@ export default function TaxiSearchScreen() {
             let requestData;
             let matchingStation = null;
 
+            const originCoords = selectedOriginCoords || (userLocation ? { lat: userLocation.lat, lng: userLocation.lng } : null);
+
+            if (!originCoords) {
+                Alert.alert(t('error'), t('location-unavailable'));
+                setLoading(false);
+                return;
+            }
+
             if (selectedCoords) {
                 requestData = {
-                    origin: [userLocation.lat, userLocation.lng] as [number, number],
+                    origin: [originCoords.lat, originCoords.lng] as [number, number],
                     destination: [selectedCoords.lat, selectedCoords.lng] as [number, number],
                 };
             } else {
@@ -90,7 +116,7 @@ export default function TaxiSearchScreen() {
 
                 if (matchingStation) {
                     requestData = {
-                        origin: [userLocation.lat, userLocation.lng] as [number, number],
+                        origin: [originCoords.lat, originCoords.lng] as [number, number],
                         destination: [matchingStation.lat, matchingStation.lng] as [number, number],
                     };
                 } else {
@@ -127,10 +153,29 @@ export default function TaxiSearchScreen() {
                 City: '',
                 Country: '',
             };
-            (globalThis as any).__taxiRouteData = {
-                ...result,
-                timestamp: Date.now(),
-            };
+
+            // If custom origin is selected, we need to show preview mode
+            if (hasCustomOrigin) {
+                const origin = {
+                    name: originName.trim() || 'Custom Origin',
+                    latitude: selectedOriginCoords.lat,
+                    longitude: selectedOriginCoords.lng,
+                    type: 'origin' as const,
+                    City: '',
+                    Country: '',
+                };
+
+                (globalThis as any).__taxiRouteData = {
+                    ...result,
+                    timestamp: Date.now(),
+                    customOrigin: origin,
+                };
+            } else {
+                (globalThis as any).__taxiRouteData = {
+                    ...result,
+                    timestamp: Date.now(),
+                };
+            }
 
             router.back();
 
@@ -140,6 +185,11 @@ export default function TaxiSearchScreen() {
                     taxiDestLng: destination.longitude.toString(),
                     taxiDestName: destination.name,
                     showTaxiMode: 'true',
+                    ...(hasCustomOrigin && {
+                        taxiOriginLat: selectedOriginCoords.lat.toString(),
+                        taxiOriginLng: selectedOriginCoords.lng.toString(),
+                        taxiOriginName: originName.trim() || 'Custom Origin',
+                    }),
                 });
             }, 100);
         } catch (error: any) {
@@ -158,8 +208,22 @@ export default function TaxiSearchScreen() {
     };
 
     const handleStationSelect = (station: TaxiNode) => {
-        setDestinationName(station.name);
-        setFilteredStations([]);
+        if (isSelectingOrigin) {
+            setOriginName(station.name);
+            setSelectedOriginCoords({ lat: station.lat, lng: station.lng });
+            setFilteredOriginStations([]);
+        } else {
+            setDestinationName(station.name);
+            setSelectedCoords({ lat: station.lat, lng: station.lng });
+            setFilteredStations([]);
+        }
+    };
+
+    const handleUseMyLocation = () => {
+        setOriginName('');
+        setSelectedOriginCoords(null);
+        setFilteredOriginStations([]);
+        setIsSelectingOrigin(false);
     };
 
     const handleMapPicker = () => {
@@ -182,14 +246,78 @@ export default function TaxiSearchScreen() {
                 <View className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                     <View className="mb-4">
                         <Text className="text-gray-700 font-semibold mb-2">{t('from')}</Text>
-                        <View className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex-row items-center">
-                            <Ionicons name="location" size={20} color="#10B981" />
-                            <Text className="text-green-700 ml-2 flex-1">
-                                {userLocation
-                                    ? t('current-location')
-                                    : t('waiting-for-location')}
-                            </Text>
-                        </View>
+
+                        {!selectedOriginCoords && !isSelectingOrigin ? (
+                            <TouchableOpacity
+                                className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex-row items-center justify-between"
+                                onPress={() => {
+                                    setIsSelectingOrigin(true);
+                                }}
+                                activeOpacity={0.7}
+                            >
+                                <View className="flex-row items-center flex-1">
+                                    <Ionicons name="location" size={20} color="#10B981" />
+                                    <Text className="text-green-700 ml-2 flex-1">
+                                        {userLocation
+                                            ? t('current-location')
+                                            : t('waiting-for-location')}
+                                    </Text>
+                                </View>
+                                <Text className="text-green-600 text-xs font-semibold">
+                                    {t('change')}
+                                </Text>
+                            </TouchableOpacity>
+                        ) : (
+                            <View>
+                                <TextInput
+                                    className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 mb-2"
+                                    placeholder={t('enter-origin-station')}
+                                    value={originName}
+                                    onChangeText={(text) => {
+                                        setOriginName(text);
+                                        setIsSelectingOrigin(true);
+                                    }}
+                                    onFocus={() => setIsSelectingOrigin(true)}
+                                />
+
+                                {filteredOriginStations.length > 0 && isSelectingOrigin && (
+                                    <View className="mb-2 bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
+                                        <View className="bg-blue-50 px-4 py-2 border-b border-blue-200">
+                                            <Text className="text-blue-700 font-semibold text-sm">
+                                                {t('available-stations')}
+                                            </Text>
+                                        </View>
+                                        <ScrollView style={{ maxHeight: 150 }} nestedScrollEnabled>
+                                            {filteredOriginStations.slice(0, 10).map((station) => (
+                                                <TouchableOpacity
+                                                    key={station.id}
+                                                    className="px-4 py-3 border-b border-gray-100"
+                                                    onPress={() => handleStationSelect(station)}
+                                                >
+                                                    <Text className="text-gray-900 font-semibold">{station.name}</Text>
+                                                    {station.routeName && (
+                                                        <Text className="text-gray-500 text-xs mt-1">
+                                                            {station.routeName}
+                                                        </Text>
+                                                    )}
+                                                </TouchableOpacity>
+                                            ))}
+                                        </ScrollView>
+                                    </View>
+                                )}
+
+                                <TouchableOpacity
+                                    className="flex-row items-center justify-center py-2"
+                                    onPress={handleUseMyLocation}
+                                    activeOpacity={0.7}
+                                >
+                                    <Ionicons name="locate" size={16} color="#10B981" />
+                                    <Text className="text-green-600 text-sm font-semibold ml-2">
+                                        {t('use-my-location')}
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
                     </View>
 
                     <View className="mb-4">
@@ -198,10 +326,14 @@ export default function TaxiSearchScreen() {
                             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900"
                             placeholder={t('enter-destination-name')}
                             value={destinationName}
-                            onChangeText={setDestinationName}
+                            onChangeText={(text) => {
+                                setDestinationName(text);
+                                setIsSelectingOrigin(false);
+                            }}
+                            onFocus={() => setIsSelectingOrigin(false)}
                         />
 
-                        {filteredStations.length > 0 && (
+                        {filteredStations.length > 0 && !isSelectingOrigin && (
                             <View className="mt-2 bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
                                 <View className="bg-blue-50 px-4 py-2 border-b border-blue-200">
                                     <Text className="text-blue-700 font-semibold text-sm">
@@ -242,16 +374,16 @@ export default function TaxiSearchScreen() {
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        className={`py-4 rounded-xl ${loading || !userLocation ? 'bg-gray-400' : 'bg-orange-500'}`}
+                        className={`py-4 rounded-xl ${loading || (!selectedOriginCoords && !userLocation) ? 'bg-gray-400' : 'bg-orange-500'}`}
                         onPress={handleSearch}
-                        disabled={loading || !userLocation}
+                        disabled={loading || (!selectedOriginCoords && !userLocation)}
                         activeOpacity={0.7}
                     >
                         {loading ? (
                             <ActivityIndicator color="white" />
                         ) : (
                             <Text className="text-white text-center font-bold text-lg">
-                                {t('find-taxi-route')}
+                                {selectedOriginCoords ? t('preview-route') : t('find-taxi-route')}
                             </Text>
                         )}
                     </TouchableOpacity>
