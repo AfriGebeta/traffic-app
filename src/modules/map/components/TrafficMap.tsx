@@ -69,6 +69,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     const [taxiRouteSegments, setTaxiRouteSegments] = useState<Array<{ coordinates: Array<[number, number]>; cost: number; from: string; to: string }> | null>(null);
     const [isFromTaxiSearch, setIsFromTaxiSearch] = useState(false);
     const [showPlaceDetail, setShowPlaceDetail] = useState(false);
+    const [isCenteredOnUser, setIsCenteredOnUser] = useState(false);
 
     const { t } = useTranslation();
     const params = useLocalSearchParams();
@@ -168,6 +169,37 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         });
         return () => { cancelled = true; };
     }, [navigationMode, fetchRules]);
+
+    useEffect(() => {
+        if (!userLocation || !isMapLoaded || navigationMode || showRoutePreview || showPlaceDetail) {
+            return;
+        }
+
+        const checkInterval = setInterval(async () => {
+            try {
+                const mapInstance = mapRef.current?.getMapInstance?.() as any;
+                if (!mapInstance?._map) return;
+
+                const camera = await mapInstance._map.getCamera();
+                const center = camera?.center;
+
+                if (!center) return;
+
+                const latDiff = Math.abs(center[1] - userLocation.lat);
+                const lngDiff = Math.abs(center[0] - userLocation.lng);
+                const threshold = 0.001;
+
+                const isNearUserLocation = latDiff < threshold && lngDiff < threshold;
+
+                if (isNearUserLocation !== isCenteredOnUser) {
+                    setIsCenteredOnUser(isNearUserLocation);
+                }
+            } catch (error) {
+            }
+        }, 1000);
+
+        return () => clearInterval(checkInterval);
+    }, [userLocation, isMapLoaded, navigationMode, showRoutePreview, showPlaceDetail, isCenteredOnUser]);
 
     const { activeAlert: activeIncidentAlert, dismissAlert: dismissIncidentAlert } = useIncidentAlerts(userLocation, incidents, navigationMode, routeCoordinates);
     const activeRuleAlert = useRuleAlerts(userLocation, nearbyRules, navigationMode, routeCoordinates);
@@ -457,6 +489,10 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         setTimeout(() => {
             addIncidentMarkers();
         }, 1000);
+
+        if (!sharedLocation && userLocation) {
+            setIsCenteredOnUser(true);
+        }
     };
 
     const handleLocationPress = () => {
@@ -475,6 +511,8 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
             zoom: USER_LOCATION_ZOOM,
             duration: 1000,
         });
+
+        setIsCenteredOnUser(true);
     };
 
     const handleRecenter = () => {
@@ -508,7 +546,19 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
             hasProcessedSharedLocation.current = true;
 
             const place: GeocodingPlace = {
+                id: `shared-${sharedLocation.lat}-${sharedLocation.lng}`,
                 name: sharedLocation.name || 'Shared Location',
+                display_name: sharedLocation.name || 'Shared Location',
+                category: sharedLocation.type || 'location',
+                location: {
+                    lat: sharedLocation.lat,
+                    lng: sharedLocation.lng,
+                },
+                address: {
+                    city: sharedLocation.city,
+                    country: sharedLocation.country || '',
+                    country_code: '',
+                },
                 latitude: sharedLocation.lat,
                 longitude: sharedLocation.lng,
                 type: sharedLocation.type || 'location',
@@ -531,9 +581,22 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     }, [sharedLocation, isMapLoaded]);
 
     useEffect(() => {
-        if (taxiDestination && userLocation && isMapLoaded) {
+
+        if (taxiDestination && userLocation) {
             const place: GeocodingPlace = {
+                id: `taxi-dest-${taxiDestination.lat}-${taxiDestination.lng}`,
                 name: taxiDestination.name,
+                display_name: taxiDestination.name,
+                category: 'destination',
+                location: {
+                    lat: taxiDestination.lat,
+                    lng: taxiDestination.lng,
+                },
+                address: {
+                    city: '',
+                    country: '',
+                    country_code: '',
+                },
                 latitude: taxiDestination.lat,
                 longitude: taxiDestination.lng,
                 type: 'destination',
@@ -542,23 +605,25 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
             };
 
             setSelectedDestination(place);
-
             setIsFromTaxiSearch(true);
 
-            setTimeout(() => {
-                handleNavigate(setUserLocation, place);
-            }, 100);
+
+            const globalTaxiRoute = (globalThis as any).__taxiRouteData;
+
+            if (globalTaxiRoute && globalTaxiRoute.timestamp) {
+                setTaxiRouteData(globalTaxiRoute);
+                setShowRoutePreview(true);
+                delete (globalThis as any).__taxiRouteData;
+            } else {
+                setTimeout(() => {
+                    handleNavigate(setUserLocation, place);
+                }, 100);
+            }
         }
-    }, [taxiDestination, userLocation, isMapLoaded]);
+    }, [taxiDestination, userLocation]);
 
     useEffect(() => {
-        console.log('[Taxi Route] Effect triggered:', {
-            hasTaxiData: !!taxiRouteData,
-            isMapLoaded
-        });
-
         if (!taxiRouteData) {
-            console.log('[Taxi Route] No taxi data, clearing stations');
             setTaxiStations(null);
             setTaxiWalkRoutes(null);
             setTaxiRouteSegments(null);
@@ -566,14 +631,11 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         }
 
         if (!taxiRouteData.startNode || !taxiRouteData.endNode || !taxiRouteData.origin || !taxiRouteData.destination) {
-            console.log('[Taxi Route] Invalid taxi route data - missing required nodes');
             setTaxiStations(null);
             setTaxiWalkRoutes(null);
             setTaxiRouteSegments(null);
             return;
         }
-
-        console.log('[Taxi Route] Setting taxi stations:', taxiRouteData);
 
         const fetchIntermediateNodes = async () => {
             const stations: Array<{ id: number; name: string; lat: number; lng: number; type: 'start' | 'end' | 'intermediate' }> = [
@@ -588,7 +650,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
 
             if (taxiRouteData.path && taxiRouteData.path.length > 2) {
                 const intermediateIds = taxiRouteData.path.slice(1, -1);
-                console.log('[Taxi Route] Fetching intermediate nodes:', intermediateIds);
 
                 try {
                     const { taxiService } = await import('../../taxi/services/taxi.service');
@@ -597,8 +658,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     const intermediateNodes = allNodes.filter((node: any) =>
                         intermediateIds.includes(node.id)
                     );
-
-                    console.log('[Taxi Route] Found intermediate nodes:', intermediateNodes.length);
 
                     intermediateIds.forEach((id: number) => {
                         const node = intermediateNodes.find((n: any) => n.id === id);
@@ -634,13 +693,11 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
             const walkRoutes: Array<{ type: 'origin' | 'transfer' | 'destination'; polyline: string }> = [];
 
             if (taxiRouteData.segments && taxiRouteData.segments.length > 0) {
-                console.log('[Taxi Route] Processing segments array:', taxiRouteData.segments.length);
                 taxiRouteData.segments.forEach((segment: any, index: number) => {
                     if ((segment.type === 'walk' || segment.mode === 'pedestrian') && segment.polyline) {
                         const type = index === 0 ? 'origin' :
                             index === taxiRouteData.segments.length - 1 ? 'destination' :
                                 'transfer';
-                        console.log(`[Taxi Route] Found walk segment ${index}:`, type, 'polyline length:', segment.polyline.length);
                         walkRoutes.push({ type, polyline: segment.polyline });
                     }
                 });
@@ -651,11 +708,9 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 }
 
                 if (taxiRouteData.path && taxiRouteData.path.length > 2) {
-                    console.log('[Taxi Route] Checking path for transfer walks:', taxiRouteData.path);
                     try {
                         const { taxiService } = await import('../../taxi/services/taxi.service');
                         const allEdges = await taxiService.getAllEdges();
-                        console.log('[Taxi Route] Total edges available:', allEdges.length);
 
                         for (let i = 0; i < taxiRouteData.path.length - 1; i++) {
                             const startNodeId = taxiRouteData.path[i];
@@ -665,16 +720,12 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                                 (e: any) => e.start_node_id === startNodeId && e.end_node_id === endNodeId
                             );
 
-                            console.log(`[Taxi Route] Edge ${startNodeId} → ${endNodeId}:`, edge ? `connection=${edge.connection}` : 'not found');
-
                             if (edge && edge.connection === 'walk') {
                                 const allNodes = await taxiService.getAllNodes();
                                 const startNode = allNodes.find((n: any) => n.id === startNodeId);
                                 const endNode = allNodes.find((n: any) => n.id === endNodeId);
 
                                 if (startNode && endNode) {
-                                    console.log('[Taxi Route] Found transfer walk:', startNode.name, '→', endNode.name);
-
                                     const { navigationService } = await import('../../navigation/services/navigation.service');
                                     const walkRoute = await navigationService.getNavigation({
                                         origin: [startNode.lat, startNode.lng],
@@ -682,7 +733,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                                     });
 
                                     if (walkRoute?.data?.trip?.legs?.[0]?.shape) {
-                                        console.log('[Taxi Route] Transfer walk polyline fetched, length:', walkRoute.data.trip.legs[0].shape.length);
                                         walkRoutes.push({
                                             type: 'transfer',
                                             polyline: walkRoute.data.trip.legs[0].shape
@@ -694,8 +744,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     } catch (error) {
                         console.error('[Taxi Route] Error fetching transfer walks:', error);
                     }
-                } else {
-                    console.log('[Taxi Route] No intermediate nodes to check for transfers (path length:', taxiRouteData.path?.length, ')');
                 }
 
                 const destShape = taxiRouteData.destinationWalkRoute?.trip.legs[0]?.shape;
@@ -703,13 +751,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     walkRoutes.push({ type: 'destination', polyline: destShape });
                 }
             }
-
-            console.log('[Taxi Route] Walking routes:', {
-                total: walkRoutes.length,
-                origin: walkRoutes.filter(r => r.type === 'origin').length,
-                transfers: walkRoutes.filter(r => r.type === 'transfer').length,
-                destination: walkRoutes.filter(r => r.type === 'destination').length,
-            });
 
             setTaxiWalkRoutes(walkRoutes);
         };
@@ -728,12 +769,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 if (routeData?.data?.trip?.legs?.[0]?.shape) {
                     const decodedCoords = decodePolyline(routeData.data.trip.legs[0].shape, 6);
                     const mapCoords: [number, number][] = decodedCoords.map(([lat, lng]) => [lng, lat] as [number, number]);
-                    console.log('[Taxi Route] Driving route decoded:', {
-                        coordsCount: decodedCoords.length,
-                        firstCoord: decodedCoords[0],
-                        lastCoord: decodedCoords[decodedCoords.length - 1],
-                        firstMapCoord: mapCoords[0],
-                    });
                     setTaxiRouteSegments([{
                         coordinates: mapCoords,
                         cost: taxiRouteData.summary.estimatedFare,
@@ -741,7 +776,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                         to: taxiRouteData.endNode.name
                     }]);
                 } else {
-                    console.log('[Taxi Route] No driving route, using straight line');
                     if (taxiRouteData.startNode && taxiRouteData.endNode && taxiRouteData.summary) {
                         setTaxiRouteSegments([{
                             coordinates: [
@@ -790,7 +824,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
             const centerLng = (minLng + maxLng) / 2;
             const centerLat = (minLat + maxLat) / 2;
 
-            console.log('[Taxi Route] Flying to center:', [centerLng, centerLat]);
             setTimeout(() => {
                 mapRef.current?.flyTo({
                     center: [centerLng, centerLat],
@@ -851,7 +884,10 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 isNavigating={navigationMode && !isNavigationMinimized}
                 userLocation={userLocation}
                 selectedDestination={selectedDestination}
-                onUserInteraction={() => setHasUserZoomedOut(true)}
+                onUserInteraction={() => {
+                    setHasUserZoomedOut(true);
+                    setIsCenteredOnUser(false);
+                }}
 
                 userHeading={currentHeading}
                 showUserLocationMarker={!routeOrigin}
@@ -870,6 +906,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 taxiWalkRoutes={taxiWalkRoutes || undefined}
                 taxiRouteSegments={taxiRouteSegments || undefined}
                 waypointMarkers={waypoints.length > 0 ? waypoints.map(wp => ({ latitude: wp.latitude, longitude: wp.longitude, name: wp.name })) : undefined}
+                externalCameraControl={!navigationMode}
             />
 
             {activeIncidentAlert && (
@@ -969,6 +1006,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     onAddPlacePress={() => router.push('/contribution')}
                     onExplorePress={() => setShowExploreSheet(true)}
                     onLocationPress={handleLocationPress}
+                    onTaxiPress={() => router.push('/taxi/search')}
                     onVoicePress={handleVoicePress}
 
                     onVoiceRelease={handleVoiceStop}
@@ -983,6 +1021,18 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     isNavigationMinimized={isNavigationMinimized}
                     onRestoreNavigation={() => setIsNavigationMinimized(false)}
                     navigationDestination={navigationMode ? selectedDestination : null}
+                    isCenteredOnUser={isCenteredOnUser}
+                    routeOrigin={routeOrigin}
+                    routeWaypoints={waypoints}
+                    routeDestination={selectedDestination}
+                    onRouteOriginChange={handleOriginChange}
+                    onRouteWaypointsChange={(updated) => {
+                        setWaypoints(updated);
+                        if (selectedDestination && userLocation) {
+                            handleNavigate(setUserLocation, selectedDestination, currentCosting === 'pedestrian' ? 'pedestrian' : 'auto', updated);
+                        }
+                    }}
+                    routeTransportMode={currentCosting === 'pedestrian' ? 'walking' : isFromTaxiSearch ? 'taxi' : 'driving'}
                 />
             )}
 
@@ -1021,6 +1071,13 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                         setClickedLocation(null);
                         setTaxiRouteData(null);
                         setIsFromTaxiSearch(false);
+
+                        router.setParams({
+                            taxiDestLat: undefined,
+                            taxiDestLng: undefined,
+                            taxiDestName: undefined,
+                            showTaxiMode: undefined,
+                        });
                     }}
                     destination={selectedDestination}
                     userLocation={userLocation}

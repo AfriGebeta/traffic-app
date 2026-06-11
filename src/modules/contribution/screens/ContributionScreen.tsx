@@ -19,6 +19,13 @@ export default function ContributionScreen() {
             route: '/places/contribute',
         },
         {
+            id: 'neighborhoods',
+            titleKey: 'contribute-neighborhood',
+            descriptionKey: 'contribute-neighborhood-description',
+            image: require('../../../../assets/images/neighborhood.png'),
+            route: '/neighborhoods/contribute',
+        },
+        {
             id: 'rules',
             titleKey: 'report-traffic-rule',
             descriptionKey: 'report-traffic-rule-description',

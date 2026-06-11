@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Image, Modal, TextInput, KeyboardAvoidingView, Platform, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -96,13 +96,6 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
     const [walkingRoute, setWalkingRoute] = useState<{ distance: number; duration: number } | null>(null);
     const [loadingWalkingRoute, setLoadingWalkingRoute] = useState(false);
 
-    const [showPlaceSearch, setShowPlaceSearch] = useState(false);
-    const [placeSearchMode, setPlaceSearchMode] = useState<'origin' | 'stop'>('stop');
-    const [placeSearchQuery, setPlaceSearchQuery] = useState('');
-    const [placeSearchResults, setPlaceSearchResults] = useState<GeocodingPlace[]>([]);
-    const [isSearchingPlace, setIsSearchingPlace] = useState(false);
-    const placeSearchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
-
     const isCustomOrigin = origin !== null;
 
     const getOriginCoords = () => {
@@ -114,6 +107,33 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
     useEffect(() => {
         checkIfSaved();
     }, [destination]);
+
+    useEffect(() => {
+        const checkMapPickerData = () => {
+            const data = (globalThis as any).__mapPickerData;
+            if (data && data.timestamp) {
+
+                const age = Date.now() - data.timestamp;
+                if (age < 2000) {
+
+                    if (data.mode === 'origin') {
+                        onOriginChange?.(data.place);
+                    } else {
+                        const updated = [...waypoints, data.place];
+                        onWaypointsChange?.(updated);
+                    }
+
+                    delete (globalThis as any).__mapPickerData;
+                }
+            }
+        };
+
+        checkMapPickerData();
+
+        const interval = setInterval(checkMapPickerData, 200);
+
+        return () => clearInterval(interval);
+    }, [waypoints, onOriginChange, onWaypointsChange]);
 
     useEffect(() => {
         const coords = getOriginCoords();
@@ -135,7 +155,6 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                 origin: [coords.lat, coords.lng],
                 destination: [destination.latitude, destination.longitude],
             });
-            console.log('[RoutePreview] Taxi route fetched:', result);
 
             if (!result.startNode || !result.endNode) {
                 setTaxiRouteError(t('taxi-route-unavailable'));
@@ -144,7 +163,6 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
             } else {
                 setTaxiRoute(result);
                 setTaxiRouteError(null);
-                console.log('[RoutePreview] Calling onTaxiRouteChange with:', result);
                 onTaxiRouteChange?.(result);
             }
         } catch (error: any) {
@@ -242,61 +260,8 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
         }
     };
 
-    const handlePlaceSearchChange = (query: string) => {
-        setPlaceSearchQuery(query);
-        if (placeSearchDebounce.current) clearTimeout(placeSearchDebounce.current);
-        if (query.length < 2) {
-            setPlaceSearchResults([]);
-            return;
-        }
-        placeSearchDebounce.current = setTimeout(async () => {
-            setIsSearchingPlace(true);
-            try {
-                const results = await navigationService.geocodePlace(query);
-                setPlaceSearchResults(results);
-            } catch {
-                setPlaceSearchResults([]);
-            } finally {
-                setIsSearchingPlace(false);
-            }
-        }, 350);
-    };
-
-    const openPlaceSearch = (mode: 'origin' | 'stop') => {
-        setPlaceSearchMode(mode);
-        setPlaceSearchQuery('');
-        setPlaceSearchResults([]);
-        setShowPlaceSearch(true);
-    };
-
-    const closePlaceSearch = () => {
-        setShowPlaceSearch(false);
-        setPlaceSearchQuery('');
-        setPlaceSearchResults([]);
-    };
-
-    const handleSelectSearchPlace = (place: GeocodingPlace) => {
-        if (placeSearchMode === 'origin') {
-            onOriginChange?.(place);
-        } else {
-            const updated = [...waypoints, place];
-            onWaypointsChange?.(updated);
-        }
-        closePlaceSearch();
-    };
-
-    const handleUseMyLocation = () => {
-        onOriginChange?.(null);
-        closePlaceSearch();
-    };
-
     const handlePreviewPress = () => {
         onPreviewPress?.();
-    };
-
-    const handleRemoveStop = (index: number) => {
-        const updated = waypoints.filter((_, i) => i !== index);
-        onWaypointsChange?.(updated);
     };
 
     const handleStartNavigation = () => {
@@ -578,100 +543,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                     )}
                                 </View>
                             </View>
-                        ) : (
-                            <View className="px-6 py-3">
-                                <View className="bg-gray-200 rounded-2xl p-4">
-                                    <View className="flex-row items-start mb-1">
-                                        <View className="w-8 items-center pt-1">
-                                            <View className="w-3 h-3 rounded-full bg-blue-500" />
-                                            <View className="w-0.5 bg-gray-400 my-1" style={{ height: waypoints.length > 0 ? 24 : 24 }} />
-                                        </View>
-                                        <TouchableOpacity
-                                            className="flex-1 ml-3 pb-2 flex-row items-center"
-                                            onPress={() => openPlaceSearch('origin')}
-                                            activeOpacity={0.7}
-                                        >
-                                            <Text className="text-gray-900 font-semibold text-sm flex-1" numberOfLines={1}>
-                                                {origin ? origin.name : t('your-location')}
-                                            </Text>
-                                            <Text
-                                                className="text-xs font-semibold ml-2"
-                                                style={{ color: colors.primary.main }}
-                                            >
-                                                {t('change-start')}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    </View>
-
-                                    {waypoints.map((wp, index) => (
-                                        <View key={index}>
-                                           
-                                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                                <View style={{ width: 32, alignItems: 'center' }}>
-                                                    <Image
-                                                        source={require('../../../../assets/images/location-pin-2.png')}
-                                                        style={{ width: 20, height: 20 }}
-                                                        resizeMode="contain"
-                                                    />
-                                                </View>
-                                                <View style={{ flex: 1, marginLeft: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                                                    <Text style={{ fontSize: 14, fontWeight: '500', color: '#1F2937', flex: 1 }} numberOfLines={1}>
-                                                        {wp.name}
-                                                    </Text>
-                                                    <TouchableOpacity
-                                                        onPress={() => handleRemoveStop(index)}
-                                                        style={{ marginLeft: 8, padding: 4 }}
-                                                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                                    >
-                                                        <Ionicons name="close-circle" size={18} color="#9CA3AF" />
-                                                    </TouchableOpacity>
-                                                </View>
-                                            </View>
-                                        
-                                            <View style={{ flexDirection: 'row', height: 14 }}>
-                                                <View style={{ width: 32, alignItems: 'center' }}>
-                                                    <View style={{ width: 1, flex: 1, backgroundColor: '#9CA3AF' }} />
-                                                </View>
-                                            </View>
-                                        </View>
-                                    ))}
-
-                                    {transportMode !== 'taxi' && (
-                                        <View>
-                                            <TouchableOpacity
-                                                style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 2 }}
-                                                onPress={() => openPlaceSearch('stop')}
-                                                activeOpacity={0.7}
-                                            >
-                                                <View style={{ width: 32, alignItems: 'center' }}>
-                                                    <View style={{ width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: `${colors.primary.main}20` }}>
-                                                        <Ionicons name="add" size={14} color={colors.primary.main} />
-                                                    </View>
-                                                </View>
-                                                <Text style={{ marginLeft: 12, fontSize: 14, fontWeight: '500', color: colors.primary.main }}>
-                                                    Add stop
-                                                </Text>
-                                            </TouchableOpacity>
-                                       
-                                            <View style={{ flexDirection: 'row', height: 14 }}>
-                                                <View style={{ width: 32, alignItems: 'center' }}>
-                                                    <View style={{ width: 1, flex: 1, backgroundColor: '#9CA3AF' }} />
-                                                </View>
-                                            </View>
-                                        </View>
-                                    )}
-
-                                    <View className="flex-row items-start">
-                                        <View className="w-8 items-center pt-1">
-                                            <Ionicons name="location" size={20} color={colors.primary.main} />
-                                        </View>
-                                        <View className="flex-1 ml-3">
-                                            <Text className="text-gray-900 font-semibold text-base">{destinationName}</Text>
-                                        </View>
-                                    </View>
-                                </View>
-                            </View>
-                        )}
+                        ) : null}
                     </ScrollView>
 
                     <View className="px-6 py-3 border-t border-gray-100 mb-2">
@@ -771,115 +643,6 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                     )}
                 </View>
             </BlurView>
-
-            <Modal
-                visible={showPlaceSearch}
-                animationType="slide"
-                transparent
-                onRequestClose={closePlaceSearch}
-            >
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                    style={{ flex: 1 }}
-                >
-                    <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' }}>
-                        <View style={{ backgroundColor: 'white', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: insets.bottom + 16 }}>
-                            {/* Header */}
-                            <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 }}>
-                                <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827', flex: 1 }}>
-                                    {placeSearchMode === 'origin' ? t('set-starting-point') : 'Add a stop'}
-                                </Text>
-                                <TouchableOpacity
-                                    onPress={closePlaceSearch}
-                                    style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' }}
-                                >
-                                    <Ionicons name="close" size={20} color="#374151" />
-                                </TouchableOpacity>
-                            </View>
-
-                            {placeSearchMode === 'origin' && (
-                                <TouchableOpacity
-                                    onPress={handleUseMyLocation}
-                                    style={{
-                                        flexDirection: 'row',
-                                        alignItems: 'center',
-                                        marginHorizontal: 20,
-                                        marginBottom: 8,
-                                        paddingVertical: 14,
-                                        borderBottomWidth: 1,
-                                        borderBottomColor: '#F3F4F6',
-                                    }}
-                                    activeOpacity={0.7}
-                                >
-                                    <View style={{
-                                        width: 36, height: 36, borderRadius: 18,
-                                        backgroundColor: `${colors.primary.main}15`,
-                                        alignItems: 'center', justifyContent: 'center', marginRight: 14,
-                                    }}>
-                                        <Ionicons name="locate" size={18} color={colors.primary.main} />
-                                    </View>
-                                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
-                                        {t('your-location')}
-                                    </Text>
-                                </TouchableOpacity>
-                            )}
-
-                            <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginBottom: 8, backgroundColor: '#F3F4F6', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10 }}>
-                                <Ionicons name="search" size={18} color="#9CA3AF" />
-                                <TextInput
-                                    autoFocus
-                                    placeholder={placeSearchMode === 'origin' ? t('search-starting-point') : 'Search for a place...'}
-                                    placeholderTextColor="#9CA3AF"
-                                    value={placeSearchQuery}
-                                    onChangeText={handlePlaceSearchChange}
-                                    style={{ flex: 1, marginLeft: 10, fontSize: 15, color: '#111827' }}
-                                    returnKeyType="search"
-                                />
-                                {placeSearchQuery.length > 0 && (
-                                    <TouchableOpacity onPress={() => { setPlaceSearchQuery(''); setPlaceSearchResults([]); }}>
-                                        <Ionicons name="close-circle" size={18} color="#9CA3AF" />
-                                    </TouchableOpacity>
-                                )}
-                            </View>
-
-                            {isSearchingPlace ? (
-                                <View style={{ paddingVertical: 32, alignItems: 'center' }}>
-                                    <ActivityIndicator size="small" color={colors.primary.main} />
-                                </View>
-                            ) : (
-                                <FlatList
-                                    data={placeSearchResults}
-                                    keyExtractor={(_, i) => i.toString()}
-                                    style={{ maxHeight: 320 }}
-                                    keyboardShouldPersistTaps="handled"
-                                    ListEmptyComponent={
-                                        placeSearchQuery.length >= 2 ? (
-                                            <View style={{ paddingVertical: 24, alignItems: 'center' }}>
-                                                <Text style={{ color: '#9CA3AF', fontSize: 14 }}>No results found</Text>
-                                            </View>
-                                        ) : null
-                                    }
-                                    renderItem={({ item }) => (
-                                        <TouchableOpacity
-                                            onPress={() => handleSelectSearchPlace(item)}
-                                            style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderTopWidth: 1, borderTopColor: '#F3F4F6' }}
-                                            activeOpacity={0.7}
-                                        >
-                                            <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: `${colors.primary.main}15`, alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
-                                                <Ionicons name="location-outline" size={18} color={colors.primary.main} />
-                                            </View>
-                                            <View style={{ flex: 1 }}>
-                                                <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }} numberOfLines={1}>{item.name}</Text>
-                                                <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }} numberOfLines={1}>{[item.City, item.Country].filter(Boolean).join(', ')}</Text>
-                                            </View>
-                                        </TouchableOpacity>
-                                    )}
-                                />
-                            )}
-                        </View>
-                    </View>
-                </KeyboardAvoidingView>
-            </Modal>
         </View>
     );
 };

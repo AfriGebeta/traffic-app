@@ -1,5 +1,18 @@
 import { apiService } from '../../../shared/services/api';
-import { CreateTaxiNodeRequest, CreateTaxiEdgeRequest, TaxiNode, TaxiEdge, TaxiNavigationRequest, TaxiNavigationResponse, CreateAvailabilityWindowRequest, AvailabilityWindow } from '../types/taxi.types';
+import {
+    CreateTaxiNodeRequest,
+    CreateTaxiEdgeRequest,
+    TaxiNode,
+    TaxiEdge,
+    TaxiNavigationRequest,
+    TaxiNavigationResponse,
+    CreateAvailabilityWindowRequest,
+    AvailabilityWindow,
+    TaxiRoute,
+    CreateTaxiRouteRequest,
+    TaxiRouteStop,
+    CreateTaxiRouteStopRequest
+} from '../types/taxi.types';
 
 export const taxiService = {
     async createNode(data: CreateTaxiNodeRequest): Promise<TaxiNode> {
@@ -94,15 +107,82 @@ export const taxiService = {
     },
 
     async createAvailabilityWindow(data: CreateAvailabilityWindowRequest): Promise<AvailabilityWindow> {
-        const response = await apiService.post<AvailabilityWindow>(
+        const response = await apiService.post<any>(
             '/api/navigation/taxi/availability-windows',
             data
         );
 
+        if (response.error) {
+            const errorMsg = response.message || response.error || 'failed to create availability window';
+            throw new Error(errorMsg);
+        }
+
+        if (!response.data) {
+            throw new Error('failed to create availability window - no data returned');
+        }
+
+        const result = response.data.data || response.data;
+        return result;
+    },
+
+    async createRoute(data: CreateTaxiRouteRequest): Promise<TaxiRoute> {
+        const response = await apiService.post<{ data: TaxiRoute }>(
+            '/api/taxi/routes',
+            data
+        );
+
         if (response.error || !response.data) {
-            throw new Error(response.error || 'Failed to create availability window');
+            throw new Error(response.error || 'Failed to create route');
+        }
+
+        return response.data.data;
+    },
+
+    async getNodesForRoute(limit: number = 1000): Promise<TaxiNode[]> {
+        const response = await apiService.get<TaxiNode[]>(
+            `/api/taxi/nodes?limit=${limit}`
+        );
+
+        if (response.error || !response.data) {
+            throw new Error(response.error || 'failed to fetch nodes for route');
         }
 
         return response.data;
+    },
+
+    async createNodeForRoute(data: { name: string; lat: number; lng: number }): Promise<TaxiNode> {
+        const response = await apiService.post<any>(
+            '/api/taxi/nodes',
+            data
+        );
+
+        if (response.error) {
+            throw new Error(response.error);
+        }
+
+        if (!response.data) {
+            throw new Error('failed to create node - no data returned');
+        }
+
+        const result = response.data.data || response.data;
+        return result;
+    },
+
+    async addStopToRoute(routeId: number, data: CreateTaxiRouteStopRequest): Promise<TaxiRouteStop> {
+        const response = await apiService.post<any>(
+            `/api/taxi/routes/${routeId}/stops`,
+            data
+        );
+
+        if (response.error) {
+            throw new Error(response.error);
+        }
+
+        if (!response.data) {
+            throw new Error('failed to add stop to route - no data returned');
+        }
+
+        const result = response.data.data || response.data;
+        return result;
     },
 };

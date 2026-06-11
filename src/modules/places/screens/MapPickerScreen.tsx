@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
+import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import CustomGebetaMap from '../../../components/GebetaMap';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
@@ -10,25 +10,117 @@ import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { showToast } from '../../../shared/utils/toast';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { navigationService } from '../../navigation/services/navigation.service';
+import { colors } from '../../../shared/theme/colors';
 
 export default function MapPickerScreen() {
     const router = useRouter();
     const { t } = useTranslation();
+    const params = useLocalSearchParams();
+    const mode = (params.mode as 'stop' | 'origin') || 'stop';
     const insets = useSafeAreaInsets();
     const mapRef = useRef<GebetaMapRef>(null);
-    const { setSelectedLocation: setGlobalLocation } = useLocation();
     const { userLocation } = useUserLocation();
     const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
+    const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
 
     const handleMapClick = (lngLat: [number, number]) => {
         const location = { lng: lngLat[0], lat: lngLat[1] };
         setSelectedLocation(location);
     };
 
-    const handleConfirm = () => {
-        if (selectedLocation) {
-            setGlobalLocation(selectedLocation);
+    const handleConfirm = async () => {
+        if (!selectedLocation) return;
+
+        setIsReverseGeocoding(true);
+        try {
+            
+            const place = await navigationService.reverseGeocode(
+                selectedLocation.lat,
+                selectedLocation.lng
+            );
+
+            if (place && place.name) {
+                const fullPlace: any = {
+                    ...place,
+
+                    latitude: selectedLocation.lat,
+                    longitude: selectedLocation.lng,
+                    location: {
+                        lat: selectedLocation.lat,
+                        lng: selectedLocation.lng,
+                    },
+                };
+
+                (globalThis as any).__mapPickerData = {
+                    place: fullPlace,
+                    mode: mode,
+                    timestamp: Date.now()
+                };
+
+                router.back();
+            } else {
+                const fallbackPlace: any = {
+                    id: `${selectedLocation.lat},${selectedLocation.lng}`,
+                    name: `${selectedLocation.lat.toFixed(6)}, ${selectedLocation.lng.toFixed(6)}`,
+                    display_name: `${selectedLocation.lat.toFixed(6)}, ${selectedLocation.lng.toFixed(6)}`,
+                    category: 'location',
+                    location: {
+                        lat: selectedLocation.lat,
+                        lng: selectedLocation.lng,
+                    },
+                    address: {
+                        country: '',
+                        country_code: '',
+                    },
+                    latitude: selectedLocation.lat,
+                    longitude: selectedLocation.lng,
+                    Country: '',
+                    City: '',
+                    type: 'point',
+                };
+
+
+                (globalThis as any).__mapPickerData = {
+                    place: fallbackPlace,
+                    mode: mode,
+                    timestamp: Date.now()
+                };
+
+                router.back();
+            }
+        } catch (error) {
+            console.error('error reverse geocoding:', error);
+
+            const fallbackPlace: any = {
+                id: `${selectedLocation.lat},${selectedLocation.lng}`,
+                name: `${selectedLocation.lat.toFixed(6)}, ${selectedLocation.lng.toFixed(6)}`,
+                display_name: `${selectedLocation.lat.toFixed(6)}, ${selectedLocation.lng.toFixed(6)}`,
+                category: 'location',
+                location: {
+                    lat: selectedLocation.lat,
+                    lng: selectedLocation.lng,
+                },
+                address: {
+                    country: '',
+                    country_code: '',
+                },
+                latitude: selectedLocation.lat,
+                longitude: selectedLocation.lng,
+                Country: '',
+                City: '',
+                type: 'point',
+            };
+
+            (globalThis as any).__mapPickerData = {
+                place: fallbackPlace,
+                mode: mode,
+                timestamp: Date.now()
+            };
+
             router.back();
+        } finally {
+            setIsReverseGeocoding(false);
         }
     };
 
@@ -66,7 +158,7 @@ export default function MapPickerScreen() {
                 <View className="flex-row items-center">
                     <Ionicons name="information-circle" size={24} color="#3B82F6" />
                     <Text className="text-sm text-gray-700 ml-2 flex-1">
-                        {t('tap-on-map-to-select-location')}
+                        {mode === 'origin' ? t('tap-to-select-start') : t('tap-on-map-to-select-location')}
                     </Text>
                 </View>
             </View>
@@ -88,7 +180,27 @@ export default function MapPickerScreen() {
                         </Text>
                     </View>
 
-                    <Button title={t('confirm-location')} onPress={handleConfirm} />
+                    {isReverseGeocoding ? (
+                        <TouchableOpacity
+                            disabled
+                            style={{
+                                backgroundColor: colors.primary.main,
+                                borderRadius: 12,
+                                padding: 16,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                opacity: 0.7,
+                            }}
+                        >
+                            <ActivityIndicator size="small" color="white" style={{ marginRight: 8 }} />
+                            <Text style={{ color: 'white', fontSize: 16, fontWeight: '600' }}>
+                                {t('loading')}...
+                            </Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <Button title={t('confirm-location')} onPress={handleConfirm} />
+                    )}
                 </View>
             )}
         </View>

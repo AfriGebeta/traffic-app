@@ -118,106 +118,94 @@ export default function SetPricingScreen() {
             console.log('Creating route:', routeName);
             console.log('Stops:', stops);
 
-            const createdNodes = [];
+            const route = await taxiService.createRoute({
+                name: routeName,
+                color: '#f97316',
+                type: 'minibus',
+            });
+            console.log('created route:', route);
+
+            const nodeIds: number[] = [];
             for (const stop of stops) {
                 if (stop.isExisting && stop.existingNodeId) {
                     console.log('Using existing node:', stop.existingNodeId);
-                    createdNodes.push({ id: stop.existingNodeId });
+                    nodeIds.push(stop.existingNodeId);
                 } else {
                     console.log('Creating new node:', {
                         name: stop.name,
                         lat: stop.lat,
                         lng: stop.lng,
                         nodeType: stop.type,
-                        routeName,
+                        routeName: routeName,
                     });
                     const node = await taxiService.createNode({
                         name: stop.name,
                         lat: stop.lat,
                         lng: stop.lng,
                         nodeType: stop.type,
-                        routeName,
+                        routeName: routeName,
                     });
                     console.log('Created node response:', node);
                     const unwrappedNode = (node as any).data || node;
                     console.log('Extracted node:', unwrappedNode);
-                    createdNodes.push(unwrappedNode);
+                    nodeIds.push(unwrappedNode.id);
                 }
             }
 
-            console.log('All nodes created:', createdNodes);
-            console.log('Creating edges:', edgePrices);
+            console.log('All node IDs:', nodeIds);
 
-            const createdEdges = [];
+            const stopFares: number[] = [];
 
-            for (const edge of edgePrices) {
-                if (edge.cost && parseFloat(edge.cost) > 0) {
-                    const edgeData = {
-                        startNodeId: createdNodes[edge.from].id,
-                        endNodeId: createdNodes[edge.to].id,
-                        cost: parseFloat(edge.cost),
-                        connection: 'taxi' as const,
-                    };
-                    console.log('Creating edge:', edgeData);
-                    await taxiService.createEdge(edgeData);
-                    createdEdges.push({
-                        startNodeId: createdNodes[edge.from].id,
-                        endNodeId: createdNodes[edge.to].id,
-                        fromName: edge.fromName,
-                        toName: edge.toName,
-                    });
+            stopFares.push(0);
+
+            for (let i = 1; i < stops.length; i++) {
+                const edge = edgePrices.find(e => e.from === 0 && e.to === i);
+                if (edge && edge.cost && parseFloat(edge.cost) > 0) {
+                    stopFares.push(parseFloat(edge.cost));
+                } else {
+                    const mainCost = parseFloat(mainRoute.cost);
+                    const proportionalFare = (mainCost / (stops.length - 1)) * i;
+                    stopFares.push(Math.round(proportionalFare * 100) / 100);
                 }
             }
 
-            if (stops.length > 2) {
-                console.log(' Creating intermediate edges for consecutive stops');
+            console.log('calculated fares:', stopFares);
 
-                for (let i = 0; i < stops.length - 1; i++) {
-                    const fromNode = createdNodes[i];
-                    const toNode = createdNodes[i + 1];
-
-                    const alreadyExists = createdEdges.some(
-                        e => e.startNodeId === fromNode.id && e.endNodeId === toNode.id
-                    );
-
-                    if (!alreadyExists) {
-
-                        const mainRoute = edgePrices.find(e => e.from === 0 && e.to === stops.length - 1);
-                        const mainCost = mainRoute && mainRoute.cost ? parseFloat(mainRoute.cost) : 0;
-
-                        const segmentCost = mainCost > 0 ? mainCost / (stops.length - 1) : 10;
-
-                        const edgeData = {
-                            startNodeId: fromNode.id,
-                            endNodeId: toNode.id,
-                            cost: segmentCost,
-                            connection: 'taxi' as const,
-                        };
-
-                        console.log('Creating intermediate edge:', {
-                            from: stops[i].name,
-                            to: stops[i + 1].name,
-                            cost: segmentCost
-                        });
-
-                        await taxiService.createEdge(edgeData);
-                        createdEdges.push({
-                            startNodeId: fromNode.id,
-                            endNodeId: toNode.id,
-                            fromName: stops[i].name,
-                            toName: stops[i + 1].name,
-                        });
-                    }
+            for (let i = 0; i < nodeIds.length; i++) {
+                const stopData = {
+                    nodeId: nodeIds[i],
+                    fareFromStart: stopFares[i],
+                };
+                try {
+                    const stopResult = await taxiService.addStopToRoute(route.id, stopData);
+                    console.log(`stop ${i + 1} added successfully:`, stopResult);
+                } catch (stopError: any) {
+                    console.error(`failed to add stop ${i + 1}:`, stopError);
+                    console.error('stop data:', stopData);
+                    console.error('routeid:', route.id);
+                    throw stopError;
                 }
+            }
 
-                console.log(`Total edges created: ${createdEdges.length}`);
+            console.log('Route creation complete!');
+            showToast.success(t('success'), t('route-created-successfully'));
+
+            const segments = [];
+            for (let i = 0; i < stops.length - 1; i++) {
+                segments.push({
+                    from: i,
+                    to: i + 1,
+                    fromName: stops[i].name,
+                    toName: stops[i + 1].name,
+                });
             }
 
             router.push({
                 pathname: '/taxi/set-availability',
                 params: {
-                    routeName,
-                    edges: JSON.stringify(createdEdges),
+                    routeId: route.id.toString(),
+                    routeName: routeName,
+                    segments: JSON.stringify(segments),
                 },
             });
         } catch (error: any) {

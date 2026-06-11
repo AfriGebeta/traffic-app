@@ -7,7 +7,7 @@ import type {
 import type { RouteSegment } from '../../taxi/types/taxi.types';
 import { calculateDistance } from '../utils/navigationUtils';
 
-const STATION_ARRIVAL_THRESHOLD = 50; // 50 meters
+const STATION_ARRIVAL_THRESHOLD = 50; //50 meters
 const WALKING_END_THRESHOLD = 20; // 20 meters
 
 export const navigationService = {
@@ -39,18 +39,20 @@ export const navigationService = {
 
     async reverseGeocode(lat: number, lng: number): Promise<GeocodingPlace> {
         try {
-            const response = await apiService.post<{ response: any[] }>('/api/navigation/request-revgeocoding', {
+            const response = await apiService.post<{ response: { results: any[] } }>('/api/navigation/request-revgeocoding', {
                 coordinate: { lat, lng },
                 cursor: 0,
-                limit: 10
+                size: 10
             });
 
-            const results = response.data?.response || [];
+            const results = response.data?.response?.results || response.data?.response || [];
+
+            const placesArray = Array.isArray(results) ? results : [];
 
             // look for landmark
             const LANDMARK_THRESHOLD = 0.0005;
 
-            for (const place of results) {
+            for (const place of placesArray) {
                 const placeLat = place.location?.lat || place.latitude;
                 const placeLng = place.location?.lng || place.longitude;
 
@@ -130,7 +132,7 @@ export const navigationService = {
         return response.data;
     },
 
-    // taxi navigation helpers
+    //taxi navigation helpers
     detectSegmentTransition(
         currentLocation: { lat: number; lng: number },
         currentSegment: RouteSegment,

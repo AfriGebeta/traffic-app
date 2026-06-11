@@ -665,6 +665,26 @@
         "AM": "መነሻ ለውጥ"
     },
     {
+        "key": "change",
+        "EN_US": "Change",
+        "AM": "ይቀይሩ"
+    },
+    {
+        "key": "use-my-location",
+        "EN_US": "Use my location",
+        "AM": "የኔን አካባቢ ይጠቀሙ"
+    },
+    {
+        "key": "enter-origin-station",
+        "EN_US": "Enter origin station",
+        "AM": "የመነሻ ጣቢያ ያስገቡ"
+    },
+    {
+        "key": "preview-route",
+        "EN_US": "Preview Route",
+        "AM": "መንገድ ይመልከቱ"
+    },
+    {
         "key": "search-starting-point",
         "EN_US": "Search starting point",
         "AM": "መነሻ ይፈልጉ"
@@ -1545,9 +1565,29 @@
         "AM": "በካርታ ላይ ይምረጡ"
     },
     {
+        "key": "pick-stop-on-map",
+        "EN_US": "Pick stop on map",
+        "AM": "በካርታ ላይ ማቆሚያ ይምረጡ"
+    },
+    {
+        "key": "tap-to-select-start",
+        "EN_US": "Tap on the map to select starting point",
+        "AM": "መነሻ ቦታ ለመምረጥ ካርታውን ይንኩ"
+    },
+    {
         "key": "add-stop",
         "EN_US": "Add Stop",
-        "AM": "ማቆሚያ ያክሉ"
+        "AM": "ማቆሚያ ይጨምሩ"
+    },
+    {
+        "key": "add-a-stop",
+        "EN_US": "Add a stop",
+        "AM": "ማቆሚያ ይጨምሩ"
+    },
+    {
+        "key": "search-for-a-place",
+        "EN_US": "Search for a place...",
+        "AM": "ቦታ ይፈልጉ..."
     },
     {
         "key": "total-cost-start-to-end",
@@ -1855,6 +1895,11 @@
         "AM": "የታክሲ መስመር በመፈለግ ላይ..."
     },
     {
+        "key": "set-operating-hours-for-route",
+        "EN_US": "Set operating hours for route",
+        "AM": "የታክሲ መገኛ ሰዐት ይምረጡ"
+    },
+    {
         "key": "no-taxi-route-found",
         "EN_US": "No taxi route found for this destination",
         "AM": "ለዚህ መድረሻ የታክሲ መስመር አልተገኘም"
@@ -1878,6 +1923,11 @@
         "key": "individual-times-per-route",
         "EN_US": "Individual Times Per Route",
         "AM": "ለእያንዳንዱ መስመር የተለየ ሰዓት"
+    },
+    {
+        "key": "quick-access",
+        "EN_US": "Quick Access",
+        "AM": "ፈጣን መዳረሻ"
     },
     {
         "key": "each-route-has-its-own-time",
@@ -2058,5 +2108,290 @@
         "key": "pricing-progress-restored",
         "EN_US": "Your pricing progress has been restored",
         "AM": "የዋጋ ታሪክዎ ተመልሷል"
+    },
+    {
+        "key": "add-neighborhood",
+        "EN_US": "Add Neighborhood",
+        "AM": "ሰፈር ይጨምሩ"
+    },
+    {
+        "key": "neighborhood-name",
+        "EN_US": "Neighborhood Name",
+        "AM": "የሰፈር ስም"
+    },
+    {
+        "key": "neighborhood-name-placeholder",
+        "EN_US": "e.g., Piassa",
+        "AM": "ለምሳሌ፣ ፒያሳ"
+    },
+    {
+        "key": "local-name",
+        "EN_US": "Local Name",
+        "AM": "የአካባቢ ስም"
+    },
+    {
+        "key": "local-name-placeholder",
+        "EN_US": "e.g., ፒያሳ",
+        "AM": "ለምሳሌ፣ ፒያሳ"
+    },
+    {
+        "key": "slug",
+        "EN_US": "Slug",
+        "AM": "የተለምዶ መጠሪያ"
+    },
+    {
+        "key": "slug-placeholder",
+        "EN_US": "e.g., piassa",
+        "AM": "ለምሳሌ፣ piassa"
+    },
+    {
+        "key": "auto-generated-from-name",
+        "EN_US": "Auto generated from name",
+        "AM": "ከስም መሰረት የተፈጠረ"
+    },
+    {
+        "key": "add-details-about-neighborhood",
+        "EN_US": "Add details about this neighborhood",
+        "AM": "ስለዚህ ሰፈር ዝርዝር ያስገቡ"
+    },
+    {
+        "key": "city",
+        "EN_US": "City",
+        "AM": "ከተማ"
+    },
+    {
+        "key": "city-placeholder",
+        "EN_US": "e.g., Addis Ababa",
+        "AM": "ለምሳሌ፣ አዲስ አበባ"
+    },
+    {
+        "key": "subcity",
+        "EN_US": "Subcity",
+        "AM": "ክፍለ ከተማ"
+    },
+    {
+        "key": "subcity-placeholder",
+        "EN_US": "e.g., Kirkos",
+        "AM": "ለምሳሌ፣ ቂርቆስ"
+    },
+    {
+        "key": "woreda",
+        "EN_US": "Woreda",
+        "AM": "ወረዳ"
+    },
+    {
+        "key": "woreda-placeholder",
+        "EN_US": "e.g., 07",
+        "AM": "ለምሳሌ፣ 07"
+    },
+    {
+        "key": "please-enter-neighborhood-name",
+        "EN_US": "Please enter a neighborhood name",
+        "AM": "እባክዎ የሰፈር ስም ያስገቡ"
+    },
+    {
+        "key": "slug-required",
+        "EN_US": "Slug is required",
+        "AM": "የተለምዶ መጠሪያ ስም ያስፈልጋል"
+    },
+    {
+        "key": "please-enter-slug",
+        "EN_US": "Please enter a slug",
+        "AM": "የተለምዶ መጠሪያ ስም ያስገቡ"
+    },
+    {
+        "key": "please-pick-location",
+        "EN_US": "Please pick a location",
+        "AM": "እባክዎ አድራሻ ይምረጡ"
+    },
+    {
+        "key": "neighborhood-contribution-submitted",
+        "EN_US": "Neighborhood contribution submitted successfully",
+        "AM": "የሰፈር አስተዋፅዖ በተሳካ ሁኔታ ገብቷል"
+    },
+    {
+        "key": "could-not-submit-contribution",
+        "EN_US": "Could not submit contribution",
+        "AM": "አስተዋፅዖ ማስገባት አልተቻለም"
+    },
+    {
+        "key": "contribute-neighborhood",
+        "EN_US": "Contribute Neighborhood",
+        "AM": "ሰፈር ይጠቁሙ"
+    },
+    {
+        "key": "contribute-neighborhood-description",
+        "EN_US": "Add neighborhoods and local areas",
+        "AM": "ሰፈሮችን እና የአካባቢ ቦታዎችን ይጠቁሙ"
+    },
+    {
+        "key": "set-bounding-box",
+        "EN_US": "Set Bounding Box (Optional)",
+        "AM": "ድንበር ያዘጋጁ (አማራጭ)"
+    },
+    {
+        "key": "bounding-box-info",
+        "EN_US": "A bounding box defines the geographic area of the neighborhood. This is optional but helps provide accurate boundaries.",
+        "AM": "ድንበር የሰፈሩን ጂኦግራፊያዊ ክልል ይገልጻል ትክክለኛ ድንበሮችን ለማቅረብ ይረዳል።"
+    },
+    {
+        "key": "north-boundary",
+        "EN_US": "North Boundary",
+        "AM": "የሰሜን ድንበር"
+    },
+    {
+        "key": "south-boundary",
+        "EN_US": "South Boundary",
+        "AM": "የደቡብ ድንበር"
+    },
+    {
+        "key": "east-boundary",
+        "EN_US": "East Boundary",
+        "AM": "የምስራቅ ድንበር"
+    },
+    {
+        "key": "west-boundary",
+        "EN_US": "West Boundary",
+        "AM": "የምዕራብ ድንበር"
+    },
+    {
+        "key": "save-bounding-box",
+        "EN_US": "Save Bounding Box",
+        "AM": "ድንበር ያስቀምጡ"
+    },
+    {
+        "key": "bounding-box-saved",
+        "EN_US": "Bounding box saved",
+        "AM": "ድንበር ተቀምጧል"
+    },
+    {
+        "key": "invalid-input",
+        "EN_US": "Invalid input",
+        "AM": "ልክ ያልሆነ ግቤት"
+    },
+    {
+        "key": "please-enter-valid-coordinates",
+        "EN_US": "Please enter valid coordinates",
+        "AM": "እባክዎ ትክክለኛ መጋጠሚያዎችን ያስገቡ"
+    },
+    {
+        "key": "invalid-bounds",
+        "EN_US": "Invalid bounds",
+        "AM": "ልክ ያልሆነ ድንበር"
+    },
+    {
+        "key": "north-must-be-greater-than-south",
+        "EN_US": "North must be greater than south",
+        "AM": "ሰሜን ከደቡብ መብለጥ አለበት"
+    },
+    {
+        "key": "east-must-be-greater-than-west",
+        "EN_US": "East must be greater than west",
+        "AM": "ምስራቅ ከምዕራብ መብለጥ አለበት"
+    },
+    {
+        "key": "clear-all",
+        "EN_US": "Clear All",
+        "AM": "ሁሉንም ያፅዱ"
+    },
+    {
+        "key": "bounding-box-optional",
+        "EN_US": "Bounding Box (Optional)",
+        "AM": "ድንበር (አማራጭ)"
+    },
+    {
+        "key": "add-bounding-box",
+        "EN_US": "Add Bounding Box",
+        "AM": "ድንበር ይጨምሩ"
+    },
+    {
+        "key": "edit-bounding-box",
+        "EN_US": "Edit Bounding Box",
+        "AM": "ድንበር ያስተካክሉ"
+    },
+    {
+        "key": "bounding-box-set",
+        "EN_US": "Bounding box configured",
+        "AM": "ድንበር ተዘጋጅቷል"
+    },
+    {
+        "key": "draw-bounding-box",
+        "EN_US": "Draw Bounding Box",
+        "AM": "ድንበር ይሳሉ"
+    },
+    {
+        "key": "drag-corners-to-adjust",
+        "EN_US": "Drag corners to adjust area",
+        "AM": "ክልሉን ለማስተካከል ጥግዎችን ይጎትቱ"
+    },
+    {
+        "key": "drag-corner-markers-instruction",
+        "EN_US": "Drag the orange corner markers to define the neighborhood boundaries",
+        "AM": "የሰፈሩን ድንበር ለመግለጽ ብርቱካንማ የጥግ ምልክቶችን ይጎትቱ"
+    },
+    {
+        "key": "reset",
+        "EN_US": "Reset",
+        "AM": "ዳግም ያስጀምሩ"
+    },
+    {
+        "key": "bounding-box-reset",
+        "EN_US": "Bounding box has been reset",
+        "AM": "ድንበር ዳግም ተዘጋጅቷል"
+    },
+    {
+        "key": "tap-corners-then-map",
+        "EN_US": "Select corner, then tap map",
+        "AM": "ጥግ ፣ ከዚያ ካርታን ንካ"
+    },
+    {
+        "key": "select-corner",
+        "EN_US": "Corner",
+        "AM": "ጥግ"
+    },
+    {
+        "key": "tap-map-to-move",
+        "EN_US": "Tap map",
+        "AM": "ካርታን ይንኩ"
+    },
+    {
+        "key": "bounding-box-tap-instruction",
+        "EN_US": "Select a corner button above, then tap the map to move that corner",
+        "AM": "ከላይ ያለውን የጥግ ቁልፍ ይምረጡ፣ ከዚያ ጥጉን ለማንቀሳቀስ ካርታውን ይንኩ"
+    },
+    {
+        "key": "map-not-ready",
+        "EN_US": "Map not ready",
+        "AM": "ካርታ ዝግጁ አይደለም"
+    },
+    {
+        "key": "please-try-again",
+        "EN_US": "Please try again",
+        "AM": "እባክዎ እንደገና ይሞክሩ"
+    },
+    {
+        "key": "bounding-box-coordinates",
+        "EN_US": "Bounding Box Coordinates",
+        "AM": "የድንበር መጋጠሚያዎች"
+    },
+    {
+        "key": "north",
+        "EN_US": "North",
+        "AM": "ሰሜን"
+    },
+    {
+        "key": "south",
+        "EN_US": "South",
+        "AM": "ደቡብ"
+    },
+    {
+        "key": "east",
+        "EN_US": "East",
+        "AM": "ምስራቅ"
+    },
+    {
+        "key": "west",
+        "EN_US": "West",
+        "AM": "ምዕራብ"
     }
 ]
