@@ -25,6 +25,38 @@ export interface CreateTaxiNodeRequest {
     routeName?: string;
 }
 
+export interface TaxiRoute {
+    id: number;
+    name: string;
+    color: string;
+    type: 'minibus' | 'taxi';
+    geometry?: any;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface CreateTaxiRouteRequest {
+    name: string;
+    color: string;
+    type: 'minibus' | 'taxi';
+}
+
+export interface TaxiRouteStop {
+    id: number;
+    routeId: number;
+    nodeId: number;
+    sequenceIndex: number;
+    fareFromStart: number;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface CreateTaxiRouteStopRequest {
+    nodeId: number;
+    fareFromStart: number;
+}
+
 export interface CreateTaxiEdgeRequest {
     startNodeId: number;
     endNodeId: number;
@@ -140,8 +172,7 @@ export interface TaxiNavigationResponse {
 }
 
 export interface AvailabilityWindow {
-    edgeStartId: number;
-    edgeEndId: number;
+    routeId: number;
     dayOfWeek: number | null;
     startMinutes: number;
     endMinutes: number;
@@ -149,8 +180,7 @@ export interface AvailabilityWindow {
 }
 
 export interface CreateAvailabilityWindowRequest {
-    edgeStartId: number;
-    edgeEndId: number;
+    routeId: number;
     dayOfWeek: number | null;
     startMinutes: number;
     endMinutes: number;

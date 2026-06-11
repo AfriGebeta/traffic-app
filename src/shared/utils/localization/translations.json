@@ -1895,6 +1895,11 @@
         "AM": "የታክሲ መስመር በመፈለግ ላይ..."
     },
     {
+        "key": "set-operating-hours-for-route",
+        "EN_US": "Set operating hours for route",
+        "AM": "የታክሲ መገኛ ሰዐት ይምረጡ"
+    },
+    {
         "key": "no-taxi-route-found",
         "EN_US": "No taxi route found for this destination",
         "AM": "ለዚህ መድረሻ የታክሲ መስመር አልተገኘም"

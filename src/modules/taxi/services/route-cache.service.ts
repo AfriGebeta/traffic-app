@@ -38,7 +38,6 @@ class RouteCacheService {
                 timestamp: Date.now(),
             };
             await AsyncStorage.setItem(ROUTE_CACHE_KEY, JSON.stringify(cacheData));
-            console.log('saved route cache:', cacheData);
         } catch (error) {
             console.error('failed to save route cache:', error);
         }
@@ -49,7 +48,7 @@ class RouteCacheService {
             const cached = await AsyncStorage.getItem(ROUTE_CACHE_KEY);
             if (cached) {
                 const data = JSON.parse(cached) as CachedRouteData;
-               
+
                 return data;
             }
             return null;
@@ -62,7 +61,6 @@ class RouteCacheService {
     async clearRouteCache(): Promise<void> {
         try {
             await AsyncStorage.removeItem(ROUTE_CACHE_KEY);
-            console.log(' cleared route cache');
         } catch (error) {
             console.error('failed to clear route cache:', error);
         }

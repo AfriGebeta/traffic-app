@@ -25,7 +25,7 @@ class ApiService {
                 };
             }
         } catch (error) {
-          
+
         }
         return {};
     }
