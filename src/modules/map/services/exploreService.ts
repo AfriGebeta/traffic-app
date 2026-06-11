@@ -14,7 +14,7 @@ const CATEGORY_TYPE_MAP: Record<string, string> = {
 
 interface ExploreParams {
     coordinate: { lat: number; lng: number };
-    type: string;
+    category: string;
     cursor?: number;
     size?: number;
 }
@@ -35,7 +35,7 @@ export const exploreService = {
                 lat: userLocation.lat,
                 lng: userLocation.lng,
             },
-            type,
+            category: type,
             cursor: 0,
             size,
         };

@@ -10,7 +10,7 @@ export type ExploreCategoryId = keyof typeof EXPLORE_CATEGORIES;
 
 export interface ExploreParams {
     coordinate: { lat: number; lng: number };
-    type: string;
+    category: string;
     cursor?: number;
     size?: number;
 }

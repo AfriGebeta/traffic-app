@@ -21,13 +21,13 @@ export const exploreService = {
                 lat: userLocation.lat,
                 lng: userLocation.lng,
             },
-            type,
+            category: type,
             cursor: 0,
             size,
         };
 
         const requestBody = JSON.stringify(params);
-        
+
 
         const response = await fetch(`${API_URL}/api/navigation/request-revgeocoding`, {
             method: 'POST',
