@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, TouchableOpacity, ActivityIndicator, Animated } from 'react-native';
+import { View, TouchableOpacity, ActivityIndicator, Animated, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../../shared/theme/colors';
 import { ShareLocationButton } from '../../../shared/components/ShareLocationButton';
@@ -9,11 +9,13 @@ interface FloatingActionsProps {
     onThemePress?: () => void;
     onVoicePressIn?: () => void;
     onVoicePressOut?: () => void;
+    onTaxiPress?: () => void;
     isRecording?: boolean;
     isProcessingVoice?: boolean;
     userLocation?: { lat: number; lng: number } | null;
     isRoutePreviewActive?: boolean;
     isPlaceDetailActive?: boolean;
+    isCenteredOnUser?: boolean;
 }
 
 export const FloatingActions: React.FC<FloatingActionsProps> = ({
@@ -21,16 +23,23 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
     onThemePress,
     onVoicePressIn,
     onVoicePressOut,
+    onTaxiPress,
     isRecording = false,
     isProcessingVoice = false,
     userLocation,
     isRoutePreviewActive = false,
     isPlaceDetailActive = false,
+    isCenteredOnUser = false,
 }) => {
     const bottomPosition = useRef(new Animated.Value(180)).current;
 
     useEffect(() => {
-        const targetBottom = isRoutePreviewActive || isPlaceDetailActive ? 450 : 180;
+        let targetBottom = 180;
+        if (isRoutePreviewActive) {
+            targetBottom = 340;
+        } else if (isPlaceDetailActive) {
+            targetBottom = 345;
+        }
         Animated.timing(bottomPosition, {
             toValue: targetBottom,
             duration: 250,
@@ -47,7 +56,7 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
                 <Ionicons name="locate" size={24} color="#F59E0B" />
             </TouchableOpacity>
 
-            {userLocation && (
+            {!isPlaceDetailActive && !isRoutePreviewActive && isCenteredOnUser && userLocation && (
                 <ShareLocationButton
                     location={{
                         lat: userLocation.lat,
@@ -66,26 +75,41 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
                 <Ionicons name="layers-outline" size={24} color="#6B7280" />
             </TouchableOpacity>
 
-            <TouchableOpacity
-                onPressIn={onVoicePressIn}
-                onPressOut={onVoicePressOut}
-                disabled={isProcessingVoice}
-                style={{
-                    backgroundColor: isRecording || isProcessingVoice ? colors.primary.main : '#FFFFFF',
-                }}
-                className="rounded-full p-3 shadow-lg"
-                activeOpacity={0.7}
-            >
-                {isProcessingVoice ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                    <Ionicons
-                        name={isRecording ? 'mic' : 'mic-outline'}
-                        size={24}
-                        color={isRecording ? '#FFFFFF' : '#6B7280'}
+            {!isRoutePreviewActive && (
+                <TouchableOpacity
+                    onPress={onTaxiPress}
+                    className="bg-white rounded-full p-3 shadow-lg"
+                >
+                    <Image
+                        source={require('../../../../assets/images/minibus-unselected.png')}
+                        style={{ width: 24, height: 24 }}
+                        resizeMode="contain"
                     />
-                )}
-            </TouchableOpacity>
+                </TouchableOpacity>
+            )}
+
+            {!isPlaceDetailActive && !isRoutePreviewActive && (
+                <TouchableOpacity
+                    onPressIn={onVoicePressIn}
+                    onPressOut={onVoicePressOut}
+                    disabled={isProcessingVoice}
+                    style={{
+                        backgroundColor: isRecording || isProcessingVoice ? colors.primary.main : '#FFFFFF',
+                    }}
+                    className="rounded-full p-3 shadow-lg"
+                    activeOpacity={0.7}
+                >
+                    {isProcessingVoice ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                        <Ionicons
+                            name={isRecording ? 'mic' : 'mic-outline'}
+                            size={24}
+                            color={isRecording ? '#FFFFFF' : '#6B7280'}
+                        />
+                    )}
+                </TouchableOpacity>
+            )}
         </Animated.View>
     );
 };

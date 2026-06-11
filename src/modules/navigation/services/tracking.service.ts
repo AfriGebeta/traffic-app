@@ -133,7 +133,6 @@ class NavigationTrackingService {
     async endNavigationAndSync(navigationId: string): Promise<boolean> {
         try {
             await this.flushPendingPoints();
-            console.log(`track: ending navigation ${navigationId} and syncing immediately`);
             return await this.syncNavigationHistory();
         } catch (error) {
             console.error('tracking: Failed to end navigation and sync:', error);

@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, Share, ScrollView, Image, ImageSourcePropType } from 'react-native';
+import { View, Text, TouchableOpacity, Share, ScrollView, Image, ImageSourcePropType } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { colors } from '../../../shared/theme/colors';
 import type { GeocodingPlace } from '../types/navigation.types';
-import { navigationService } from '../services/navigation.service';
 import { SavePlaceModal } from '../../places/components/SavePlaceModal';
 import { placeService } from '../../places/services/place.service';
 import { showToast } from '../../../shared/utils/toast';
@@ -65,33 +64,6 @@ const ActionPill: React.FC<ActionPillProps> = ({ icon, imageSource, label, onPre
     </TouchableOpacity>
 );
 
-const formatDistance = (meters: number): string => {
-    if (meters < 1000) {
-        return `${Math.round(meters)} m`;
-    }
-    return `${(meters / 1000).toFixed(1)} km`;
-};
-
-const formatTime = (seconds: number): string => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-
-    if (hours > 0) {
-        return `${hours} hr ${minutes} min`;
-    }
-    return `${minutes} min`;
-};
-
-const formatETA = (seconds: number): string => {
-    const now = new Date();
-    const eta = new Date(now.getTime() + seconds * 1000);
-    const hours = eta.getHours();
-    const minutes = eta.getMinutes();
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    const displayHours = hours % 12 || 12;
-    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
-};
-
 export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
     place,
     userLocation,
@@ -104,40 +76,10 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
     const insets = useSafeAreaInsets();
     const [showSaveModal, setShowSaveModal] = useState(false);
     const [savedPlace, setSavedPlace] = useState<SavedPlace | null>(null);
-    const [duration, setDuration] = useState<number | null>(null);
-    const [distance, setDistance] = useState<number | null>(null);
-    const [loadingRoute, setLoadingRoute] = useState(false);
 
     useEffect(() => {
         checkIfSaved();
     }, [place]);
-
-    useEffect(() => {
-        fetchRouteEstimate();
-    }, [place, userLocation]);
-
-    const fetchRouteEstimate = async () => {
-        if (!userLocation) return;
-
-        setLoadingRoute(true);
-        try {
-            const result = await navigationService.getNavigation({
-                origin: [userLocation.lat, userLocation.lng],
-                destination: [place.latitude, place.longitude],
-                costing: 'auto',
-            });
-
-            const leg = result?.data?.trip?.legs?.[0];
-            if (leg) {
-                setDistance(leg.summary.length * 1000);
-                setDuration(leg.summary.time);
-            }
-        } catch (error) {
-            console.error('Error fetching route estimate:', error);
-        } finally {
-            setLoadingRoute(false);
-        }
-    };
 
     const checkIfSaved = async () => {
         const saved = await placeService.isPlaceSaved(place.latitude, place.longitude);
@@ -182,6 +124,35 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
     const locationLine = [place.City, place.Country].filter(Boolean).join(', ');
     const categoryLabel = place.type || t('location');
 
+    const getPlaceImage = () => {
+        const placeType = (place.type || place.category || '').toLowerCase();
+
+
+        if (placeType.includes('restaurant') || placeType.includes('hotel') || placeType.includes('cafe') || placeType.includes('food') || placeType.includes('coffee') || placeType.includes('teahouse')) {
+            return require('../../../../assets/images/restaurant-detail.png');
+        }
+        if (placeType.includes('bank')) {
+            return require('../../../../assets/images/bank-detail.png');
+        }
+        if (placeType.includes('atm')) {
+            return require('../../../../assets/images/atm-detail.png');
+        }
+        if (placeType.includes('gas') || placeType.includes('fuel') || placeType.includes('petrol')) {
+            return require('../../../../assets/images/gas-detail.png');
+        }
+        if (placeType.includes('parking')) {
+            return require('../../../../assets/images/parking-detail.png');
+        }
+        if (placeType.includes('repair') || placeType.includes('garage') || placeType.includes('mechanic')) {
+            return require('../../../../assets/images/repair-detail.png');
+        }
+        if (placeType.includes('taxi')) {
+            return require('../../../../assets/images/taxi-detail.png');
+        }
+
+        return require('../../../../assets/images/random-detail.png');
+    };
+
     return (
         <View
             className="absolute left-4 right-4 rounded-3xl shadow-2xl overflow-hidden"
@@ -200,10 +171,14 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
 
                     <View className="px-5 pb-2">
                         <View
-                            className="rounded-2xl bg-gray-200 items-center justify-center mb-3"
+                            className="rounded-2xl overflow-hidden mb-3"
                             style={{ height: 112 }}
                         >
-                            <Ionicons name="image-outline" size={40} color="#9CA3AF" />
+                            <Image
+                                source={getPlaceImage()}
+                                style={{ width: '100%', height: '100%' }}
+                                resizeMode="cover"
+                            />
                         </View>
 
                         <Text className="text-xl font-bold text-gray-900 mb-1" numberOfLines={2}>
@@ -214,36 +189,6 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
                             {categoryLabel}
                             {locationLine ? ` • ${locationLine}` : ''}
                         </Text>
-                    </View>
-
-                    <View className="px-5 py-2 border-t border-gray-100">
-                        <View className="bg-gray-200 rounded-2xl p-3">
-                            {loadingRoute ? (
-                                <View className="py-2 items-center">
-                                    <ActivityIndicator size="small" color={colors.primary.main} />
-                                </View>
-                            ) : duration != null && distance != null ? (
-                                <>
-                                    <View className="flex-row items-center">
-                                        <Image
-                                            source={require('../../../../assets/images/car-selected.png')}
-                                            style={{ width: 22, height: 22, marginRight: 8 }}
-                                            resizeMode="contain"
-                                        />
-                                        <Text className="text-2xl font-bold text-gray-900">
-                                            {formatTime(duration)}
-                                        </Text>
-                                    </View>
-                                    <Text className="text-gray-500 text-sm mt-1">
-                                        {t('eta')} {formatETA(duration)} • {formatDistance(distance)}
-                                    </Text>
-                                </>
-                            ) : (
-                                <Text className="text-gray-500 text-sm">
-                                    {userLocation ? t('route-unavailable') : t('please-wait-for-location')}
-                                </Text>
-                            )}
-                        </View>
                     </View>
 
                     <ScrollView
@@ -262,12 +207,7 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
                             primary
                         />
                         <ActionPill
-                            icon="play"
-                            label={t('start')}
-                            onPress={onStart}
-                        />
-                        <ActionPill
-                            imageSource={require('../../../../assets/images/minibus-selected.png')}
+                            icon="car-outline"
                             label={t('taxi')}
                             onPress={onTaxi}
                         />

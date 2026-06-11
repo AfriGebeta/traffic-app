@@ -25,13 +25,11 @@ export const useCollectorTracking = ({
                     const sessionName = routeName ? `collection_${routeName}` : 'collection';
                     collectionIdRef.current = `${sessionName}_${Date.now()}`;
                     hasPointsRef.current = false;
-                    console.log('collector:Started tracking:', collectionIdRef.current);
                 }
 
                 try {
                     const { status } = await Location.requestForegroundPermissionsAsync();
                     if (status !== 'granted') {
-                        console.log('collector: Location permission denied');
                         return;
                     }
 
@@ -51,7 +49,6 @@ export const useCollectorTracking = ({
                                         longitude
                                     );
                                     hasPointsRef.current = true;
-                                    console.log('collector point added:', { latitude, longitude });
                                 }
                             }
                         );
@@ -72,18 +69,9 @@ export const useCollectorTracking = ({
 
                 if (collectionIdRef.current && previousCollectingRef.current) {
                     const collectionId = collectionIdRef.current;
-                    console.log('collect: collection ended, syncing:', collectionId);
 
                     if (hasPointsRef.current) {
-                        navigationTrackingService.endNavigationAndSync(collectionId).then((success) => {
-                            if (success) {
-                                console.log('collector data synced successfully');
-                            } else {
-                                console.log('failed to sync (will retry in background)');
-                            }
-                        });
-                    } else {
-                        console.log('collector points collected, skipping sync');
+                        navigationTrackingService.endNavigationAndSync(collectionId);
                     }
 
                     collectionIdRef.current = null;

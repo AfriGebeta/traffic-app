@@ -22,35 +22,30 @@ function summarizeIdToken(idToken: string | null | undefined): string | null {
 
 export const telegramAuthLog = {
     info(step: string, details?: Record<string, unknown>) {
-        if (details) {
-            console.log(LOG_PREFIX, step, details);
-            return;
-        }
-
-        console.log(LOG_PREFIX, step);
+        
     },
 
     warn(step: string, details?: Record<string, unknown>) {
-        console.warn(LOG_PREFIX, step, details ?? '');
+       
     },
 
     error(step: string, error: unknown, details?: Record<string, unknown>) {
-        console.error(LOG_PREFIX, step, error, details ?? '');
+       
     },
 
     url(step: string, url: string) {
-        const idToken = extractIdTokenPreview(url);
+        // const idToken = extractIdTokenPreview(url);
 
-        console.log(LOG_PREFIX, step, {
-            url,
-            queryKeys: getQueryKeys(url),
-            hash: getHash(url),
-            hasIdTokenParam: url.includes('id_token'),
-            hasTgAuthResult: url.includes('tgAuthResult'),
-            hasLegacyHash: url.includes('hash='),
-            hasLegacyId: url.includes('id=') && url.includes('hash='),
-            idTokenPreview: idToken,
-        });
+        // console.log(LOG_PREFIX, step, {
+        //     url,
+        //     queryKeys: getQueryKeys(url),
+        //     hash: getHash(url),
+        //     hasIdTokenParam: url.includes('id_token'),
+        //     hasTgAuthResult: url.includes('tgAuthResult'),
+        //     hasLegacyHash: url.includes('hash='),
+        //     hasLegacyId: url.includes('id=') && url.includes('hash='),
+        //     idTokenPreview: idToken,
+        // });
     },
 };
 
@@ -74,10 +69,10 @@ function extractIdTokenPreview(url: string): string | null {
 }
 
 export function logUrlTokenExtraction(url: string, idToken: string | null) {
-    telegramAuthLog.info('extractIdTokenFromUrl', {
-        found: !!idToken,
-        idTokenPreview: summarizeIdToken(idToken),
-        queryKeys: getQueryKeys(url),
-        hash: getHash(url),
-    });
+    // telegramAuthLog.info('extractIdTokenFromUrl', {
+    //     found: !!idToken,
+    //     idTokenPreview: summarizeIdToken(idToken),
+    //     queryKeys: getQueryKeys(url),
+    //     hash: getHash(url),
+    // });
 }

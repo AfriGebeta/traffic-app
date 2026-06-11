@@ -318,6 +318,14 @@ export const useSimulation = ({
                     : (25 * 1000) / 3600;
                 const estimatedTime = totalDistance / averageSpeedMps;
                 setRemainingTime(estimatedTime);
+
+                if (totalDistance <= 50 && totalDistance > 0) {
+                    stopSimulation();
+                    onArrival?.();
+                    if (onSimulationComplete) {
+                        onSimulationComplete();
+                    }
+                }
             } else {
 
                 lastRenderedMarkerRef.current = { lat: markerLat, lng: markerLng };

@@ -5,10 +5,12 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { MapThemeProvider } from '../modules/map/context/MapThemeContext';
 import { UserLocationProvider } from '../modules/map/context/UserLocationContext';
 import { IncidentFiltersProvider } from '../modules/incidents/context/IncidentFiltersContext';
+import { LocationProvider } from '../shared/contexts/LocationContext';
 import { useEffect } from 'react';
 import * as NavigationBar from 'expo-navigation-bar';
 import { Platform } from 'react-native';
 import { useTelegramDeepLink } from '../shared/hooks/useTelegramDeepLink';
+import telemetryApiService from '../shared/services/telemetry-api.service';
 import './globals.css';
 import '../shared/utils/localization/i18n';
 
@@ -24,6 +26,8 @@ export default function RootLayout() {
 
       }
     }
+
+    telemetryApiService.trackAppLaunch();
   }, []);
 
   return (
@@ -31,14 +35,16 @@ export default function RootLayout() {
       <GestureHandlerRootView style={{ flex: 1 }}>
         <MapThemeProvider>
           <UserLocationProvider>
-            <IncidentFiltersProvider>
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                }}
-              />
-              <Toast />
-            </IncidentFiltersProvider>
+            <LocationProvider>
+              <IncidentFiltersProvider>
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                  }}
+                />
+                <Toast />
+              </IncidentFiltersProvider>
+            </LocationProvider>
           </UserLocationProvider>
         </MapThemeProvider>
       </GestureHandlerRootView>

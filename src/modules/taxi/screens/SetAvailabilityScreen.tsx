@@ -9,9 +9,9 @@ import { colors } from '../../../shared/theme/colors';
 import { routeCacheService } from '../services/route-cache.service';
 import { useRouteBuilder } from '../contexts/RouteBuilderContext';
 
-interface EdgeInfo {
-    startNodeId: number;
-    endNodeId: number;
+interface RouteSegment {
+    from: number;
+    to: number;
     fromName: string;
     toName: string;
 }
@@ -29,19 +29,26 @@ export default function SetAvailabilityScreen() {
     const params = useLocalSearchParams();
     const { endCollectorTracking, setIsCollecting } = useRouteBuilder();
 
-    const [edges, setEdges] = useState<EdgeInfo[]>([]);
+    const [routeId, setRouteId] = useState<number | null>(null);
+    const [routeName, setRouteName] = useState('');
+    const [segments, setSegments] = useState<RouteSegment[]>([]);
     const [timeWindows, setTimeWindows] = useState<TimeWindow[]>([]);
     const [loading, setLoading] = useState(false);
     const [showTimePicker, setShowTimePicker] = useState(false);
-    const [editingTime, setEditingTime] = useState<{ windowIndex: number; field: 'start' | 'end'; edgeIndex?: number } | null>(null);
+    const [editingTime, setEditingTime] = useState<{ windowIndex: number; field: 'start' | 'end'; segmentIndex?: number } | null>(null);
     const [tempHour, setTempHour] = useState('');
     const [tempMinute, setTempMinute] = useState('');
     const [individualTimes, setIndividualTimes] = useState(false);
 
     useEffect(() => {
-        if (params.edges) {
-            const parsedEdges = JSON.parse(params.edges as string);
-            setEdges(parsedEdges);
+        if (params.routeId && params.routeName) {
+            setRouteId(Number(params.routeId));
+            setRouteName(params.routeName as string);
+
+            if (params.segments) {
+                const parsedSegments = JSON.parse(params.segments as string);
+                setSegments(parsedSegments);
+            }
 
             setTimeWindows([{
                 startMinutes: 300, // 5 am
@@ -49,18 +56,17 @@ export default function SetAvailabilityScreen() {
                 isAvailable: true,
             }]);
         }
-    }, [params.edges]);
+    }, [params.routeId, params.routeName, params.segments]);
 
     useEffect(() => {
-        if (individualTimes && edges.length > 0) {
-            const newTimeWindows = edges.map(() => ({
+        if (individualTimes && segments.length > 0) {
+            const newTimeWindows = segments.map(() => ({
                 startMinutes: 300,
                 endMinutes: 1320,
                 isAvailable: true,
             }));
             setTimeWindows(newTimeWindows);
-        } else if (!individualTimes && edges.length > 0) {
-
+        } else if (!individualTimes && segments.length > 0) {
             setTimeWindows([timeWindows[0] || {
                 startMinutes: 300,
                 endMinutes: 1320,
@@ -75,7 +81,7 @@ export default function SetAvailabilityScreen() {
         return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
     };
 
-    const openTimePicker = (windowIndex: number, field: 'start' | 'end', edgeIndex?: number) => {
+    const openTimePicker = (windowIndex: number, field: 'start' | 'end', segmentIndex?: number) => {
         const window = timeWindows[windowIndex];
         const minutes = field === 'start' ? window.startMinutes : window.endMinutes;
         const hours = Math.floor(minutes / 60);
@@ -83,7 +89,7 @@ export default function SetAvailabilityScreen() {
 
         setTempHour(hours.toString());
         setTempMinute(mins.toString());
-        setEditingTime({ windowIndex, field, edgeIndex });
+        setEditingTime({ windowIndex, field, segmentIndex });
         setShowTimePicker(true);
     };
 
@@ -127,6 +133,11 @@ export default function SetAvailabilityScreen() {
     };
 
     const handleSubmit = async () => {
+        if (!routeId) {
+            Alert.alert(t('error'), t('route-id-not-found'));
+            return;
+        }
+
         if (timeWindows.length === 0) {
             Alert.alert(t('error'), t('please-add-at-least-one-time-window'));
             return;
@@ -141,42 +152,36 @@ export default function SetAvailabilityScreen() {
 
         setLoading(true);
         try {
-            console.log(`[Availability] Creating windows for ${edges.length} edges`);
+            console.log(`[Availability] Creating windows for route ${routeId}: ${routeName}`);
 
-            if (individualTimes) {
-                for (let i = 0; i < edges.length; i++) {
-                    const edge = edges[i];
+            if (individualTimes && segments.length > 0) {
+               
+                for (let i = 0; i < segments.length; i++) {
                     const window = timeWindows[i];
                     await taxiService.createAvailabilityWindow({
-                        edgeStartId: edge.startNodeId,
-                        edgeEndId: edge.endNodeId,
+                        routeId: routeId,
                         dayOfWeek: null,
                         startMinutes: window.startMinutes,
                         endMinutes: window.endMinutes,
                         isAvailable: window.isAvailable,
                     });
-
                 }
             } else {
+                
                 const window = timeWindows[0];
-                for (const edge of edges) {
-                    await taxiService.createAvailabilityWindow({
-                        edgeStartId: edge.startNodeId,
-                        edgeEndId: edge.endNodeId,
-                        dayOfWeek: null,
-                        startMinutes: window.startMinutes,
-                        endMinutes: window.endMinutes,
-                        isAvailable: window.isAvailable,
-                    });
-
-                }
+                await taxiService.createAvailabilityWindow({
+                    routeId: routeId,
+                    dayOfWeek: null,
+                    startMinutes: window.startMinutes,
+                    endMinutes: window.endMinutes,
+                    isAvailable: window.isAvailable,
+                });
             }
 
             Alert.alert(t('success'), t('availability-windows-created-successfully'), [
                 {
                     text: t('ok'),
                     onPress: async () => {
-
                         console.log('[SetAvailability] Ending collector tracking...');
                         await endCollectorTracking();
                         setIsCollecting(false);
@@ -200,7 +205,7 @@ export default function SetAvailabilityScreen() {
         }
     };
 
-    if (edges.length === 0) {
+    if (!routeId) {
         return null;
     }
 
@@ -221,53 +226,57 @@ export default function SetAvailabilityScreen() {
             <ScrollView className="flex-1 p-4" contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}>
                 <View className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-4">
                     <Text className="text-lg font-bold text-gray-900 mb-2">
-                        {params.routeName}
+                        {routeName}
                     </Text>
                     <Text className="text-gray-600 text-sm mb-4">
                         {individualTimes
                             ? t('set-individual-times-for-each-route')
-                            : `${t('these-hours-will-apply-to-all-edges')} (${edges.length} ${t('edges')})`
+                            : segments.length > 0
+                                ? `${t('these-hours-will-apply-to-all-edges')} (${segments.length} ${t('edges')})`
+                                : t('set-operating-hours-for-route')
                         }
                     </Text>
 
-                    <View className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-xl">
-                        <View className="flex-row items-center justify-between">
-                            <View className="flex-1 mr-3">
-                                <Text className="text-gray-900 font-semibold mb-1">
-                                    {t('individual-times-per-route')}
-                                </Text>
-                                <Text className="text-gray-600 text-xs">
-                                    {individualTimes
-                                        ? t('each-route-has-its-own-time')
-                                        : t('all-routes-share-same-time')
-                                    }
-                                </Text>
+                    {segments.length > 0 && (
+                        <View className="mb-4 p-4 border border-gray-200 rounded-xl">
+                            <View className="flex-row items-center justify-between">
+                                <View className="flex-1 mr-3">
+                                    <Text className="text-gray-900 font-semibold mb-1">
+                                        {t('individual-times-per-route')}
+                                    </Text>
+                                    <Text className="text-gray-600 text-xs">
+                                        {individualTimes
+                                            ? t('each-route-has-its-own-time')
+                                            : t('all-routes-share-same-time')
+                                        }
+                                    </Text>
+                                </View>
+                                <Switch
+                                    value={individualTimes}
+                                    onValueChange={setIndividualTimes}
+                                    trackColor={{ false: colors.gray[200], true: colors.primary.light }}
+                                    thumbColor={individualTimes ? colors.primary.main : colors.gray[100]}
+                                />
                             </View>
-                            <Switch
-                                value={individualTimes}
-                                onValueChange={setIndividualTimes}
-                                trackColor={{ false: colors.gray[200], true: colors.primary.light }}
-                                thumbColor={individualTimes ? colors.primary.main : colors.gray[100]}
-                            />
                         </View>
-                    </View>
+                    )}
 
-                    {!individualTimes && (
+                    {!individualTimes && segments.length > 0 && (
                         <View className="mb-4 p-3 bg-gray-50 rounded-xl">
                             <Text className="text-gray-700 font-semibold mb-2">{t('affected-routes')}:</Text>
-                            {edges.map((edge, index) => (
+                            {segments.map((segment, index) => (
                                 <Text key={index} className="text-gray-600 text-sm">
-                                    • {edge.fromName} → {edge.toName}
+                                    • {segment.fromName} → {segment.toName}
                                 </Text>
                             ))}
                         </View>
                     )}
 
-                    {individualTimes ? (
-                        edges.map((edge, edgeIndex) => (
-                            <View key={edgeIndex} className="mb-6 p-4 bg-gray-50 rounded-xl border-2 border-gray-200">
+                    {individualTimes && segments.length > 0 ? (
+                        segments.map((segment, segmentIndex) => (
+                            <View key={segmentIndex} className="mb-6 p-4 bg-gray-50 rounded-xl border-2 border-gray-200">
                                 <Text className="text-gray-900 font-bold mb-3">
-                                    {edge.fromName} → {edge.toName}
+                                    {segment.fromName} → {segment.toName}
                                 </Text>
 
                                 <View className="flex-row items-center justify-between mb-4">
@@ -275,10 +284,10 @@ export default function SetAvailabilityScreen() {
                                         <Text className="text-gray-700 font-medium mb-2">{t('start-time')}</Text>
                                         <TouchableOpacity
                                             className="bg-white border border-gray-300 rounded-lg p-3"
-                                            onPress={() => openTimePicker(edgeIndex, 'start', edgeIndex)}
+                                            onPress={() => openTimePicker(segmentIndex, 'start', segmentIndex)}
                                         >
                                             <Text className="text-gray-900 text-center font-mono text-lg">
-                                                {formatTime(timeWindows[edgeIndex]?.startMinutes || 300)}
+                                                {formatTime(timeWindows[segmentIndex]?.startMinutes || 300)}
                                             </Text>
                                         </TouchableOpacity>
                                     </View>
@@ -286,10 +295,10 @@ export default function SetAvailabilityScreen() {
                                         <Text className="text-gray-700 font-medium mb-2">{t('end-time')}</Text>
                                         <TouchableOpacity
                                             className="bg-white border border-gray-300 rounded-lg p-3"
-                                            onPress={() => openTimePicker(edgeIndex, 'end', edgeIndex)}
+                                            onPress={() => openTimePicker(segmentIndex, 'end', segmentIndex)}
                                         >
                                             <Text className="text-gray-900 text-center font-mono text-lg">
-                                                {formatTime(timeWindows[edgeIndex]?.endMinutes || 1320)}
+                                                {formatTime(timeWindows[segmentIndex]?.endMinutes || 1320)}
                                             </Text>
                                         </TouchableOpacity>
                                     </View>
@@ -298,10 +307,10 @@ export default function SetAvailabilityScreen() {
                                 <View className="flex-row items-center justify-between bg-white p-3 rounded-lg">
                                     <Text className="text-gray-700 font-medium">{t('is-available')}</Text>
                                     <Switch
-                                        value={timeWindows[edgeIndex]?.isAvailable ?? true}
-                                        onValueChange={(value) => updateTimeWindow(edgeIndex, 'isAvailable', value)}
+                                        value={timeWindows[segmentIndex]?.isAvailable ?? true}
+                                        onValueChange={(value) => updateTimeWindow(segmentIndex, 'isAvailable', value)}
                                         trackColor={{ false: colors.gray[200], true: colors.primary.light }}
-                                        thumbColor={timeWindows[edgeIndex]?.isAvailable ? colors.primary.main : colors.gray[100]}
+                                        thumbColor={timeWindows[segmentIndex]?.isAvailable ? colors.primary.main : colors.gray[100]}
                                     />
                                 </View>
                             </View>
@@ -313,6 +322,11 @@ export default function SetAvailabilityScreen() {
                                     <Text className="text-gray-900 font-semibold">
                                         {t('operating-hours')}
                                     </Text>
+                                    {timeWindows.length > 1 && (
+                                        <TouchableOpacity onPress={() => removeTimeWindow(index)}>
+                                            <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                                        </TouchableOpacity>
+                                    )}
                                 </View>
 
                                 <View className="flex-row items-center justify-between mb-4">
@@ -351,6 +365,17 @@ export default function SetAvailabilityScreen() {
                                 </View>
                             </View>
                         ))
+                    )}
+
+                    {!individualTimes && (
+                        <TouchableOpacity
+                            className="bg-gray-200 py-3 rounded-xl mb-4 flex-row items-center justify-center"
+                            onPress={addTimeWindow}
+                            activeOpacity={0.7}
+                        >
+                            <Ionicons name="add-circle-outline" size={20} color={colors.primary.main} />
+                            <Text className="text-gray-700 font-semibold ml-2">{t('add-time-window')}</Text>
+                        </TouchableOpacity>
                     )}
 
                     <View className="flex-row space-x-2">

@@ -9,7 +9,7 @@ export const exploreService = {
     async fetchPlacesByCategory(
         categoryId: ExploreCategoryId,
         userLocation: { lat: number; lng: number },
-        limit: number = 5
+        size: number = 5
     ): Promise<GeocodingPlace[]> {
         const type = EXPLORE_CATEGORIES[categoryId];
         if (!type) {
@@ -21,17 +21,20 @@ export const exploreService = {
                 lat: userLocation.lat,
                 lng: userLocation.lng,
             },
-            type,
+            category: type,
             cursor: 0,
-            limit,
+            size,
         };
+
+        const requestBody = JSON.stringify(params);
+
 
         const response = await fetch(`${API_URL}/api/navigation/request-revgeocoding`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(params),
+            body: requestBody,
         });
 
         if (!response.ok) {
@@ -39,15 +42,39 @@ export const exploreService = {
         }
 
         const data = await response.json();
-        const rawResults = data.response || data.results || data.data || [];
+
+        let rawResults: any[] = [];
+        if (data.response?.results && Array.isArray(data.response.results)) {
+            rawResults = data.response.results;
+        } else if (data.data?.results && Array.isArray(data.data.results)) {
+            rawResults = data.data.results;
+        } else if (Array.isArray(data.data)) {
+            rawResults = data.data;
+        } else if (Array.isArray(data.response)) {
+            rawResults = data.response;
+        } else if (Array.isArray(data.results)) {
+            rawResults = data.results;
+        }
 
         const places: GeocodingPlace[] = rawResults.map((item: any) => ({
+            id: item.id || '',
             name: item.name || 'Unknown',
-            latitude: item.latitude || 0,
-            longitude: item.longitude || 0,
-            type: item.type || type,
-            Country: item.Country || '',
-            City: item.City || '',
+            display_name: item.display_name || item.name || 'Unknown',
+            category: item.category || type,
+            location: {
+                lat: item.location?.lat || item.latitude || 0,
+                lng: item.location?.lng || item.longitude || 0,
+            },
+            address: {
+                city: item.address?.city || item.City || '',
+                country: item.address?.country || item.Country || '',
+                country_code: item.address?.country_code || '',
+            },
+            latitude: item.location?.lat || item.latitude || 0,
+            longitude: item.location?.lng || item.longitude || 0,
+            type: item.category || item.type || type,
+            Country: item.address?.country || item.Country || '',
+            City: item.address?.city || item.City || '',
         }));
 
         return places;

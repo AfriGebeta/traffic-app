@@ -293,19 +293,23 @@ export const useNavigation = (
                     maxLat: route.coordinates[0][1],
                 });
 
-                const centerLng = (bounds.minLng + bounds.maxLng) / 2;
-                const centerLat = (bounds.minLat + bounds.maxLat) / 2;
-
                 const latDiff = bounds.maxLat - bounds.minLat;
                 const lngDiff = bounds.maxLng - bounds.minLng;
-                const maxDiff = Math.max(latDiff, lngDiff);
+
+                const adjustedLatDiff = latDiff * 1.8; 
+                const maxDiff = Math.max(adjustedLatDiff, lngDiff);
 
                 let zoom = 13;
-                if (maxDiff > 0.1) zoom = 11;
+                if (maxDiff > 0.15) zoom = 10;
+                else if (maxDiff > 0.1) zoom = 11;
                 else if (maxDiff > 0.05) zoom = 12;
                 else if (maxDiff > 0.02) zoom = 13;
                 else if (maxDiff > 0.01) zoom = 14;
                 else zoom = 15;
+
+                const latShift = (bounds.maxLat - bounds.minLat) * 0.8; 
+                const centerLng = (bounds.minLng + bounds.maxLng) / 2;
+                const centerLat = (bounds.minLat + bounds.maxLat) / 2 - latShift;
 
                 mapRef.current.flyTo({
                     center: [centerLng, centerLat],
@@ -447,7 +451,7 @@ export const useNavigation = (
                         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
                         const distanceToDestination = R * c;
 
-                        if (distanceToDestination <= 10) {
+                        if (distanceToDestination <= 50) {
                             setShowArrivalModal(true);
                             handleStopNavigation();
                             return;

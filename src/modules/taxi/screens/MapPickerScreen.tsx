@@ -237,6 +237,7 @@ export default function MapPickerScreen() {
                         lng: station.lng,
                         type: 'intermediate' as const,
                     }))}
+                    externalCameraControl={true}
                 />
 
                 <View className="absolute top-4 left-4 right-4 bg-white rounded-xl p-4 shadow-lg">
