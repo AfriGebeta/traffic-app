@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, Share, ScrollView, Image, ImageSourceProp
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { colors } from '../../../shared/theme/colors';
 import type { GeocodingPlace } from '../types/navigation.types';
@@ -76,6 +77,7 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
     const insets = useSafeAreaInsets();
     const [showSaveModal, setShowSaveModal] = useState(false);
     const [savedPlace, setSavedPlace] = useState<SavedPlace | null>(null);
+    const router = useRouter();
 
     useEffect(() => {
         checkIfSaved();
@@ -119,6 +121,30 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
             message: `Check out ${place.name} on Gebeta Maps: ${url}`,
             url,
         });
+    };
+
+    const handleClaimBusiness = () => {
+        router.push({
+            pathname: '/places/claim',
+            params: {
+                placeId: place.id || `${place.latitude},${place.longitude}`,
+                placeName: place.name
+            },
+        });
+    };
+
+    const isClaimableBusiness = () => {
+        const type = (place.type || '').toLowerCase();
+        const category = (place.category || '').toLowerCase();
+
+        const claimableKeywords = [
+            'restaurant', 'cafe', 'shop', 'store', 'mall', 'gas', 'fuel',
+            'repair', 'hotel', 'bank', 'pharmacy', 'company', 'business'
+        ];
+
+        return claimableKeywords.some(keyword =>
+            type.includes(keyword) || category.includes(keyword)
+        );
     };
 
     const locationLine = [place.City, place.Country].filter(Boolean).join(', ');
@@ -216,6 +242,13 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
                             label={t('save')}
                             onPress={savedPlace ? handleUnsavePlace : () => setShowSaveModal(true)}
                         />
+                        {/* {isClaimableBusiness() && (
+                            <ActionPill
+                                icon="briefcase-outline"
+                                label={t('claim')}
+                                onPress={handleClaimBusiness}
+                            />
+                        )} */}
                         <ActionPill
                             icon="share-social-outline"
                             label={t('share')}
