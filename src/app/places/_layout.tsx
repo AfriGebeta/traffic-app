@@ -36,6 +36,13 @@ export default function PlacesLayout() {
                         title: 'Pick Location',
                     }}
                 />
+                <Stack.Screen
+                    name="claim"
+                    options={{
+                        title: 'Claim Business',
+                        headerShown: false,
+                    }}
+                />
             </Stack>
         </LocationProvider>
     );

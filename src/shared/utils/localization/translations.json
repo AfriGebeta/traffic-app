@@ -2393,5 +2393,105 @@
         "key": "west",
         "EN_US": "West",
         "AM": "ምዕራብ"
+    },
+    {
+        "key": "claim",
+        "EN_US": "Claim",
+        "AM": "ይጠይቁ"
+    },
+    {
+        "key": "claim-business",
+        "EN_US": "Claim Business",
+        "AM": "እውቅና ይጠይቁ"
+    },
+    {
+        "key": "claim-this-business",
+        "EN_US": "Claim this business",
+        "AM": "ይህን ቦታ እውቅና ይጠይቁ"
+    },
+    {
+        "key": "verification-method",
+        "EN_US": "Verification Method",
+        "AM": "የማረጋገጫ ዘዴ"
+    },
+    {
+        "key": "trade-license",
+        "EN_US": "Trade License",
+        "AM": "የንግድ ፈቃድ"
+    },
+    {
+        "key": "upload-your-trade-license",
+        "EN_US": "Upload your trade license document",
+        "AM": "የንግድ ፈቃድዎን ያስገቡ"
+    },
+    {
+        "key": "tin-certificate",
+        "EN_US": "TIN Certificate",
+        "AM": "የቲን ሰርተፊኬት"
+    },
+    {
+        "key": "upload-your-tin-certificate",
+        "EN_US": "Upload your TIN certificate document",
+        "AM": "የቲን ሰርተፊኬትዎን ያስገቡ"
+    },
+    {
+        "key": "tin-number",
+        "EN_US": "TIN Number",
+        "AM": "የቲን ቁጥር"
+    },
+    {
+        "key": "enter-10-digit-tin",
+        "EN_US": "Enter 10-digit TIN number",
+        "AM": "የቲን ሰርተፊኬትዎን ያስገቡ"
+    },
+    {
+        "key": "upload-document",
+        "EN_US": "Upload Document",
+        "AM": "ሰነድ ይስቀሉ"
+    },
+    {
+        "key": "choose-file",
+        "EN_US": "Choose File",
+        "AM": "ፋይል ይምረጡ"
+    },
+    {
+        "key": "pdf-or-image-max-10mb",
+        "EN_US": "PDF or Image (Max 10MB)",
+        "AM": "PDF ወይም ምስል (ከ10MB በታች)"
+    },
+    {
+        "key": "uploading",
+        "EN_US": "Uploading",
+        "AM": "በማስገባት ላይ"
+    },
+    {
+        "key": "submit-claim",
+        "EN_US": "Submit Claim",
+        "AM": "ጥያቄ ያስገቡ"
+    },
+    {
+        "key": "claim-submitted-successfully",
+        "EN_US": "Claim submitted successfully",
+        "AM": "ጥያቄ በተሳካ ሁኔታ ገብቷል"
+    },
+    {
+        "key": "failed-to-submit-claim",
+        "EN_US": "Failed to submit claim",
+        "AM": "ጥያቄ ማስገባት አልተሳካም"
+    },
+    {
+        "key": "please-upload-verification-document",
+        "EN_US": "Please upload a verification document",
+        "AM": "እባክዎ የማረጋገጫ ሰነድ ይስቀሉ"
+    },
+    {
+        "key": "please-enter-tin-number",
+        "EN_US": "Please enter TIN number",
+        "AM": "እባክዎ የቲን ቁጥር ያስገቡ"
+    },
+    {
+        "key": "failed-to-pick-document",
+        "EN_US": "Failed to pick document",
+        "AM": "ሰነድ መምረጥ አልተሳካም"
     }
 ]

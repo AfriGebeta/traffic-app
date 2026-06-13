@@ -26,13 +26,13 @@ export const voiceNavigationService = {
         originLng?: number
     ): Promise<VoiceNavigationResponse | null> {
         try {
-            console.log('Voice Navigation Request:', {
+            console.log('voice nav req:', {
+               
                 audioUri,
                 language,
                 sessionId,
                 originLat,
-                originLng,
-                endpoint: `${API_URL}/api/asr/process-voice-navigation`
+                originLng
             });
 
             const formData = new FormData();
@@ -100,6 +100,7 @@ export const voiceNavigationService = {
                 transcription: data.transcription,
                 hasNavigationData: !!data.navigationData
             });
+            
 
             return data as VoiceNavigationResponse;
         } catch (error) {
