@@ -113,6 +113,119 @@ export const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2
     return R * c;
 };
 
+export const buildCumulativeDistances = (coords: [number, number][]): number[] => {
+    const cum: number[] = new Array(coords.length);
+    cum[0] = 0;
+    for (let i = 1; i < coords.length; i++) {
+        const [lng1, lat1] = coords[i - 1];
+        const [lng2, lat2] = coords[i];
+        cum[i] = cum[i - 1] + calculateDistance(lat1, lng1, lat2, lng2);
+    }
+    return cum;
+};
+
+const segmentIndexAtDistance = (cum: number[], s: number): number => {
+    if (s <= 0) return 0;
+    if (s >= cum[cum.length - 1]) return cum.length - 2;
+    let lo = 0;
+    let hi = cum.length - 1;
+    while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (cum[mid] <= s) lo = mid + 1;
+        else hi = mid;
+    }
+    return Math.max(0, lo - 1);
+};
+
+export const pointAtDistance = (
+    coords: [number, number][],
+    cum: number[],
+    s: number
+): [number, number] => {
+    if (coords.length === 0) return [0, 0];
+    if (coords.length === 1) return coords[0];
+    const total = cum[cum.length - 1];
+    const clamped = Math.max(0, Math.min(s, total));
+    const i = segmentIndexAtDistance(cum, clamped);
+    const segLen = cum[i + 1] - cum[i];
+    const t = segLen > 0 ? (clamped - cum[i]) / segLen : 0;
+    const [lng1, lat1] = coords[i];
+    const [lng2, lat2] = coords[i + 1];
+    return [lng1 + t * (lng2 - lng1), lat1 + t * (lat2 - lat1)];
+};
+
+export const headingAtDistance = (
+    coords: [number, number][],
+    cum: number[],
+    s: number
+): number => {
+    if (coords.length < 2) return 0;
+    const i = segmentIndexAtDistance(cum, Math.max(0, Math.min(s, cum[cum.length - 1])));
+    return calculateBearing(coords[i], coords[i + 1]);
+};
+
+export const sliceFromDistance = (
+    coords: [number, number][],
+    cum: number[],
+    s: number
+): [number, number][] => {
+    if (coords.length === 0) return [];
+    const total = cum[cum.length - 1];
+    const clamped = Math.max(0, Math.min(s, total));
+    const i = segmentIndexAtDistance(cum, clamped);
+    const head = pointAtDistance(coords, cum, clamped);
+    // Drop vertices we've already passed; keep everything from i+1 onward.
+    return [head, ...coords.slice(i + 1)];
+};
+
+export const snapToRouteDistance = (
+    coords: [number, number][],
+    cum: number[],
+    lat: number,
+    lng: number,
+    fromS: number,
+    windowMeters = 400
+): { s: number; distance: number } => {
+    if (coords.length < 2) return { s: 0, distance: Infinity };
+
+    const total = cum[cum.length - 1];
+    const lo = Math.max(0, fromS - windowMeters);
+    const hi = Math.min(total, fromS + windowMeters);
+    const startIdx = segmentIndexAtDistance(cum, lo);
+    const endIdx = segmentIndexAtDistance(cum, hi);
+
+    const scan = (from: number, to: number): { s: number; distance: number } => {
+        let best = { s: fromS, distance: Infinity };
+        for (let i = from; i <= to && i < coords.length - 1; i++) {
+            const [lng1, lat1] = coords[i];
+            const [lng2, lat2] = coords[i + 1];
+            const dx = lng2 - lng1;
+            const dy = lat2 - lat1;
+            let t = 0;
+            if (dx !== 0 || dy !== 0) {
+                t = Math.max(0, Math.min(1,
+                    ((lng - lng1) * dx + (lat - lat1) * dy) / (dx * dx + dy * dy)
+                ));
+            }
+            const projLng = lng1 + t * dx;
+            const projLat = lat1 + t * dy;
+            const dist = calculateDistance(lat, lng, projLat, projLng);
+            if (dist < best.distance) {
+                const segLen = cum[i + 1] - cum[i];
+                best = { s: cum[i] + t * segLen, distance: dist };
+            }
+        }
+        return best;
+    };
+
+    let result = scan(startIdx, endIdx);
+    if (result.distance > windowMeters) {
+        const full = scan(0, coords.length - 2);
+        if (full.distance < result.distance) result = full;
+    }
+    return result;
+};
+
 /**
  * Update navigation instruction based on current position
  * @param currentLat - Current latitude
