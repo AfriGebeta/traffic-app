@@ -71,11 +71,6 @@ export const useLocationTracking = ({
     const isOffRouteRef = useRef<boolean>(false);
     const offRouteStartTime = useRef<number | null>(null);
     const lastOffRoutePosition = useRef<{ lat: number; lng: number } | null>(null);
-    const deadReckoningIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-    const lastSnappedPositionRef = useRef<{ lat: number; lng: number } | null>(null);
-    const lastSpeedRef = useRef<number>(0);
-    const lastHeadingForDRRef = useRef<number>(0);
-    const lastFixTimeRef = useRef<number>(0);
     const currentGPSIntervalRef = useRef<number>(5000);
     const locationCallbackRef = useRef<((location: Location.LocationObject) => void) | null>(null);
     const lastRenderedMarkerRef = useRef<{ lat: number; lng: number } | null>(null);
@@ -85,16 +80,10 @@ export const useLocationTracking = ({
             locationSubscription.current.remove();
             locationSubscription.current = null;
         }
-        if (deadReckoningIntervalRef.current) {
-            clearInterval(deadReckoningIntervalRef.current);
-            deadReckoningIntervalRef.current = null;
-        }
         lastClosestIndex.current = 0;
         isOffRouteRef.current = false;
         offRouteStartTime.current = null;
         lastOffRoutePosition.current = null;
-        lastSnappedPositionRef.current = null;
-        lastFixTimeRef.current = 0;
         currentGPSIntervalRef.current = 5000;
         locationCallbackRef.current = null;
     }, []);
@@ -112,7 +101,7 @@ export const useLocationTracking = ({
             }
 
             locationCallbackRef.current = (location: Location.LocationObject) => {
-                const { latitude, longitude, heading, speed } = location.coords;
+                const { latitude, longitude, heading } = location.coords;
 
                 let displayLat = latitude;
                 let displayLng = longitude;
@@ -272,10 +261,25 @@ export const useLocationTracking = ({
                         const nextPoint = routeCoordinates.current[closestIndex + 1];
                         const bearing = calculateBearing(currentPoint, nextPoint);
                         setCurrentHeading(bearing);
-                        lastHeadingForDRRef.current = bearing;
                     } else if (heading !== null && heading !== undefined) {
                         setCurrentHeading(heading);
-                        lastHeadingForDRRef.current = heading;
+                    }
+
+                    if (routeManeuversRef && currentManeuverIndexRef) {
+                        const maneuvers = routeManeuversRef.current;
+                        const nextManeuver = maneuvers[currentManeuverIndexRef.current];
+                        if (
+                            nextManeuver?.begin_shape_index !== undefined &&
+                            routeCoordinates.current[nextManeuver.begin_shape_index]
+                        ) {
+                            const [mLng, mLat] = routeCoordinates.current[nextManeuver.begin_shape_index];
+                            const distToTurn = calculateDistance(displayLat, displayLng, mLat, mLng);
+                            if (distToTurn < 100 && currentGPSIntervalRef.current !== 1000) {
+                                void restartAtInterval(1000);
+                            } else if (distToTurn > 150 && currentGPSIntervalRef.current !== 5000) {
+                                void restartAtInterval(5000);
+                            }
+                        }
                     }
 
                     const remainingCoords = routeCoordinates.current.slice(closestIndex + 1);
@@ -303,21 +307,11 @@ export const useLocationTracking = ({
                             }
                         } else {
 
-                            const remainingGeoJSON = {
-                                type: 'Feature',
-                                properties: {},
-                                geometry: {
-                                    type: 'LineString',
-                                    coordinates: routeFromMarker,
-                                }
-                            };
-
                             lastRenderedMarkerRef.current = { lat: displayLat, lng: displayLng };
 
                             if (setUserLocation) {
                                 setUserLocation({ lat: displayLat, lng: displayLng });
                             }
-                            setRouteGeoJSON(remainingGeoJSON);
                         }
 
                         let totalDistance = 0;
@@ -352,10 +346,6 @@ export const useLocationTracking = ({
                     }
                 }
 
-                lastSnappedPositionRef.current = { lat: displayLat, lng: displayLng };
-                lastSpeedRef.current = speed ?? 0;
-                lastFixTimeRef.current = Date.now();
-
                 updateInstructionBasedOnPosition(displayLat, displayLng);
             };
 
@@ -388,55 +378,6 @@ export const useLocationTracking = ({
                 },
                 (loc) => locationCallbackRef.current?.(loc)
             );
-
-            if (deadReckoningIntervalRef.current) {
-                clearInterval(deadReckoningIntervalRef.current);
-            }
-            deadReckoningIntervalRef.current = setInterval(() => {
-                if (!isNavigatingRef.current || !lastSnappedPositionRef.current) return;
-
-                const elapsed = (Date.now() - lastFixTimeRef.current) / 1000;
-
-                if (elapsed < 0.3 || elapsed > 5.5) return;
-
-                const currentSpeed = lastSpeedRef.current;
-                if (!currentSpeed || currentSpeed < 0.5) return;
-
-                const { lat, lng } = lastSnappedPositionRef.current;
-                const headingRad = (lastHeadingForDRRef.current * Math.PI) / 180;
-                const distanceMoved = currentSpeed * elapsed;
-
-                const estimatedLat = lat + (distanceMoved / 111320) * Math.cos(headingRad);
-                const estimatedLng = lng + (distanceMoved / (111320 * Math.cos(lat * Math.PI / 180))) * Math.sin(headingRad);
-
-                updateInstructionBasedOnPosition(estimatedLat, estimatedLng);
-
-                lastRenderedMarkerRef.current = { lat: estimatedLat, lng: estimatedLng };
-
-                if (setUserLocation) {
-                    setUserLocation({ lat: estimatedLat, lng: estimatedLng });
-                }
-
-
-
-                if (routeManeuversRef && currentManeuverIndexRef) {
-                    const maneuvers = routeManeuversRef.current;
-                    const idx = currentManeuverIndexRef.current;
-                    const nextManeuver = maneuvers[idx];
-                    if (
-                        nextManeuver?.begin_shape_index !== undefined &&
-                        routeCoordinates.current[nextManeuver.begin_shape_index]
-                    ) {
-                        const [mLng, mLat] = routeCoordinates.current[nextManeuver.begin_shape_index];
-                        const distToTurn = calculateDistance(estimatedLat, estimatedLng, mLat, mLng);
-                        if (distToTurn < 100 && currentGPSIntervalRef.current !== 1000) {
-                            void restartAtInterval(1000);
-                        } else if (distToTurn > 150 && currentGPSIntervalRef.current !== 5000) {
-                            void restartAtInterval(5000);
-                        }
-                    }
-                }
-            }, 1000);
         } catch (error) {
             console.error('Error starting location tracking:', error);
             showToast.error('Could not start location tracking', 'Location Error');

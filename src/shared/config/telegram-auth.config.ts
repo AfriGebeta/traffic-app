@@ -86,18 +86,36 @@ export function getTelegramWebViewStartUrl(lang = 'en'): string {
     return getTelegramOAuthPostMessageUrl(config.clientId, lang);
 }
 
+function matchesRedirectUri(url: string, redirectUri: string): boolean {
+    try {
+        const incoming = new URL(url);
+        const target = new URL(redirectUri);
+        const stripTrailingSlash = (path: string) => path.replace(/\/+$/, '');
+
+        return (
+            incoming.protocol === target.protocol &&
+            incoming.host === target.host &&
+            stripTrailingSlash(incoming.pathname) === stripTrailingSlash(target.pathname)
+        );
+    } catch {
+        return false;
+    }
+}
+
 export function isTelegramAuthCallbackUrl(url: string): boolean {
     if (url.includes('id_token=') || url.includes('tgAuthResult=')) {
         return true;
     }
 
-  const config = getTelegramAuthConfig();
+    if (url.includes('-login.tg.dev')) {
+        return true;
+    }
 
-  return (
-    url.startsWith('trafficapp://') ||
-    url.includes('-login.tg.dev') ||
-    url.includes(new URL(config.webRedirectUri).host)
-  );
+    const config = getTelegramAuthConfig();
+    return (
+        url.startsWith(config.mobileRedirectUri) ||
+        matchesRedirectUri(url, config.webRedirectUri)
+    );
 }
 
 export const TELEGRAM_WEBVIEW_INJECTED_JS = `
