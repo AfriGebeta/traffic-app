@@ -49,7 +49,8 @@ interface TrafficMapProps {
 export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMode }: TrafficMapProps) {
     const mapRef = useRef<GebetaMapRef>(null);
     const searchMarkerRef = useRef<any>(null);
-    const hasProcessedSharedLocation = useRef(false);
+    const processedSharedLocationRef = useRef<SharedLocation | null>(null);
+    const sharedFlyToTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const router = useRouter();
 
     const USER_LOCATION_ZOOM = 15;
@@ -495,6 +496,12 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         }
     };
 
+    useEffect(() => {
+        if (isMapLoaded) return;
+        const timer = setTimeout(() => setIsMapLoaded(true), 2500);
+        return () => clearTimeout(timer);
+    }, [isMapLoaded]);
+
     const handleLocationPress = () => {
         if (!userLocation) {
             showToast.error('Location not available', 'Please wait for location to load');
@@ -542,8 +549,12 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     useBackgroundSync();
 
     useEffect(() => {
-        if (sharedLocation && mapRef.current && isMapLoaded && !hasProcessedSharedLocation.current) {
-            hasProcessedSharedLocation.current = true;
+        if (sharedLocation && mapRef.current && isMapLoaded) {
+
+            if (processedSharedLocationRef.current === sharedLocation) {
+                return;
+            }
+            processedSharedLocationRef.current = sharedLocation;
 
             const place: GeocodingPlace = {
                 id: `shared-${sharedLocation.lat}-${sharedLocation.lng}`,
@@ -566,17 +577,28 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 Country: sharedLocation.country || '',
             };
 
-            setSearchResults([place]);
-            setShowSearchContainer(true);
-            setSelectedDestination(place);
 
-            setTimeout(() => {
+            handleSelectSharedPlace(place);
+            setShowPlaceDetail(true);
+
+            setIsCenteredOnUser(false);
+
+            if (sharedFlyToTimer.current) {
+                clearTimeout(sharedFlyToTimer.current);
+            }
+            let attempts = 0;
+            const flyToShared = () => {
                 mapRef.current?.flyTo({
                     center: [place.longitude, place.latitude],
                     zoom: 15,
-                    duration: 1500,
+                    duration: attempts === 0 ? 1200 : 500,
                 });
-            }, 100);
+                attempts += 1;
+                if (attempts < 5) {
+                    sharedFlyToTimer.current = setTimeout(flyToShared, 600);
+                }
+            };
+            sharedFlyToTimer.current = setTimeout(flyToShared, 100);
         }
     }, [sharedLocation, isMapLoaded]);
 

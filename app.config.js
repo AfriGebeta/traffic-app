@@ -10,7 +10,9 @@ if (!telegramClientId) {
   );
 }
 const telegramLoginHost = `app${telegramClientId}-login.tg.dev`;
-const baseIntentFilter = appJson.expo.android.intentFilters[0];
+// First entry is the web-only autoVerify filter for maps.gebeta.app; keep it
+// untouched and preserve any other filters (e.g. the trafficapp custom scheme).
+const [mapsIntentFilter, ...otherIntentFilters] = appJson.expo.android.intentFilters;
 
 module.exports = {
   expo: {
@@ -41,16 +43,21 @@ module.exports = {
         { package: 'org.telegram.messenger.web' },
       ],
       intentFilters: [
+        // maps.gebeta.app stays in its own web-only autoVerify filter so it
+        // verifies independently of the Telegram login host below.
+        mapsIntentFilter,
+        ...otherIntentFilters,
         {
-          ...baseIntentFilter,
+          action: 'VIEW',
+          autoVerify: true,
           data: [
-            ...baseIntentFilter.data,
             {
               scheme: 'https',
               host: telegramLoginHost,
               pathPrefix: '/tglogin',
             },
           ],
+          category: ['BROWSABLE', 'DEFAULT'],
         },
       ],
     },
