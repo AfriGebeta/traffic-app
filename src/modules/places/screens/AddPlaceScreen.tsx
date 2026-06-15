@@ -27,7 +27,7 @@ export default function AddPlaceScreen() {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
-    const [images, setImages] = useState<string[]>([]);
+    const [images, setImages] = useState<{ localUri: string; objectName: string }[]>([]);
     const [uploading, setUploading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [usingCurrentLocation, setUsingCurrentLocation] = useState(false);
@@ -86,8 +86,8 @@ export default function AddPlaceScreen() {
     const uploadImage = async (uri: string) => {
         setUploading(true);
         try {
-            const url = await uploadToMinio(uri, 'places');
-            setImages((prev) => [...prev, url]);
+            const objectName = await uploadToMinio(uri, 'places');
+            setImages((prev) => [...prev, { localUri: uri, objectName }]);
             showToast.success('Image uploaded', 'Photo added successfully');
         } catch (error) {
             showToast.error('Upload failed', 'Could not upload image');
@@ -133,7 +133,7 @@ export default function AddPlaceScreen() {
                 lat: coordinates.lat,
                 lng: coordinates.lng,
                 description: description.trim(),
-                images,
+                images: images.map((img) => img.objectName),
             });
 
             showToast.success('Success!', 'Place contribution submitted');
@@ -325,9 +325,13 @@ export default function AddPlaceScreen() {
 
                         {images.length > 0 && (
                             <View className="flex-row flex-wrap gap-3">
-                                {images.map((uri, index) => (
+                                {images.map((img, index) => (
                                     <View key={index} className="relative">
-                                        <Image source={{ uri }} className="w-28 h-28 rounded-2xl" />
+                                        <Image
+                                            source={{ uri: img.localUri }}
+                                            style={{ width: 112, height: 112, borderRadius: 16 }}
+                                            resizeMode="cover"
+                                        />
                                         <TouchableOpacity
                                             className="absolute -top-2 -right-2 bg-red-500 rounded-full w-7 h-7 items-center justify-center shadow-lg"
                                             onPress={() => removeImage(index)}
