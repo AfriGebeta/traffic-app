@@ -6,10 +6,10 @@ import {
     TouchableOpacity,
     Alert,
     ScrollView,
-    KeyboardAvoidingView,
-    Platform,
 } from 'react-native';
+import Animated, { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-reanimated';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { colors } from '../../../shared/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -40,6 +40,10 @@ export default function MapPickerScreen() {
     const [filteredStations, setFilteredStations] = useState<TaxiNode[]>([]);
     const [selectedExisting, setSelectedExisting] = useState<TaxiNode | null>(null);
     const [loadingStations, setLoadingStations] = useState(false);
+    const keyboard = useAnimatedKeyboard();
+    const sheetAnimatedStyle = useAnimatedStyle(() => ({
+        marginBottom: keyboard.height.value,
+    }));
 
     const calculateDistance = (point1: { lat: number; lng: number }, point2: { lat: number; lng: number }) => {
         const R = 6371e3;
@@ -252,18 +256,13 @@ export default function MapPickerScreen() {
                     <Ionicons name="locate" size={24} color="#FFA500" />
                 </TouchableOpacity>
 
-                {selectedLocation && (
-                    <KeyboardAvoidingView
-                        behavior={Platform.OS === 'ios' ? 'position' : 'position'}
-                        keyboardVerticalOffset={0}
-                        style={{
-                            position: 'absolute',
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                        }}
-                    >
-                        <View className="bg-white border-t border-gray-200" style={{ paddingBottom: insets.bottom + 16 }}>
+            </View>
+
+            {selectedLocation && (
+                <Animated.View
+                    className="bg-white border-t border-gray-200"
+                    style={[{ paddingBottom: insets.bottom + 16 }, sheetAnimatedStyle]}
+                >
                             <ScrollView
                                 style={{ maxHeight: 350 }}
                                 keyboardShouldPersistTaps="handled"
@@ -301,7 +300,7 @@ export default function MapPickerScreen() {
                                             <View className="bg-blue-50 px-4 py-2 border-b border-blue-200">
                                                 <Text className="text-orange-500 font-semibold text-sm">{t('nearby-existing-stations')}</Text>
                                             </View>
-                                            <ScrollView style={{ maxHeight: 120 }} nestedScrollEnabled showsVerticalScrollIndicator={true}>
+                                            <View>
                                                 {filteredStations.slice(0, 5).map((station) => (
                                                     <TouchableOpacity
                                                         key={station.id}
@@ -324,7 +323,7 @@ export default function MapPickerScreen() {
                                                         </Text>
                                                     </TouchableOpacity>
                                                 ))}
-                                            </ScrollView>
+                                            </View>
                                         </View>
                                     )}
 
@@ -362,14 +361,17 @@ export default function MapPickerScreen() {
                                     </View>
                                 )}
 
-                                <TouchableOpacity className="bg-orange-500 py-4 rounded-xl mt-2" onPress={handleConfirm} activeOpacity={0.7}>
+                                <TouchableOpacity
+                                    className="py-4 rounded-xl mt-2"
+                                    style={{ backgroundColor: colors.primary.main }}
+                                    onPress={handleConfirm}
+                                    activeOpacity={0.7}
+                                >
                                     <Text className="text-white text-center font-bold text-lg">{t('confirm-location')}</Text>
                                 </TouchableOpacity>
                             </ScrollView>
-                        </View>
-                    </KeyboardAvoidingView>
-                )}
-            </View>
+                </Animated.View>
+            )}
         </View>
     );
 }
