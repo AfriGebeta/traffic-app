@@ -74,17 +74,6 @@ export const useSimulation = ({
         if (setUserLocation) {
             setUserLocation({ lat: initialLat, lng: initialLng });
         }
-        const initialRemaining = routeCoordinates.current.slice(1);
-        if (initialRemaining.length > 0) {
-            setRouteGeoJSON({
-                type: 'Feature',
-                properties: {},
-                geometry: {
-                    type: 'LineString',
-                    coordinates: [[initialLng, initialLat] as [number, number], ...initialRemaining],
-                },
-            });
-        }
 
         simFromIndexRef.current = 0;
         simInterpolateFromRef.current = { lat: initialLat, lng: initialLng };
@@ -278,15 +267,6 @@ export const useSimulation = ({
             const remainingCoords = routeCoordinates.current.slice(estimatedIdx + 1);
 
             if (remainingCoords.length > 0) {
-                const routeGeoJSON = {
-                    type: 'Feature',
-                    properties: {},
-                    geometry: {
-                        type: 'LineString',
-                        coordinates: [[markerLng, markerLat] as [number, number], ...remainingCoords],
-                    },
-                };
-
                 let totalDistance = 0;
                 const routeWithMarker = [[markerLng, markerLat] as [number, number], ...remainingCoords];
                 for (let i = 0; i < routeWithMarker.length - 1; i++) {
@@ -310,7 +290,6 @@ export const useSimulation = ({
                 if (setUserLocation) {
                     setUserLocation({ lat: markerLat, lng: markerLng });
                 }
-                setRouteGeoJSON(routeGeoJSON);
                 setRemainingDistance(totalDistance);
 
                 const averageSpeedMps = totalRouteDistance > 0 && totalRouteDuration > 0

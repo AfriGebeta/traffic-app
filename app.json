@@ -43,7 +43,16 @@
             {
               "scheme": "https",
               "host": "maps.gebeta.app"
-            },
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        },
+        {
+          "action": "VIEW",
+          "data": [
             {
               "scheme": "trafficapp"
             },
