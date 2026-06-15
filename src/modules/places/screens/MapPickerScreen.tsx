@@ -21,6 +21,7 @@ export default function MapPickerScreen() {
     const insets = useSafeAreaInsets();
     const mapRef = useRef<GebetaMapRef>(null);
     const { userLocation } = useUserLocation();
+    const { setSelectedLocation: setContextLocation } = useLocation();
     const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
 
@@ -31,6 +32,8 @@ export default function MapPickerScreen() {
 
     const handleConfirm = async () => {
         if (!selectedLocation) return;
+
+        setContextLocation(selectedLocation);
 
         setIsReverseGeocoding(true);
         try {

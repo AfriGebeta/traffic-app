@@ -16,7 +16,7 @@ export default function AddRuleReportScreen() {
     const { t } = useTranslation();
     const params = useLocalSearchParams();
     const { typeId, typeName, typeDescription, typeImg } = params;
-    const { selectedLocation } = useLocation();
+    const { selectedLocation, setSelectedLocation } = useLocation();
     const { userLocation } = useUserLocation();
 
     const insets = useSafeAreaInsets();
@@ -29,8 +29,10 @@ export default function AddRuleReportScreen() {
         React.useCallback(() => {
             if (selectedLocation) {
                 setCoordinates(selectedLocation);
+                setUsingCurrentLocation(false);
+                setSelectedLocation(null);
             }
-        }, [selectedLocation])
+        }, [selectedLocation, setSelectedLocation])
     );
 
     const handlePickLocation = () => {

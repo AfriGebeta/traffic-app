@@ -21,7 +21,7 @@ export default function AddPlaceScreen() {
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
     const placeType = params.type as PlaceType;
-    const { selectedLocation } = useLocation();
+    const { selectedLocation, setSelectedLocation } = useLocation();
     const { userLocation } = useUserLocation();
 
     const [name, setName] = useState('');
@@ -38,8 +38,10 @@ export default function AddPlaceScreen() {
         React.useCallback(() => {
             if (selectedLocation) {
                 setCoordinates(selectedLocation);
+                setUsingCurrentLocation(false);
+                setSelectedLocation(null);
             }
-        }, [selectedLocation])
+        }, [selectedLocation, setSelectedLocation])
     );
 
     const pickImage = async () => {
