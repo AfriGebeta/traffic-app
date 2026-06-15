@@ -487,6 +487,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         const pulseAnim = useRef(new Animated.Value(1)).current;
         const [imagesLoaded, setImagesLoaded] = useState(false);
         const [renderKey, setRenderKey] = useState(0);
+        const lastFreeCameraRef = useRef<{ center: [number, number]; zoom: number } | null>(null);
         const pendingFlyTo = useRef<{
             center: [number, number];
             zoom?: number;
@@ -528,6 +529,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
         const moveCamera = useCallback((center: [number, number], heading: number) => {
             if (!cameraRef.current || userHasZoomedOut.current) return;
+            console.log('[CAM-DEBUG] moveCamera (nav) ->', center);
             cameraRef.current.setCamera({
                 centerCoordinate: center,
                 heading,
@@ -826,6 +828,13 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         const handleMapLoad = useCallback(() => {
             if (!externalCameraControl) {
                 applyInitialCamera();
+            } else if (lastFreeCameraRef.current) {
+                cameraRef.current?.setCamera({
+                    centerCoordinate: lastFreeCameraRef.current.center,
+                    zoomLevel: lastFreeCameraRef.current.zoom,
+                    animationDuration: 0,
+                    animationMode: 'moveTo',
+                });
             }
             if (pendingFlyTo.current) {
                 applyFlyTo(pendingFlyTo.current);
@@ -890,6 +899,14 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             // console.log('event properties:', JSON.stringify(e.properties));
                             // console.log('event geometry:', JSON.stringify(e.geometry));
 
+                            if (!isNavigating && externalCameraControl) {
+                                const c = e.geometry?.coordinates;
+                                const z = e.properties?.zoom;
+                                if (Array.isArray(c) && z !== undefined) {
+                                    lastFreeCameraRef.current = { center: [c[0], c[1]], zoom: z };
+                                }
+                            }
+
                             if (e.properties?.zoom !== undefined) {
                                 const zoomLevel = e.properties.zoom;
                                 // console.log('zoom level:', zoomLevel.toFixed(1));
@@ -924,8 +941,12 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             heading={0}
                             maxBounds={undefined}
                             defaultSettings={{
-                                centerCoordinate: center,
-                                zoomLevel: zoom ?? 15,
+                                centerCoordinate: externalCameraControl && lastFreeCameraRef.current
+                                    ? lastFreeCameraRef.current.center
+                                    : center,
+                                zoomLevel: externalCameraControl && lastFreeCameraRef.current
+                                    ? lastFreeCameraRef.current.zoom
+                                    : (zoom ?? 15),
                             }}
                         />
 
@@ -1210,7 +1231,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
                         {!isNavigating && !routeOrigin && showUserLocationMarker && userLocation && imagesLoaded && (
                             <MapLibreGL.PointAnnotation
-                                key={`user-location-${userLocation.lng}-${userLocation.lat}-${renderKey}`}
+                                key={`user-location-static-${renderKey}`}
                                 id="user-location-marker-static"
                                 coordinate={[userLocation.lng, userLocation.lat]}
                                 anchor={{ x: 0.5, y: 1 }}
