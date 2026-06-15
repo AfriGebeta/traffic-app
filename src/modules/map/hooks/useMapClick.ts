@@ -1,7 +1,5 @@
 import { useCallback } from 'react';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
-import { showToast } from '../../../shared/utils/toast';
-import { useTranslation } from 'react-i18next';
 import { exploreService } from '../services/exploreService';
 
 interface UseMapClickParams {
@@ -18,8 +16,6 @@ export const useMapClick = ({
     onSelectPlace,
     setClickedLocation,
 }: UseMapClickParams) => {
-    const { t } = useTranslation();
-
     const handleMapClick = useCallback(
         async (lngLat: [number, number], event?: any) => {
             if (navigationMode) return;
@@ -41,7 +37,12 @@ export const useMapClick = ({
 
 
                 const place: GeocodingPlace = {
+                    id: '',
                     name: featureName,
+                    display_name: featureName,
+                    category: '',
+                    location: { lat, lng },
+                    address: { country: '', country_code: '' },
                     latitude: lat,
                     longitude: lng,
                     type: clickedFeature.properties.class || clickedFeature.properties.type || 'place',
@@ -51,7 +52,6 @@ export const useMapClick = ({
 
                 setClickedLocation({ lat, lng });
 
-                showToast.info(t('navigate-to'), featureName);
                 onSelectPlace(place);
                 return;
             }
@@ -67,7 +67,6 @@ export const useMapClick = ({
 
                     setClickedLocation({ lat: place.latitude, lng: place.longitude });
 
-                    showToast.info(t('navigate-to'), place.name);
                     onSelectPlace(place);
                     return;
                 }
@@ -76,7 +75,12 @@ export const useMapClick = ({
             }
 
             const clickedPlace: GeocodingPlace = {
+                id: '',
                 name: `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+                display_name: `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+                category: '',
+                location: { lat, lng },
+                address: { country: '', country_code: '' },
                 latitude: lat,
                 longitude: lng,
                 type: 'coordinates',
@@ -86,10 +90,9 @@ export const useMapClick = ({
 
             setClickedLocation({ lat, lng });
 
-            showToast.info(t('navigate-to-location'), clickedPlace.name);
             onSelectPlace(clickedPlace);
         },
-        [navigationMode, onSelectPlace, setClickedLocation, t]
+        [navigationMode, onSelectPlace, setClickedLocation]
     );
 
     return { handleMapClick };

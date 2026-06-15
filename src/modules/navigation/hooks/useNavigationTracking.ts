@@ -14,20 +14,30 @@ export const useNavigationTracking = ({
     const navigationIdRef = useRef<string | null>(null);
     const trackingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const previousNavigatingRef = useRef<boolean>(false);
+    const userLocationRef = useRef(userLocation);
 
     useEffect(() => {
-        if (isNavigating && userLocation) {
+        userLocationRef.current = userLocation;
+    }, [userLocation]);
+
+    useEffect(() => {
+        if (isNavigating) {
             if (!navigationIdRef.current) {
                 navigationIdRef.current = `nav_${Date.now()}`;
                 console.log('[Tracking] Started tracking navigation:', navigationIdRef.current);
             }
 
             trackingIntervalRef.current = setInterval(() => {
-                if (navigationIdRef.current && userLocation) {
+                const loc = userLocationRef.current;
+                if (navigationIdRef.current && loc) {
+                    console.log(
+                        `[Tracking] ${navigationIdRef.current} point @ ${new Date().toISOString()} →`,
+                        `lat: ${loc.lat}, lng: ${loc.lng}`
+                    );
                     navigationTrackingService.addNavigationPoint(
                         navigationIdRef.current,
-                        userLocation.lat,
-                        userLocation.lng
+                        loc.lat,
+                        loc.lng
                     );
                 }
             }, 5000);
@@ -56,9 +66,10 @@ export const useNavigationTracking = ({
         return () => {
             if (trackingIntervalRef.current) {
                 clearInterval(trackingIntervalRef.current);
+                trackingIntervalRef.current = null;
             }
         };
-    }, [isNavigating, userLocation]);
+    }, [isNavigating]);
 
     useEffect(() => {
         const handleAppStateChange = (nextAppState: AppStateStatus) => {

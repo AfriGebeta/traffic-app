@@ -307,7 +307,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
             [place.longitude, place.latitude],
             '',
             [40, 40],
-            () => showToast.info(place.name, place.type),
+            () => {},
             10,
             undefined
         );
@@ -357,7 +357,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
             [place.longitude, place.latitude],
             '',
             [40, 40],
-            () => showToast.info(place.name, place.type),
+            () => {},
             10,
             undefined
         );
