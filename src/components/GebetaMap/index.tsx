@@ -889,11 +889,30 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         compassEnabled={!isNavigating}
                         compassViewPosition={1}
                         compassViewMargins={{ x: 16, y: 130 }}
-                        onPress={(e) => {
+                        onPress={async (e) => {
                             const coords = (e.geometry as any)?.coordinates;
-                            if (coords && onMapClick) {
-                                onMapClick([coords[0], coords[1]], e);
+                            if (!coords || !onMapClick) return;
+                            let features: any[] = [];
+                            const screenPointX = (e.properties as any)?.screenPointX;
+                            const screenPointY = (e.properties as any)?.screenPointY;
+                            if (
+                                mapViewRef.current &&
+                                typeof screenPointX === 'number' &&
+                                typeof screenPointY === 'number'
+                            ) {
+                                try {
+                                    const fc = await mapViewRef.current.queryRenderedFeaturesAtPoint(
+                                        [screenPointX, screenPointY],
+                                        undefined,
+                                        []
+                                    );
+                                    features = fc?.features ?? [];
+                                } catch (err) {
+                                    console.log('[GebetaMap] queryRenderedFeaturesAtPoint error:', err);
+                                }
                             }
+
+                            onMapClick([coords[0], coords[1]], { ...e, features });
                         }}
                         onRegionIsChanging={(e: any) => {
                             // console.log('event properties:', JSON.stringify(e.properties));
@@ -929,7 +948,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                     >
                         <MapLibreGL.Camera
                             ref={cameraRef}
-                            {...(externalCameraControl
+                            {...(externalCameraControl || isNavigating
                                 ? {}
                                 : {
                                     centerCoordinate: center,
@@ -937,16 +956,17 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                     animationMode: 'moveTo' as const,
                                     animationDuration: 0,
                                 })}
-                            pitch={0}
-                            heading={0}
+                            {...(isNavigating ? {} : { pitch: 0, heading: 0 })}
                             maxBounds={undefined}
                             defaultSettings={{
                                 centerCoordinate: externalCameraControl && lastFreeCameraRef.current
                                     ? lastFreeCameraRef.current.center
                                     : center,
-                                zoomLevel: externalCameraControl && lastFreeCameraRef.current
-                                    ? lastFreeCameraRef.current.zoom
-                                    : (zoom ?? 15),
+                                zoomLevel: isNavigating
+                                    ? NAV_ZOOM
+                                    : (externalCameraControl && lastFreeCameraRef.current
+                                        ? lastFreeCameraRef.current.zoom
+                                        : (zoom ?? 15)),
                             }}
                         />
 
