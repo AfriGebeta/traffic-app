@@ -1845,6 +1845,11 @@
         "AM": "በእግር እየተጓዙ"
     },
     {
+        "key": "exit",
+        "EN_US": "Exit",
+        "AM": "ይውጡ"
+    },
+    {
         "key": "exit-at",
         "EN_US": "Exit at",
         "AM": "ይውጡ በ"

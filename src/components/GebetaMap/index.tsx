@@ -12,6 +12,7 @@ import {
     headingAtDistance,
     sliceFromDistance,
     snapToRouteDistance,
+    findCorners,
 } from '../../modules/navigation/utils/navigationUtils';
 
 const MAPPIN_IMAGE = require('../../../assets/images/Mappin.png');
@@ -282,10 +283,11 @@ const NAV_RENDER_MS = 33;
 const NAV_CAMERA_MS = 40;
 const NAV_CAMERA_LOOKAHEAD_M = 35;
 const NAV_HEADING_FILTER = 0.15;
-const NAV_POS_SMOOTH = 0.12;   
-const NAV_SPEED_SMOOTH = 0.4; 
-const NAV_MAX_PREDICT_S = 7;   
-                             
+const NAV_POS_SMOOTH = 0.12;
+const NAV_SPEED_SMOOTH = 0.4;
+const NAV_MAX_PREDICT_S = 7;
+const NAV_CORNER_ANGLE = 25; 
+const NAV_CORNER_BUFFER_M = 4; 
 const NAV_ZOOM = 19;
 
 const AnimatedNavLayer = memo(({
@@ -305,6 +307,11 @@ const AnimatedNavLayer = memo(({
     const cum = useMemo(
         () => (coords && coords.length > 1 ? buildCumulativeDistances(coords) : null),
         [coords]
+    );
+
+    const corners = useMemo(
+        () => (coords && cum ? findCorners(coords, cum, NAV_CORNER_ANGLE) : []),
+        [coords, cum]
     );
 
     const [render, setRender] = useState({ lat: 0, lng: 0, heading: 0, s: 0 });
@@ -363,7 +370,6 @@ const AnimatedNavLayer = memo(({
         lastFixRef.current = { s: snappedS, t: now };
     }, [userLocation?.lat, userLocation?.lng, isNavigating, useRouteModel, coords, cum]);
 
-    // One RAF clock drives marker + line + camera.
     useEffect(() => {
         if (!isNavigating) {
             firstRef.current = true;
@@ -399,9 +405,21 @@ const AnimatedNavLayer = memo(({
                 const fix = lastFixRef.current;
 
                 const elapsed = fix ? Math.min((now - fix.t) / 1000, NAV_MAX_PREDICT_S) : 0;
-                const target = fix
+                let target = fix
                     ? Math.min(fix.s + vRef.current * elapsed, total)
                     : renderedSRef.current;
+
+                if (fix && corners.length > 0) {
+                    let nextCorner = Infinity;
+                    for (let i = 0; i < corners.length; i++) {
+                        if (corners[i] > fix.s) { nextCorner = corners[i]; break; }
+                    }
+                    if (nextCorner !== Infinity) {
+                        const cap = Math.max(nextCorner - NAV_CORNER_BUFFER_M, fix.s);
+                        target = Math.min(target, cap);
+                    }
+                }
+
                 s = renderedSRef.current + (target - renderedSRef.current) * NAV_POS_SMOOTH;
                 renderedSRef.current = s;
                 const pt = pointAtDistance(coords, cum, s);
@@ -433,7 +451,7 @@ const AnimatedNavLayer = memo(({
 
         rafId = requestAnimationFrame(tick);
         return () => cancelAnimationFrame(rafId);
-    }, [isNavigating, useRouteModel, coords, cum, moveCamera]);
+    }, [isNavigating, useRouteModel, coords, cum, corners, moveCamera]);
 
     const lineShape = useMemo(() => {
         if (!useRouteModel || !coords || !cum) return null;
@@ -483,6 +501,8 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         const mapViewRef = useRef<any>(null);
         const hasStartedNavigating = useRef(false);
         const userHasZoomedOut = useRef(false);
+        const cameraSuspendedRef = useRef(false);     // follow was paused (user zoomed/panned out)
+        const cameraResumeUntilRef = useRef(0);        // suppress follow writes until this time (ms)
         const lastSetZoom = useRef<number>(18);
         const pulseAnim = useRef(new Animated.Value(1)).current;
         const [imagesLoaded, setImagesLoaded] = useState(false);
@@ -528,14 +548,32 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         }, []);
 
         const moveCamera = useCallback((center: [number, number], heading: number) => {
-            if (!cameraRef.current || userHasZoomedOut.current) return;
-            console.log('[CAM-DEBUG] moveCamera (nav) ->', center);
+            if (!cameraRef.current) return;
+            const now = Date.now();
+            if (userHasZoomedOut.current) {
+                cameraSuspendedRef.current = true;
+                return;
+            }
+            if (now < cameraResumeUntilRef.current) return;
+            if (cameraSuspendedRef.current) {
+                cameraSuspendedRef.current = false;
+                cameraResumeUntilRef.current = now + 600;
+                cameraRef.current.setCamera({
+                    centerCoordinate: center,
+                    heading,
+                    pitch: 60,
+                    zoomLevel: NAV_ZOOM,
+                    animationDuration: 600,
+                    animationMode: 'flyTo',
+                });
+                lastSetZoom.current = NAV_ZOOM;
+                return;
+            }
             cameraRef.current.setCamera({
                 centerCoordinate: center,
                 heading,
                 pitch: 60,
                 zoomLevel: NAV_ZOOM,
-
                 animationDuration: NAV_CAMERA_MS,
                 animationMode: 'linearTo',
             });
@@ -730,6 +768,9 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             flyTo: (options: any) => {
                 applyFlyTo(options);
             },
+            recenterNavigation: () => {
+                userHasZoomedOut.current = false;
+            },
             addImageMarker: () => ({ marker: {} }),
             addMarker: () => ({}),
             clearMarkers: () => { },
@@ -874,9 +915,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             onUserInteraction();
                         }
                         if (isNavigating) {
-                            setTimeout(() => {
-                                userHasZoomedOut.current = true;
-                            }, 500);
+                            userHasZoomedOut.current = true;
                         }
                     }}
                 >
