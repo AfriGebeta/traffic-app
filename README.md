@@ -44,13 +44,8 @@ This app is built intended for a community-driven traffic reporting app for Ethi
    EXPO_PUBLIC_API_URL - your backend
    ```
 
-4. Start the development server
 
-   ```bash
-   npx expo start
-   ```
-
-5. Run on Android device:
+4. Run on Android device:
    ```bash
    npx expo run:android
    ```

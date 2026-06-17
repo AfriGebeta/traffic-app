@@ -33,12 +33,7 @@ Thanks for your interest in contributing! This document provides guidelines for 
    EXPO_PUBLIC_API_URL=your backend url
    ```
 
-5. Start the development server:
-   ```bash
-   npx expo start
-   ```
-
-6. Run on Android device (via USB cable):
+5. Run on Android device (via USB cable):
    ```bash
    npx expo run:android
    ```
