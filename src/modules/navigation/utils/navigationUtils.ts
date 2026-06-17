@@ -225,6 +225,21 @@ export const snapToRouteDistance = (
     }
     return result;
 };
+export const findCorners = (
+    coords: [number, number][],
+    cum: number[],
+    angleThresholdDeg = 25
+): number[] => {
+    const corners: number[] = [];
+    for (let i = 1; i < coords.length - 1; i++) {
+        const b1 = calculateBearing(coords[i - 1], coords[i]);
+        const b2 = calculateBearing(coords[i], coords[i + 1]);
+        let diff = Math.abs(b2 - b1);
+        if (diff > 180) diff = 360 - diff;
+        if (diff > angleThresholdDeg) corners.push(cum[i]);
+    }
+    return corners;
+};
 
 /**
  * Update navigation instruction based on current position
