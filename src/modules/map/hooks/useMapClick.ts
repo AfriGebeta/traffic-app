@@ -22,18 +22,21 @@ export const useMapClick = ({
 
             const [lng, lat] = lngLat;
 
+            const getFeatureName = (props: any): string | undefined =>
+                props?.name ||
+                props?.['name:latin'] ||
+                props?.['name:en'] ||
+                props?.name_en ||
+                props?.['name:am'] ||
+                props?.name_am;
+
             let clickedFeature = null;
             if (event?.features && event.features.length > 0) {
-                clickedFeature = event.features.find(
-                    (f: any) => f.properties?.name || f.properties?.name_en || f.properties?.name_am
-                );
+                clickedFeature = event.features.find((f: any) => getFeatureName(f.properties));
             }
 
             if (clickedFeature) {
-                const featureName =
-                    clickedFeature.properties.name ||
-                    clickedFeature.properties.name_en ||
-                    clickedFeature.properties.name_am;
+                const featureName = getFeatureName(clickedFeature.properties)!;
 
 
                 const place: GeocodingPlace = {
@@ -62,6 +65,8 @@ export const useMapClick = ({
                     exploreService.reverseGeocode(lat, lng),
                     new Promise<null>((resolve) => setTimeout(() => resolve(null), 800)),
                 ]);
+
+                // console.log('usemapclick:reverseGeocode result:', place ? place.name : 'null/timeout');
 
                 if (place) {
 

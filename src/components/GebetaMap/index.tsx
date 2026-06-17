@@ -12,6 +12,7 @@ import {
     headingAtDistance,
     sliceFromDistance,
     snapToRouteDistance,
+    findCorners,
 } from '../../modules/navigation/utils/navigationUtils';
 
 const MAPPIN_IMAGE = require('../../../assets/images/Mappin.png');
@@ -282,10 +283,17 @@ const NAV_RENDER_MS = 33;
 const NAV_CAMERA_MS = 40;
 const NAV_CAMERA_LOOKAHEAD_M = 35;
 const NAV_HEADING_FILTER = 0.15;
-const NAV_POS_SMOOTH = 0.12;   
-const NAV_SPEED_SMOOTH = 0.4; 
-const NAV_MAX_PREDICT_S = 7;   
-                             
+const NAV_POS_SMOOTH = 0.12;
+const NAV_SPEED_SMOOTH = 0.6;  // higher = speed estimate tracks accel/decel faster (less per-fix lurch)
+const NAV_SETTLE_SMOOTH = 0.04;  // gentle backward ease onto true position, only while stopped
+const NAV_MAX_PREDICT_S = 7;
+const NAV_CORNER_ANGLE = 25;
+const NAV_CORNER_BUFFER_M = 4;
+// Free-roam: leave the route line (show raw GPS) past UNSNAP, re-snap at/under RESNAP. Snapping
+// owns the marker below RESNAP (12m); the small UNSNAP gap above only prevents boundary flicker.
+const NAV_UNSNAP_M = 14;
+const NAV_RESNAP_M = 12;
+const NAV_FREE_SMOOTH = 0.2;     // lerp toward raw position while roaming off-route
 const NAV_ZOOM = 19;
 
 const AnimatedNavLayer = memo(({
@@ -307,13 +315,23 @@ const AnimatedNavLayer = memo(({
         [coords]
     );
 
+    const corners = useMemo(
+        () => (coords && cum ? findCorners(coords, cum, NAV_CORNER_ANGLE) : []),
+        [coords, cum]
+    );
+
     const [render, setRender] = useState({ lat: 0, lng: 0, heading: 0, s: 0 });
 
-    const renderedSRef = useRef(0);  
-    const vRef = useRef(0);             
-    const lastFixRef = useRef<{ s: number; t: number } | null>(null); 
+    const renderedSRef = useRef(0);
+    const vRef = useRef(0);
+    const lastFixRef = useRef<{ s: number; t: number } | null>(null);
     const firstRef = useRef(true);
     const headingRef = useRef(0);
+    // free-roam (off-route): marker leaves the line and follows raw GPS until back on / rerouted
+    const freeRoamRef = useRef(false);
+    const freeTargetRef = useRef({ lat: 0, lng: 0 });   // raw GPS target
+    const freeCurRef = useRef({ lat: 0, lng: 0 });       // lerped marker position while roaming
+    const lastOnRouteSRef = useRef(0);                   // s where we left the route (line stays here)
     // taxi lerp refs
     const taxiCurRef = useRef({ lat: 0, lng: 0 });
     const taxiToRef = useRef({ lat: 0, lng: 0 });
@@ -323,6 +341,8 @@ const AnimatedNavLayer = memo(({
         lastFixRef.current = null;
         renderedSRef.current = 0;
         vRef.current = 0;
+        freeRoamRef.current = false;
+        lastOnRouteSRef.current = 0;
     }, [coords]);
 
     useEffect(() => {
@@ -338,14 +358,24 @@ const AnimatedNavLayer = memo(({
         }
 
         const now = Date.now();
-        const { s: snappedS } = snapToRouteDistance(
+        // userLocation is the RAW GPS position; snapToRouteDistance gives both the along-route
+        // distance and the perpendicular distance used to decide snap vs free-roam.
+        // While roaming, renderedSRef is frozen at where we left the route, so a normal ±window
+        // search goes stale once the vehicle drives past it (alongside the road) — it then measures
+        // distance against a far section and never re-snaps. Search the whole route while roaming
+        // so the distance is always the true nearest and re-snap fires correctly.
+        const searchWindow = freeRoamRef.current ? Number.POSITIVE_INFINITY : 400;
+        const { s: snappedS, distance } = snapToRouteDistance(
             coords, cum, userLocation.lat, userLocation.lng,
-            firstRef.current ? 0 : renderedSRef.current
+            firstRef.current ? 0 : renderedSRef.current,
+            searchWindow
         );
 
         if (firstRef.current) {
             firstRef.current = false;
+            freeRoamRef.current = false;
             renderedSRef.current = snappedS;
+            lastOnRouteSRef.current = snappedS;
             vRef.current = 0;
             headingRef.current = headingAtDistance(coords, cum, snappedS);
             lastFixRef.current = { s: snappedS, t: now };
@@ -354,16 +384,39 @@ const AnimatedNavLayer = memo(({
             return;
         }
 
-        const prev = lastFixRef.current!;
-        const dt = Math.max(0.001, (now - prev.t) / 1000);
-        let measured = (snappedS - prev.s) / dt; 
-        if (measured < 0) measured = 0;    
-        vRef.current = vRef.current * (1 - NAV_SPEED_SMOOTH) + measured * NAV_SPEED_SMOOTH;
-        if (vRef.current < 0.5) vRef.current = 0;
-        lastFixRef.current = { s: snappedS, t: now };
+        // Hysteresis: once roaming, stay until well back on the line; once snapped, only leave
+        // when clearly off. The 6–12 m band keeps GPS noise from toggling the mode.
+        const free = freeRoamRef.current ? distance > NAV_RESNAP_M : distance > NAV_UNSNAP_M;
+
+        if (free) {
+            if (!freeRoamRef.current) {
+                // entering free-roam: start the loose marker at the point we left the line
+                const [lngL, latL] = pointAtDistance(coords, cum, renderedSRef.current);
+                freeCurRef.current = { lat: latL, lng: lngL };
+            }
+            freeRoamRef.current = true;
+            freeTargetRef.current = { lat: userLocation.lat, lng: userLocation.lng };
+            // lastOnRouteSRef stays frozen → the route line keeps showing from where you left.
+        } else if (freeRoamRef.current) {
+            // returning on-route: re-anchor the chase model at the snapped position and skip the
+            // speed estimate this fix (the previous fix is stale from the roaming period).
+            freeRoamRef.current = false;
+            renderedSRef.current = snappedS;
+            vRef.current = 0;
+            lastFixRef.current = { s: snappedS, t: now };
+            lastOnRouteSRef.current = snappedS;
+        } else {
+            const prev = lastFixRef.current!;
+            const dt = Math.max(0.001, (now - prev.t) / 1000);
+            let measured = (snappedS - prev.s) / dt;
+            if (measured < 0) measured = 0;
+            vRef.current = vRef.current * (1 - NAV_SPEED_SMOOTH) + measured * NAV_SPEED_SMOOTH;
+            if (vRef.current < 0.5) vRef.current = 0;
+            lastFixRef.current = { s: snappedS, t: now };
+            lastOnRouteSRef.current = snappedS;
+        }
     }, [userLocation?.lat, userLocation?.lng, isNavigating, useRouteModel, coords, cum]);
 
-    // One RAF clock drives marker + line + camera.
     useEffect(() => {
         if (!isNavigating) {
             firstRef.current = true;
@@ -377,6 +430,8 @@ const AnimatedNavLayer = memo(({
         const tick = () => {
             const now = Date.now();
             let lat: number, lng: number, heading: number, s: number;
+
+            let freeRoaming = false;
 
             if (!useRouteModel || !coords || !cum) {
                 const cur = taxiCurRef.current;
@@ -394,15 +449,55 @@ const AnimatedNavLayer = memo(({
                 }
                 heading = headingRef.current;
                 s = 0;
+            } else if (freeRoamRef.current) {
+                // Off-route: marker leaves the line and eases toward the raw GPS position; heading
+                // comes from actual movement. The route line is frozen at lastOnRouteSRef.
+                freeRoaming = true;
+                const cur = freeCurRef.current;
+                const to = freeTargetRef.current;
+                lat = cur.lat + (to.lat - cur.lat) * NAV_FREE_SMOOTH;
+                lng = cur.lng + (to.lng - cur.lng) * NAV_FREE_SMOOTH;
+                freeCurRef.current = { lat, lng };
+                if (Math.abs(to.lat - lat) > 1e-6 || Math.abs(to.lng - lng) > 1e-6) {
+                    const raw = calcBearing({ lat, lng }, to);
+                    let diff = raw - headingRef.current;
+                    if (diff > 180) diff -= 360;
+                    if (diff < -180) diff += 360;
+                    headingRef.current += diff * NAV_HEADING_FILTER;
+                }
+                heading = headingRef.current;
+                s = lastOnRouteSRef.current;
             } else {
                 const total = cum[cum.length - 1];
                 const fix = lastFixRef.current;
 
                 const elapsed = fix ? Math.min((now - fix.t) / 1000, NAV_MAX_PREDICT_S) : 0;
-                const target = fix
+                let target = fix
                     ? Math.min(fix.s + vRef.current * elapsed, total)
                     : renderedSRef.current;
-                s = renderedSRef.current + (target - renderedSRef.current) * NAV_POS_SMOOTH;
+
+                if (fix && corners.length > 0) {
+                    let nextCorner = Infinity;
+                    for (let i = 0; i < corners.length; i++) {
+                        if (corners[i] > fix.s) { nextCorner = corners[i]; break; }
+                    }
+                    if (nextCorner !== Infinity) {
+                        const cap = Math.max(nextCorner - NAV_CORNER_BUFFER_M, fix.s);
+                        target = Math.min(target, cap);
+                    }
+                }
+
+                let newS = renderedSRef.current + (target - renderedSRef.current) * NAV_POS_SMOOTH;
+                if (newS < renderedSRef.current) {
+                    // Overshoot (we predicted ahead, then slowed/braked so the fix is behind us).
+                    // Forward-only while moving: hold instead of jumping backward (the annoying part).
+                    // Only when essentially stopped do we gently settle onto the true position, so
+                    // the puck doesn't float ahead at a red light.
+                    newS = vRef.current < 0.5
+                        ? renderedSRef.current + (target - renderedSRef.current) * NAV_SETTLE_SMOOTH
+                        : renderedSRef.current;
+                }
+                s = newS;
                 renderedSRef.current = s;
                 const pt = pointAtDistance(coords, cum, s);
                 lng = pt[0];
@@ -422,7 +517,8 @@ const AnimatedNavLayer = memo(({
 
             if (moveCamera && now - lastCam >= NAV_CAMERA_MS) {
                 lastCam = now;
-                const camCenter: [number, number] = (useRouteModel && coords && cum)
+                // On-route: look ahead along the route. Free-roam/taxi: center on the marker.
+                const camCenter: [number, number] = (useRouteModel && coords && cum && !freeRoaming)
                     ? pointAtDistance(coords, cum, s + NAV_CAMERA_LOOKAHEAD_M)
                     : [lng, lat];
                 moveCamera(camCenter, heading);
@@ -433,7 +529,7 @@ const AnimatedNavLayer = memo(({
 
         rafId = requestAnimationFrame(tick);
         return () => cancelAnimationFrame(rafId);
-    }, [isNavigating, useRouteModel, coords, cum, moveCamera]);
+    }, [isNavigating, useRouteModel, coords, cum, corners, moveCamera]);
 
     const lineShape = useMemo(() => {
         if (!useRouteModel || !coords || !cum) return null;
@@ -483,6 +579,8 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         const mapViewRef = useRef<any>(null);
         const hasStartedNavigating = useRef(false);
         const userHasZoomedOut = useRef(false);
+        const cameraSuspendedRef = useRef(false);     // follow was paused (user zoomed/panned out)
+        const cameraResumeUntilRef = useRef(0);        // suppress follow writes until this time (ms)
         const lastSetZoom = useRef<number>(18);
         const pulseAnim = useRef(new Animated.Value(1)).current;
         const [imagesLoaded, setImagesLoaded] = useState(false);
@@ -528,14 +626,32 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         }, []);
 
         const moveCamera = useCallback((center: [number, number], heading: number) => {
-            if (!cameraRef.current || userHasZoomedOut.current) return;
-            console.log('[CAM-DEBUG] moveCamera (nav) ->', center);
+            if (!cameraRef.current) return;
+            const now = Date.now();
+            if (userHasZoomedOut.current) {
+                cameraSuspendedRef.current = true;
+                return;
+            }
+            if (now < cameraResumeUntilRef.current) return;
+            if (cameraSuspendedRef.current) {
+                cameraSuspendedRef.current = false;
+                cameraResumeUntilRef.current = now + 600;
+                cameraRef.current.setCamera({
+                    centerCoordinate: center,
+                    heading,
+                    pitch: 60,
+                    zoomLevel: NAV_ZOOM,
+                    animationDuration: 600,
+                    animationMode: 'flyTo',
+                });
+                lastSetZoom.current = NAV_ZOOM;
+                return;
+            }
             cameraRef.current.setCamera({
                 centerCoordinate: center,
                 heading,
                 pitch: 60,
                 zoomLevel: NAV_ZOOM,
-
                 animationDuration: NAV_CAMERA_MS,
                 animationMode: 'linearTo',
             });
@@ -730,6 +846,9 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             flyTo: (options: any) => {
                 applyFlyTo(options);
             },
+            recenterNavigation: () => {
+                userHasZoomedOut.current = false;
+            },
             addImageMarker: () => ({ marker: {} }),
             addMarker: () => ({}),
             clearMarkers: () => { },
@@ -874,9 +993,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             onUserInteraction();
                         }
                         if (isNavigating) {
-                            setTimeout(() => {
-                                userHasZoomedOut.current = true;
-                            }, 500);
+                            userHasZoomedOut.current = true;
                         }
                     }}
                 >
@@ -889,11 +1006,30 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         compassEnabled={!isNavigating}
                         compassViewPosition={1}
                         compassViewMargins={{ x: 16, y: 130 }}
-                        onPress={(e) => {
+                        onPress={async (e) => {
                             const coords = (e.geometry as any)?.coordinates;
-                            if (coords && onMapClick) {
-                                onMapClick([coords[0], coords[1]], e);
+                            if (!coords || !onMapClick) return;
+                            let features: any[] = [];
+                            const screenPointX = (e.properties as any)?.screenPointX;
+                            const screenPointY = (e.properties as any)?.screenPointY;
+                            if (
+                                mapViewRef.current &&
+                                typeof screenPointX === 'number' &&
+                                typeof screenPointY === 'number'
+                            ) {
+                                try {
+                                    const fc = await mapViewRef.current.queryRenderedFeaturesAtPoint(
+                                        [screenPointX, screenPointY],
+                                        undefined,
+                                        []
+                                    );
+                                    features = fc?.features ?? [];
+                                } catch (err) {
+                                    console.log('[GebetaMap] queryRenderedFeaturesAtPoint error:', err);
+                                }
                             }
+
+                            onMapClick([coords[0], coords[1]], { ...e, features });
                         }}
                         onRegionIsChanging={(e: any) => {
                             // console.log('event properties:', JSON.stringify(e.properties));
@@ -929,7 +1065,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                     >
                         <MapLibreGL.Camera
                             ref={cameraRef}
-                            {...(externalCameraControl
+                            {...(externalCameraControl || isNavigating
                                 ? {}
                                 : {
                                     centerCoordinate: center,
@@ -937,16 +1073,17 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                     animationMode: 'moveTo' as const,
                                     animationDuration: 0,
                                 })}
-                            pitch={0}
-                            heading={0}
+                            {...(isNavigating ? {} : { pitch: 0, heading: 0 })}
                             maxBounds={undefined}
                             defaultSettings={{
                                 centerCoordinate: externalCameraControl && lastFreeCameraRef.current
                                     ? lastFreeCameraRef.current.center
                                     : center,
-                                zoomLevel: externalCameraControl && lastFreeCameraRef.current
-                                    ? lastFreeCameraRef.current.zoom
-                                    : (zoom ?? 15),
+                                zoomLevel: isNavigating
+                                    ? NAV_ZOOM
+                                    : (externalCameraControl && lastFreeCameraRef.current
+                                        ? lastFreeCameraRef.current.zoom
+                                        : (zoom ?? 15)),
                             }}
                         />
 

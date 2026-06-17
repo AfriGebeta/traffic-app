@@ -71,6 +71,8 @@ export const useLocationTracking = ({
     const isOffRouteRef = useRef<boolean>(false);
     const offRouteStartTime = useRef<number | null>(null);
     const lastOffRoutePosition = useRef<{ lat: number; lng: number } | null>(null);
+    const headingDivergeStartRef = useRef<number | null>(null);  // when heading first diverged
+    const headingDivergeDistRef = useRef<number>(0);             // distance-from-route at that moment
     const currentGPSIntervalRef = useRef<number>(5000);
     const locationCallbackRef = useRef<((location: Location.LocationObject) => void) | null>(null);
     const lastRenderedMarkerRef = useRef<{ lat: number; lng: number } | null>(null);
@@ -84,6 +86,7 @@ export const useLocationTracking = ({
         isOffRouteRef.current = false;
         offRouteStartTime.current = null;
         lastOffRoutePosition.current = null;
+        headingDivergeStartRef.current = null;
         currentGPSIntervalRef.current = 5000;
         locationCallbackRef.current = null;
     }, []);
@@ -101,7 +104,7 @@ export const useLocationTracking = ({
             }
 
             locationCallbackRef.current = (location: Location.LocationObject) => {
-                const { latitude, longitude, heading } = location.coords;
+                const { latitude, longitude, heading, speed } = location.coords;
 
                 let displayLat = latitude;
                 let displayLng = longitude;
@@ -207,7 +210,49 @@ export const useLocationTracking = ({
                     const OFF_ROUTE_THRESHOLD = 50;
                     const OFF_ROUTE_DELAY = 2000;
 
-                    if (distanceFromRoute > OFF_ROUTE_THRESHOLD) {
+                    // Heading-divergence off-route: the perpendicular-distance rule misses the case
+                    // where you take a different but nearby (<50m) road — e.g. the route veers onto
+                    // a ramp while you stay straight on a parallel carriageway. If, while moving,
+                    // your GPS course stays far off the route's bearing AND you keep getting
+                    // farther from the route, treat it as off-route. Conservative thresholds +
+                    // "distance growing" avoid false triggers during a legitimate turn (which
+                    // converges back onto the route).
+                    const HEADING_DIVERGE_ANGLE = 50;   // degrees
+                    const HEADING_DIVERGE_TIME = 3000;  // ms sustained
+                    const HEADING_MIN_SPEED = 3;        // m/s (~11 km/h) — heading unreliable slower
+                    const HEADING_MIN_DISTANCE = 20;    // m off-route before heading even counts
+                    let divergedByHeading = false;
+                    if (
+                        (speed ?? 0) > HEADING_MIN_SPEED &&
+                        heading !== null && heading !== undefined &&
+                        distanceFromRoute > HEADING_MIN_DISTANCE &&
+                        closestIndex < routeCoordinates.current.length - 1
+                    ) {
+                        const [rLng1, rLat1] = routeCoordinates.current[closestIndex];
+                        const [rLng2, rLat2] = routeCoordinates.current[closestIndex + 1];
+                        const routeBearing = calculateBearing([rLng1, rLat1], [rLng2, rLat2]);
+                        let angDiff = Math.abs(heading - routeBearing);
+                        if (angDiff > 180) angDiff = 360 - angDiff;
+                        if (angDiff > HEADING_DIVERGE_ANGLE) {
+                            if (headingDivergeStartRef.current === null) {
+                                headingDivergeStartRef.current = Date.now();
+                                headingDivergeDistRef.current = distanceFromRoute;
+                            } else if (
+                                Date.now() - headingDivergeStartRef.current >= HEADING_DIVERGE_TIME &&
+                                distanceFromRoute > headingDivergeDistRef.current
+                            ) {
+                                divergedByHeading = true;
+                            }
+                        } else {
+                            headingDivergeStartRef.current = null;
+                        }
+                    } else {
+                        headingDivergeStartRef.current = null;
+                    }
+
+                    const offRoute = distanceFromRoute > OFF_ROUTE_THRESHOLD || divergedByHeading;
+
+                    if (offRoute) {
                         lastOffRoutePosition.current = { lat: latitude, lng: longitude };
 
                         if (!isOffRouteRef.current) {
@@ -309,8 +354,11 @@ export const useLocationTracking = ({
 
                             lastRenderedMarkerRef.current = { lat: displayLat, lng: displayLng };
 
+                            // Publish the RAW GPS position (not the snapped point). On-route the
+                            // renderer re-snaps it to the same place; off-route it lets the marker
+                            // leave the line and roam free until back on / rerouted.
                             if (setUserLocation) {
-                                setUserLocation({ lat: displayLat, lng: displayLng });
+                                setUserLocation({ lat: latitude, lng: longitude });
                             }
                         }
 
@@ -360,7 +408,11 @@ export const useLocationTracking = ({
                         {
                             accuracy: Location.Accuracy.BestForNavigation,
                             timeInterval: newInterval,
-                            distanceInterval: 5,
+                            // 0 = emit on the time interval even when stationary. With a distance
+                            // filter the GPS goes silent at stops, so the predictor never learns we
+                            // stopped and drifts the marker forward (then pauses/jumps on restart).
+                            // timeInterval still gates the rate, so this doesn't add GPS load.
+                            distanceInterval: 0,
                             mayShowUserSettingsDialog: true,
                         },
                         (loc) => locationCallbackRef.current?.(loc)
@@ -373,7 +425,7 @@ export const useLocationTracking = ({
                 {
                     accuracy: Location.Accuracy.BestForNavigation,
                     timeInterval: 5000,
-                    distanceInterval: 5,
+                    distanceInterval: 0,
                     mayShowUserSettingsDialog: true,
                 },
                 (loc) => locationCallbackRef.current?.(loc)

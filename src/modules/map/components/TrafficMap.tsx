@@ -523,21 +523,9 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     };
 
     const handleRecenter = () => {
-        if (!userLocation || !mapRef.current) return;
+        if (!mapRef.current) return;
 
-        const offsetDistance = 0.0007;
-        const headingRad = ((currentHeading || 0) * Math.PI) / 180;
-        const latOffset = offsetDistance * Math.cos(headingRad);
-        const lngOffset = offsetDistance * Math.sin(headingRad);
-
-        mapRef.current.flyTo({
-            center: [userLocation.lng + lngOffset, userLocation.lat + latOffset],
-            zoom: 19,
-            duration: 500,
-            pitch: 60,
-        });
-
-        //reset the flag
+        (mapRef.current as any).recenterNavigation?.();
         setHasUserZoomedOut(false);
     };
 
