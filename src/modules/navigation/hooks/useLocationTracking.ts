@@ -210,17 +210,10 @@ export const useLocationTracking = ({
                     const OFF_ROUTE_THRESHOLD = 50;
                     const OFF_ROUTE_DELAY = 2000;
 
-                    // Heading-divergence off-route: the perpendicular-distance rule misses the case
-                    // where you take a different but nearby (<50m) road — e.g. the route veers onto
-                    // a ramp while you stay straight on a parallel carriageway. If, while moving,
-                    // your GPS course stays far off the route's bearing AND you keep getting
-                    // farther from the route, treat it as off-route. Conservative thresholds +
-                    // "distance growing" avoid false triggers during a legitimate turn (which
-                    // converges back onto the route).
-                    const HEADING_DIVERGE_ANGLE = 50;   // degrees
-                    const HEADING_DIVERGE_TIME = 3000;  // ms sustained
-                    const HEADING_MIN_SPEED = 3;        // m/s (~11 km/h) — heading unreliable slower
-                    const HEADING_MIN_DISTANCE = 20;    // m off-route before heading even counts
+                    const HEADING_DIVERGE_ANGLE = 50;  
+                    const HEADING_DIVERGE_TIME = 3000; 
+                    const HEADING_MIN_SPEED = 3;     
+                    const HEADING_MIN_DISTANCE = 20; 
                     let divergedByHeading = false;
                     if (
                         (speed ?? 0) > HEADING_MIN_SPEED &&
@@ -354,9 +347,6 @@ export const useLocationTracking = ({
 
                             lastRenderedMarkerRef.current = { lat: displayLat, lng: displayLng };
 
-                            // Publish the RAW GPS position (not the snapped point). On-route the
-                            // renderer re-snaps it to the same place; off-route it lets the marker
-                            // leave the line and roam free until back on / rerouted.
                             if (setUserLocation) {
                                 setUserLocation({ lat: latitude, lng: longitude });
                             }
@@ -408,10 +398,6 @@ export const useLocationTracking = ({
                         {
                             accuracy: Location.Accuracy.BestForNavigation,
                             timeInterval: newInterval,
-                            // 0 = emit on the time interval even when stationary. With a distance
-                            // filter the GPS goes silent at stops, so the predictor never learns we
-                            // stopped and drifts the marker forward (then pauses/jumps on restart).
-                            // timeInterval still gates the rate, so this doesn't add GPS load.
                             distanceInterval: 0,
                             mayShowUserSettingsDialog: true,
                         },
