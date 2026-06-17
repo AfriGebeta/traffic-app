@@ -10,6 +10,8 @@ interface UseRouteRecalculationProps {
     mapRef: React.RefObject<GebetaMapRef | null>;
     userLocation: { lat: number; lng: number } | null;
     currentDestination: React.MutableRefObject<GeocodingPlace | null>;
+    currentCostingRef: React.MutableRefObject<'auto' | 'pedestrian'>;
+    waypointsRef: React.MutableRefObject<GeocodingPlace[]>;
     routeCoordinates: React.MutableRefObject<[number, number][]>;
     routeManeuvers: React.MutableRefObject<any[]>;
     totalRouteDistance: React.MutableRefObject<number>;
@@ -36,6 +38,8 @@ export const useRouteRecalculation = ({
     mapRef,
     userLocation,
     currentDestination,
+    currentCostingRef,
+    waypointsRef,
     routeCoordinates,
     routeManeuvers,
     totalRouteDistance,
@@ -85,9 +89,16 @@ export const useRouteRecalculation = ({
             lastRerouteTime.current = now;
 
             try {
+                const remainingWaypoints = waypointsRef.current ?? [];
                 const navigationData = await navigationService.getNavigation({
                     origin: [locationToUse.lat, locationToUse.lng],
-                    destination: [currentDestination.current.latitude, currentDestination.current.longitude]
+                    destination: [currentDestination.current.latitude, currentDestination.current.longitude],
+                    // Preserve the travel mode and stops on reroute — previously dropped, which
+                    // turned pedestrian routes into driving routes and lost multi-stop waypoints.
+                    costing: currentCostingRef.current,
+                    waypoints: remainingWaypoints.length > 0
+                        ? remainingWaypoints.map(wp => [wp.latitude, wp.longitude] as [number, number])
+                        : undefined,
                 });
 
                 if (!navigationData?.data?.trip?.legs?.[0]) {
@@ -124,160 +135,26 @@ export const useRouteRecalculation = ({
                 totalRouteDistance.current = newRoute.distance;
                 totalRouteDuration.current = newRoute.duration;
 
-                if (locationToUse && newRoute.coordinates.length > 0) {
-                    let minDistance = Infinity;
-                    newRoute.coordinates.forEach((coord) => {
-                        const [routeLng, routeLat] = coord;
-                        const R = 6371000;
-                        const dLat = (locationToUse.lat - routeLat) * Math.PI / 180;
-                        const dLng = (locationToUse.lng - routeLng) * Math.PI / 180;
-                        const a =
-                            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                            Math.cos(routeLat * Math.PI / 180) *
-                            Math.cos(locationToUse.lat * Math.PI / 180) *
-                            Math.sin(dLng / 2) *
-                            Math.sin(dLng / 2);
-                        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                        const distance = R * c;
-                        if (distance < minDistance) {
-                            minDistance = distance;
-                        }
-                    });
-                    if (minDistance <= 30) {
-                        let closestIndex = 0;
-                        let closestDistance = Infinity;
-                        newRoute.coordinates.forEach((coord, index) => {
-                            const [routeLng, routeLat] = coord;
-                            const R = 6371000;
-                            const dLat = (locationToUse.lat - routeLat) * Math.PI / 180;
-                            const dLng = (locationToUse.lng - routeLng) * Math.PI / 180;
-                            const a =
-                                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                                Math.cos(routeLat * Math.PI / 180) *
-                                Math.cos(locationToUse.lat * Math.PI / 180) *
-                                Math.sin(dLng / 2) *
-                                Math.sin(dLng / 2);
-                            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                            const distance = R * c;
-                            if (distance < closestDistance) {
-                                closestDistance = distance;
-                                closestIndex = index;
-                            }
-                        });
-
-                        const [snappedLng, snappedLat] = newRoute.coordinates[closestIndex];
-
-                        if (userLocation) {
-                            setIsNavigating(true);
-                            isNavigatingRef.current = true;
-                            setTimeout(() => {
-                                if (mapRef.current) {
-                                    mapRef.current.updateNavigationPosition?.([snappedLng, snappedLat]);
-                                }
-                            }, 100);
-                        }
-                    }
-                }
-
                 const newGeoJSON = {
-                    type: 'Feature',
-                    properties: {
-                        timestamp: Date.now(),
-                    },
+                    type: 'Feature' as const,
+                    properties: { timestamp: Date.now() },
                     geometry: {
-                        type: 'LineString',
+                        type: 'LineString' as const,
                         coordinates: newRoute.coordinates,
                     }
                 };
 
-                if (!simulateMovement && locationToUse && newRoute.coordinates.length > 0) {
-                    const routeWithCurrentStart = [[locationToUse.lng, locationToUse.lat] as [number, number], ...newRoute.coordinates];
-                    newGeoJSON.geometry.coordinates = routeWithCurrentStart;
-                }
-
+                // Re-anchor the puck at the reroute origin; AnimatedNavLayer snaps it onto the new
+                // route and rebuilds from the new geometry. Set the route directly (no null-flush)
+                // and do NOT prepend the raw position — that drew an off-road diagonal "tail".
                 if (setUserLocation && locationToUse) {
                     setUserLocation({ lat: locationToUse.lat, lng: locationToUse.lng });
                 }
+                setRouteGeoJSON(newGeoJSON);
 
-                setRouteGeoJSON(null);
-                setTimeout(() => {
-                    setRouteGeoJSON(newGeoJSON);
-                }, 50);
-
-                if (mapRef.current) {
-                    mapRef.current.stopNavigation();
-                }
-
-                if (mapRef.current) {
-                    mapRef.current.startNavigation(newRoute, {
-                        followUserLocation: true,
-                        cameraPitch: 60,
-                        cameraZoom: 18,
-                        updateInterval: 1000,
-                        offRouteThreshold: 30,
-                        onNavigationUpdate: (state: any) => {
-                            setIsNavigating(state.isNavigating);
-                            isNavigatingRef.current = state.isNavigating;
-                            setRemainingDistance(state.distanceRemaining);
-                            setRemainingTime(state.durationRemaining);
-
-                            //destination arrival
-                            if (userLocation && currentDestination.current) {
-                                const R = 6371000;
-                                const dLat = (currentDestination.current.latitude - userLocation.lat) * Math.PI / 180;
-                                const dLng = (currentDestination.current.longitude - userLocation.lng) * Math.PI / 180;
-                                const a =
-                                    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                                    Math.cos(userLocation.lat * Math.PI / 180) *
-                                    Math.cos(currentDestination.current.latitude * Math.PI / 180) *
-                                    Math.sin(dLng / 2) *
-                                    Math.sin(dLng / 2);
-                                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                                const distanceToDestination = R * c;
-
-                                if (distanceToDestination <= 50) {
-                                    onArrival?.();
-                                    handleStopNavigation();
-                                    return;
-                                }
-                            }
-
-                            if (state.nextInstruction) {
-                                const instructionText = state.nextInstruction.instruction || state.nextInstruction.text || '';
-                                setCurrentInstruction(instructionText);
-                            } else {
-                                setCurrentInstruction('Continue ahead');
-                            }
-                        },
-                        onOffRoute: (distanceFromRoute: number) => {
-                            setIsOffRoute(true);
-
-                            if (rerouteTimeout.current) {
-                                clearTimeout(rerouteTimeout.current);
-                            }
-                            rerouteTimeout.current = setTimeout(() => {
-                                recalculateRoute();
-                            }, 3000);
-                        },
-                        onBackOnRoute: () => {
-                            setIsOffRoute(false);
-                            setIsRecalculating(false);
-                            if (rerouteTimeout.current) {
-                                clearTimeout(rerouteTimeout.current);
-                                rerouteTimeout.current = null;
-                            }
-
-                            showToast.success(
-                                t('back-on-route') || 'Back on Route',
-                                t('back-on-planned-route') || 'You are back on the planned route'
-                            );
-                        },
-                        onNavigationComplete: () => {
-                            onArrival?.();
-                            handleStopNavigation();
-                        },
-                    } as any);
-                }
+                // Still navigating — just on a new route.
+                setIsNavigating(true);
+                isNavigatingRef.current = true;
 
                 setIsRecalculating(false);
                 setIsOffRoute(false);

@@ -77,6 +77,17 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                     </View>
                 )}
 
+                {__DEV__ && onTestOffRoute && (
+                    <TouchableOpacity
+                        className="mb-3 border rounded-2xl py-3 flex-row items-center justify-center"
+                        style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', borderColor: '#EF4444' }}
+                        onPress={onTestOffRoute}
+                    >
+                        <Ionicons name="bug-outline" size={16} color="#EF4444" />
+                        <Text className="text-red-500 text-sm font-bold ml-2">Test Off Route</Text>
+                    </TouchableOpacity>
+                )}
+
                 {showRecenterButton && onRecenter && (
                     <TouchableOpacity
                         className="mb-3 border rounded-2xl py-3 flex-row items-center justify-center"

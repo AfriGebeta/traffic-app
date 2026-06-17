@@ -52,6 +52,12 @@ export const useNavigation = (
     const totalRouteDistance = useRef<number>(0);
     const totalRouteDuration = useRef<number>(0);
 
+    // Mirror costing/waypoints into refs so reroute reads fresh values (not a stale closure).
+    const currentCostingRef = useRef<'auto' | 'pedestrian'>('auto');
+    const waypointsRef = useRef<GeocodingPlace[]>([]);
+    useEffect(() => { currentCostingRef.current = currentCosting; }, [currentCosting]);
+    useEffect(() => { waypointsRef.current = waypoints; }, [waypoints]);
+
 
     useVoiceInstructions({
         currentInstruction,
@@ -128,6 +134,8 @@ export const useNavigation = (
         mapRef,
         userLocation,
         currentDestination,
+        currentCostingRef,
+        waypointsRef,
         routeCoordinates,
         routeManeuvers,
         totalRouteDistance,
