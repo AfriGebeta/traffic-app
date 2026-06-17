@@ -93,8 +93,6 @@ export const useRouteRecalculation = ({
                 const navigationData = await navigationService.getNavigation({
                     origin: [locationToUse.lat, locationToUse.lng],
                     destination: [currentDestination.current.latitude, currentDestination.current.longitude],
-                    // Preserve the travel mode and stops on reroute — previously dropped, which
-                    // turned pedestrian routes into driving routes and lost multi-stop waypoints.
                     costing: currentCostingRef.current,
                     waypoints: remainingWaypoints.length > 0
                         ? remainingWaypoints.map(wp => [wp.latitude, wp.longitude] as [number, number])
@@ -144,15 +142,11 @@ export const useRouteRecalculation = ({
                     }
                 };
 
-                // Re-anchor the puck at the reroute origin; AnimatedNavLayer snaps it onto the new
-                // route and rebuilds from the new geometry. Set the route directly (no null-flush)
-                // and do NOT prepend the raw position — that drew an off-road diagonal "tail".
                 if (setUserLocation && locationToUse) {
                     setUserLocation({ lat: locationToUse.lat, lng: locationToUse.lng });
                 }
                 setRouteGeoJSON(newGeoJSON);
 
-                // Still navigating — just on a new route.
                 setIsNavigating(true);
                 isNavigatingRef.current = true;
 
