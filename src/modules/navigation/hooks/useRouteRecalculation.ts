@@ -11,17 +11,20 @@ interface UseRouteRecalculationProps {
     userLocation: { lat: number; lng: number } | null;
     currentDestination: React.MutableRefObject<GeocodingPlace | null>;
     currentCostingRef: React.MutableRefObject<'auto' | 'pedestrian'>;
+    
     waypointsRef: React.MutableRefObject<GeocodingPlace[]>;
     routeCoordinates: React.MutableRefObject<[number, number][]>;
     routeManeuvers: React.MutableRefObject<any[]>;
     totalRouteDistance: React.MutableRefObject<number>;
     totalRouteDuration: React.MutableRefObject<number>;
     rerouteTimeout: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
+
     simulateMovement: boolean;
     setFullRouteCoordinates: (coords: [number, number][]) => void;
     setRouteGeoJSON: (geoJSON: any) => void;
     setIsRecalculating: (value: boolean) => void;
     setIsOffRoute: (value: boolean) => void;
+
     setIsNavigating: (value: boolean) => void;
     isNavigatingRef: React.MutableRefObject<boolean>;
     setRemainingDistance: (distance: number) => void;
@@ -38,10 +41,13 @@ export const useRouteRecalculation = ({
     mapRef,
     userLocation,
     currentDestination,
+
     currentCostingRef,
     waypointsRef,
     routeCoordinates,
     routeManeuvers,
+
+    
     totalRouteDistance,
     totalRouteDuration,
     rerouteTimeout,
@@ -54,11 +60,13 @@ export const useRouteRecalculation = ({
     isNavigatingRef,
     setRemainingDistance,
     setRemainingTime,
+
     setCurrentInstruction,
     handleStopNavigation,
     onArrival,
     startSimulation,
     resetClosestIndex,
+
     setUserLocation,
 }: UseRouteRecalculationProps) => {
     const { t } = useTranslation();
@@ -178,6 +186,7 @@ export const useRouteRecalculation = ({
             totalRouteDistance,
             totalRouteDuration,
             rerouteTimeout,
+
             simulateMovement,
             setFullRouteCoordinates,
             setRouteGeoJSON,
@@ -191,6 +200,7 @@ export const useRouteRecalculation = ({
             handleStopNavigation,
             startSimulation,
             mapRef,
+            
             resetClosestIndex,
             setUserLocation,
         ]
