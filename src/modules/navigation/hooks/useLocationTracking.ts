@@ -8,7 +8,7 @@ interface UseLocationTrackingProps {
     isNavigatingRef: React.MutableRefObject<boolean>;
     mapRef: React.RefObject<GebetaMapRef | null>;
     isOffRoute: boolean;
-    setUserLocation?: (location: { lat: number; lng: number }) => void;
+    setUserLocation?: (location: { lat: number; lng: number; accuracy?: number }) => void;
     setCurrentHeading: (heading: number) => void;
     setRouteGeoJSON: (geoJSON: any) => void;
     setRemainingDistance: (distance: number) => void;
@@ -348,7 +348,7 @@ export const useLocationTracking = ({
                             lastRenderedMarkerRef.current = { lat: displayLat, lng: displayLng };
 
                             if (setUserLocation) {
-                                setUserLocation({ lat: latitude, lng: longitude });
+                                setUserLocation({ lat: latitude, lng: longitude, accuracy: location.coords.accuracy ?? undefined });
                             }
                         }
 

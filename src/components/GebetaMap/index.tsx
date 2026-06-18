@@ -13,6 +13,7 @@ import {
     sliceFromDistance,
     snapToRouteDistance,
     findCorners,
+    calculateDistance,
 } from '../../modules/navigation/utils/navigationUtils';
 
 const MAPPIN_IMAGE = require('../../../assets/images/Mappin.png');
@@ -75,7 +76,7 @@ interface ExtendedGebetaMapProps extends Omit<GebetaMapProps, 'center'> {
         isDotted?: boolean;
     };
     isNavigating?: boolean;
-    userLocation?: { lat: number; lng: number } | null;
+    userLocation?: { lat: number; lng: number; accuracy?: number } | null;
     userHeading?: number;
     showUserLocationMarker?: boolean;
     onUserInteraction?: () => void;
@@ -267,7 +268,7 @@ AnimatedSegmentedRoutes.displayName = 'AnimatedSegmentedRoutes';
 
 
 interface AnimatedNavLayerProps {
-    userLocation: { lat: number; lng: number } | null;
+    userLocation: { lat: number; lng: number; accuracy?: number } | null;
     isNavigating: boolean;
     routeGeoJSON: any;
     routeLineStyle: any;
@@ -282,6 +283,7 @@ interface AnimatedNavLayerProps {
 const NAV_RENDER_MS = 33;
 const NAV_CAMERA_MS = 40;
 const NAV_CAMERA_LOOKAHEAD_M = 35;
+
 const NAV_HEADING_FILTER = 0.15;
 const NAV_POS_SMOOTH = 0.12;
 const NAV_SPEED_SMOOTH = 0.6; 
@@ -291,6 +293,12 @@ const NAV_CORNER_ANGLE = 25;
 const NAV_CORNER_BUFFER_M = 4;
 const NAV_UNSNAP_M = 14;
 const NAV_RESNAP_M = 12;
+
+const NAV_UNSNAP_ACC_FACTOR = 1.5; 
+const NAV_UNSNAP_DEBOUNCE_MS = 3000;
+const NAV_UNSNAP_HEADING_ANGLE = 70;  
+const NAV_UNSNAP_HEADING_MIN_DIST = 8;  
+const NAV_UNSNAP_HEADING_MIN_MOVE = 8; 
 const NAV_FREE_SMOOTH = 0.2;  
 const NAV_ZOOM = 19;
 
@@ -325,10 +333,13 @@ const AnimatedNavLayer = memo(({
     const lastFixRef = useRef<{ s: number; t: number } | null>(null);
     const firstRef = useRef(true);
     const headingRef = useRef(0);
+
     const freeRoamRef = useRef(false);
     const freeTargetRef = useRef({ lat: 0, lng: 0 });  
     const freeCurRef = useRef({ lat: 0, lng: 0 }); 
-    const lastOnRouteSRef = useRef(0);       
+    const lastOnRouteSRef = useRef(0);
+    const unsnapStartRef = useRef<number | null>(null);  
+    const prevRawRef = useRef<{ lat: number; lng: number } | null>(null); 
     const taxiCurRef = useRef({ lat: 0, lng: 0 });
     const taxiToRef = useRef({ lat: 0, lng: 0 });
 
@@ -339,6 +350,9 @@ const AnimatedNavLayer = memo(({
         vRef.current = 0;
         freeRoamRef.current = false;
         lastOnRouteSRef.current = 0;
+
+        unsnapStartRef.current = null;
+        prevRawRef.current = null;
     }, [coords]);
 
     useEffect(() => {
@@ -369,12 +383,41 @@ const AnimatedNavLayer = memo(({
             vRef.current = 0;
             headingRef.current = headingAtDistance(coords, cum, snappedS);
             lastFixRef.current = { s: snappedS, t: now };
+            prevRawRef.current = { lat: userLocation.lat, lng: userLocation.lng };
             const [lng0, lat0] = pointAtDistance(coords, cum, snappedS);
             setRender({ lat: lat0, lng: lng0, heading: headingRef.current, s: snappedS });
             return;
         }
 
-        const free = freeRoamRef.current ? distance > NAV_RESNAP_M : distance > NAV_UNSNAP_M;
+        let free: boolean;
+        if (freeRoamRef.current) {
+            free = distance > NAV_RESNAP_M;
+        } else {
+            const acc = userLocation.accuracy;
+            const beyondNoise = acc == null ? true : distance > acc * NAV_UNSNAP_ACC_FACTOR;
+            const positionOff = distance > NAV_UNSNAP_M && beyondNoise;
+
+            let headingOff = false;
+            const prev = prevRawRef.current;
+            if (prev && distance > NAV_UNSNAP_HEADING_MIN_DIST) {
+                const moved = calculateDistance(prev.lat, prev.lng, userLocation.lat, userLocation.lng);
+                if (moved > NAV_UNSNAP_HEADING_MIN_MOVE) {
+                    const travel = calcBearing(prev, { lat: userLocation.lat, lng: userLocation.lng });
+                    const routeB = headingAtDistance(coords, cum, snappedS);
+                    let dh = Math.abs(travel - routeB);
+                    if (dh > 180) dh = 360 - dh;
+                    headingOff = dh > NAV_UNSNAP_HEADING_ANGLE;
+                }
+            }
+
+            if (positionOff || headingOff) {
+                if (unsnapStartRef.current == null) unsnapStartRef.current = now;
+                free = now - unsnapStartRef.current >= NAV_UNSNAP_DEBOUNCE_MS;
+            } else {
+                unsnapStartRef.current = null;
+                free = false;
+            }
+        }
 
         if (free) {
             if (!freeRoamRef.current) {
@@ -385,11 +428,13 @@ const AnimatedNavLayer = memo(({
             freeTargetRef.current = { lat: userLocation.lat, lng: userLocation.lng };
         } else if (freeRoamRef.current) {
             freeRoamRef.current = false;
+            unsnapStartRef.current = null;
             renderedSRef.current = snappedS;
             vRef.current = 0;
             lastFixRef.current = { s: snappedS, t: now };
             lastOnRouteSRef.current = snappedS;
         } else {
+            unsnapStartRef.current = null;
             const prev = lastFixRef.current!;
             const dt = Math.max(0.001, (now - prev.t) / 1000);
             let measured = (snappedS - prev.s) / dt;
@@ -399,6 +444,8 @@ const AnimatedNavLayer = memo(({
             lastFixRef.current = { s: snappedS, t: now };
             lastOnRouteSRef.current = snappedS;
         }
+
+        prevRawRef.current = { lat: userLocation.lat, lng: userLocation.lng };
     }, [userLocation?.lat, userLocation?.lng, isNavigating, useRouteModel, coords, cum]);
 
     useEffect(() => {
