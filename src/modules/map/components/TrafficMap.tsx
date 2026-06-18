@@ -57,6 +57,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
 
     const initialMapCenterRef = useRef<[number, number] | null>(null);
     const [showReportOptions, setShowReportOptions] = useState(false);
+    const [incidentReportLocation, setIncidentReportLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [showExploreSheet, setShowExploreSheet] = useState(false);
     const [selectedExploreCategory, setSelectedExploreCategory] = useState<string | null>(null);
     const [clickedLocation, setClickedLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -218,6 +219,12 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         setShowPlaceDetail(false);
         setSelectedDestination(null);
         clearSearchMarker();
+    };
+
+    const handleContributeFromPlaceDetail = (location: { lat: number; lng: number }) => {
+        setShowPlaceDetail(false);
+        setIncidentReportLocation(location);
+        setShowReportOptions(true);
     };
 
     const handleDirectionsFromPlaceDetail = () => {
@@ -1053,6 +1060,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     onDirections={handleDirectionsFromPlaceDetail}
                     onStart={handleStartFromPlaceDetail}
                     onTaxi={handleTaxiFromPlaceDetail}
+                    onContribute={handleContributeFromPlaceDetail}
                     onClose={handleClosePlaceDetail}
                 />
             )}
@@ -1122,8 +1130,11 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
 
             <IncidentReportSheet
                 isVisible={showReportOptions}
-                onClose={() => setShowReportOptions(false)}
-                userLocation={userLocation}
+                onClose={() => {
+                    setShowReportOptions(false);
+                    setIncidentReportLocation(null);
+                }}
+                userLocation={incidentReportLocation ?? userLocation}
                 isNavigating={navigationMode}
                 onNavigateToReport={() => setIsOnIncidentReportScreen(true)}
             />
