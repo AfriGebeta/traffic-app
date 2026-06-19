@@ -61,7 +61,6 @@ interface MapOverlayProps {
     navigationDestination?: GeocodingPlace | null;
     showRoutePreview?: boolean;
     showPlaceDetail?: boolean;
-    isCenteredOnUser?: boolean;
     routeOrigin?: GeocodingPlace | null;
     routeWaypoints?: GeocodingPlace[];
     routeDestination?: GeocodingPlace | null;
@@ -113,7 +112,6 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
     navigationDestination,
     showRoutePreview = false,
     showPlaceDetail = false,
-    isCenteredOnUser = false,
     routeOrigin,
     routeWaypoints = [],
     routeDestination,
@@ -199,10 +197,8 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                 onVoicePressOut={onVoiceRelease}
                 isRecording={isRecording}
                 isProcessingVoice={isProcessingVoice}
-                userLocation={userLocation}
                 isRoutePreviewActive={showRoutePreview}
                 isPlaceDetailActive={showPlaceDetail}
-                isCenteredOnUser={isCenteredOnUser}
             />
 
             {isNavigationMinimized && navigationDestination && onRestoreNavigation && (

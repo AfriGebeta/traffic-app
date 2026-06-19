@@ -18,6 +18,7 @@ interface PlaceDetailPreviewProps {
     onDirections: () => void;
     onStart: () => void;
     onTaxi: () => void;
+    onContribute: (location: { lat: number; lng: number }) => void;
     onClose: () => void;
 }
 
@@ -71,6 +72,7 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
     onDirections,
     onStart,
     onTaxi,
+    onContribute,
     onClose,
 }) => {
     const { t } = useTranslation();
@@ -133,6 +135,10 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
         });
     };
 
+    const handleContribute = () => {
+        onContribute({ lat: place.latitude, lng: place.longitude });
+    };
+
     const isClaimableBusiness = () => {
         const type = (place.type || '').toLowerCase();
         const category = (place.category || '').toLowerCase();
@@ -155,25 +161,28 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
 
 
         if (placeType.includes('restaurant') || placeType.includes('hotel') || placeType.includes('cafe') || placeType.includes('food') || placeType.includes('coffee') || placeType.includes('teahouse')) {
-            return require('../../../../assets/images/restaurant-detail.png');
+            return require('../../../../assets/images/restaurant-detail-page.png');
         }
         if (placeType.includes('bank')) {
-            return require('../../../../assets/images/bank-detail.png');
+            return require('../../../../assets/images/bank-detail-page.png');
         }
         if (placeType.includes('atm')) {
-            return require('../../../../assets/images/atm-detail.png');
+            return require('../../../../assets/images/atm-detail-page.png');
         }
         if (placeType.includes('gas') || placeType.includes('fuel') || placeType.includes('petrol')) {
-            return require('../../../../assets/images/gas-detail.png');
+            return require('../../../../assets/images/gas-station-detail-page.png');
         }
         if (placeType.includes('parking')) {
-            return require('../../../../assets/images/parking-detail.png');
+            return require('../../../../assets/images/parking-detail-page.png');
         }
         if (placeType.includes('repair') || placeType.includes('garage') || placeType.includes('mechanic')) {
-            return require('../../../../assets/images/repair-detail.png');
+            return require('../../../../assets/images/repair-detail-page.png');
         }
         if (placeType.includes('taxi')) {
-            return require('../../../../assets/images/taxi-detail.png');
+            return require('../../../../assets/images/taxi-detail-page.png');
+        }
+        if (placeType.includes('hospital') || placeType.includes('clinic') || placeType.includes('medical') || placeType.includes('health')) {
+            return require('../../../../assets/images/hospital-detail-page.png');
         }
 
         return require('../../../../assets/images/random-detail.png');
@@ -203,8 +212,30 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
                             <Image
                                 source={getPlaceImage()}
                                 style={{ width: '100%', height: '100%' }}
-                                resizeMode="cover"
+                                resizeMode="contain"
                             />
+                            <TouchableOpacity
+                                onPress={handleContribute}
+                                activeOpacity={0.8}
+                                style={{
+                                    position: 'absolute',
+                                    bottom: 24,
+                                    left: 0,
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    backgroundColor: colors.primary.main,
+                                    borderTopLeftRadius: 0,
+                                    borderBottomLeftRadius: 0,
+                                    borderTopRightRadius: 6,
+                                    borderBottomRightRadius: 6,
+                                    paddingVertical: 4,
+                                    paddingHorizontal: 10,
+                                }}
+                            >
+                                <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>
+                                    Contribute
+                                </Text>
+                            </TouchableOpacity>
                         </View>
 
                         <Text className="text-xl font-bold text-gray-900 mb-1" numberOfLines={2}>
