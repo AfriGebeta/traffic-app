@@ -6,6 +6,7 @@ import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 import { NavigationBar } from './NavigationBar';
 import { NavigationOverlay } from './NavigationOverlay';
 import { IncidentAlert } from './IncidentAlert';
+
 import { RuleAlert } from './RuleAlert';
 import { MapOverlay } from './MapOverlay';
 import { IncidentReportSheet } from './IncidentReportSheet';
@@ -18,6 +19,7 @@ import { VoiceNavigationModal } from '../../navigation/components/VoiceNavigatio
 import { useIncidents } from '../../incidents/hooks/useIncidents';
 import { useUserLocation } from '../hooks/useUserLocation';
 import { useSearch } from '../hooks/useSearch';
+
 import { colors } from '../../../shared/theme/colors';
 import { useNavigation } from '../../navigation/hooks/useNavigation';
 import { useVoiceNavigation } from '../../navigation/hooks/useVoiceNavigation';
@@ -28,6 +30,7 @@ import { useRuleAlerts } from '../hooks/useRuleAlerts';
 import { useMapMarkers } from '../hooks/useMapMarkers';
 import { useMapTheme } from '../context/MapThemeContext';
 import { useExplore } from '../hooks/useExplore';
+
 import { useMapClick } from '../hooks/useMapClick';
 import { showToast } from '../../../shared/utils/toast';
 import { useTranslation } from 'react-i18next';
@@ -57,6 +60,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
 
     const initialMapCenterRef = useRef<[number, number] | null>(null);
     const [showReportOptions, setShowReportOptions] = useState(false);
+    const [incidentReportLocation, setIncidentReportLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [showExploreSheet, setShowExploreSheet] = useState(false);
     const [selectedExploreCategory, setSelectedExploreCategory] = useState<string | null>(null);
     const [clickedLocation, setClickedLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -70,7 +74,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     const [taxiRouteSegments, setTaxiRouteSegments] = useState<Array<{ coordinates: Array<[number, number]>; cost: number; from: string; to: string }> | null>(null);
     const [isFromTaxiSearch, setIsFromTaxiSearch] = useState(false);
     const [showPlaceDetail, setShowPlaceDetail] = useState(false);
-    const [isCenteredOnUser, setIsCenteredOnUser] = useState(false);
 
     const { t } = useTranslation();
     const params = useLocalSearchParams();
@@ -171,37 +174,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         return () => { cancelled = true; };
     }, [navigationMode, fetchRules]);
 
-    useEffect(() => {
-        if (!userLocation || !isMapLoaded || navigationMode || showRoutePreview || showPlaceDetail) {
-            return;
-        }
-
-        const checkInterval = setInterval(async () => {
-            try {
-                const mapInstance = mapRef.current?.getMapInstance?.() as any;
-                if (!mapInstance?._map) return;
-
-                const camera = await mapInstance._map.getCamera();
-                const center = camera?.center;
-
-                if (!center) return;
-
-                const latDiff = Math.abs(center[1] - userLocation.lat);
-                const lngDiff = Math.abs(center[0] - userLocation.lng);
-                const threshold = 0.001;
-
-                const isNearUserLocation = latDiff < threshold && lngDiff < threshold;
-
-                if (isNearUserLocation !== isCenteredOnUser) {
-                    setIsCenteredOnUser(isNearUserLocation);
-                }
-            } catch (error) {
-            }
-        }, 1000);
-
-        return () => clearInterval(checkInterval);
-    }, [userLocation, isMapLoaded, navigationMode, showRoutePreview, showPlaceDetail, isCenteredOnUser]);
-
     const { activeAlert: activeIncidentAlert, dismissAlert: dismissIncidentAlert } = useIncidentAlerts(userLocation, incidents, navigationMode, routeCoordinates);
     const activeRuleAlert = useRuleAlerts(userLocation, nearbyRules, navigationMode, routeCoordinates);
     const { addIncidentMarkers } = useMapMarkers(mapRef, incidents);
@@ -218,6 +190,12 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         setShowPlaceDetail(false);
         setSelectedDestination(null);
         clearSearchMarker();
+    };
+
+    const handleContributeFromPlaceDetail = (location: { lat: number; lng: number }) => {
+        setShowPlaceDetail(false);
+        setIncidentReportLocation(location);
+        setShowReportOptions(true);
     };
 
     const handleDirectionsFromPlaceDetail = () => {
@@ -490,10 +468,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         setTimeout(() => {
             addIncidentMarkers();
         }, 1000);
-
-        if (!sharedLocation && userLocation) {
-            setIsCenteredOnUser(true);
-        }
     };
 
     useEffect(() => {
@@ -518,8 +492,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
             zoom: USER_LOCATION_ZOOM,
             duration: 1000,
         });
-
-        setIsCenteredOnUser(true);
     };
 
     const handleRecenter = () => {
@@ -568,8 +540,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
 
             handleSelectSharedPlace(place);
             setShowPlaceDetail(true);
-
-            setIsCenteredOnUser(false);
 
             if (sharedFlyToTimer.current) {
                 clearTimeout(sharedFlyToTimer.current);
@@ -896,7 +866,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 selectedDestination={selectedDestination}
                 onUserInteraction={() => {
                     setHasUserZoomedOut(true);
-                    setIsCenteredOnUser(false);
                 }}
 
                 userHeading={currentHeading}
@@ -1031,7 +1000,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     isNavigationMinimized={isNavigationMinimized}
                     onRestoreNavigation={() => setIsNavigationMinimized(false)}
                     navigationDestination={navigationMode ? selectedDestination : null}
-                    isCenteredOnUser={isCenteredOnUser}
                     routeOrigin={routeOrigin}
                     routeWaypoints={waypoints}
                     routeDestination={selectedDestination}
@@ -1053,6 +1021,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     onDirections={handleDirectionsFromPlaceDetail}
                     onStart={handleStartFromPlaceDetail}
                     onTaxi={handleTaxiFromPlaceDetail}
+                    onContribute={handleContributeFromPlaceDetail}
                     onClose={handleClosePlaceDetail}
                 />
             )}
@@ -1122,8 +1091,11 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
 
             <IncidentReportSheet
                 isVisible={showReportOptions}
-                onClose={() => setShowReportOptions(false)}
-                userLocation={userLocation}
+                onClose={() => {
+                    setShowReportOptions(false);
+                    setIncidentReportLocation(null);
+                }}
+                userLocation={incidentReportLocation ?? userLocation}
                 isNavigating={navigationMode}
                 onNavigateToReport={() => setIsOnIncidentReportScreen(true)}
             />

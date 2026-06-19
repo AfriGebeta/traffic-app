@@ -2,7 +2,6 @@ import React, { useEffect, useRef } from 'react';
 import { View, TouchableOpacity, ActivityIndicator, Animated, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../../shared/theme/colors';
-import { ShareLocationButton } from '../../../shared/components/ShareLocationButton';
 
 interface FloatingActionsProps {
     onLocationPress?: () => void;
@@ -12,10 +11,8 @@ interface FloatingActionsProps {
     onTaxiPress?: () => void;
     isRecording?: boolean;
     isProcessingVoice?: boolean;
-    userLocation?: { lat: number; lng: number } | null;
     isRoutePreviewActive?: boolean;
     isPlaceDetailActive?: boolean;
-    isCenteredOnUser?: boolean;
 }
 
 export const FloatingActions: React.FC<FloatingActionsProps> = ({
@@ -26,10 +23,8 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
     onTaxiPress,
     isRecording = false,
     isProcessingVoice = false,
-    userLocation,
     isRoutePreviewActive = false,
     isPlaceDetailActive = false,
-    isCenteredOnUser = false,
 }) => {
     const bottomPosition = useRef(new Animated.Value(180)).current;
 
@@ -55,18 +50,6 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
             >
                 <Ionicons name="locate" size={24} color="#F59E0B" />
             </TouchableOpacity>
-
-            {!isPlaceDetailActive && !isRoutePreviewActive && isCenteredOnUser && userLocation && (
-                <ShareLocationButton
-                    location={{
-                        lat: userLocation.lat,
-                        lng: userLocation.lng,
-                        name: 'My Current Location',
-                    }}
-                    variant="icon"
-                    size="medium"
-                />
-            )}
 
             <TouchableOpacity
                 onPress={onThemePress}
