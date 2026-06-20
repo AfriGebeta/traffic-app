@@ -10,12 +10,15 @@ import { useEffect } from 'react';
 import * as NavigationBar from 'expo-navigation-bar';
 import { Platform } from 'react-native';
 import { useTelegramDeepLink } from '../shared/hooks/useTelegramDeepLink';
+import { useForceUpdate } from '../shared/hooks/useForceUpdate';
+import { ForceUpdateModal } from '../components/ForceUpdateModal';
 import telemetryApiService from '../shared/services/telemetry-api.service';
 import './globals.css';
 import '../shared/utils/localization/i18n';
 
 export default function RootLayout() {
   useTelegramDeepLink();
+  const updateRequired = useForceUpdate();
 
   useEffect(() => {
     if (Platform.OS === 'android') {
@@ -43,6 +46,7 @@ export default function RootLayout() {
                   }}
                 />
                 <Toast />
+                <ForceUpdateModal visible={updateRequired} />
               </IncidentFiltersProvider>
             </LocationProvider>
           </UserLocationProvider>

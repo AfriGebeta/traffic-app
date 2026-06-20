@@ -36,6 +36,7 @@ module.exports = {
     },
     android: {
       ...appJson.expo.android,
+      googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? appJson.expo.android.googleServicesFile,
       queries: [
         { scheme: 'tg' },
         { scheme: 'telegram' },
