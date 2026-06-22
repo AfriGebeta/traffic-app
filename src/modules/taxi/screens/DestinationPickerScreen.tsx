@@ -7,12 +7,14 @@ import { useTranslation } from 'react-i18next';
 import GebetaMap from '../../../components/GebetaMap';
 import { colors } from '../../../shared/theme/colors';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
+import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
 
 export default function DestinationPickerScreen() {
     const router = useRouter();
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { userLocation } = useUserLocation();
+    const { apiKey } = useRemoteConfig();
 
     const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
 
@@ -40,8 +42,8 @@ export default function DestinationPickerScreen() {
         <View className="flex-1 bg-gray-50">
             <View className="flex-1">
                 <GebetaMap
-                    apiKey={process.env.EXPO_PUBLIC_GEBETA_API_KEY || ''}
-                    mapStyleUrl={`https://tiles.gebeta.app/styles/standard/style.json?apiKey=${process.env.EXPO_PUBLIC_GEBETA_API_KEY}`}
+                    apiKey={apiKey || ''}
+                    mapStyleUrl={`https://tiles.gebeta.app/styles/standard/style.json?apiKey=${apiKey}`}
                     center={userLocation ? [userLocation.lng, userLocation.lat] : [38.7463, 9.0223]}
                     zoom={13}
                     onMapClick={handleMapClick}
