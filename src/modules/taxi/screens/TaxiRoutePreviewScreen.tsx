@@ -9,6 +9,7 @@ import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 import { colors } from '../../../shared/theme/colors';
 import { showToast } from '../../../shared/utils/toast';
 import { useMapTheme } from '../../map/context/MapThemeContext';
+import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
 import { TaxiNavigationResponse } from '../types/taxi.types';
 
 export default function TaxiRoutePreviewScreen() {
@@ -17,6 +18,7 @@ export default function TaxiRoutePreviewScreen() {
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
     const { currentTheme } = useMapTheme();
+    const { apiKey } = useRemoteConfig();
     const mapRef = useRef<GebetaMapRef>(null);
 
     const [mapReady, setMapReady] = useState(false);
@@ -159,8 +161,8 @@ export default function TaxiRoutePreviewScreen() {
             <View className="flex-1">
                 <GebetaMap
                     ref={mapRef}
-                    apiKey={process.env.EXPO_PUBLIC_GEBETA_API_KEY || ''}
-                    mapStyleUrl={currentTheme.styleUrl ? `${currentTheme.styleUrl}?apiKey=${process.env.EXPO_PUBLIC_GEBETA_API_KEY}` : undefined}
+                    apiKey={apiKey || ''}
+                    mapStyleUrl={currentTheme.styleUrl ? `${currentTheme.styleUrl}?apiKey=${apiKey}` : undefined}
                     mapStyleJson={currentTheme.styleJson}
                     center={[origin.lng, origin.lat]}
                     zoom={13}

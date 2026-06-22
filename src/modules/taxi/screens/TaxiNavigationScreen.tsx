@@ -17,6 +17,7 @@ import { useLocationTracking } from '../../navigation/hooks/useLocationTracking'
 import { SegmentProgressBar } from '../../navigation/components/SegmentProgressBar';
 import { ArrivalModal } from '../../navigation/components/ArrivalModal';
 import { decodePolyline } from '../../../shared/utils/polyline';
+import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
 
 export default function TaxiNavigationScreen() {
     useKeepAwake();
@@ -24,6 +25,7 @@ export default function TaxiNavigationScreen() {
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
     const { currentTheme } = useMapTheme();
+    const { apiKey } = useRemoteConfig();
     const mapRef = useRef<GebetaMapRef>(null);
 
     const routeData: TaxiNavigationResponse | null = params.routeData
@@ -371,8 +373,8 @@ export default function TaxiNavigationScreen() {
             <View className="flex-1">
                 <GebetaMap
                     ref={mapRef}
-                    apiKey={process.env.EXPO_PUBLIC_GEBETA_API_KEY || ''}
-                    mapStyleUrl={currentTheme.styleUrl ? `${currentTheme.styleUrl}?apiKey=${process.env.EXPO_PUBLIC_GEBETA_API_KEY}` : undefined}
+                    apiKey={apiKey || ''}
+                    mapStyleUrl={currentTheme.styleUrl ? `${currentTheme.styleUrl}?apiKey=${apiKey}` : undefined}
                     mapStyleJson={currentTheme.styleJson}
                     center={initialCenter}
                     zoom={initialZoom}

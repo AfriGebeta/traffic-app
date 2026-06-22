@@ -25,6 +25,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
+      "googleServicesFile": "./android/app/google-services.json",
       "package": "co.gebeta.apps.android.maps",
       "softwareKeyboardLayoutMode": "resize",
       "permissions": [
@@ -89,7 +90,8 @@
         }
       ],
       "@maplibre/maplibre-react-native",
-      "expo-secure-store"
+      "expo-secure-store",
+      "@react-native-firebase/app"
     ],
     "experiments": {
       "typedRoutes": true,

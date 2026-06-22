@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { navigationService } from '../../navigation/services/navigation.service';
 import { colors } from '../../../shared/theme/colors';
+import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
 
 export default function MapPickerScreen() {
     const router = useRouter();
@@ -21,6 +22,7 @@ export default function MapPickerScreen() {
     const insets = useSafeAreaInsets();
     const mapRef = useRef<GebetaMapRef>(null);
     const { userLocation } = useUserLocation();
+    const { apiKey } = useRemoteConfig();
     const { setSelectedLocation: setContextLocation } = useLocation();
     const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
@@ -149,12 +151,15 @@ export default function MapPickerScreen() {
         <View className="flex-1">
             <CustomGebetaMap
                 ref={mapRef}
-                apiKey={process.env.EXPO_PUBLIC_GEBETA_API_KEY!}
-                mapStyleUrl={`https://tiles.gebeta.app/styles/standard/style.json?apiKey=${process.env.EXPO_PUBLIC_GEBETA_API_KEY}`}
-                center={[38.7463, 9.0223]}
-                zoom={12}
+                apiKey={apiKey!}
+                mapStyleUrl={`https://tiles.gebeta.app/styles/standard/style.json?apiKey=${apiKey}`}
+                center={userLocation ? [userLocation.lng, userLocation.lat] : [38.7463, 9.0223]}
+                zoom={15}
                 onMapClick={handleMapClick}
                 selectedLocation={selectedLocation}
+                userLocation={userLocation}
+                showUserLocationMarker={false}
+                externalCameraControl={true}
             />
 
             <View className="absolute top-12 left-4 right-4 bg-white rounded-2xl p-4 shadow-lg">
@@ -167,7 +172,7 @@ export default function MapPickerScreen() {
             </View>
 
             <TouchableOpacity
-                className="absolute top-32 right-4 bg-white rounded-full w-12 h-12 items-center justify-center shadow-lg"
+                className="absolute top-56 right-4 bg-white rounded-full w-12 h-12 items-center justify-center shadow-lg"
                 onPress={handleLocationPress}
                 activeOpacity={0.7}
             >

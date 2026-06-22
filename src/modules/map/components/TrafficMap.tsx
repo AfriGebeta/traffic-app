@@ -29,6 +29,7 @@ import { useIncidentAlerts } from '../hooks/useIncidentAlerts';
 import { useRuleAlerts } from '../hooks/useRuleAlerts';
 import { useMapMarkers } from '../hooks/useMapMarkers';
 import { useMapTheme } from '../context/MapThemeContext';
+import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
 import { useExplore } from '../hooks/useExplore';
 
 import { useMapClick } from '../hooks/useMapClick';
@@ -80,6 +81,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     const { incidents, refetch } = useIncidents();
     const { userLocation, setUserLocation, stopLocationTracking: stopBackgroundTracking, startLocationTracking: startBackgroundTracking } = useUserLocation();
     const { currentTheme } = useMapTheme();
+    const { apiKey } = useRemoteConfig();
     const { isLoading: isExploring, results: exploreResults, searchNearby, clearResults: clearExploreResults } = useExplore();
     const { refetch: refetchRulePreferences } = useRulePreferences();
 
@@ -843,10 +845,10 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
             <StatusBar barStyle="dark-content" backgroundColor="#ffffff" translucent={false} />
             <CustomGebetaMap
                 ref={mapRef}
-                apiKey={process.env.EXPO_PUBLIC_GEBETA_API_KEY!}
+                apiKey={apiKey!}
                 mapStyleUrl={
                     !currentTheme.styleJson && currentTheme.styleUrl
-                        ? `${currentTheme.styleUrl}?apiKey=${process.env.EXPO_PUBLIC_GEBETA_API_KEY}`
+                        ? `${currentTheme.styleUrl}?apiKey=${apiKey}`
                         : undefined
                 }
                 mapStyleJson={currentTheme.styleJson}
