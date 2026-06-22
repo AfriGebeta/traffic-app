@@ -160,7 +160,10 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
         const placeType = (place.type || place.category || '').toLowerCase();
 
 
-        if (placeType.includes('restaurant') || placeType.includes('hotel') || placeType.includes('cafe') || placeType.includes('food') || placeType.includes('coffee') || placeType.includes('teahouse')) {
+        if (placeType.includes('coffee') || placeType.includes('cafe') || placeType.includes('teahouse')) {
+            return require('../../../../assets/images/coffee-shop.png');
+        }
+        if (placeType.includes('restaurant') || placeType.includes('hotel') || placeType.includes('food') ) {
             return require('../../../../assets/images/restaurant-detail-page.png');
         }
         if (placeType.includes('bank')) {
@@ -184,8 +187,14 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
         if (placeType.includes('hospital') || placeType.includes('clinic') || placeType.includes('medical') || placeType.includes('health')) {
             return require('../../../../assets/images/hospital-detail-page.png');
         }
+        if (placeType.includes('school') || placeType.includes('university') || placeType.includes('college')) {
+            return require('../../../../assets/images/school.png');
+        }
+        if (placeType.includes('shop') || placeType.includes('store')) {
+            return require('../../../../assets/images/shop-detail-page.png');
+        }
 
-        return require('../../../../assets/images/random-detail.png');
+        return require('../../../../assets/images/establishment.png');
     };
 
     return (
