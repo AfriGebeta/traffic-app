@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
 
 export type MapThemeId = 'standard' | 'custom3' | 'dark' | 'raster';
 
@@ -14,7 +15,7 @@ export interface MapTheme {
 
 const STORAGE_KEY = '@map_theme';
 
-const processRemoteStyle = async (url: string): Promise<Record<string, unknown>> => {
+const processRemoteStyle = async (url: string, apiKey: string): Promise<Record<string, unknown>> => {
     try {
         const response = await fetch(url);
         const style = await response.json();
@@ -26,7 +27,7 @@ const processRemoteStyle = async (url: string): Promise<Record<string, unknown>>
                     source.tiles = source.tiles.map((tile: string) => {
                         const processedTile = tile.replace('~~TILE_ENDPOINT~~', 'https://tiles.gebeta.app/tiles');
                         const separator = processedTile.includes('?') ? '&' : '?';
-                        return `${processedTile}${separator}apiKey=${process.env.EXPO_PUBLIC_GEBETA_API_KEY}`;
+                        return `${processedTile}${separator}apiKey=${apiKey}`;
                     });
                 }
             });
@@ -102,6 +103,7 @@ const themeWithStyle = (base: (typeof BASE_THEMES)[number], styleJson: Record<st
 });
 
 export const MapThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    const { apiKey } = useRemoteConfig();
     const [currentTheme, setCurrentTheme] = useState<MapTheme>({
         ...BASE_THEMES[0],
         styleUrl: undefined,
@@ -117,7 +119,7 @@ export const MapThemeProvider: React.FC<{ children: ReactNode }> = ({ children }
                 const activeThemeId: MapThemeId =
                     savedThemeId && savedThemeId in STYLE_URLS ? savedThemeId : 'standard';
 
-                const activeStyle = await processRemoteStyle(STYLE_URLS[activeThemeId]);
+                const activeStyle = await processRemoteStyle(STYLE_URLS[activeThemeId], apiKey);
                 const activeBase = BASE_THEMES.find((t) => t.id === activeThemeId) ?? BASE_THEMES[0];
                 const activeTheme = themeWithStyle(activeBase, activeStyle);
 
@@ -128,7 +130,7 @@ export const MapThemeProvider: React.FC<{ children: ReactNode }> = ({ children }
                     (id) => id !== activeThemeId
                 );
                 const otherStyles = await Promise.all(
-                    otherIds.map((id) => processRemoteStyle(STYLE_URLS[id]))
+                    otherIds.map((id) => processRemoteStyle(STYLE_URLS[id], apiKey))
                 );
 
                 const loadedThemes: MapTheme[] = BASE_THEMES.map((base) => {
@@ -147,7 +149,7 @@ export const MapThemeProvider: React.FC<{ children: ReactNode }> = ({ children }
         };
 
         loadThemes();
-    }, []);
+    }, [apiKey]);
 
     const setTheme = useCallback(async (themeId: MapThemeId) => {
         const theme = themes.find(t => t.id === themeId);

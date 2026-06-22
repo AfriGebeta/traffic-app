@@ -10,15 +10,15 @@ import { useEffect } from 'react';
 import * as NavigationBar from 'expo-navigation-bar';
 import { Platform } from 'react-native';
 import { useTelegramDeepLink } from '../shared/hooks/useTelegramDeepLink';
-import { useForceUpdate } from '../shared/hooks/useForceUpdate';
+import { useRemoteConfig, RemoteConfigProvider } from '../shared/contexts/RemoteConfigContext';
 import { ForceUpdateModal } from '../components/ForceUpdateModal';
 import telemetryApiService from '../shared/services/telemetry-api.service';
 import './globals.css';
 import '../shared/utils/localization/i18n';
 
-export default function RootLayout() {
+function AppShell() {
   useTelegramDeepLink();
-  const updateRequired = useForceUpdate();
+  const { updateRequired } = useRemoteConfig();
 
   useEffect(() => {
     if (Platform.OS === 'android') {
@@ -53,5 +53,13 @@ export default function RootLayout() {
         </MapThemeProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <RemoteConfigProvider>
+      <AppShell />
+    </RemoteConfigProvider>
   );
 }

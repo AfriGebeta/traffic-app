@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
+import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
 import GebetaMap from '../../../components/GebetaMap';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 import { colors } from '../../../shared/theme/colors';
@@ -76,6 +77,7 @@ export default function RouteDirectionsPreviewScreen() {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { currentTheme } = useMapTheme();
+    const { apiKey } = useRemoteConfig();
     const { userLocation } = useUserLocation();
     const mapRef = useRef<GebetaMapRef>(null);
 
@@ -161,10 +163,10 @@ export default function RouteDirectionsPreviewScreen() {
             <GebetaMap
                 ref={mapRef}
                 externalCameraControl
-                apiKey={process.env.EXPO_PUBLIC_GEBETA_API_KEY || ''}
+                apiKey={apiKey || ''}
                 mapStyleUrl={
                     currentTheme.styleUrl
-                        ? `${currentTheme.styleUrl}?apiKey=${process.env.EXPO_PUBLIC_GEBETA_API_KEY}`
+                        ? `${currentTheme.styleUrl}?apiKey=${apiKey}`
                         : undefined
                 }
                 mapStyleJson={currentTheme.styleJson}

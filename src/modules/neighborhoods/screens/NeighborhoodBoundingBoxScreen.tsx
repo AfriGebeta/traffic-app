@@ -11,6 +11,7 @@ import CustomGebetaMap from '../../../components/GebetaMap';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { colors } from '../../../shared/theme/colors';
+import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
 
 export default function NeighborhoodBoundingBoxScreen() {
     const { t } = useTranslation();
@@ -19,6 +20,7 @@ export default function NeighborhoodBoundingBoxScreen() {
     const params = useLocalSearchParams();
     const mapRef = useRef<GebetaMapRef>(null);
     const { userLocation } = useUserLocation();
+    const { apiKey } = useRemoteConfig();
 
     const existingBox = params.boundingBox ? JSON.parse(params.boundingBox as string) : null;
 
@@ -132,8 +134,8 @@ export default function NeighborhoodBoundingBoxScreen() {
         <View className="flex-1 bg-gray-50">
             <CustomGebetaMap
                 ref={mapRef}
-                apiKey={process.env.EXPO_PUBLIC_GEBETA_API_KEY!}
-                mapStyleUrl={`https://tiles.gebeta.app/styles/standard/dark.json?apiKey=${process.env.EXPO_PUBLIC_GEBETA_API_KEY}`}
+                apiKey={apiKey!}
+                mapStyleUrl={`https://tiles.gebeta.app/styles/standard/style.json?apiKey=${apiKey}`}
                 center={initialCenter}
                 zoom={13}
                 onMapClick={handleMapClick}

@@ -20,6 +20,7 @@ import { taxiService } from '../services/taxi.service';
 import { TaxiNode } from '../types/taxi.types';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { showToast } from '../../../shared/utils/toast';
+import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
 
 export default function MapPickerScreen() {
     const router = useRouter();
@@ -29,6 +30,7 @@ export default function MapPickerScreen() {
     const { setPendingStop } = useRouteBuilder();
     const mapRef = useRef<GebetaMapRef>(null);
     const { userLocation } = useUserLocation();
+    const { apiKey } = useRemoteConfig();
 
     const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [stopName, setStopName] = useState('');
@@ -226,10 +228,10 @@ export default function MapPickerScreen() {
             <View className="flex-1">
                 <GebetaMap
                     ref={mapRef}
-                    apiKey={process.env.EXPO_PUBLIC_GEBETA_API_KEY!}
-                    mapStyleUrl={`https://tiles.gebeta.app/styles/standard/style.json?apiKey=${process.env.EXPO_PUBLIC_GEBETA_API_KEY}`}
+                    apiKey={apiKey!}
+                    mapStyleUrl={`https://tiles.gebeta.app/styles/standard/style.json?apiKey=${apiKey}`}
                     center={[38.7525, 9.0192]}
-                    zoom={12}
+                    zoom={13}
                     onMapClick={handleMapClick}
                     selectedLocation={selectedLocation}
                     userLocation={userLocation}
