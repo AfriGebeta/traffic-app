@@ -239,7 +239,6 @@ export default function RouteBuilderScreen() {
         const stopType = type === 'start' ? startStationType : type === 'end' ? endStationType : intermediateStopType;
 
         const landmarkValue = type === 'start' ? startStationLandmark : type === 'end' ? endStationLandmark : intermediateStopLandmark;
-        console.log('routebuilder: confirmcurrloc:', { type, landmarkValue, selectedExisting: !!selectedExisting });
 
         const newStop: RouteStop = {
             id: selectedExisting ? selectedExisting.id.toString() : Date.now().toString(),

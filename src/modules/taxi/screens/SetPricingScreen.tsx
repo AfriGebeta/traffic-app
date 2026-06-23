@@ -140,7 +140,7 @@ export default function SetPricingScreen() {
                         routeName: routeName,
                         landmark: stop.landmark,
                     });
-                    const node = await taxiService.createNode({
+                    const node = await taxiService.createNodeForRoute({
                         name: stop.name,
                         lat: stop.lat,
                         lng: stop.lng,
