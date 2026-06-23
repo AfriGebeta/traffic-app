@@ -10,6 +10,7 @@ interface RouteStop {
     type: 'station' | 'stop';
     existingNodeId?: number;
     isExisting?: boolean;
+    landmark?: string;
 }
 
 interface RouteBuilderContextType {
