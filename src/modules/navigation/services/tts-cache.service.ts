@@ -1,4 +1,5 @@
 import { Audio } from 'expo-av';
+import { getAppCheckToken } from '../../../shared/utils/appCheck';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL!;
 
@@ -29,10 +30,12 @@ class TTSCacheService {
         this.fetchQueue.add(text);
 
         try {
+            const appCheckToken = await getAppCheckToken();
             const response = await fetch(`${API_URL}/api/asr/tts/synthesize`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    ...(appCheckToken ? { 'X-Firebase-AppCheck': appCheckToken } : {}),
                 },
                 body: JSON.stringify({ text }),
             });

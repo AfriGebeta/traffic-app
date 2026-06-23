@@ -6,6 +6,7 @@ import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { BottomSheet } from '../../../shared/components';
 import { INCIDENT_TYPES } from '../../incidents/types/incident.types';
 import { getIncidentTranslationKey } from '../../incidents/utils/incidentTranslations';
+import { getAppCheckToken } from '../../../shared/utils/appCheck';
 
 interface IncidentReportSheetProps {
     isVisible: boolean;
@@ -40,7 +41,12 @@ export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
     React.useEffect(() => {
         const fetchIncidentTypes = async () => {
             try {
-                const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/incidents/types`);
+                const appCheckToken = await getAppCheckToken();
+                const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/incidents/types`, {
+                    headers: {
+                        ...(appCheckToken ? { 'X-Firebase-AppCheck': appCheckToken } : {}),
+                    },
+                });
                 if (response.ok) {
                     const types = await response.json();
 

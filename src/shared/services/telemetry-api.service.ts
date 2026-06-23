@@ -1,6 +1,7 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import telemetryService, { TelemetryData } from './telemetry.service';
+import { getAppCheckToken } from '../utils/appCheck';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 const TELEMETRY_SENT_KEY = '@telemetry_already_sent';
@@ -54,9 +55,11 @@ class TelemetryApiService {
         telemetry: telemetryData,
       };
 
+      const appCheckToken = await getAppCheckToken();
       await axios.post(`${API_BASE_URL}/api/users/telemetry`, payload, {
         headers: {
           'Content-Type': 'application/json',
+          ...(appCheckToken ? { 'X-Firebase-AppCheck': appCheckToken } : {}),
         },
       });
 

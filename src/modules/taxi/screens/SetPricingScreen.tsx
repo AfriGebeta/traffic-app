@@ -17,6 +17,7 @@ interface RouteStop {
     type: 'station' | 'stop';
     existingNodeId?: number;
     isExisting?: boolean;
+    landmark?: string;
 }
 
 interface EdgePrice {
@@ -137,6 +138,7 @@ export default function SetPricingScreen() {
                         lng: stop.lng,
                         nodeType: stop.type,
                         routeName: routeName,
+                        landmark: stop.landmark,
                     });
                     const node = await taxiService.createNode({
                         name: stop.name,
@@ -144,6 +146,7 @@ export default function SetPricingScreen() {
                         lng: stop.lng,
                         nodeType: stop.type,
                         routeName: routeName,
+                        landmark: stop.landmark,
                     });
                     console.log('Created node response:', node);
                     const unwrappedNode = (node as any).data || node;

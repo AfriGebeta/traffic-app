@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getAppCheckToken } from '../utils/appCheck';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL!;
 const TOKEN_STORAGE_KEY = '@traffic_app_token';
@@ -38,12 +39,14 @@ class ApiService {
             const url = `${this.baseUrl}${endpoint}`;
 
             const authHeaders = await this.getAuthHeaders();
+            const appCheckToken = await getAppCheckToken();
 
             const config: RequestInit = {
                 ...options,
                 headers: {
                     'Content-Type': 'application/json',
                     ...authHeaders,
+                    ...(appCheckToken ? { 'X-Firebase-AppCheck': appCheckToken } : {}),
                     ...options.headers,
                 },
             };

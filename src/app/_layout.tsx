@@ -11,6 +11,7 @@ import * as NavigationBar from 'expo-navigation-bar';
 import { Platform } from 'react-native';
 import { useTelegramDeepLink } from '../shared/hooks/useTelegramDeepLink';
 import { useRemoteConfig, RemoteConfigProvider } from '../shared/contexts/RemoteConfigContext';
+import { initializeAppCheckSingleton } from '../shared/utils/appCheck';
 import { ForceUpdateModal } from '../components/ForceUpdateModal';
 import telemetryApiService from '../shared/services/telemetry-api.service';
 import './globals.css';
@@ -57,6 +58,10 @@ function AppShell() {
 }
 
 export default function RootLayout() {
+  useEffect(() => {
+    initializeAppCheckSingleton();
+  }, []);
+
   return (
     <RemoteConfigProvider>
       <AppShell />

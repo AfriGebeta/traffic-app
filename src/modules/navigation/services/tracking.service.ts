@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { StoredNavigation, RequestNavigationHistory } from '../types/tracking.types';
+import { getAppCheckToken } from '../../../shared/utils/appCheck';
 
 const STORAGE_KEY = '@navigation_tracking';
 const LAST_SYNC_KEY = '@navigation_last_sync';
@@ -96,8 +97,10 @@ class NavigationTrackingService {
             };
 
             const token = await AsyncStorage.getItem('@traffic_app_token');
+            const appCheckToken = await getAppCheckToken();
             const headers: HeadersInit = {
                 'Content-Type': 'application/json',
+                ...(appCheckToken ? { 'X-Firebase-AppCheck': appCheckToken } : {}),
             };
 
             if (token) {

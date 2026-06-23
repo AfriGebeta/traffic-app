@@ -1,3 +1,5 @@
+import { getAppCheckToken } from './appCheck';
+
 interface PresignedUrlResponse {
     objectName: string;
     url: string;
@@ -14,10 +16,12 @@ export const uploadToMinio = async (imageUri: string, prefix: string = 'incident
     try {
         const filename = imageUri.split('/').pop() || 'photo.jpg';
 
+        const appCheckToken = await getAppCheckToken();
         const presignedResponse = await fetch(`${apiUrl}/api/uploads/presigned`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                ...(appCheckToken ? { 'X-Firebase-AppCheck': appCheckToken } : {}),
             },
             body: JSON.stringify({
                 prefix,

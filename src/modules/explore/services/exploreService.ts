@@ -1,5 +1,6 @@
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 import { EXPLORE_CATEGORIES, type ExploreCategoryId, type ExploreParams } from '../types/explore.types';
+import { getAppCheckToken } from '../../../shared/utils/appCheck';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -28,11 +29,12 @@ export const exploreService = {
 
         const requestBody = JSON.stringify(params);
 
-
+        const appCheckToken = await getAppCheckToken();
         const response = await fetch(`${API_URL}/api/navigation/request-revgeocoding`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                ...(appCheckToken ? { 'X-Firebase-AppCheck': appCheckToken } : {}),
             },
             body: requestBody,
         });

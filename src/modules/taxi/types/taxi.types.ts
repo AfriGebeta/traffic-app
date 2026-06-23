@@ -5,6 +5,7 @@ export interface TaxiNode {
     lng: number;
     nodeType?: 'station' | 'stop';
     routeName?: string;
+    landmark?: string;
 }
 
 export interface TaxiEdge {
@@ -23,6 +24,7 @@ export interface CreateTaxiNodeRequest {
     lng: number;
     nodeType?: 'station' | 'stop';
     routeName?: string;
+    landmark?: string;
 }
 
 export interface TaxiRoute {

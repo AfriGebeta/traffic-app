@@ -10,6 +10,7 @@ export interface RouteStop {
     type: 'station' | 'stop';
     existingNodeId?: number;
     isExisting?: boolean;
+    landmark?: string;
 }
 
 export interface EdgePrice {

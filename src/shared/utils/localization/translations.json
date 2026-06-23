@@ -2498,5 +2498,10 @@
         "key": "failed-to-pick-document",
         "EN_US": "Failed to pick document",
         "AM": "ሰነድ መምረጥ አልተሳካም"
+    },
+    {
+        "key": "landmark",
+        "EN_US": "Enter nearby landmark (optional)",
+        "AM": "አቅራቢያ ያለ ምልክት ያስገቡ (አማራጭ)"
     }
 ]

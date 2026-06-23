@@ -20,6 +20,7 @@ interface RouteStop {
     type: 'station' | 'stop';
     existingNodeId?: number;
     isExisting?: boolean;
+    landmark?: string;
 }
 
 export default function RouteBuilderScreen() {
@@ -57,6 +58,9 @@ export default function RouteBuilderScreen() {
     const [endStationType, setEndStationType] = useState<'station' | 'stop'>('station');
     const [intermediateStopType, setIntermediateStopType] = useState<'station' | 'stop'>('stop');
     const [showRestorePrompt, setShowRestorePrompt] = useState(false);
+    const [startStationLandmark, setStartStationLandmark] = useState('');
+    const [endStationLandmark, setEndStationLandmark] = useState('');
+    const [intermediateStopLandmark, setIntermediateStopLandmark] = useState('');
 
     useEffect(() => {
         if (startStation && !isCollecting) {
@@ -234,6 +238,9 @@ export default function RouteBuilderScreen() {
 
         const stopType = type === 'start' ? startStationType : type === 'end' ? endStationType : intermediateStopType;
 
+        const landmarkValue = type === 'start' ? startStationLandmark : type === 'end' ? endStationLandmark : intermediateStopLandmark;
+        console.log('routebuilder: confirmcurrloc:', { type, landmarkValue, selectedExisting: !!selectedExisting });
+
         const newStop: RouteStop = {
             id: selectedExisting ? selectedExisting.id.toString() : Date.now().toString(),
             name: name.trim(),
@@ -242,20 +249,24 @@ export default function RouteBuilderScreen() {
             type: selectedExisting ? (selectedExisting.nodeType as 'station' | 'stop') : stopType,
             existingNodeId: selectedExisting?.id,
             isExisting: !!selectedExisting,
+            landmark: !selectedExisting && landmarkValue.trim() ? landmarkValue.trim() : undefined,
         };
 
         if (type === 'start') {
             setStartStation(newStop);
             setShowStartNameInput(false);
             setStartStationName('');
+            setStartStationLandmark('');
         } else if (type === 'end') {
             setEndStation(newStop);
             setShowEndNameInput(false);
             setEndStationName('');
+            setEndStationLandmark('');
         } else {
             setIntermediateStops((prev) => [...prev, newStop]);
             setShowIntermediateNameInput(false);
             setIntermediateStopName('');
+            setIntermediateStopLandmark('');
         }
 
         setSelectedExisting(null);
@@ -266,12 +277,15 @@ export default function RouteBuilderScreen() {
         if (type === 'start') {
             setShowStartNameInput(false);
             setStartStationName('');
+            setStartStationLandmark('');
         } else if (type === 'end') {
             setShowEndNameInput(false);
             setEndStationName('');
+            setEndStationLandmark('');
         } else {
             setShowIntermediateNameInput(false);
             setIntermediateStopName('');
+            setIntermediateStopLandmark('');
         }
 
         setSelectedExisting(null);
@@ -466,6 +480,20 @@ export default function RouteBuilderScreen() {
                                     </View>
                                 )}
 
+                                {!selectedExisting && (
+                                    <View className="mb-3">
+                                        <Text className="text-gray-700 font-semibold mb-2">{t('landmark')}</Text>
+                                        <TextInput
+                                            className="bg-white border border-gray-200 rounded-lg px-4 py-3 text-gray-900"
+                                            placeholder={t('enter-landmark-description')}
+                                            value={startStationLandmark}
+                                            onChangeText={setStartStationLandmark}
+                                            multiline
+                                            numberOfLines={2}
+                                        />
+                                    </View>
+                                )}
+
                                 <View className="flex-row gap-2">
                                     <TouchableOpacity
                                         className="flex-1 bg-gray-200 py-2 rounded-lg"
@@ -610,6 +638,20 @@ export default function RouteBuilderScreen() {
                                     </View>
                                 )}
 
+                                {!selectedExisting && (
+                                    <View className="mb-3">
+                                        <Text className="text-gray-700 font-semibold mb-2">{t('landmark')}</Text>
+                                        <TextInput
+                                            className="bg-white border border-gray-200 rounded-lg px-4 py-3 text-gray-900"
+                                            placeholder={t('enter-landmark-description')}
+                                            value={intermediateStopLandmark}
+                                            onChangeText={setIntermediateStopLandmark}
+                                            multiline
+                                            numberOfLines={2}
+                                        />
+                                    </View>
+                                )}
+
                                 <View className="flex-row gap-2">
                                     <TouchableOpacity
                                         className="flex-1 bg-gray-200 py-2 rounded-lg"
@@ -748,6 +790,20 @@ export default function RouteBuilderScreen() {
                                                 </Text>
                                             </TouchableOpacity>
                                         </View>
+                                    </View>
+                                )}
+
+                                {!selectedExisting && (
+                                    <View className="mb-3">
+                                        <Text className="text-gray-700 font-semibold mb-2">{t('landmark')}</Text>
+                                        <TextInput
+                                            className="bg-white border border-gray-200 rounded-lg px-4 py-3 text-gray-900"
+                                            placeholder={t('enter-landmark-description')}
+                                            value={endStationLandmark}
+                                            onChangeText={setEndStationLandmark}
+                                            multiline
+                                            numberOfLines={2}
+                                        />
                                     </View>
                                 )}
 

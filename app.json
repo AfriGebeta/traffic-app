@@ -91,7 +91,8 @@
       ],
       "@maplibre/maplibre-react-native",
       "expo-secure-store",
-      "@react-native-firebase/app"
+      "@react-native-firebase/app",
+      "@react-native-firebase/app-check"
     ],
     "experiments": {
       "typedRoutes": true,
