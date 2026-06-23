@@ -37,6 +37,7 @@ export default function MapPickerScreen() {
     const [stopType, setStopType] = useState<'station' | 'stop'>(() =>
         params.type === 'intermediate' ? 'stop' : 'station'
     );
+    const [stopLandmark, setStopLandmark] = useState('');
     const [nearbyStations, setNearbyStations] = useState<TaxiNode[]>([]);
     const [allStations, setAllStations] = useState<TaxiNode[]>([]);
     const [filteredStations, setFilteredStations] = useState<TaxiNode[]>([]);
@@ -195,6 +196,7 @@ export default function MapPickerScreen() {
             type: stopType,
             existingNodeId: selectedExisting?.id,
             isExisting: !!selectedExisting,
+            landmark: !selectedExisting && stopLandmark.trim() ? stopLandmark.trim() : undefined,
         });
 
         router.back();
@@ -360,6 +362,20 @@ export default function MapPickerScreen() {
                                                 </Text>
                                             </TouchableOpacity>
                                         </View>
+                                    </View>
+                                )}
+
+                                {!selectedExisting && (
+                                    <View className="mb-3">
+                                        <Text className="text-gray-700 font-semibold mb-2">{t('landmark')}</Text>
+                                        <TextInput
+                                            className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900"
+                                            placeholder={t('enter-landmark-description')}
+                                            value={stopLandmark}
+                                            onChangeText={setStopLandmark}
+                                            multiline
+                                            numberOfLines={2}
+                                        />
                                     </View>
                                 )}
 

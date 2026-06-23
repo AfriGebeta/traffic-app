@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import remoteConfig from '@react-native-firebase/remote-config';
+import { getRemoteConfig, fetchAndActivate, getString, setDefaults } from '@react-native-firebase/remote-config';
 import semver from 'semver';
 import * as Application from 'expo-application';
 
@@ -23,19 +23,21 @@ export function RemoteConfigProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const fetchConfig = async () => {
-      await remoteConfig().setDefaults({
+      const rc = getRemoteConfig();
+
+      await setDefaults(rc, {
         min_android_version: '1.0.0',
         gebeta_api_key: FALLBACK_API_KEY,
       });
-      await remoteConfig().fetchAndActivate();
+      await fetchAndActivate(rc);
 
-      const apiKey = remoteConfig().getString('gebeta_api_key') || FALLBACK_API_KEY;
-      const minVersion = remoteConfig().getString('min_android_version');
+      const apiKey = getString(rc, 'gebeta_api_key') || FALLBACK_API_KEY;
+      const minVersion = getString(rc, 'min_android_version');
       const currentVersion = Application.nativeApplicationVersion ?? '0.0.0';
       const updateRequired = semver.lt(currentVersion, minVersion);
 
-      const source = remoteConfig().getString('gebeta_api_key') ? 'remote-config' : 'fallback';
-      // console.log(`remoteconfig: apikey source: ${source}, min_android_version: ${minVersion}`);
+      const source = getString(rc, 'gebeta_api_key') ? 'remote-config' : 'fallback';
+      console.log(`remoteconfig: apikey source: ${source}, min_android_version: ${minVersion}`);
       setState({ apiKey, updateRequired });
     };
 

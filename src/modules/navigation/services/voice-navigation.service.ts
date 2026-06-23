@@ -1,6 +1,7 @@
 import { Audio } from 'expo-av';
 import type { VoiceNavigationResponse } from '../types/voice-navigation.types';
 import { ttsCacheService } from './tts-cache.service';
+import { getAppCheckToken } from '../../../shared/utils/appCheck';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL!;
 
@@ -61,12 +62,14 @@ export const voiceNavigationService = {
                 formData.append('originLng', originLng.toString());
             }
 
+            const appCheckToken = await getAppCheckToken();
             const response = await fetch(`${API_URL}/api/asr/process-voice-navigation`, {
                 method: 'POST',
                 body: formData,
                 headers: {
                     'Accept': 'application/json',
                     'x-session-id': sessionId,
+                    ...(appCheckToken ? { 'X-Firebase-AppCheck': appCheckToken } : {}),
                 },
             });
 
