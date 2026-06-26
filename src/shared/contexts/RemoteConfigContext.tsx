@@ -5,20 +5,39 @@ import * as Application from 'expo-application';
 
 const FALLBACK_API_KEY = process.env.EXPO_PUBLIC_GEBETA_API_KEY ?? '';
 
+export interface RemoteMapStyle {
+  id: string;
+  name: string;
+  nameAmharic: string;
+  icon: string;
+  url: string;
+  enabled: boolean;
+}
+
+const FALLBACK_MAP_STYLES: RemoteMapStyle[] = [
+  { id: 'standard', name: 'Classic', nameAmharic: 'ክላሲክ', icon: 'map-outline', url: 'https://tiles.gebeta.app/styles/standard/style.json', enabled: true },
+  { id: 'custom3', name: 'Standard', nameAmharic: 'መደበኛ', icon: 'color-palette-outline', url: 'https://tiles.gebeta.app/styles/standard/light.json', enabled: true },
+  { id: 'dark', name: 'Dark', nameAmharic: 'ጨለማ', icon: 'moon-outline', url: 'https://tiles.gebeta.app/styles/standard/dark.json', enabled: true },
+  { id: 'raster', name: 'Satellite', nameAmharic: 'ሳተላይት', icon: 'globe-outline', url: 'https://tiles.gebeta.app/styles/raster/raster.json', enabled: true },
+];
+
 interface RemoteConfigState {
   apiKey: string;
   updateRequired: boolean;
+  mapStyles: RemoteMapStyle[];
 }
 
 const RemoteConfigContext = createContext<RemoteConfigState>({
   apiKey: FALLBACK_API_KEY,
   updateRequired: false,
+  mapStyles: FALLBACK_MAP_STYLES,
 });
 
 export function RemoteConfigProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<RemoteConfigState>({
     apiKey: FALLBACK_API_KEY,
     updateRequired: false,
+    mapStyles: FALLBACK_MAP_STYLES,
   });
 
   useEffect(() => {
@@ -28,6 +47,7 @@ export function RemoteConfigProvider({ children }: { children: ReactNode }) {
       await setDefaults(rc, {
         min_android_version: '1.0.0',
         gebeta_api_key: FALLBACK_API_KEY,
+        map_styles: JSON.stringify(FALLBACK_MAP_STYLES),
       });
       await fetchAndActivate(rc);
 
@@ -36,9 +56,22 @@ export function RemoteConfigProvider({ children }: { children: ReactNode }) {
       const currentVersion = Application.nativeApplicationVersion ?? '0.0.0';
       const updateRequired = semver.lt(currentVersion, minVersion);
 
+      let mapStyles = FALLBACK_MAP_STYLES;
+      let mapStylesSource = 'fallback';
+      try {
+        const raw = getString(rc, 'map_styles');
+        if (raw) {
+          mapStyles = JSON.parse(raw);
+          mapStylesSource = 'remote-config';
+        }
+      } catch {
+        console.error('remoteconfig: failed to parse map_styles, using fallback');
+      }
+
       const source = getString(rc, 'gebeta_api_key') ? 'remote-config' : 'fallback';
-      console.log(`remoteconfig: apikey source: ${source}, min_android_version: ${minVersion}`);
-      setState({ apiKey, updateRequired });
+      // console.log(`remoteconfig: apikey source: ${source}, min_android_version: ${minVersion}`);
+      // console.log(`remoteconfig: map_styles source: ${mapStylesSource}, count: ${mapStyles.length}, ids: ${mapStyles.map(s => s.id).join(', ')}`);
+      setState({ apiKey, updateRequired, mapStyles });
     };
 
     fetchConfig().catch(console.error);
