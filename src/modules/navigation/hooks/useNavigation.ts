@@ -28,10 +28,12 @@ export const useNavigation = (
     const [showRoutePreview, setShowRoutePreview] = useState(false);
     const [currentHeading, setCurrentHeading] = useState(0);
     const [simulateMovement, setSimulateMovement] = useState(false);
+
     const [currentInstruction, setCurrentInstruction] = useState<string>('');
     const [nextInstruction, setNextInstruction] = useState<string>('');
     const [remainingDistance, setRemainingDistance] = useState<number>(0);
     const [remainingTime, setRemainingTime] = useState<number>(0);
+
     const [isOffRoute, setIsOffRoute] = useState(false);
     const [isRecalculating, setIsRecalculating] = useState(false);
     const [routeGeoJSON, setRouteGeoJSON] = useState<any>(null);
@@ -148,6 +150,7 @@ export const useNavigation = (
         setIsOffRoute,
         setIsNavigating,
         isNavigatingRef,
+        
         setRemainingDistance,
         setRemainingTime,
         setCurrentInstruction,
@@ -610,6 +613,7 @@ export const useNavigation = (
         setRouteManeuversList([]);
         setRouteLegs([]);
         routeManeuvers.current = [];
+
         setCurrentInstruction('');
         setRemainingDistance(0);
         setRemainingTime(0);
@@ -651,12 +655,14 @@ export const useNavigation = (
         currentHeading,
         simulateMovement,
         setSimulateMovement,
+
         currentInstruction,
         nextInstruction,
         remainingDistance,
         remainingTime,
         isOffRoute,
         isRecalculating,
+
         showArrivalModal,
         setShowArrivalModal,
         currentCosting,
