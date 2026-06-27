@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { getRemoteConfig, fetchAndActivate, getString, setDefaults } from '@react-native-firebase/remote-config';
+import { getRemoteConfig, fetchAndActivate, getString, setDefaults, setConfigSettings } from '@react-native-firebase/remote-config';
 import semver from 'semver';
 import * as Application from 'expo-application';
 
@@ -49,6 +49,7 @@ export function RemoteConfigProvider({ children }: { children: ReactNode }) {
         gebeta_api_key: FALLBACK_API_KEY,
         map_styles: JSON.stringify(FALLBACK_MAP_STYLES),
       });
+      await setConfigSettings(rc, { minimumFetchIntervalMillis: 0 });
       await fetchAndActivate(rc);
 
       const apiKey = getString(rc, 'gebeta_api_key') || FALLBACK_API_KEY;
@@ -57,20 +58,15 @@ export function RemoteConfigProvider({ children }: { children: ReactNode }) {
       const updateRequired = semver.lt(currentVersion, minVersion);
 
       let mapStyles = FALLBACK_MAP_STYLES;
-      let mapStylesSource = 'fallback';
       try {
         const raw = getString(rc, 'map_styles');
-        if (raw) {
-          mapStyles = JSON.parse(raw);
-          mapStylesSource = 'remote-config';
-        }
+        if (raw) mapStyles = JSON.parse(raw);
       } catch {
         console.error('remoteconfig: failed to parse map_styles, using fallback');
       }
 
       const source = getString(rc, 'gebeta_api_key') ? 'remote-config' : 'fallback';
-      // console.log(`remoteconfig: apikey source: ${source}, min_android_version: ${minVersion}`);
-      // console.log(`remoteconfig: map_styles source: ${mapStylesSource}, count: ${mapStyles.length}, ids: ${mapStyles.map(s => s.id).join(', ')}`);
+      console.log(`remoteconfig: apikey source: ${source}, min_android_version: ${minVersion}, map_styles: ${mapStyles.map(s => s.id).join(', ')}`);
       setState({ apiKey, updateRequired, mapStyles });
     };
 
