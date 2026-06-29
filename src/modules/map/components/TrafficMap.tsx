@@ -361,7 +361,9 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         isProcessingVoice,
         navigationData: voiceNavigationData,
         options: voiceOptions,
+        currentOption: voiceCurrentOption,
         showOptions: showVoiceOptions,
+        disambiguationMessage: voiceDisambiguationMessage,
         showVoiceModal,
 
         transcription: voiceTranscription,
@@ -1113,8 +1115,12 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 visible={showVoiceOptions}
                 options={voiceOptions}
                 transcription={voiceTranscription}
+                disambiguationMessage={voiceDisambiguationMessage}
+                isRecording={isRecording}
                 onSelectOption={handleOptionSelect}
                 onClose={clearVoiceNavigation}
+                onPressIn={handleVoiceStart}
+                onPressOut={handleVoiceStop}
             />
 
             <VoiceNavigationModal

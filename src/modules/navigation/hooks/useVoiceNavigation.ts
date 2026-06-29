@@ -39,8 +39,8 @@ const buildStreamUrl = (
 };
 
 const toGeocodingPlace = (dest: any): GeocodingPlace | null => {
-    const lat = Number(dest?.latitude ?? dest?.lat);
-    const lng = Number(dest?.longitude ?? dest?.lng);
+    const lat = Number(dest?.latitude ?? dest?.lat ?? dest?.location?.lat);
+    const lng = Number(dest?.longitude ?? dest?.lng ?? dest?.location?.lng);
     if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
 
     return {
@@ -78,7 +78,9 @@ export const useVoiceNavigation = ({
 
     const [navigationData, setNavigationData] = useState<VoiceNavigationData | null>(null);
     const [options, setOptions] = useState<NavigationOption[]>([]);
+    const [currentOption, setCurrentOption] = useState<NavigationOption | null>(null);
     const [showOptions, setShowOptions] = useState(false);
+    const [disambiguationMessage, setDisambiguationMessage] = useState<string>('');
     const [showVoiceModal, setShowVoiceModal] = useState(false);
     const [transcription, setTranscription] = useState<string>('');
 
@@ -112,7 +114,9 @@ export const useVoiceNavigation = ({
             return;
         }
         setOptions([]);
+        setCurrentOption(null);
         setShowOptions(false);
+        setDisambiguationMessage('');
         setShowVoiceModal(false);
         setTranscription('');
         onDestinationFoundRef.current?.(place);
@@ -171,9 +175,24 @@ export const useVoiceNavigation = ({
 
             case 'disambiguate': {
                 const opts: NavigationOption[] = data?.options ?? [];
-                vlog(`disambiguate: ${opts.length} option(s)`, opts.map((o) => o.name));
+                const current: NavigationOption | null = data?.current ?? null;
 
-                if (opts.length > 0) setOptions(opts);
+                // Server narrowed to one confirmed place — auto-select, no UI interruption
+                if (data?.requiresConfirmation && opts.length === 0 && current) {
+                    vlog(`disambiguate: auto-confirm "${current.name}"`);
+                    const socket = socketRef.current;
+                    if (socket?.isOpen) {
+                        reqStartRef.current = Date.now();
+                        socket.sendJson('select_option', { optionId: current.id, name: current.name });
+                    }
+                    // Keep isProcessing true — navigation_ready/ready will clear it
+                    break;
+                }
+
+                vlog(`disambiguate: ${opts.length} option(s)`, opts.map((o) => o.name));
+                setOptions(opts);
+                setCurrentOption(current);
+                if (data?.message) setDisambiguationMessage(data.message);
                 setShowOptions(true);
                 setShowVoiceModal(false);
                 finishProcessing();
@@ -422,7 +441,9 @@ export const useVoiceNavigation = ({
         isProcessingVoice: isProcessing,
         navigationData,
         options,
+        currentOption,
         showOptions,
+        disambiguationMessage,
         showVoiceModal,
         transcription,
         handleVoicePress,

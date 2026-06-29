@@ -910,6 +910,11 @@
         "AM": "መድረሻዎን ለመናገር ማይክሮፎኑን ተጭነው ይያዙ"
     },
     {
+        "key": "or-speak-your-answer",
+        "EN_US": "or hold mic to speak",
+        "AM": "ወይም ማይክሮፎን ተጭነው ይናገሩ"
+    },
+    {
         "key": "still-there",
         "EN_US": "Still there?",
         "AM": "አሁንም አለ?"
