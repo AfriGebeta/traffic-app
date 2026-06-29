@@ -147,6 +147,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         recalculateRoute,
         currentCosting,
         setCurrentCosting,
+        currentSpeed,
     } = useNavigation(mapRef, userLocation, setUserLocation, stopBackgroundTracking, startBackgroundTracking);
 
     const [nearbyRules, setNearbyRules] = useState<any[]>([]);
@@ -934,14 +935,16 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                         remainingTime={remainingTime}
                         remainingDistance={remainingDistance}
                         destination={selectedDestination.name}
+                        destinationCoords={{ lat: selectedDestination.latitude, lng: selectedDestination.longitude }}
                         onReportPress={() => setShowReportOptions(true)}
-                        onVoiceReportPress={() => showToast.info(t('coming-soon'), 'Voice Report')}
                         onExitPress={handleStopNavigation}
                         isOffRoute={isOffRoute}
                         isRecalculating={isRecalculating}
                         onTestOffRoute={() => simulateOffRoute(setUserLocation)}
                         showRecenterButton={hasUserZoomedOut}
                         onRecenter={handleRecenter}
+                        currentSpeed={currentSpeed}
+                        activeRule={activeRuleAlert}
                     />
                 </>
             )}

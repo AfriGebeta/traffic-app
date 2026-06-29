@@ -119,7 +119,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                 <View className="absolute -right-0.5" style={{ top: '100%' }}>
                     <View
                         style={{
-                            backgroundColor: '#1E5438',
+                            backgroundColor: '#fff',
                             borderTopLeftRadius: 0,
                             borderTopRightRadius: 0,
                             borderBottomLeftRadius: 12,
@@ -131,8 +131,8 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                             gap: 6,
                         }}
                     >
-                        <Ionicons name={nextDirectionIcon} size={12} color="rgba(255,255,255,0.7)" />
-                        <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 }} numberOfLines={1}>
+                        <Ionicons name={nextDirectionIcon} size={12} color="#1E5438" />
+                        <Text style={{ color: '#1E5438', fontSize: 12 }} numberOfLines={1}>
                             then {nextInstruction.toLowerCase()}
                         </Text>
                     </View>

@@ -34,6 +34,7 @@ export const useNavigation = (
     const [remainingDistance, setRemainingDistance] = useState<number>(0);
     const [remainingTime, setRemainingTime] = useState<number>(0);
 
+    const [currentSpeed, setCurrentSpeed] = useState<number>(0);
     const [isOffRoute, setIsOffRoute] = useState(false);
     const [isRecalculating, setIsRecalculating] = useState(false);
     const [routeGeoJSON, setRouteGeoJSON] = useState<any>(null);
@@ -122,6 +123,7 @@ export const useNavigation = (
 
         setIsOffRoute,
         setIsRecalculating,
+        setCurrentSpeed,
         updateInstructionBasedOnPosition,
         recalculateRoute: (fromLocation?: { lat: number; lng: number }) => recalculateRoute(fromLocation),
         rerouteTimeout,
@@ -660,6 +662,7 @@ export const useNavigation = (
         nextInstruction,
         remainingDistance,
         remainingTime,
+        currentSpeed,
         isOffRoute,
         isRecalculating,
 

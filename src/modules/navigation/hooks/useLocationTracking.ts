@@ -23,6 +23,7 @@ interface UseLocationTrackingProps {
     totalRouteDuration: number;
     routeManeuversRef?: React.MutableRefObject<any[]>;
     currentManeuverIndexRef?: React.MutableRefObject<number>;
+    setCurrentSpeed?: (speed: number) => void;
     // Taxi-specific
     taxiSegments?: Array<{
         polyline: string;
@@ -65,6 +66,7 @@ export const useLocationTracking = ({
     routeManeuversRef,
 
     currentManeuverIndexRef,
+    setCurrentSpeed,
     taxiSegments,
     setSegmentedRoutes,
     updateNavigationState,
@@ -110,6 +112,10 @@ export const useLocationTracking = ({
 
             locationCallbackRef.current = (location: Location.LocationObject) => {
                 const { latitude, longitude, heading, speed } = location.coords;
+
+                if (speed !== null && speed >= 0) {
+                    setCurrentSpeed?.(Math.round(speed * 3.6)); // m/s → km/h
+                }
 
                 let displayLat = latitude;
                 let displayLng = longitude;

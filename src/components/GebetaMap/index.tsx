@@ -588,9 +588,28 @@ const AnimatedNavLayer = memo(({
                 />
             )}
             {isNavigating && lineShape && (
-                <MapLibreGL.ShapeSource id="route-nav-animated-source" shape={lineShape}>
-                    <MapLibreGL.LineLayer id="route-nav-animated-layer" style={routeLineStyle} />
-                </MapLibreGL.ShapeSource>
+                <>
+                    <MapLibreGL.ShapeSource id="route-nav-casing-source" shape={lineShape}>
+                        <MapLibreGL.LineLayer
+                            id="route-nav-casing-layer"
+                            belowLayerID="nav-marker-layer"
+                            style={{
+                                lineColor: '#1e3a8a',
+                                lineWidth: (routeLineStyle.lineWidth ?? 16) + 4,
+                                lineOpacity: 0.5,
+                                lineCap: 'round',
+                                lineJoin: 'round',
+                            }}
+                        />
+                    </MapLibreGL.ShapeSource>
+                    <MapLibreGL.ShapeSource id="route-nav-animated-source" shape={lineShape}>
+                        <MapLibreGL.LineLayer
+                            id="route-nav-animated-layer"
+                            belowLayerID="nav-marker-layer"
+                            style={{ ...routeLineStyle, lineOpacity: 1 }}
+                        />
+                    </MapLibreGL.ShapeSource>
+                </>
             )}
             <NavigationMarker
                 lat={render.lat}
@@ -1024,6 +1043,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             return () => cancelAnimationFrame(frameId);
         }, [navCameraFree, isNavigating, applyRecenterFlyTo]);
 
+        const NAV_LINE_COLOR = '#4285F4';
         const defaultRouteStyle = {
             color: routeStyle?.color || '#1D4ED8',
             width: 9,
@@ -1530,7 +1550,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             isNavigating={!!isNavigating}
                             routeGeoJSON={routeGeoJSON ?? null}
                             routeLineStyle={{
-                                lineColor: defaultRouteStyle.color,
+                                lineColor: NAV_LINE_COLOR,
                                 lineWidth: routeStyle?.isDotted ? 6 : defaultRouteStyle.navWidth,
                                 lineOpacity: 0.6,
                                 lineCap: 'round',
