@@ -10,6 +10,7 @@ import { useSimulation } from './useSimulation';
 import { useLocationTracking } from './useLocationTracking';
 import { useRouteRecalculation } from './useRouteRecalculation';
 import { useVoiceInstructions } from './useVoiceInstructions';
+import { startNavService, stopNavService, updateNavNotification } from '../services/nav-foreground-service';
 import { calculateBearing, calculateDistance, updateInstructionBasedOnPosition as updateInstruction } from '../utils/navigationUtils';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 
@@ -550,6 +551,7 @@ export const useNavigation = (
                 showToast.info('Navigation Started', 'GPS simulation is running for testing');
             } else {
                 startLocationTracking();
+                void startNavService(currentInstruction || 'Navigating…');
             }
 
         } catch (error: any) {
@@ -574,6 +576,7 @@ export const useNavigation = (
 
         stopLocationTracking();
         stopSimulation();
+        void stopNavService();
 
         // Clear reroute timeout
         if (rerouteTimeout.current) {
@@ -637,12 +640,24 @@ export const useNavigation = (
         return () => {
             stopLocationTracking();
             stopSimulation();
+            void stopNavService();
 
             if (rerouteTimeout.current) {
                 clearTimeout(rerouteTimeout.current);
             }
         };
     }, [stopLocationTracking, stopSimulation]);
+
+    useEffect(() => {
+        if (!navigationMode) return;
+        const distanceText = remainingDistance >= 1000
+            ? `${(remainingDistance / 1000).toFixed(1)} km`
+            : `${Math.round(remainingDistance / 10) * 10} m`;
+        const minutes = Math.max(1, Math.round(remainingTime / 60));
+        const summary = `${distanceText} · ${minutes} min`;
+        const body = currentInstruction ? `${currentInstruction} · ${summary}` : summary;
+        void updateNavNotification(body);
+    }, [navigationMode, currentInstruction, remainingDistance, remainingTime]);
 
     return {
         selectedDestination,

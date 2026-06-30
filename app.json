@@ -29,7 +29,8 @@
       "package": "co.gebeta.apps.android.maps",
       "softwareKeyboardLayoutMode": "resize",
       "permissions": [
-        "RECORD_AUDIO"
+        "RECORD_AUDIO",
+        "POST_NOTIFICATIONS"
       ],
       "splash": {
         "image": "./assets/images/gebetamaps.png",
@@ -90,6 +91,14 @@
         }
       ],
       "@maplibre/maplibre-react-native",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Gebeta Maps uses your location to show your position and provide turn-by-turn navigation.",
+          "isAndroidBackgroundLocationEnabled": false,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
       "expo-secure-store",
       "@react-native-firebase/app",
       "@react-native-firebase/app-check"

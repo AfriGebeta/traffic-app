@@ -8,7 +8,7 @@ import { IncidentFiltersProvider } from '../modules/incidents/context/IncidentFi
 import { LocationProvider } from '../shared/contexts/LocationContext';
 import { useEffect } from 'react';
 import * as NavigationBar from 'expo-navigation-bar';
-import { Platform } from 'react-native';
+import { Platform, PermissionsAndroid } from 'react-native';
 import { useTelegramDeepLink } from '../shared/hooks/useTelegramDeepLink';
 import { useRemoteConfig, RemoteConfigProvider } from '../shared/contexts/RemoteConfigContext';
 import { initializeAppCheckSingleton } from '../shared/utils/appCheck';
@@ -16,6 +16,8 @@ import { ForceUpdateModal } from '../components/ForceUpdateModal';
 import telemetryApiService from '../shared/services/telemetry-api.service';
 import './globals.css';
 import '../shared/utils/localization/i18n';
+
+import '../modules/navigation/services/nav-foreground-service';
 
 function AppShell() {
   useTelegramDeepLink();
@@ -32,6 +34,14 @@ function AppShell() {
     }
 
     telemetryApiService.trackAppLaunch();
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS === 'android' && Number(Platform.Version) >= 33) {
+      PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
+      ).catch(() => undefined);
+    }
   }, []);
 
   return (
