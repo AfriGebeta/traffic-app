@@ -9,7 +9,7 @@ import React, {
 } from 'react';
 import * as Location from 'expo-location';
 
-export type UserLocationCoords = { lat: number; lng: number; accuracy?: number };
+export type UserLocationCoords = { lat: number; lng: number; accuracy?: number; speed?: number };
 
 interface UserLocationContextValue {
     userLocation: UserLocationCoords | null;

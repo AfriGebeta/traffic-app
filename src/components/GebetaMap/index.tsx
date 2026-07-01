@@ -12,8 +12,8 @@ import {
     headingAtDistance,
     sliceFromDistance,
     snapToRouteDistance,
-    findCorners,
     calculateDistance,
+    calculateBearing,
 } from '../../modules/navigation/utils/navigationUtils';
 
 const MAPPIN_IMAGE = require('../../../assets/images/Mappin.png');
@@ -76,7 +76,7 @@ interface ExtendedGebetaMapProps extends Omit<GebetaMapProps, 'center'> {
         isDotted?: boolean;
     };
     isNavigating?: boolean;
-    userLocation?: { lat: number; lng: number; accuracy?: number } | null;
+    userLocation?: { lat: number; lng: number; accuracy?: number; speed?: number } | null;
     userHeading?: number;
     showUserLocationMarker?: boolean;
     onUserInteraction?: () => void;
@@ -268,7 +268,7 @@ AnimatedSegmentedRoutes.displayName = 'AnimatedSegmentedRoutes';
 
 
 interface AnimatedNavLayerProps {
-    userLocation: { lat: number; lng: number; accuracy?: number } | null;
+    userLocation: { lat: number; lng: number; accuracy?: number; speed?: number } | null;
     isNavigating: boolean;
     routeGeoJSON: any;
     routeLineStyle: any;
@@ -280,17 +280,19 @@ interface AnimatedNavLayerProps {
 }
 
 
-const NAV_RENDER_MS = 33;
-const NAV_CAMERA_MS = 40;
+const NAV_LINE_MS = 33; 
+const NAV_CAMERA_MS = 0;
 const NAV_CAMERA_LOOKAHEAD_M = 35;
 
-const NAV_HEADING_FILTER = 0.15;
-const NAV_POS_SMOOTH = 0.12;
-const NAV_SPEED_SMOOTH = 0.6; 
-const NAV_SETTLE_SMOOTH = 0.04; 
-const NAV_MAX_PREDICT_S = 7;
-const NAV_CORNER_ANGLE = 25;
-const NAV_CORNER_BUFFER_M = 4;
+const NAV_HEADING_TAU = 0.10;  
+const NAV_POS_TAU = 0.19;  
+const NAV_SETTLE_TAU = 0.40; 
+const NAV_FREE_TAU = 0.072;  
+const NAV_DT_CLAMP_S = 0.1;   
+const NAV_HEADING_LOOKAHEAD = 25;  
+                             
+const NAV_SPEED_SMOOTH = 0.3;
+const NAV_SNAP_BACK_TOLERANCE_M = 2; 
 const NAV_UNSNAP_M = 14;
 const NAV_RESNAP_M = 12;
 
@@ -298,8 +300,7 @@ const NAV_UNSNAP_ACC_FACTOR = 1.5;
 const NAV_UNSNAP_DEBOUNCE_MS = 3000;
 const NAV_UNSNAP_HEADING_ANGLE = 70;  
 const NAV_UNSNAP_HEADING_MIN_DIST = 8;  
-const NAV_UNSNAP_HEADING_MIN_MOVE = 8; 
-const NAV_FREE_SMOOTH = 0.2;  
+const NAV_UNSNAP_HEADING_MIN_MOVE = 8;
 const NAV_ZOOM = 19;
 
 const angleDiff = (a: number, b: number) => {
@@ -327,12 +328,8 @@ const AnimatedNavLayer = memo(({
         [coords]
     );
 
-    const corners = useMemo(
-        () => (coords && cum ? findCorners(coords, cum, NAV_CORNER_ANGLE) : []),
-        [coords, cum]
-    );
-
-    const [render, setRender] = useState({ lat: 0, lng: 0, heading: 0, s: 0 });
+    const [render, setRender] = useState({ lat: 0, lng: 0, heading: 0 });
+    const [lineS, setLineS] = useState(0);
 
     const renderedSRef = useRef(0);
     const vRef = useRef(0);
@@ -356,9 +353,9 @@ const AnimatedNavLayer = memo(({
         vRef.current = 0;
         freeRoamRef.current = false;
         lastOnRouteSRef.current = 0;
-
         unsnapStartRef.current = null;
         prevRawRef.current = null;
+        setLineS(0);
     }, [coords]);
 
     useEffect(() => {
@@ -381,17 +378,23 @@ const AnimatedNavLayer = memo(({
             searchWindow
         );
 
+        const prevFixS = lastFixRef.current?.s;
+        const routeS = prevFixS != null
+            ? Math.max(snappedS, prevFixS - NAV_SNAP_BACK_TOLERANCE_M)
+            : snappedS;
+
         if (firstRef.current) {
             firstRef.current = false;
             freeRoamRef.current = false;
-            renderedSRef.current = snappedS;
-            lastOnRouteSRef.current = snappedS;
-            vRef.current = 0;
-            headingRef.current = headingAtDistance(coords, cum, snappedS);
-            lastFixRef.current = { s: snappedS, t: now };
+            renderedSRef.current = routeS;
+            lastOnRouteSRef.current = routeS;
+            vRef.current = userLocation.speed != null && userLocation.speed >= 0 ? userLocation.speed : 0;
+            headingRef.current = headingAtDistance(coords, cum, routeS);
+            lastFixRef.current = { s: routeS, t: now };
             prevRawRef.current = { lat: userLocation.lat, lng: userLocation.lng };
-            const [lng0, lat0] = pointAtDistance(coords, cum, snappedS);
-            setRender({ lat: lat0, lng: lng0, heading: headingRef.current, s: snappedS });
+            const [lng0, lat0] = pointAtDistance(coords, cum, routeS);
+            setRender({ lat: lat0, lng: lng0, heading: headingRef.current });
+            setLineS(routeS);
             return;
         }
 
@@ -409,7 +412,7 @@ const AnimatedNavLayer = memo(({
                 const moved = calculateDistance(prev.lat, prev.lng, userLocation.lat, userLocation.lng);
                 if (moved > NAV_UNSNAP_HEADING_MIN_MOVE) {
                     const travel = calcBearing(prev, { lat: userLocation.lat, lng: userLocation.lng });
-                    const routeB = headingAtDistance(coords, cum, snappedS);
+                    const routeB = headingAtDistance(coords, cum, routeS);
                     let dh = Math.abs(travel - routeB);
                     if (dh > 180) dh = 360 - dh;
                     headingOff = dh > NAV_UNSNAP_HEADING_ANGLE;
@@ -435,24 +438,27 @@ const AnimatedNavLayer = memo(({
         } else if (freeRoamRef.current) {
             freeRoamRef.current = false;
             unsnapStartRef.current = null;
-            renderedSRef.current = snappedS;
-            vRef.current = 0;
-            lastFixRef.current = { s: snappedS, t: now };
-            lastOnRouteSRef.current = snappedS;
+            renderedSRef.current = routeS;
+            vRef.current = userLocation.speed != null && userLocation.speed >= 0 ? userLocation.speed : 0;
+            lastFixRef.current = { s: routeS, t: now };
+            lastOnRouteSRef.current = routeS;
         } else {
             unsnapStartRef.current = null;
             const prev = lastFixRef.current!;
             const dt = Math.max(0.001, (now - prev.t) / 1000);
-            let measured = (snappedS - prev.s) / dt;
+            let measured = (routeS - prev.s) / dt;
             if (measured < 0) measured = 0;
-            vRef.current = vRef.current * (1 - NAV_SPEED_SMOOTH) + measured * NAV_SPEED_SMOOTH;
+            const speedSample = userLocation.speed != null && userLocation.speed >= 0
+                ? userLocation.speed
+                : measured;
+            vRef.current = vRef.current * (1 - NAV_SPEED_SMOOTH) + speedSample * NAV_SPEED_SMOOTH;
             if (vRef.current < 0.5) vRef.current = 0;
-            lastFixRef.current = { s: snappedS, t: now };
-            lastOnRouteSRef.current = snappedS;
+            lastFixRef.current = { s: routeS, t: now };
+            lastOnRouteSRef.current = routeS;
         }
 
         prevRawRef.current = { lat: userLocation.lat, lng: userLocation.lng };
-    }, [userLocation?.lat, userLocation?.lng, isNavigating, useRouteModel, coords, cum]);
+    }, [userLocation?.lat, userLocation?.lng, userLocation?.speed, isNavigating, useRouteModel, coords, cum]);
 
     useEffect(() => {
         if (!isNavigating) {
@@ -461,11 +467,18 @@ const AnimatedNavLayer = memo(({
         }
 
         let rafId: number;
-        let lastEmit = 0;
-        let lastCam = 0;
+        let lastLine = 0;
+        let lastTick = 0;
 
         const tick = () => {
             const now = Date.now();
+            const dt = lastTick ? Math.min((now - lastTick) / 1000, NAV_DT_CLAMP_S) : 0.016;
+            lastTick = now;
+            const posAlpha = 1 - Math.exp(-dt / NAV_POS_TAU);
+            const settleAlpha = 1 - Math.exp(-dt / NAV_SETTLE_TAU);
+            const headAlpha = 1 - Math.exp(-dt / NAV_HEADING_TAU);
+            const freeAlpha = 1 - Math.exp(-dt / NAV_FREE_TAU);
+
             let lat: number, lng: number, heading: number, s: number;
 
             let freeRoaming = false;
@@ -473,16 +486,15 @@ const AnimatedNavLayer = memo(({
             if (!useRouteModel || !coords || !cum) {
                 const cur = taxiCurRef.current;
                 const to = taxiToRef.current;
-                const ALPHA = 0.2;
-                lat = cur.lat + (to.lat - cur.lat) * ALPHA;
-                lng = cur.lng + (to.lng - cur.lng) * ALPHA;
+                lat = cur.lat + (to.lat - cur.lat) * freeAlpha;
+                lng = cur.lng + (to.lng - cur.lng) * freeAlpha;
                 taxiCurRef.current = { lat, lng };
                 if (Math.abs(to.lat - lat) > 1e-6 || Math.abs(to.lng - lng) > 1e-6) {
                     const raw = calcBearing({ lat, lng }, to);
                     let diff = raw - headingRef.current;
                     if (diff > 180) diff -= 360;
                     if (diff < -180) diff += 360;
-                    headingRef.current += diff * NAV_HEADING_FILTER;
+                    headingRef.current += diff * headAlpha;
                 }
                 heading = headingRef.current;
                 s = 0;
@@ -490,15 +502,15 @@ const AnimatedNavLayer = memo(({
                 freeRoaming = true;
                 const cur = freeCurRef.current;
                 const to = freeTargetRef.current;
-                lat = cur.lat + (to.lat - cur.lat) * NAV_FREE_SMOOTH;
-                lng = cur.lng + (to.lng - cur.lng) * NAV_FREE_SMOOTH;
+                lat = cur.lat + (to.lat - cur.lat) * freeAlpha;
+                lng = cur.lng + (to.lng - cur.lng) * freeAlpha;
                 freeCurRef.current = { lat, lng };
                 if (Math.abs(to.lat - lat) > 1e-6 || Math.abs(to.lng - lng) > 1e-6) {
                     const raw = calcBearing({ lat, lng }, to);
                     let diff = raw - headingRef.current;
                     if (diff > 180) diff -= 360;
                     if (diff < -180) diff += 360;
-                    headingRef.current += diff * NAV_HEADING_FILTER;
+                    headingRef.current += diff * headAlpha;
                 }
                 heading = headingRef.current;
                 s = lastOnRouteSRef.current;
@@ -506,26 +518,15 @@ const AnimatedNavLayer = memo(({
                 const total = cum[cum.length - 1];
                 const fix = lastFixRef.current;
 
-                const elapsed = fix ? Math.min((now - fix.t) / 1000, NAV_MAX_PREDICT_S) : 0;
-                let target = fix
+                const elapsed = fix ? Math.min((now - fix.t) / 1000, 1.0) : 0;
+                const target = fix
                     ? Math.min(fix.s + vRef.current * elapsed, total)
                     : renderedSRef.current;
 
-                if (fix && corners.length > 0) {
-                    let nextCorner = Infinity;
-                    for (let i = 0; i < corners.length; i++) {
-                        if (corners[i] > fix.s) { nextCorner = corners[i]; break; }
-                    }
-                    if (nextCorner !== Infinity) {
-                        const cap = Math.max(nextCorner - NAV_CORNER_BUFFER_M, fix.s);
-                        target = Math.min(target, cap);
-                    }
-                }
-
-                let newS = renderedSRef.current + (target - renderedSRef.current) * NAV_POS_SMOOTH;
+                let newS = renderedSRef.current + (target - renderedSRef.current) * posAlpha;
                 if (newS < renderedSRef.current) {
                     newS = vRef.current < 0.5
-                        ? renderedSRef.current + (target - renderedSRef.current) * NAV_SETTLE_SMOOTH
+                        ? renderedSRef.current + (target - renderedSRef.current) * settleAlpha
                         : renderedSRef.current;
                 }
                 s = newS;
@@ -533,21 +534,24 @@ const AnimatedNavLayer = memo(({
                 const pt = pointAtDistance(coords, cum, s);
                 lng = pt[0];
                 lat = pt[1];
-                const rawH = headingAtDistance(coords, cum, s);
+                const aheadPt = pointAtDistance(coords, cum, s + NAV_HEADING_LOOKAHEAD);
+                const rawH = (Math.abs(aheadPt[0] - pt[0]) > 1e-7 || Math.abs(aheadPt[1] - pt[1]) > 1e-7)
+                    ? calculateBearing(pt, aheadPt)
+                    : headingAtDistance(coords, cum, s);
                 let diff = rawH - headingRef.current;
                 if (diff > 180) diff -= 360;
                 if (diff < -180) diff += 360;
-                headingRef.current += diff * NAV_HEADING_FILTER;
+                headingRef.current += diff * headAlpha;
                 heading = headingRef.current;
             }
 
-            if (now - lastEmit >= NAV_RENDER_MS) {
-                lastEmit = now;
-                setRender({ lat, lng, heading, s });
+            setRender({ lat, lng, heading });
+            if (now - lastLine >= NAV_LINE_MS) {
+                lastLine = now;
+                setLineS(s);
             }
 
-            if (moveCamera && now - lastCam >= NAV_CAMERA_MS) {
-                lastCam = now;
+            if (moveCamera) {
                 const camCenter: [number, number] = (useRouteModel && coords && cum && !freeRoaming)
                     ? pointAtDistance(coords, cum, s + NAV_CAMERA_LOOKAHEAD_M)
                     : [lng, lat];
@@ -559,7 +563,7 @@ const AnimatedNavLayer = memo(({
 
         rafId = requestAnimationFrame(tick);
         return () => cancelAnimationFrame(rafId);
-    }, [isNavigating, useRouteModel, coords, cum, corners, moveCamera]);
+    }, [isNavigating, useRouteModel, coords, cum, moveCamera]);
 
     const lineShape = useMemo(() => {
         if (!useRouteModel || !coords || !cum) return null;
@@ -568,10 +572,10 @@ const AnimatedNavLayer = memo(({
             properties: {},
             geometry: {
                 type: 'LineString' as const,
-                coordinates: sliceFromDistance(coords, cum, render.s),
+                coordinates: sliceFromDistance(coords, cum, lineS),
             },
         };
-    }, [useRouteModel, coords, cum, render.s]);
+    }, [useRouteModel, coords, cum, lineS]);
 
     return (
         <>
@@ -584,9 +588,28 @@ const AnimatedNavLayer = memo(({
                 />
             )}
             {isNavigating && lineShape && (
-                <MapLibreGL.ShapeSource id="route-nav-animated-source" shape={lineShape}>
-                    <MapLibreGL.LineLayer id="route-nav-animated-layer" style={routeLineStyle} />
-                </MapLibreGL.ShapeSource>
+                <>
+                    <MapLibreGL.ShapeSource id="route-nav-casing-source" shape={lineShape}>
+                        <MapLibreGL.LineLayer
+                            id="route-nav-casing-layer"
+                            belowLayerID="nav-marker-layer"
+                            style={{
+                                lineColor: '#1e3a8a',
+                                lineWidth: (routeLineStyle.lineWidth ?? 16) + 4,
+                                lineOpacity: 0.5,
+                                lineCap: 'round',
+                                lineJoin: 'round',
+                            }}
+                        />
+                    </MapLibreGL.ShapeSource>
+                    <MapLibreGL.ShapeSource id="route-nav-animated-source" shape={lineShape}>
+                        <MapLibreGL.LineLayer
+                            id="route-nav-animated-layer"
+                            belowLayerID="nav-marker-layer"
+                            style={{ ...routeLineStyle, lineOpacity: 1 }}
+                        />
+                    </MapLibreGL.ShapeSource>
+                </>
             )}
             <NavigationMarker
                 lat={render.lat}
@@ -1020,9 +1043,11 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             return () => cancelAnimationFrame(frameId);
         }, [navCameraFree, isNavigating, applyRecenterFlyTo]);
 
+        const NAV_LINE_COLOR = '#4285F4';
         const defaultRouteStyle = {
-            color: routeStyle?.color || '#3B82F6',
+            color: routeStyle?.color || '#1D4ED8',
             width: 9,
+            navWidth: 16,
             opacity: routeStyle?.opacity || 0.8,
         };
 
@@ -1525,8 +1550,8 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             isNavigating={!!isNavigating}
                             routeGeoJSON={routeGeoJSON ?? null}
                             routeLineStyle={{
-                                lineColor: defaultRouteStyle.color,
-                                lineWidth: routeStyle?.isDotted ? 6 : defaultRouteStyle.width,
+                                lineColor: NAV_LINE_COLOR,
+                                lineWidth: routeStyle?.isDotted ? 6 : defaultRouteStyle.navWidth,
                                 lineOpacity: 0.6,
                                 lineCap: 'round',
                                 lineJoin: 'round',

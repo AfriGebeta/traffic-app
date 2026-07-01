@@ -99,7 +99,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
         <View className="absolute left-4 right-4" style={{ top: insets.top + (hasIncidentAlert ? 112 : 18) }}>
             <View
                 style={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.75)',
+                    backgroundColor: '#1E5438',
                     borderTopLeftRadius: 20,
                     borderTopRightRadius: 20,
                     borderBottomLeftRadius: 20,
@@ -107,10 +107,10 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                     padding: 20,
                 }}
             >
-                <Text className="text-gray-900 text-3xl font-bold mb-1">
+                <Text className="text-white text-3xl font-bold mb-1">
                     {currentInstruction || 'Go straight ahead'}
                 </Text>
-                <Text className="text-gray-500 text-base">
+                <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 16 }}>
                     for {remainingDistance !== undefined ? formatDistance(remainingDistance) : formatDistance(distance * 1000)}
                 </Text>
             </View>
@@ -119,7 +119,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                 <View className="absolute -right-0.5" style={{ top: '100%' }}>
                     <View
                         style={{
-                            backgroundColor: 'rgba(255, 255, 255, 0.75)',
+                            backgroundColor: '#fff',
                             borderTopLeftRadius: 0,
                             borderTopRightRadius: 0,
                             borderBottomLeftRadius: 12,
@@ -131,8 +131,8 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                             gap: 6,
                         }}
                     >
-                        <Ionicons name={nextDirectionIcon} size={12} color="#9CA3AF" />
-                        <Text className="text-gray-500 text-xs" numberOfLines={1}>
+                        <Ionicons name={nextDirectionIcon} size={12} color="#1E5438" />
+                        <Text style={{ color: '#1E5438', fontSize: 12 }} numberOfLines={1}>
                             then {nextInstruction.toLowerCase()}
                         </Text>
                     </View>

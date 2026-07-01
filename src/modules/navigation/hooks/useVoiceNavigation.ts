@@ -5,6 +5,7 @@ import { voiceNavigationService } from '../services/voice-navigation.service';
 import { ttsService } from '../services/tts.service';
 import { showToast } from '../../../shared/utils/toast';
 import { generateSessionId } from '../../../shared/utils/session';
+import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 import type { VoiceNavigationData, NavigationOption } from '../types/voice-navigation.types';
 import type { GeocodingPlace } from '../types/navigation.types';
@@ -236,7 +237,7 @@ export const useVoiceNavigation = ({
     };
 
     const handleVoicePress = async () => {
-
+        dashboardEventsService.voiceSession();
         setShowVoiceModal(true);
     };
 

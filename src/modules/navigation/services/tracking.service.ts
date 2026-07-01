@@ -114,7 +114,8 @@ class NavigationTrackingService {
             });
 
             if (!response.ok) {
-                throw new Error(`Sync failed: ${response.status}`);
+                const body = await response.text().catch(() => '');
+                throw new Error(`Sync failed: ${response.status} ${body}`);
             }
 
             await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([]));
@@ -122,6 +123,7 @@ class NavigationTrackingService {
 
             return true;
         } catch (error) {
+            console.error('tracking: syncNavigationHistory failed:', error);
             return false;
         }
     }

@@ -10,6 +10,8 @@ import { useSimulation } from './useSimulation';
 import { useLocationTracking } from './useLocationTracking';
 import { useRouteRecalculation } from './useRouteRecalculation';
 import { useVoiceInstructions } from './useVoiceInstructions';
+import { startNavService, stopNavService, updateNavNotification } from '../services/nav-foreground-service';
+import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import { calculateBearing, calculateDistance, updateInstructionBasedOnPosition as updateInstruction } from '../utils/navigationUtils';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 
@@ -28,10 +30,13 @@ export const useNavigation = (
     const [showRoutePreview, setShowRoutePreview] = useState(false);
     const [currentHeading, setCurrentHeading] = useState(0);
     const [simulateMovement, setSimulateMovement] = useState(false);
+
     const [currentInstruction, setCurrentInstruction] = useState<string>('');
     const [nextInstruction, setNextInstruction] = useState<string>('');
     const [remainingDistance, setRemainingDistance] = useState<number>(0);
     const [remainingTime, setRemainingTime] = useState<number>(0);
+
+    const [currentSpeed, setCurrentSpeed] = useState<number>(0);
     const [isOffRoute, setIsOffRoute] = useState(false);
     const [isRecalculating, setIsRecalculating] = useState(false);
     const [routeGeoJSON, setRouteGeoJSON] = useState<any>(null);
@@ -120,6 +125,7 @@ export const useNavigation = (
 
         setIsOffRoute,
         setIsRecalculating,
+        setCurrentSpeed,
         updateInstructionBasedOnPosition,
         recalculateRoute: (fromLocation?: { lat: number; lng: number }) => recalculateRoute(fromLocation),
         rerouteTimeout,
@@ -148,6 +154,7 @@ export const useNavigation = (
         setIsOffRoute,
         setIsNavigating,
         isNavigatingRef,
+        
         setRemainingDistance,
         setRemainingTime,
         setCurrentInstruction,
@@ -281,6 +288,7 @@ export const useNavigation = (
             };
 
             setRouteGeoJSON(geoJSON);
+            dashboardEventsService.routeGenerated();
 
             setShowRoutePreview(true);
             setIsNavigating(false);
@@ -545,6 +553,7 @@ export const useNavigation = (
                 showToast.info('Navigation Started', 'GPS simulation is running for testing');
             } else {
                 startLocationTracking();
+                void startNavService(currentInstruction || 'Navigating…');
             }
 
         } catch (error: any) {
@@ -569,6 +578,7 @@ export const useNavigation = (
 
         stopLocationTracking();
         stopSimulation();
+        void stopNavService();
 
         // Clear reroute timeout
         if (rerouteTimeout.current) {
@@ -610,6 +620,7 @@ export const useNavigation = (
         setRouteManeuversList([]);
         setRouteLegs([]);
         routeManeuvers.current = [];
+
         setCurrentInstruction('');
         setRemainingDistance(0);
         setRemainingTime(0);
@@ -631,12 +642,24 @@ export const useNavigation = (
         return () => {
             stopLocationTracking();
             stopSimulation();
+            void stopNavService();
 
             if (rerouteTimeout.current) {
                 clearTimeout(rerouteTimeout.current);
             }
         };
     }, [stopLocationTracking, stopSimulation]);
+
+    useEffect(() => {
+        if (!navigationMode) return;
+        const distanceText = remainingDistance >= 1000
+            ? `${(remainingDistance / 1000).toFixed(1)} km`
+            : `${Math.round(remainingDistance / 10) * 10} m`;
+        const minutes = Math.max(1, Math.round(remainingTime / 60));
+        const summary = `${distanceText} · ${minutes} min`;
+        const body = currentInstruction ? `${currentInstruction} · ${summary}` : summary;
+        void updateNavNotification(body);
+    }, [navigationMode, currentInstruction, remainingDistance, remainingTime]);
 
     return {
         selectedDestination,
@@ -651,12 +674,15 @@ export const useNavigation = (
         currentHeading,
         simulateMovement,
         setSimulateMovement,
+
         currentInstruction,
         nextInstruction,
         remainingDistance,
         remainingTime,
+        currentSpeed,
         isOffRoute,
         isRecalculating,
+
         showArrivalModal,
         setShowArrivalModal,
         currentCosting,
