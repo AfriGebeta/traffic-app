@@ -280,18 +280,18 @@ interface AnimatedNavLayerProps {
 }
 
 
-const NAV_LINE_MS = 33; 
+const NAV_LINE_MS = 33;
+const NAV_RENDER_MS = 0;
 const NAV_CAMERA_MS = 0;
-const NAV_CAMERA_LOOKAHEAD_M = 35;
+const NAV_CAMERA_LOOKAHEAD_M = 45;
 
-const NAV_HEADING_TAU = 0.10;  
-const NAV_POS_TAU = 0.19;  
-const NAV_SETTLE_TAU = 0.40; 
-const NAV_FREE_TAU = 0.072;  
+const NAV_HEADING_TAU = 0.10;
+const NAV_V_SMOOTH = 0.35;
+const NAV_CORR_TAU = 0.6;
+const NAV_FREE_TAU = 0.072;
 const NAV_DT_CLAMP_S = 0.1;   
 const NAV_HEADING_LOOKAHEAD = 25;  
                              
-const NAV_SPEED_SMOOTH = 0.3;
 const NAV_SNAP_BACK_TOLERANCE_M = 2; 
 const NAV_UNSNAP_M = 14;
 const NAV_RESNAP_M = 12;
@@ -301,7 +301,7 @@ const NAV_UNSNAP_DEBOUNCE_MS = 3000;
 const NAV_UNSNAP_HEADING_ANGLE = 70;  
 const NAV_UNSNAP_HEADING_MIN_DIST = 8;  
 const NAV_UNSNAP_HEADING_MIN_MOVE = 8;
-const NAV_ZOOM = 19;
+const NAV_ZOOM = 18;
 
 const angleDiff = (a: number, b: number) => {
     let diff = Math.abs(a - b);
@@ -387,8 +387,8 @@ const AnimatedNavLayer = memo(({
             firstRef.current = false;
             freeRoamRef.current = false;
             renderedSRef.current = routeS;
-            lastOnRouteSRef.current = routeS;
             vRef.current = userLocation.speed != null && userLocation.speed >= 0 ? userLocation.speed : 0;
+            lastOnRouteSRef.current = routeS;
             headingRef.current = headingAtDistance(coords, cum, routeS);
             lastFixRef.current = { s: routeS, t: now };
             prevRawRef.current = { lat: userLocation.lat, lng: userLocation.lng };
@@ -445,14 +445,13 @@ const AnimatedNavLayer = memo(({
         } else {
             unsnapStartRef.current = null;
             const prev = lastFixRef.current!;
-            const dt = Math.max(0.001, (now - prev.t) / 1000);
-            let measured = (routeS - prev.s) / dt;
+            const dtFix = Math.max(0.001, (now - prev.t) / 1000);
+            let measured = (routeS - prev.s) / dtFix;
             if (measured < 0) measured = 0;
-            const speedSample = userLocation.speed != null && userLocation.speed >= 0
-                ? userLocation.speed
-                : measured;
-            vRef.current = vRef.current * (1 - NAV_SPEED_SMOOTH) + speedSample * NAV_SPEED_SMOOTH;
-            if (vRef.current < 0.5) vRef.current = 0;
+            if (measured > 60) measured = 60;
+            const sample = userLocation.speed != null && userLocation.speed >= 0 ? userLocation.speed : measured;
+            vRef.current = vRef.current * (1 - NAV_V_SMOOTH) + sample * NAV_V_SMOOTH;
+            if (vRef.current < 0.4) vRef.current = 0;
             lastFixRef.current = { s: routeS, t: now };
             lastOnRouteSRef.current = routeS;
         }
@@ -468,14 +467,14 @@ const AnimatedNavLayer = memo(({
 
         let rafId: number;
         let lastLine = 0;
+        let lastRender = 0;
+        let lastCam = 0;
         let lastTick = 0;
 
         const tick = () => {
             const now = Date.now();
             const dt = lastTick ? Math.min((now - lastTick) / 1000, NAV_DT_CLAMP_S) : 0.016;
             lastTick = now;
-            const posAlpha = 1 - Math.exp(-dt / NAV_POS_TAU);
-            const settleAlpha = 1 - Math.exp(-dt / NAV_SETTLE_TAU);
             const headAlpha = 1 - Math.exp(-dt / NAV_HEADING_TAU);
             const freeAlpha = 1 - Math.exp(-dt / NAV_FREE_TAU);
 
@@ -516,19 +515,15 @@ const AnimatedNavLayer = memo(({
                 s = lastOnRouteSRef.current;
             } else {
                 const total = cum[cum.length - 1];
+
                 const fix = lastFixRef.current;
+                const sinceFix = fix ? (now - fix.t) / 1000 : 0;
+                const targetS = fix ? Math.min(fix.s + vRef.current * sinceFix, total) : renderedSRef.current;
 
-                const elapsed = fix ? Math.min((now - fix.t) / 1000, 1.0) : 0;
-                const target = fix
-                    ? Math.min(fix.s + vRef.current * elapsed, total)
-                    : renderedSRef.current;
-
-                let newS = renderedSRef.current + (target - renderedSRef.current) * posAlpha;
-                if (newS < renderedSRef.current) {
-                    newS = vRef.current < 0.5
-                        ? renderedSRef.current + (target - renderedSRef.current) * settleAlpha
-                        : renderedSRef.current;
-                }
+                const corrAlpha = 1 - Math.exp(-dt / NAV_CORR_TAU);
+                let newS = renderedSRef.current + (targetS - renderedSRef.current) * corrAlpha;
+                if (newS < renderedSRef.current) newS = renderedSRef.current;   // never step backward
+                if (newS > total) newS = total;
                 s = newS;
                 renderedSRef.current = s;
                 const pt = pointAtDistance(coords, cum, s);
@@ -545,13 +540,17 @@ const AnimatedNavLayer = memo(({
                 heading = headingRef.current;
             }
 
-            setRender({ lat, lng, heading });
+            if (now - lastRender >= NAV_RENDER_MS) {
+                lastRender = now;
+                setRender({ lat, lng, heading });
+            }
             if (now - lastLine >= NAV_LINE_MS) {
                 lastLine = now;
                 setLineS(s);
             }
 
-            if (moveCamera) {
+            if (moveCamera && now - lastCam >= NAV_CAMERA_MS) {
+                lastCam = now;
                 const camCenter: [number, number] = (useRouteModel && coords && cum && !freeRoaming)
                     ? pointAtDistance(coords, cum, s + NAV_CAMERA_LOOKAHEAD_M)
                     : [lng, lat];

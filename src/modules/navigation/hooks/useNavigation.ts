@@ -143,6 +143,7 @@ export const useNavigation = (
         waypointsRef,
         routeCoordinates,
         routeManeuvers,
+        currentManeuverIndexRef: currentManeuverIndex,
         totalRouteDistance,
         totalRouteDuration,
         rerouteTimeout,
@@ -154,7 +155,7 @@ export const useNavigation = (
         setIsOffRoute,
         setIsNavigating,
         isNavigatingRef,
-        
+
         setRemainingDistance,
         setRemainingTime,
         setCurrentInstruction,
