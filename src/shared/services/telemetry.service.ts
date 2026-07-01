@@ -54,7 +54,7 @@ class TelemetryService {
   }
 
 
-  private async getDeviceId(): Promise<string> {
+  async getDeviceId(): Promise<string> {
     try {
       let deviceId = await AsyncStorage.getItem(DEVICE_ID_KEY);
       

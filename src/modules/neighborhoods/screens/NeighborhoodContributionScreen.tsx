@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { useNeighborhoodContribution } from '../hooks/useNeighborhoodContribution';
+import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import { BoundingBox } from '../types/neighborhood.types';
 import { colors } from '../../../shared/theme/colors';
 import { useLocalSearchParams } from 'expo-router';
@@ -98,6 +99,7 @@ export default function NeighborhoodContributionScreen() {
 
             await contributeNeighborhood(contributionData);
 
+            dashboardEventsService.contribute();
             showToast.success(t('success'), t('neighborhood-contribution-submitted'));
             router.back();
         } catch (error) {

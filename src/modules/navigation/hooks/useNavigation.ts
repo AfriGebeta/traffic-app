@@ -11,6 +11,7 @@ import { useLocationTracking } from './useLocationTracking';
 import { useRouteRecalculation } from './useRouteRecalculation';
 import { useVoiceInstructions } from './useVoiceInstructions';
 import { startNavService, stopNavService, updateNavNotification } from '../services/nav-foreground-service';
+import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import { calculateBearing, calculateDistance, updateInstructionBasedOnPosition as updateInstruction } from '../utils/navigationUtils';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 
@@ -287,6 +288,7 @@ export const useNavigation = (
             };
 
             setRouteGeoJSON(geoJSON);
+            dashboardEventsService.routeGenerated();
 
             setShowRoutePreview(true);
             setIsNavigating(false);

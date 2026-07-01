@@ -6,22 +6,26 @@ import { MapThemeProvider } from '../modules/map/context/MapThemeContext';
 import { UserLocationProvider } from '../modules/map/context/UserLocationContext';
 import { IncidentFiltersProvider } from '../modules/incidents/context/IncidentFiltersContext';
 import { LocationProvider } from '../shared/contexts/LocationContext';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import * as NavigationBar from 'expo-navigation-bar';
-import { Platform, PermissionsAndroid } from 'react-native';
+import { AppState, AppStateStatus, Platform, PermissionsAndroid } from 'react-native';
 import { useTelegramDeepLink } from '../shared/hooks/useTelegramDeepLink';
 import { useRemoteConfig, RemoteConfigProvider } from '../shared/contexts/RemoteConfigContext';
 import { initializeAppCheckSingleton } from '../shared/utils/appCheck';
 import { ForceUpdateModal } from '../components/ForceUpdateModal';
 import telemetryApiService from '../shared/services/telemetry-api.service';
+import { dashboardEventsService } from '../shared/services/dashboard-events.service';
 import './globals.css';
 import '../shared/utils/localization/i18n';
 
 import '../modules/navigation/services/nav-foreground-service';
 
+const BACKGROUND_IDLE_MS = 30 * 60 * 1000;
+
 function AppShell() {
   useTelegramDeepLink();
   const { updateRequired } = useRemoteConfig();
+  const backgroundedAtRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (Platform.OS === 'android') {
@@ -34,6 +38,27 @@ function AppShell() {
     }
 
     telemetryApiService.trackAppLaunch();
+
+    // cold start
+    dashboardEventsService.sessionStart();
+    void dashboardEventsService.installOnce();
+  }, []);
+
+  useEffect(() => {
+    const handleAppStateChange = (nextState: AppStateStatus) => {
+      if (nextState === 'background' || nextState === 'inactive') {
+        backgroundedAtRef.current = Date.now();
+      } else if (nextState === 'active') {
+        const backgroundedAt = backgroundedAtRef.current;
+        if (backgroundedAt !== null && Date.now() - backgroundedAt >= BACKGROUND_IDLE_MS) {
+          dashboardEventsService.sessionStart();
+        }
+        backgroundedAtRef.current = null;
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription.remove();
   }, []);
 
   useEffect(() => {

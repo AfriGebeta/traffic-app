@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Input, Button } from '../../../shared/components';
 import { ruleService } from '../services/rule.service';
 import { showToast } from '../../../shared/utils/toast';
+import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import { useLocation } from '../../../shared/contexts/LocationContext';
 import { useTranslation } from 'react-i18next';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
@@ -69,6 +70,7 @@ export default function AddRuleReportScreen() {
                 punishment: punishment.trim(),
             });
 
+            dashboardEventsService.contribute();
             showToast.success(t('success'), t('traffic-rule-report-submitted'));
             router.back();
             router.back();
