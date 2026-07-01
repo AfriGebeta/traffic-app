@@ -138,6 +138,10 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         setRouteOrigin,
         routeManeuversList,
         routeLegs,
+        allRouteOptions,
+        selectedRouteIndex,
+        alternativeRoutesGeoJSON,
+        handleSelectRoute,
         handleNavigate,
 
         handleStartNavigation,
@@ -862,6 +866,11 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 onMapClick={handleMapClick}
                 onMapLoaded={handleMapLoaded}
                 routeGeoJSON={isNavigationMinimized ? undefined : (taxiRouteData ? undefined : routeGeoJSON)}
+                alternativeRoutesGeoJSON={
+                    !isNavigationMinimized && !taxiRouteData && alternativeRoutesGeoJSON.length > 0
+                        ? alternativeRoutesGeoJSON
+                        : undefined
+                }
                 routeStyle={{
                     color: navigationMode ? '#3B82F6' : colors.primary.main,
                     width: 5,
@@ -1096,6 +1105,9 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     onOriginChange={handleOriginChange}
                     maneuvers={routeManeuversList}
                     onPreviewPress={handleOpenRoutePreview}
+                    routeOptions={allRouteOptions.length > 1 ? allRouteOptions.map(r => ({ distance: r.distance, duration: r.duration })) : undefined}
+                    selectedRouteIndex={selectedRouteIndex}
+                    onSelectRoute={handleSelectRoute}
                 />
             )}
 

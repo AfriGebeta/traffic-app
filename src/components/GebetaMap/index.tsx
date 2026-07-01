@@ -146,6 +146,7 @@ interface ExtendedGebetaMapProps extends Omit<GebetaMapProps, 'center'> {
         east: number;
         west: number;
     } | null;
+    alternativeRoutesGeoJSON?: any[];
 }
 
 
@@ -623,7 +624,7 @@ AnimatedNavLayer.displayName = 'AnimatedNavLayer';
 
 
 const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
-    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, boundingBox }, ref) => {
+    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, boundingBox, alternativeRoutesGeoJSON }, ref) => {
         const [mapStyleState, setMapStyleState] = useState<Record<string, unknown> | null>(() =>
             mapStyleJson ? ensureStyleBackgroundLayer(mapStyleJson as Record<string, any>) : null
         );
@@ -914,6 +915,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             return () => clearTimeout(timer);
         }, [rules, imagesLoaded, mapStyleState]);
 
+
         useEffect(() => {
             if (imagesLoaded && selectedLocation) {
                 setRenderKey(prev => prev + 1);
@@ -1049,6 +1051,12 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             navWidth: 16,
             opacity: routeStyle?.opacity || 0.8,
         };
+
+        const hasAlternativeRoutes = !isNavigating
+            && !segmentedRoutes
+            && !routeStyle?.isDotted
+            && Array.isArray(alternativeRoutesGeoJSON)
+            && alternativeRoutesGeoJSON.length > 0;
 
         useImperativeHandle(ref, () => ({
             flyTo: (options: any) => {
@@ -1336,6 +1344,25 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             );
                         })}
 
+
+                        {hasAlternativeRoutes && alternativeRoutesGeoJSON!.map((altGeoJSON: any, i: number) => (
+                            <MapLibreGL.ShapeSource
+                                key={`route-alternative-${i}`}
+                                id={`route-alternative-source-${i}`}
+                                shape={altGeoJSON}
+                            >
+                                <MapLibreGL.LineLayer
+                                    id={`route-alternative-layer-${i}`}
+                                    style={{
+                                        lineColor: '#FDBA74',
+                                        lineWidth: 6,
+                                        lineOpacity: 0.9,
+                                        lineCap: 'round',
+                                        lineJoin: 'round',
+                                    }}
+                                />
+                            </MapLibreGL.ShapeSource>
+                        ))}
 
                         {!isNavigating && routeGeoJSON && !segmentedRoutes && (
                             <MapLibreGL.ShapeSource
