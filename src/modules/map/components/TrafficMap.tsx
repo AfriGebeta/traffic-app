@@ -866,6 +866,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 onMapClick={handleMapClick}
                 onMapLoaded={handleMapLoaded}
                 routeGeoJSON={isNavigationMinimized ? undefined : (taxiRouteData ? undefined : routeGeoJSON)}
+                maneuvers={isNavigationMinimized || taxiRouteData ? undefined : routeManeuversList}
                 alternativeRoutesGeoJSON={
                     !isNavigationMinimized && !taxiRouteData && alternativeRoutesGeoJSON.length > 0
                         ? alternativeRoutesGeoJSON
