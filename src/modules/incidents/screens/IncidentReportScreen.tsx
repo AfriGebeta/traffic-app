@@ -10,6 +10,7 @@ import { showToast } from '../../../shared/utils/toast';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { getIncidentTranslationKey } from '../utils/incidentTranslations';
 import { uploadToMinio } from '../../../shared/utils/minio';
+import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 
 export default function IncidentReportScreen() {
     const { t } = useTranslation();
@@ -109,6 +110,7 @@ export default function IncidentReportScreen() {
 
         if (incident) {
             console.log('Incident created:', incident);
+            dashboardEventsService.contribute();
             showToast.success(t('incident-reported-successfully'));
             setTimeout(() => {
                 router.back();

@@ -12,6 +12,7 @@ import { useLocation } from '../../../shared/contexts/LocationContext';
 import { useTranslation } from 'react-i18next';
 import { getPlaceTranslationKey } from '../utils/placeTranslations';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { colors } from '../../../shared/theme/colors';
 
@@ -136,6 +137,7 @@ export default function AddPlaceScreen() {
                 images: images.map((img) => img.objectName),
             });
 
+            dashboardEventsService.contribute();
             showToast.success('Success!', 'Place contribution submitted');
             router.back();
             router.back();

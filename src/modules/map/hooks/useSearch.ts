@@ -5,6 +5,7 @@ import { placeService } from '../../places/services/place.service';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 import type { SavedPlace } from '../../places/types/place.types';
 import { showToast } from '../../../shared/utils/toast';
+import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 
 const parseCoordinates = (query: string): { lat: number; lng: number } | null => {
     const cleaned = query.trim().replace(/\s+/g, ' ');
@@ -69,6 +70,7 @@ export const useSearch = () => {
             return;
         }
 
+        dashboardEventsService.search(query.trim());
         setIsSearching(true);
         setShowRecentSearches(false);
 

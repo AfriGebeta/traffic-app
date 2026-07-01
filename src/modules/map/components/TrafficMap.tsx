@@ -70,6 +70,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     const [isOnIncidentReportScreen, setIsOnIncidentReportScreen] = useState(false);
     const [isMapLoaded, setIsMapLoaded] = useState(false);
     const [taxiRouteData, setTaxiRouteData] = useState<any>(null);
+
     const [taxiStations, setTaxiStations] = useState<Array<{ id: number; name: string; lat: number; lng: number; type: 'start' | 'end' | 'intermediate' }> | null>(null);
     const [taxiWalkRoutes, setTaxiWalkRoutes] = useState<Array<{ type: 'origin' | 'transfer' | 'destination'; polyline: string }> | null>(null);
     const [taxiRouteSegments, setTaxiRouteSegments] = useState<Array<{ coordinates: Array<[number, number]>; cost: number; from: string; to: string }> | null>(null);
@@ -88,6 +89,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     const {
         searchQuery,
         setSearchQuery,
+
         searchResults,
         setSearchResults,
         recentSearches,
@@ -101,6 +103,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         handleSearchFocus,
         handleSearchBlur,
         prepareSearchSelection,
+
         dismissSearchPanel,
         recordRecentSearch,
         removeRecentSearch,
@@ -144,19 +147,20 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         recalculateRoute,
         currentCosting,
         setCurrentCosting,
+        currentSpeed,
     } = useNavigation(mapRef, userLocation, setUserLocation, stopBackgroundTracking, startBackgroundTracking);
 
     const [nearbyRules, setNearbyRules] = useState<any[]>([]);
 
     const fetchRules = React.useCallback(async () => {
         try {
-            console.log('[Rules] fetchRules called');
+            // console.log('rules: fetchRules called');
             const { ruleService } = await import('../../rules/services/rule.service');
             const rules = await ruleService.getAllReports();
-            console.log('[Rules] fetched count:', rules.length);
+            // console.log('rules: fetched count:', rules.length);
             setNearbyRules(rules);
         } catch (error) {
-            console.log('[Rules] fetchRules error:', error);
+            // console.log('rules: fetchRules error:', error);
         }
     }, []);
 
@@ -165,7 +169,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         import('../../rules/services/preferences.service').then(({ rulePreferencesService }) => {
             rulePreferencesService.getPreferences().then((prefs) => {
                 if (cancelled) return;
-                console.log('[Rules] storage read on mount — showOnMap:', prefs.showOnMap, 'navigationMode:', navigationMode);
+                // console.log('rules: storage read on mount - showonmap:', prefs.showOnMap, 'navigationMode:', navigationMode);
                 if (prefs.showOnMap || navigationMode) {
                     fetchRules();
                 } else {
@@ -232,6 +236,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
             );
         }
     };
+
 
     const handleOpenRoutePreview = () => {
         if (!selectedDestination || !routeGeoJSON || routeLegs.length === 0) {
@@ -449,11 +454,11 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
 
     useFocusEffect(
         React.useCallback(() => {
-            console.log('[Rules] useFocusEffect fired');
+            // console.log('rules: useFocusEffect fired');
             refetch();
             import('../../rules/services/preferences.service').then(({ rulePreferencesService }) => {
                 rulePreferencesService.getPreferences().then((prefs) => {
-                    console.log('[Rules] useFocusEffect direct storage read — showOnMap:', prefs.showOnMap);
+                    // console.log('rules: useFocusEffect direct storage read - show on map:', prefs.showOnMap);
                     if (prefs.showOnMap || navigationMode) {
                         fetchRules();
                     } else {
@@ -654,7 +659,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                         }
                     });
                 } catch (error) {
-                    console.error('[Taxi Route] Error fetching intermediate nodes:', error);
+                    console.error('taxi route: Error fetching intermediate nodes:', error);
                 }
             }
 
@@ -724,7 +729,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                             }
                         }
                     } catch (error) {
-                        console.error('[Taxi Route] Error fetching transfer walks:', error);
+                        console.error('taxi route: Error fetching transfer walks:', error);
                     }
                 }
 
@@ -771,7 +776,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     }
                 }
             } catch (error) {
-                console.error('[Taxi Route] Error fetching driving route:', error);
+                // console.error('taxi route Error fetching driving route:', error);
                 if (taxiRouteData.startNode && taxiRouteData.endNode && taxiRouteData.summary) {
                     setTaxiRouteSegments([{
                         coordinates: [
@@ -930,14 +935,16 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                         remainingTime={remainingTime}
                         remainingDistance={remainingDistance}
                         destination={selectedDestination.name}
+                        destinationCoords={{ lat: selectedDestination.latitude, lng: selectedDestination.longitude }}
                         onReportPress={() => setShowReportOptions(true)}
-                        onVoiceReportPress={() => showToast.info(t('coming-soon'), 'Voice Report')}
                         onExitPress={handleStopNavigation}
                         isOffRoute={isOffRoute}
                         isRecalculating={isRecalculating}
                         onTestOffRoute={() => simulateOffRoute(setUserLocation)}
                         showRecenterButton={hasUserZoomedOut}
                         onRecenter={handleRecenter}
+                        currentSpeed={currentSpeed}
+                        activeRule={activeRuleAlert}
                     />
                 </>
             )}
@@ -999,6 +1006,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     onExploreCategory={handleExploreCategory}
                     isExploring={isExploring}
                     selectedExploreCategory={selectedExploreCategory}
+
                     isNavigationMinimized={isNavigationMinimized}
                     onRestoreNavigation={() => setIsNavigationMinimized(false)}
                     navigationDestination={navigationMode ? selectedDestination : null}
