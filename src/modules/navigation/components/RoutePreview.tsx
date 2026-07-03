@@ -485,7 +485,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                         </ScrollView>
                     )}
 
-                    {/* {__DEV__ && (
+                     {__DEV__ && (
                         <View className="px-6 py-3 border-b border-gray-100">
                             <TouchableOpacity
                                 onPress={onSimulateToggle}
@@ -503,7 +503,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                 </View>
                             </TouchableOpacity>
                         </View>
-                    )} */}
+                    )}
                     <ScrollView className="max-h-48">
                         {loadingTaxiRoute ? (
                             <View className="px-6 py-8 items-center">
