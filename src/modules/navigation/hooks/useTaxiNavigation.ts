@@ -18,7 +18,7 @@ interface UseTaxiNavigationProps {
 
 const STATION_ARRIVAL_THRESHOLD = 80; // 50 meters
 const WALKING_END_THRESHOLD = 40; // 20 meters
-const OFF_ROUTE_THRESHOLD = 50; // 50 meters for taxi routes
+const OFF_ROUTE_THRESHOLD = 30; // 30 meters for taxi routes
 
 export const useTaxiNavigation = ({
     taxiRoute,

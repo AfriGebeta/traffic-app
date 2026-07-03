@@ -123,6 +123,10 @@ export const navigationService = {
             payload.waypoints = request.waypoints;
         }
 
+        if (request.alternative) {
+            payload.alternative = "t";
+        }
+
         const response = await apiService.post<NavigationResponse>('/api/navigation/request-navigation', payload);
 
         if (response.error || !response.data) {

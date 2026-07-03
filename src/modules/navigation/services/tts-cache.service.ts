@@ -11,7 +11,7 @@ interface CachedAudio {
 class TTSCacheService {
     private cache: Map<string, CachedAudio> = new Map();
     private readonly CACHE_EXPIRY_MS = 30 * 60 * 1000;
-    private fetchQueue: Set<string> = new Set();
+    private fetchQueue: Map<string, Promise<boolean>> = new Map();
 
     async prefetchInstructions(instructions: string[]): Promise<void> {
         const batchSize = 3;
@@ -23,51 +23,59 @@ class TTSCacheService {
         }
     }
     private async fetchAndCache(text: string): Promise<boolean> {
-        if (this.cache.has(text) || this.fetchQueue.has(text)) {
+        if (this.cache.has(text)) {
             return true;
         }
 
-        this.fetchQueue.add(text);
-
-        try {
-            const appCheckToken = await getAppCheckToken();
-            const response = await fetch(`${API_URL}/api/asr/tts/synthesize`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(appCheckToken ? { 'X-Firebase-AppCheck': appCheckToken } : {}),
-                },
-                body: JSON.stringify({ text }),
-            });
-
-            if (!response.ok) {
-                return false;
-            }
-
-            const audioBlob = await response.blob();
-
-            if (audioBlob.size === 0) {
-                return false;
-            }
-
-            const base64Uri = await new Promise<string>((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result as string);
-                reader.onerror = reject;
-                reader.readAsDataURL(audioBlob);
-            });
-
-            this.cache.set(text, {
-                base64Uri,
-                timestamp: Date.now(),
-            });
-
-            return true;
-        } catch (error: any) {
-            return false;
-        } finally {
-            this.fetchQueue.delete(text);
+        const inFlight = this.fetchQueue.get(text);
+        if (inFlight) {
+            return inFlight;
         }
+
+        const promise = (async (): Promise<boolean> => {
+            try {
+                const appCheckToken = await getAppCheckToken();
+                const response = await fetch(`${API_URL}/api/asr/tts/synthesize`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(appCheckToken ? { 'X-Firebase-AppCheck': appCheckToken } : {}),
+                    },
+                    body: JSON.stringify({ text }),
+                });
+
+                if (!response.ok) {
+                    return false;
+                }
+
+                const audioBlob = await response.blob();
+
+                if (audioBlob.size === 0) {
+                    return false;
+                }
+
+                const base64Uri = await new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result as string);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(audioBlob);
+                });
+
+                this.cache.set(text, {
+                    base64Uri,
+                    timestamp: Date.now(),
+                });
+
+                return true;
+            } catch (error: any) {
+                return false;
+            } finally {
+                this.fetchQueue.delete(text);
+            }
+        })();
+
+        this.fetchQueue.set(text, promise);
+        return promise;
     }
 
     async playInstruction(text: string): Promise<boolean> {
