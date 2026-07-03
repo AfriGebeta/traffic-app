@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image } from 'react-native';
+import { View, Text, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeepAwake } from 'expo-keep-awake';
@@ -79,10 +79,27 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
     return (
         <View className="absolute left-0 right-0 bottom-0">
             {isRecalculating && (
-                <View className="mx-4 mb-2 bg-orange-50 border border-orange-200 rounded-xl px-3 py-2">
-                    <Text className="text-orange-600 text-sm font-semibold text-center">
-                        Recalculating route...
-                    </Text>
+                <View className="items-center mb-3">
+                    <View
+                        className="flex-row items-center bg-white rounded-full"
+                        style={{
+                            paddingVertical: 12,
+                            paddingHorizontal: 22,
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.18,
+                            shadowRadius: 6,
+                            elevation: 5,
+                        }}
+                    >
+                        <ActivityIndicator size="small" color="#0F9D58" />
+                        <Text
+                            className="font-semibold ml-2"
+                            style={{ color: '#1F2937', fontSize: 16 }}
+                        >
+                            Recalculating route
+                        </Text>
+                    </View>
                 </View>
             )}
 

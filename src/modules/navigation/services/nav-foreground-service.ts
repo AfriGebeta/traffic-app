@@ -16,6 +16,25 @@ let running = false;
 let lastBody = '';
 let lastUpdateAt = 0;
 const MIN_UPDATE_INTERVAL_MS = 3000;
+const START_RETRY_DELAYS_MS = [500, 1000, 2000, 4000, 8000];
+
+let startToken = 0;
+
+function delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function waitForActiveAppState(): Promise<void> {
+    if (AppState.currentState === 'active') return Promise.resolve();
+    return new Promise((resolve) => {
+        const sub = AppState.addEventListener('change', (state) => {
+            if (state === 'active') {
+                sub.remove();
+                resolve();
+            }
+        });
+    });
+}
 
 function buildOptions(body: string): Location.LocationTaskOptions {
     return {
@@ -32,22 +51,33 @@ function buildOptions(body: string): Location.LocationTaskOptions {
 }
 
 export async function startNavService(initialBody = 'Navigating…'): Promise<void> {
-    try {
-        lastBody = initialBody;
+    const token = ++startToken;
+    lastBody = initialBody;
 
-        const already = await Location
-            .hasStartedLocationUpdatesAsync(NAV_TASK)
-            .catch(() => false);
-        if (already) {
+    const already = await Location
+        .hasStartedLocationUpdatesAsync(NAV_TASK)
+        .catch(() => false);
+    if (already) {
+        running = true;
+        return;
+    }
+
+    for (let attempt = 0; ; attempt++) {
+        await waitForActiveAppState();
+        if (token !== startToken) return;
+        try {
+            await Location.startLocationUpdatesAsync(NAV_TASK, buildOptions(lastBody));
             running = true;
             return;
+        } catch (e) {
+            if (attempt >= START_RETRY_DELAYS_MS.length) {
+                console.warn('nav-foreground-service: failed to start', e);
+                running = false;
+                return;
+            }
+            await delay(START_RETRY_DELAYS_MS[attempt]);
+            if (token !== startToken) return;
         }
-
-        await Location.startLocationUpdatesAsync(NAV_TASK, buildOptions(initialBody));
-        running = true;
-    } catch (e) {
-        console.warn('nav-foreground-service: failed to start', e);
-        running = false;
     }
 }
 export async function updateNavNotification(body: string): Promise<void> {
@@ -69,6 +99,7 @@ export async function updateNavNotification(body: string): Promise<void> {
 }
 
 export async function stopNavService(): Promise<void> {
+    startToken++;
     running = false;
     lastBody = '';
     lastUpdateAt = 0;
