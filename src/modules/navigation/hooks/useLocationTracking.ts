@@ -218,7 +218,7 @@ export const useLocationTracking = ({
                     displayLat = snappedLat;
                     displayLng = snappedLng;
 
-                    const OFF_ROUTE_THRESHOLD = 50;
+                    const OFF_ROUTE_THRESHOLD = 30;
                     const OFF_ROUTE_DELAY = 2000;
 
                     const HEADING_DIVERGE_ANGLE = 50;  

@@ -32,6 +32,7 @@ export interface NavigationRequest {
     destination: [number, number];
     costing?: Costing;
     waypoints?: [number, number][];
+    alternative?: boolean;
 }
 
 export interface Maneuver {
@@ -90,5 +91,6 @@ export interface Trip {
 export interface NavigationResponse {
     data: {
         trip: Trip;
+        alternates?: Array<{ trip: Trip }>;
     };
 }

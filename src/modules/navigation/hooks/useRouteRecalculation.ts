@@ -15,6 +15,7 @@ interface UseRouteRecalculationProps {
     waypointsRef: React.MutableRefObject<GeocodingPlace[]>;
     routeCoordinates: React.MutableRefObject<[number, number][]>;
     routeManeuvers: React.MutableRefObject<any[]>;
+    currentManeuverIndexRef: React.MutableRefObject<number>;
     totalRouteDistance: React.MutableRefObject<number>;
     totalRouteDuration: React.MutableRefObject<number>;
     rerouteTimeout: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
@@ -46,8 +47,8 @@ export const useRouteRecalculation = ({
     waypointsRef,
     routeCoordinates,
     routeManeuvers,
+    currentManeuverIndexRef,
 
-    
     totalRouteDistance,
     totalRouteDuration,
     rerouteTimeout,
@@ -121,6 +122,20 @@ export const useRouteRecalculation = ({
 
                 routeManeuvers.current = leg.maneuvers;
 
+                if (leg.maneuvers.length > 0) {
+                    const firstManeuver = leg.maneuvers[0];
+                    if (firstManeuver.type === 2 && leg.maneuvers.length > 1) {
+                        currentManeuverIndexRef.current = 1;
+                        setCurrentInstruction(leg.maneuvers[1].instruction || 'Continue ahead');
+                    } else {
+                        currentManeuverIndexRef.current = 0;
+                        setCurrentInstruction(firstManeuver.instruction || 'Continue ahead');
+                    }
+                } else {
+                    currentManeuverIndexRef.current = 0;
+                    setCurrentInstruction('Continue ahead');
+                }
+
                 const newRoute = {
                     coordinates: decodedCoordinates.map(coord => [coord[1], coord[0]]) as [number, number][],
                     distance: leg.summary.length * 1000,
@@ -183,6 +198,7 @@ export const useRouteRecalculation = ({
             currentDestination,
             routeCoordinates,
             routeManeuvers,
+            currentManeuverIndexRef,
             totalRouteDistance,
             totalRouteDuration,
             rerouteTimeout,

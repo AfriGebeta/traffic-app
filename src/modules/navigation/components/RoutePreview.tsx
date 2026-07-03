@@ -34,6 +34,9 @@ interface RoutePreviewProps {
     onOriginChange?: (place: GeocodingPlace | null) => void;
     maneuvers?: Maneuver[];
     onPreviewPress?: () => void;
+    routeOptions?: Array<{ distance: number; duration: number }>;
+    selectedRouteIndex?: number;
+    onSelectRoute?: (index: number) => void;
 }
 
 const formatDistance = (meters: number): string => {
@@ -83,6 +86,9 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
     onOriginChange,
     maneuvers = [],
     onPreviewPress,
+    routeOptions,
+    selectedRouteIndex = 0,
+    onSelectRoute,
 }) => {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
@@ -276,6 +282,27 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
         }
     };
 
+    const handleShareDestination = async () => {
+        if (!destination) return;
+        const { Share } = await import('react-native');
+        const url = `https://maps.gebeta.app/?lat=${destination.latitude}&lng=${destination.longitude}&name=${encodeURIComponent(destination.name)}`;
+        Share.share({
+            message: `Check out ${destination.name} on Gebeta Maps: ${url}`,
+            url: url,
+        });
+    };
+
+    const handleGoRoute = (index: number) => {
+        onSelectRoute?.(index);
+        if (isCustomOrigin) {
+            handlePreviewPress();
+        } else {
+            handleStartNavigation();
+        }
+    };
+
+    const showRouteOptionCards = transportMode === 'driving' && !!routeOptions && routeOptions.length > 1;
+
     const displayDistance = transportMode === 'taxi' && taxiRoute
         ? ((taxiRoute.originWalkRoute?.trip.summary.length || 0) + (taxiRoute.destinationWalkRoute?.trip.summary.length || 0)) * 1000
         : transportMode === 'walking' && walkingRoute
@@ -389,7 +416,76 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                         </View>
                     </View>
 
-                    {__DEV__ && (
+                    {showRouteOptionCards && (
+                        <ScrollView
+                            className="max-h-80"
+                            contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12, gap: 10 }}
+                            showsVerticalScrollIndicator={false}
+                        >
+                            {routeOptions!.map((opt, i) => {
+                                const isSelected = i === selectedRouteIndex;
+                                return (
+                                    <TouchableOpacity
+                                        key={i}
+                                        activeOpacity={0.85}
+                                        onPress={() => onSelectRoute?.(i)}
+                                        className="rounded-2xl p-4"
+                                        style={{
+                                            borderWidth: 2,
+                                            borderColor: isSelected ? colors.primary.main : 'rgba(209,213,219,0.6)',
+                                            backgroundColor: isSelected ? `${colors.primary.main}12` : 'rgba(255,255,255,0.65)',
+                                        }}
+                                    >
+                                        <View className="flex-row items-center justify-between">
+                                            <View className="flex-1 mr-3">
+                                                {i === 0 && (
+                                                    <Text style={{ fontSize: 10, fontWeight: '700', color: colors.primary.main, marginBottom: 2, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                                        Fastest
+                                                    </Text>
+                                                )}
+                                                <Text className="text-2xl font-bold text-gray-900">
+                                                    {formatTime(opt.duration)}
+                                                </Text>
+                                                <Text className="text-gray-500 text-sm mt-0.5">
+                                                    {t('eta')} {formatETA(opt.duration)} • {formatDistance(opt.distance)}
+                                                </Text>
+                                            </View>
+
+                                            <View className="flex-row items-center flex-shrink-0">
+                                                {destination && (
+                                                    <TouchableOpacity
+                                                        onPress={handleShareDestination}
+                                                        className="w-11 h-11 items-center justify-center rounded-2xl mr-2"
+                                                        style={{ borderWidth: 1.5, borderColor: `${colors.primary.main}55` }}
+                                                    >
+                                                        <Ionicons name="share-social" size={20} color={colors.primary.main} />
+                                                    </TouchableOpacity>
+                                                )}
+                                                <TouchableOpacity
+                                                    onPress={() => handleGoRoute(i)}
+                                                    className="rounded-2xl px-6 py-4 shadow-lg"
+                                                    style={{
+                                                        backgroundColor: colors.primary.main,
+                                                        shadowColor: colors.primary.main,
+                                                        shadowOffset: { width: 0, height: 4 },
+                                                        shadowOpacity: 0.3,
+                                                        shadowRadius: 8,
+                                                        elevation: 8,
+                                                    }}
+                                                >
+                                                    <Text className="text-white text-lg font-bold">
+                                                        {!isCustomOrigin ? t('go') : t('preview')}
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                        </View>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </ScrollView>
+                    )}
+
+                    {/* {__DEV__ && (
                         <View className="px-6 py-3 border-b border-gray-100">
                             <TouchableOpacity
                                 onPress={onSimulateToggle}
@@ -407,7 +503,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                 </View>
                             </TouchableOpacity>
                         </View>
-                    )}
+                    )} */}
                     <ScrollView className="max-h-48">
                         {loadingTaxiRoute ? (
                             <View className="px-6 py-8 items-center">
@@ -546,6 +642,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                         ) : null}
                     </ScrollView>
 
+                    {!showRouteOptionCards && (
                     <View className="px-6 py-3 border-t border-gray-100 mb-2">
                         <View className="bg-gray-200 rounded-2xl p-4 ">
                             <View className="flex-row items-start justify-between">
@@ -632,6 +729,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                             </View>
                         </View>
                     </View>
+                    )}
 
                     {destination && (
                         <SavePlaceModal
