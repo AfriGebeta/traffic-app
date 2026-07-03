@@ -979,6 +979,27 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             return () => cancelAnimationFrame(frameId);
         }, [mapStyleState, applyFlyTo]);
 
+        const showStaticPuck = !isNavigating && !routeOrigin && !!showUserLocationMarker;
+        const [mapFinishedLoading, setMapFinishedLoading] = useState(false);
+        const [puckRenderMode, setPuckRenderMode] = useState<'normal' | 'compass'>('normal');
+        const [followPulse, setFollowPulse] = useState(false);
+        useEffect(() => {
+            if (!showStaticPuck || !mapFinishedLoading) {
+                setPuckRenderMode('normal');
+                return;
+            }
+            setPuckRenderMode('normal');
+            const timer = setTimeout(() => setPuckRenderMode('compass'), 800);
+            const pulseOn = setTimeout(() => setFollowPulse(true), 1200);
+            const pulseOff = setTimeout(() => setFollowPulse(false), 2000);
+            return () => {
+                clearTimeout(timer);
+                clearTimeout(pulseOn);
+                clearTimeout(pulseOff);
+                setFollowPulse(false);
+            };
+        }, [showStaticPuck, mapFinishedLoading, mapStyleState]);
+
         // Preload images on mount
         useEffect(() => {
             const preloadImages = async () => {
@@ -1294,6 +1315,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         }, [center?.[0], center?.[1], zoom, isNavigating, mapStyleState, applyInitialCamera, externalCameraControl]);
 
         const handleMapLoad = useCallback(() => {
+            setMapFinishedLoading(true);
             if (!externalCameraControl) {
                 applyInitialCamera();
             } else if (lastFreeCameraRef.current) {
@@ -1429,6 +1451,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                         animationDuration: 0,
                                         pitch: 0,
                                         heading: 0,
+                                        followUserLocation: followPulse,
                                     }
                                     : {})}
                                 maxBounds={undefined}
@@ -1744,29 +1767,12 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             </MapLibreGL.PointAnnotation>
                         )}
 
-                        {!isNavigating && !routeOrigin && showUserLocationMarker && userLocation && imagesLoaded && (
-                            <MapLibreGL.PointAnnotation
-                                key={`user-location-static-${renderKey}`}
-                                id="user-location-marker-static"
-                                coordinate={[userLocation.lng, userLocation.lat]}
-                                anchor={{ x: 0.5, y: 1 }}
-                            >
-                                <View style={{
-                                    width: 50,
-                                    height: 50,
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                }}>
-                                    <Image
-                                        source={PIN_NORMAL_IMAGE}
-                                        style={{
-                                            width: 40,
-                                            height: 40,
-                                        }}
-                                        resizeMode="contain"
-                                    />
-                                </View>
-                            </MapLibreGL.PointAnnotation>
+                        {showStaticPuck && (
+                            <MapLibreGL.UserLocation
+                                renderMode="native"
+                                androidRenderMode={puckRenderMode}
+                                showsUserHeadingIndicator
+                            />
                         )}
 
                         {incidents && imagesLoaded && incidents.map((incident) => {
