@@ -7,7 +7,6 @@ import { NavigationBar } from './NavigationBar';
 import { NavigationOverlay } from './NavigationOverlay';
 import { IncidentAlert } from './IncidentAlert';
 
-import { RuleAlert } from './RuleAlert';
 import { MapOverlay } from './MapOverlay';
 import { IncidentReportSheet } from './IncidentReportSheet';
 import { ExploreSheet } from '../../explore/components/ExploreSheet';
@@ -913,17 +912,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     distanceKm={activeIncidentAlert.distanceKm}
                     incidentType={activeIncidentAlert.incidentType}
                     onDismiss={dismissIncidentAlert}
-                />
-            )}
-
-            {activeRuleAlert && !(navigationMode && selectedDestination && !isNavigationMinimized) && (
-                <RuleAlert
-                    ruleId={activeRuleAlert.ruleId}
-                    ruleName={activeRuleAlert.ruleName}
-                    ruleImg={activeRuleAlert.ruleImg}
-                    distance={activeRuleAlert.distance}
-                    punishment={activeRuleAlert.punishment}
-                    hasIncidentAlert={!!activeIncidentAlert}
                 />
             )}
 
