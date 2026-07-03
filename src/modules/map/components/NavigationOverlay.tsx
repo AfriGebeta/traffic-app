@@ -27,7 +27,21 @@ interface NavigationOverlayProps {
     onTestOffRoute?: () => void;
     showRecenterButton?: boolean;
     onRecenter?: () => void;
+    currentInstruction?: string;
 }
+
+const getDirectionIcon = (instruction?: string): keyof typeof Ionicons.glyphMap => {
+    if (!instruction) return 'arrow-up';
+
+    const lowerInstruction = instruction.toLowerCase();
+
+    if (lowerInstruction.includes('u-turn') || lowerInstruction.includes('uturn')) return 'return-down-back';
+    if (lowerInstruction.includes('left')) return 'arrow-back';
+    if (lowerInstruction.includes('right')) return 'arrow-forward';
+    if (lowerInstruction.includes('straight') || lowerInstruction.includes('continue')) return 'arrow-up';
+
+    return 'arrow-up';
+};
 
 const formatTime = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
@@ -50,9 +64,11 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
     // onTestOffRoute,
     showRecenterButton,
     onRecenter,
+    currentInstruction,
 }) => {
     useKeepAwake();
     const insets = useSafeAreaInsets();
+    const directionIcon = getDirectionIcon(currentInstruction);
 
     const getETA = () => {
         if (!remainingTime) return '--:--';
@@ -80,16 +96,6 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                     <Text className="text-red-500 text-sm font-bold ml-2">Test Off Route</Text>
                 </TouchableOpacity>
             )} */}
-
-            {showRecenterButton && onRecenter && (
-                <TouchableOpacity
-                    className="mx-4 mb-2 border rounded-2xl py-2 flex-row items-center justify-center"
-                    style={{ backgroundColor: 'rgba(249, 115, 22, 0.1)', borderColor: '#FFA500' }}
-                    onPress={onRecenter}
-                >
-                    <Text className="text-orange-600 text-sm font-bold">Re-center</Text>
-                </TouchableOpacity>
-            )}
 
             <View
                 className="flex-row justify-between items-end"
@@ -187,6 +193,33 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                 </View>
             )}
 
+            {showRecenterButton && onRecenter && (
+                <View className="items-center mb-3">
+                    <TouchableOpacity
+                        activeOpacity={0.85}
+                        onPress={onRecenter}
+                        className="flex-row items-center bg-white rounded-full"
+                        style={{
+                            paddingVertical: 12,
+                            paddingHorizontal: 22,
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.18,
+                            shadowRadius: 6,
+                            elevation: 5,
+                        }}
+                    >
+                        <Ionicons name="navigate" size={20} color="#0F9D58" />
+                        <Text
+                            className="font-semibold ml-2"
+                            style={{ color: '#1F2937', fontSize: 16 }}
+                        >
+                            Re-center
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            )}
+
             <View
                 style={{
                     backgroundColor: '#fff',
@@ -199,7 +232,22 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                     alignItems: 'center',
                 }}
             >
-                <View style={{ flex: 1, alignItems: 'center', paddingLeft: 60 }}>
+                <View
+                    style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 24,
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        borderColor: NAV_GREEN,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}
+                >
+                    <Ionicons name={directionIcon} size={26} color={NAV_GREEN} />
+                </View>
+
+                <View style={{ flex: 1, alignItems: 'center' }}>
                     <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827' }}>
                         {remainingTime ? formatTime(remainingTime) : '-- min'}
                         {'  ·  '}

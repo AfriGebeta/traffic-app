@@ -21,7 +21,7 @@ export const RuleAlert: React.FC<RuleAlertProps> = ({ ruleImg, punishment, hasIn
             exiting={FadeOutUp.duration(300)}
             style={{
                 position: 'absolute',
-                top: insets.top + (hasIncidentAlert ? 294 : 200),
+                top: insets.top + (hasIncidentAlert ? 265 : 200),
                 right: 16,
                 zIndex: 9999,
                 elevation: 9,
