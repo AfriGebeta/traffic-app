@@ -147,6 +147,12 @@ export const useNavigation = (
         totalRouteDuration: totalRouteDuration.current,
         routeManeuversRef: routeManeuvers,
         currentManeuverIndexRef: currentManeuverIndex,
+        onArrival: () => {
+            setShowArrivalModal(true);
+            if (stopNavigationRef.current) {
+                stopNavigationRef.current();
+            }
+        },
     });
 
     const { recalculateRoute } = useRouteRecalculation({
@@ -536,27 +542,6 @@ export const useNavigation = (
 
                     setRemainingDistance(state.distanceRemaining);
                     setRemainingTime(state.durationRemaining);
-
-                    //destination arrival
-                    if (userLocation && selectedDestination) {
-                        const R = 6371000; // earth rad
-                        const dLat = (selectedDestination.latitude - userLocation.lat) * Math.PI / 180;
-                        const dLng = (selectedDestination.longitude - userLocation.lng) * Math.PI / 180;
-                        const a =
-                            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                            Math.cos(userLocation.lat * Math.PI / 180) *
-                            Math.cos(selectedDestination.latitude * Math.PI / 180) *
-                            Math.sin(dLng / 2) *
-                            Math.sin(dLng / 2);
-                        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                        const distanceToDestination = R * c;
-
-                        if (distanceToDestination <= 100) {
-                            setShowArrivalModal(true);
-                            handleStopNavigation();
-                            return;
-                        }
-                    }
 
                     if (state.nextInstruction) {
                         const instructionText = state.nextInstruction.instruction || state.nextInstruction.text || '';

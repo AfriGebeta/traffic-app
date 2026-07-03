@@ -43,7 +43,10 @@ interface UseLocationTrackingProps {
             segmentIndex: number;
         }>
     ) => void;
+    onArrival?: () => void;
 }
+
+const ARRIVAL_DISTANCE_METERS = 80;
 
 export const useLocationTracking = ({
     routeCoordinates,
@@ -70,6 +73,7 @@ export const useLocationTracking = ({
     taxiSegments,
     setSegmentedRoutes,
     updateNavigationState,
+    onArrival,
 }: UseLocationTrackingProps) => {
     const locationSubscription = useRef<Location.LocationSubscription | null>(null);
     const lastClosestIndex = useRef<number>(0);
@@ -83,6 +87,7 @@ export const useLocationTracking = ({
 
     const locationCallbackRef = useRef<((location: Location.LocationObject) => void) | null>(null);
     const lastRenderedMarkerRef = useRef<{ lat: number; lng: number } | null>(null);
+    const hasArrivedRef = useRef<boolean>(false);
 
     const stopLocationTracking = useCallback(() => {
         if (locationSubscription.current) {
@@ -96,6 +101,7 @@ export const useLocationTracking = ({
         headingDivergeStartRef.current = null;
         currentGPSIntervalRef.current = 1000;
         locationCallbackRef.current = null;
+        hasArrivedRef.current = false;
     }, []);
 
     const startLocationTracking = useCallback(async () => {
@@ -109,6 +115,8 @@ export const useLocationTracking = ({
             if (locationSubscription.current) {
                 locationSubscription.current.remove();
             }
+
+            hasArrivedRef.current = false;
 
             locationCallbackRef.current = (location: Location.LocationObject) => {
                 const { latitude, longitude, heading, speed } = location.coords;
@@ -391,6 +399,20 @@ export const useLocationTracking = ({
                             : (25 * 1000) / 3600;
                         const estimatedTime = totalDistance / averageSpeedMps;
                         setRemainingTime(estimatedTime);
+
+                        if (
+                            !hasArrivedRef.current &&
+                            !isOffRouteRef.current &&
+                            totalDistance > 0 &&
+                            totalDistance <= ARRIVAL_DISTANCE_METERS &&
+                            onArrival
+                        ) {
+                            hasArrivedRef.current = true;
+                            onArrival();
+                        }
+                    } else if (!hasArrivedRef.current && onArrival) {
+                        hasArrivedRef.current = true;
+                        onArrival();
                     }
                 } else {
                     if (setUserLocation) {
@@ -451,6 +473,7 @@ export const useLocationTracking = ({
         taxiSegments,
         setSegmentedRoutes,
         updateNavigationState,
+        onArrival,
     ]);
 
     return {
