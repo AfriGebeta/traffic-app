@@ -7,46 +7,45 @@ interface UseNavigationTrackingProps {
     userLocation: { lat: number; lng: number } | null;
 }
 
+const TRACKING_POINT_INTERVAL_MS = 5000;
+
 export const useNavigationTracking = ({
     isNavigating,
     userLocation,
 }: UseNavigationTrackingProps) => {
     const navigationIdRef = useRef<string | null>(null);
-    const trackingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const previousNavigatingRef = useRef<boolean>(false);
-    const userLocationRef = useRef(userLocation);
+    const lastPointTimeRef = useRef<number>(0);
 
+    // Record points from location updates instead of setInterval: RN pauses JS
+    // timers while the app is backgrounded, but location updates keep arriving
+    // through the foreground service, so tracking continues in the background.
     useEffect(() => {
-        userLocationRef.current = userLocation;
-    }, [userLocation]);
+        if (!isNavigating || !navigationIdRef.current || !userLocation) return;
+
+        const now = Date.now();
+        if (now - lastPointTimeRef.current < TRACKING_POINT_INTERVAL_MS) return;
+        lastPointTimeRef.current = now;
+
+        console.log(
+            `[Tracking] ${navigationIdRef.current} point @ ${new Date(now).toISOString()} →`,
+            `lat: ${userLocation.lat}, lng: ${userLocation.lng}`
+        );
+        navigationTrackingService.addNavigationPoint(
+            navigationIdRef.current,
+            userLocation.lat,
+            userLocation.lng
+        );
+    }, [isNavigating, userLocation]);
 
     useEffect(() => {
         if (isNavigating) {
             if (!navigationIdRef.current) {
                 navigationIdRef.current = `nav_${Date.now()}`;
+                lastPointTimeRef.current = 0;
                 console.log('[Tracking] Started tracking navigation:', navigationIdRef.current);
             }
-
-            trackingIntervalRef.current = setInterval(() => {
-                const loc = userLocationRef.current;
-                if (navigationIdRef.current && loc) {
-                    console.log(
-                        `[Tracking] ${navigationIdRef.current} point @ ${new Date().toISOString()} →`,
-                        `lat: ${loc.lat}, lng: ${loc.lng}`
-                    );
-                    navigationTrackingService.addNavigationPoint(
-                        navigationIdRef.current,
-                        loc.lat,
-                        loc.lng
-                    );
-                }
-            }, 5000);
         } else {
-            if (trackingIntervalRef.current) {
-                clearInterval(trackingIntervalRef.current);
-                trackingIntervalRef.current = null;
-            }
-
             if (navigationIdRef.current && previousNavigatingRef.current) {
                 const navId = navigationIdRef.current;
                 console.log(' trackomg: navigation ended, syncing immediately:', navId);
@@ -62,13 +61,6 @@ export const useNavigationTracking = ({
         }
 
         previousNavigatingRef.current = isNavigating;
-
-        return () => {
-            if (trackingIntervalRef.current) {
-                clearInterval(trackingIntervalRef.current);
-                trackingIntervalRef.current = null;
-            }
-        };
     }, [isNavigating]);
 
     useEffect(() => {
