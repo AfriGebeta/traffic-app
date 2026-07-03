@@ -99,7 +99,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
         <View className="absolute left-4 right-4" style={{ top: insets.top + (hasIncidentAlert ? 112 : 18) }}>
             <View
                 style={{
-                    backgroundColor: '#1E5438',
+                    backgroundColor: '#0F9D58',
                     borderTopLeftRadius: 20,
                     borderTopRightRadius: 20,
                     borderBottomLeftRadius: 20,
@@ -131,8 +131,8 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                             gap: 6,
                         }}
                     >
-                        <Ionicons name={nextDirectionIcon} size={12} color="#1E5438" />
-                        <Text style={{ color: '#1E5438', fontSize: 12 }} numberOfLines={1}>
+                        <Ionicons name={nextDirectionIcon} size={12} color="#0F9D58" />
+                        <Text style={{ color: '#0F9D58', fontSize: 12 }} numberOfLines={1}>
                             then {nextInstruction.toLowerCase()}
                         </Text>
                     </View>

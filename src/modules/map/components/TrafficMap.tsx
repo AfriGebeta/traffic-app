@@ -916,7 +916,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 />
             )}
 
-            {activeRuleAlert && (
+            {activeRuleAlert && !(navigationMode && selectedDestination && !isNavigationMinimized) && (
                 <RuleAlert
                     ruleId={activeRuleAlert.ruleId}
                     ruleName={activeRuleAlert.ruleName}
@@ -939,7 +939,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                         nextInstruction={nextInstruction}
                         remainingDistance={remainingDistance}
                         remainingTime={remainingTime}
-                        hasIncidentAlert={!!activeIncidentAlert}
                     />
                     <NavigationOverlay
                         remainingTime={remainingTime}
@@ -955,6 +954,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                         onRecenter={handleRecenter}
                         currentSpeed={currentSpeed}
                         activeRule={activeRuleAlert}
+                        currentInstruction={currentInstruction}
                     />
                 </>
             )}
