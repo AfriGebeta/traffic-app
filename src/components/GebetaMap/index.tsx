@@ -794,6 +794,16 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             duration?: number;
             pitch?: number;
         } | null>(null);
+        const lastFlyToAtRef = useRef(0);
+        const pendingStyleRestoreRef = useRef(false);
+        const prevStyleKeyRef = useRef<string | null>(null);
+        useEffect(() => {
+            const styleKey = mapStyleState ? JSON.stringify(mapStyleState) : null;
+            if (prevStyleKeyRef.current && styleKey && prevStyleKeyRef.current !== styleKey) {
+                pendingStyleRestoreRef.current = true;
+            }
+            prevStyleKeyRef.current = styleKey;
+        }, [mapStyleState]);
         const applyInitialCamera = useCallback(() => {
             if (!center || isNavigating || !cameraRef.current) return;
 
@@ -818,9 +828,11 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 animationDuration: options.duration ?? 1000,
                 pitch: options.pitch ?? 0,
             };
+            // console.log('[cam] flyTo', JSON.stringify(options.center), 'zoom', options.zoom, 'cameraReady=', !!cameraRef.current);
 
             if (cameraRef.current) {
                 pendingFlyTo.current = null;
+                lastFlyToAtRef.current = Date.now();
                 cameraRef.current.setCamera(cameraConfig);
             } else {
                 pendingFlyTo.current = options;
@@ -980,25 +992,35 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         }, [mapStyleState, applyFlyTo]);
 
         const showStaticPuck = !isNavigating && !routeOrigin && !!showUserLocationMarker;
-        const [mapFinishedLoading, setMapFinishedLoading] = useState(false);
+        const [styleFinishedLoading, setStyleFinishedLoading] = useState(false);
         const [puckRenderMode, setPuckRenderMode] = useState<'normal' | 'compass'>('normal');
         const [followPulse, setFollowPulse] = useState(false);
+        const followPulsedRef = useRef(false);
         useEffect(() => {
-            if (!showStaticPuck || !mapFinishedLoading) {
+            if (!showStaticPuck || !styleFinishedLoading) {
                 setPuckRenderMode('normal');
                 return;
             }
             setPuckRenderMode('normal');
-            const timer = setTimeout(() => setPuckRenderMode('compass'), 800);
-            const pulseOn = setTimeout(() => setFollowPulse(true), 1200);
-            const pulseOff = setTimeout(() => setFollowPulse(false), 2000);
+            const timer = setTimeout(() => setPuckRenderMode('compass'), 1100);
+            let pulseOn: ReturnType<typeof setTimeout> | undefined;
+            let pulseOff: ReturnType<typeof setTimeout> | undefined;
+            if (!followPulsedRef.current && !routeGeoJSON) {
+                pulseOn = setTimeout(() => {
+                    if (followPulsedRef.current || Date.now() - lastFlyToAtRef.current < 3000) return;
+                    followPulsedRef.current = true;
+                    // console.log('[cam] follow pulse on');
+                    setFollowPulse(true);
+                    pulseOff = setTimeout(() => { console.log('cam:follow pulse off'); setFollowPulse(false); }, 400);
+                }, 500);
+            }
             return () => {
                 clearTimeout(timer);
-                clearTimeout(pulseOn);
-                clearTimeout(pulseOff);
+                if (pulseOn) clearTimeout(pulseOn);
+                if (pulseOff) clearTimeout(pulseOff);
                 setFollowPulse(false);
             };
-        }, [showStaticPuck, mapFinishedLoading, mapStyleState]);
+        }, [showStaticPuck, styleFinishedLoading, mapStyleState, routeGeoJSON]);
 
         // Preload images on mount
         useEffect(() => {
@@ -1315,10 +1337,15 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         }, [center?.[0], center?.[1], zoom, isNavigating, mapStyleState, applyInitialCamera, externalCameraControl]);
 
         const handleMapLoad = useCallback(() => {
-            setMapFinishedLoading(true);
+            // console.log('cam:onDidFinishLoadingMap; styleRestorePending=', pendingStyleRestoreRef.current);
             if (!externalCameraControl) {
                 applyInitialCamera();
-            } else if (lastFreeCameraRef.current) {
+            } else if (
+                pendingStyleRestoreRef.current &&
+                lastFreeCameraRef.current &&
+                Date.now() - lastFlyToAtRef.current > 2500
+            ) {
+                // console.log('cam: restoring free camera after style switch', JSON.stringify(lastFreeCameraRef.current));
                 cameraRef.current?.setCamera({
                     centerCoordinate: lastFreeCameraRef.current.center,
                     zoomLevel: lastFreeCameraRef.current.zoom,
@@ -1326,6 +1353,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                     animationMode: 'moveTo',
                 });
             }
+            pendingStyleRestoreRef.current = false;
             if (pendingFlyTo.current) {
                 applyFlyTo(pendingFlyTo.current);
             }
@@ -1429,6 +1457,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         }}
                         onRegionDidChange={(e: any) => {
                             if (isNavigating || !externalCameraControl) return;
+                            if (Date.now() - lastFlyToAtRef.current < 2500) return;
 
                             const props = e.properties;
                             const zoomLevel = props?.zoomLevel ?? props?.zoom;
@@ -1438,6 +1467,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             }
                         }}
                         onDidFinishLoadingMap={handleMapLoad}
+                        onDidFinishLoadingStyle={() => setStyleFinishedLoading(true)}
                     >
                         {(showFollowCamera || showExploreCamera) && (
                             <MapLibreGL.Camera
