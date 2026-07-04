@@ -15,6 +15,7 @@ import { initializeAppCheckSingleton } from '../shared/utils/appCheck';
 import { ForceUpdateModal } from '../components/ForceUpdateModal';
 import telemetryApiService from '../shared/services/telemetry-api.service';
 import { dashboardEventsService } from '../shared/services/dashboard-events.service';
+import { locationPermissionSettled } from '../shared/utils/permissionSequence';
 import './globals.css';
 import '../shared/utils/localization/i18n';
 
@@ -63,9 +64,12 @@ function AppShell() {
 
   useEffect(() => {
     if (Platform.OS === 'android' && Number(Platform.Version) >= 33) {
-      PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
-      ).catch(() => undefined);
+      const timeout = new Promise<void>((resolve) => setTimeout(resolve, 30000));
+      Promise.race([locationPermissionSettled, timeout]).then(() => {
+        PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
+        ).catch(() => undefined);
+      });
     }
   }, []);
 

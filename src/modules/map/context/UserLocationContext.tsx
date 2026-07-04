@@ -7,7 +7,9 @@ import React, {
     useState,
     type ReactNode,
 } from 'react';
+import { PermissionsAndroid, Platform } from 'react-native';
 import * as Location from 'expo-location';
+import { markLocationPermissionSettled } from '../../../shared/utils/permissionSequence';
 
 export type UserLocationCoords = { lat: number; lng: number; accuracy?: number; speed?: number };
 
@@ -45,9 +47,20 @@ export function UserLocationProvider({ children }: { children: ReactNode }) {
         }
 
         try {
-            const { status } = await Location.requestForegroundPermissionsAsync();
+            let { status } = await Location.getForegroundPermissionsAsync();
             if (status !== 'granted') {
-                console.log('location denied');
+                if (Platform.OS === 'android') {
+                    await PermissionsAndroid.requestMultiple([
+                        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+                        PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
+                    ]).catch(() => undefined);
+                } else {
+                    await Location.requestForegroundPermissionsAsync().catch(() => undefined);
+                }
+                ({ status } = await Location.getForegroundPermissionsAsync());
+            }
+            markLocationPermissionSettled();
+            if (status !== 'granted') {
                 return;
             }
 
@@ -63,28 +76,11 @@ export function UserLocationProvider({ children }: { children: ReactNode }) {
             };
 
             try {
-                const lastKnown = await Location.getLastKnownPositionAsync({
-                    maxAge: 10 * 60 * 1000,
-                });
+                const lastKnown = await Location.getLastKnownPositionAsync();
                 if (lastKnown) {
                     applyLocation(lastKnown.coords);
                 }
             } catch {
-            }
-
-            try {
-                const current = await Location.getCurrentPositionAsync({
-                    accuracy: Location.Accuracy.Balanced,
-                });
-                applyLocation(current.coords);
-            } catch {
-                try {
-                    const current = await Location.getCurrentPositionAsync({
-                        accuracy: Location.Accuracy.Lowest,
-                    });
-                    applyLocation(current.coords);
-                } catch {
-                }
             }
 
             locationSubscription.current = await Location.watchPositionAsync(
@@ -95,8 +91,16 @@ export function UserLocationProvider({ children }: { children: ReactNode }) {
                 },
                 (location) => applyLocation(location.coords)
             );
+
+            Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Lowest })
+                .then((current) => applyLocation(current.coords))
+                .catch(() => { });
+            Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
+                .then((current) => applyLocation(current.coords))
+                .catch(() => { });
         } catch (error) {
             isTrackingActive.current = false;
+            markLocationPermissionSettled();
             console.log('error getting location:', error);
         }
     }, []);

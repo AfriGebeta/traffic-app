@@ -82,6 +82,8 @@ interface ExtendedGebetaMapProps extends Omit<GebetaMapProps, 'center'> {
     userLocation?: { lat: number; lng: number; accuracy?: number; speed?: number } | null;
     userHeading?: number;
     showUserLocationMarker?: boolean;
+    onUserLocationUpdate?: (location: { lat: number; lng: number }) => void;
+    onRegionCenterChange?: (center: [number, number]) => void;
     onUserInteraction?: () => void;
     incidents?: Array<{
         id: string;
@@ -762,7 +764,7 @@ AnimatedNavLayer.displayName = 'AnimatedNavLayer';
 
 
 const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
-    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, maneuvers, boundingBox, alternativeRoutesGeoJSON }, ref) => {
+    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, maneuvers, boundingBox, alternativeRoutesGeoJSON }, ref) => {
         const [mapStyleState, setMapStyleState] = useState<Record<string, unknown> | null>(() =>
             mapStyleJson ? ensureStyleBackgroundLayer(mapStyleJson as Record<string, any>) : null
         );
@@ -795,6 +797,8 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             pitch?: number;
         } | null>(null);
         const lastFlyToAtRef = useRef(0);
+        const flyToTokenRef = useRef(0);
+        const lastRegionEventAtRef = useRef(0);
         const pendingStyleRestoreRef = useRef(false);
         const prevStyleKeyRef = useRef<string | null>(null);
         useEffect(() => {
@@ -824,16 +828,25 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             const cameraConfig = {
                 centerCoordinate: options.center,
                 zoomLevel: options.zoom,
-                animationMode: 'flyTo' as const,
+                animationMode: 'easeTo' as const,
                 animationDuration: options.duration ?? 1000,
                 pitch: options.pitch ?? 0,
             };
-            // console.log('[cam] flyTo', JSON.stringify(options.center), 'zoom', options.zoom, 'cameraReady=', !!cameraRef.current);
-
             if (cameraRef.current) {
                 pendingFlyTo.current = null;
                 lastFlyToAtRef.current = Date.now();
                 cameraRef.current.setCamera(cameraConfig);
+                const issuedAt = Date.now();
+                const token = ++flyToTokenRef.current;
+                setTimeout(() => {
+                    if (
+                        flyToTokenRef.current === token &&
+                        cameraRef.current &&
+                        lastRegionEventAtRef.current < issuedAt
+                    ) {
+                        cameraRef.current.setCamera(cameraConfig);
+                    }
+                }, 300);
             } else {
                 pendingFlyTo.current = options;
             }
@@ -992,35 +1005,6 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         }, [mapStyleState, applyFlyTo]);
 
         const showStaticPuck = !isNavigating && !routeOrigin && !!showUserLocationMarker;
-        const [styleFinishedLoading, setStyleFinishedLoading] = useState(false);
-        const [puckRenderMode, setPuckRenderMode] = useState<'normal' | 'compass'>('normal');
-        const [followPulse, setFollowPulse] = useState(false);
-        const followPulsedRef = useRef(false);
-        useEffect(() => {
-            if (!showStaticPuck || !styleFinishedLoading) {
-                setPuckRenderMode('normal');
-                return;
-            }
-            setPuckRenderMode('normal');
-            const timer = setTimeout(() => setPuckRenderMode('compass'), 1100);
-            let pulseOn: ReturnType<typeof setTimeout> | undefined;
-            let pulseOff: ReturnType<typeof setTimeout> | undefined;
-            if (!followPulsedRef.current && !routeGeoJSON) {
-                pulseOn = setTimeout(() => {
-                    if (followPulsedRef.current || Date.now() - lastFlyToAtRef.current < 3000) return;
-                    followPulsedRef.current = true;
-                    // console.log('[cam] follow pulse on');
-                    setFollowPulse(true);
-                    pulseOff = setTimeout(() => { console.log('cam:follow pulse off'); setFollowPulse(false); }, 400);
-                }, 500);
-            }
-            return () => {
-                clearTimeout(timer);
-                if (pulseOn) clearTimeout(pulseOn);
-                if (pulseOff) clearTimeout(pulseOff);
-                setFollowPulse(false);
-            };
-        }, [showStaticPuck, styleFinishedLoading, mapStyleState, routeGeoJSON]);
 
         // Preload images on mount
         useEffect(() => {
@@ -1336,16 +1320,13 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             };
         }, [center?.[0], center?.[1], zoom, isNavigating, mapStyleState, applyInitialCamera, externalCameraControl]);
 
-        const handleMapLoad = useCallback(() => {
-            // console.log('cam:onDidFinishLoadingMap; styleRestorePending=', pendingStyleRestoreRef.current);
-            if (!externalCameraControl) {
-                applyInitialCamera();
-            } else if (
+        const handleStyleLoad = useCallback(() => {
+            if (
+                externalCameraControl &&
                 pendingStyleRestoreRef.current &&
                 lastFreeCameraRef.current &&
                 Date.now() - lastFlyToAtRef.current > 2500
             ) {
-                // console.log('cam: restoring free camera after style switch', JSON.stringify(lastFreeCameraRef.current));
                 cameraRef.current?.setCamera({
                     centerCoordinate: lastFreeCameraRef.current.center,
                     zoomLevel: lastFreeCameraRef.current.zoom,
@@ -1354,6 +1335,12 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 });
             }
             pendingStyleRestoreRef.current = false;
+        }, [externalCameraControl]);
+
+        const handleMapLoad = useCallback(() => {
+            if (!externalCameraControl) {
+                applyInitialCamera();
+            }
             if (pendingFlyTo.current) {
                 applyFlyTo(pendingFlyTo.current);
             }
@@ -1435,6 +1422,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             onMapClick([coords[0], coords[1]], { ...e, features });
                         }}
                         onRegionIsChanging={(e: any) => {
+                            lastRegionEventAtRef.current = Date.now();
                             const c = e.geometry?.coordinates;
                             const zoomLevel = e.properties?.zoomLevel ?? e.properties?.zoom;
 
@@ -1446,7 +1434,11 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             }
 
                             if (!isNavigating && externalCameraControl) {
-                                if (Array.isArray(c) && zoomLevel !== undefined) {
+                                if (
+                                    Array.isArray(c) &&
+                                    zoomLevel !== undefined &&
+                                    Date.now() - lastFlyToAtRef.current > 2500
+                                ) {
                                     lastFreeCameraRef.current = { center: [c[0], c[1]], zoom: zoomLevel };
                                 }
                             }
@@ -1456,6 +1448,11 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             }
                         }}
                         onRegionDidChange={(e: any) => {
+                            const centerCoords = e.geometry?.coordinates;
+                            if (Array.isArray(centerCoords)) {
+                                onRegionCenterChange?.([centerCoords[0], centerCoords[1]]);
+                            }
+
                             if (isNavigating || !externalCameraControl) return;
                             if (Date.now() - lastFlyToAtRef.current < 2500) return;
 
@@ -1467,7 +1464,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             }
                         }}
                         onDidFinishLoadingMap={handleMapLoad}
-                        onDidFinishLoadingStyle={() => setStyleFinishedLoading(true)}
+                        onDidFinishLoadingStyle={handleStyleLoad}
                     >
                         {(showFollowCamera || showExploreCamera) && (
                             <MapLibreGL.Camera
@@ -1481,7 +1478,6 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                         animationDuration: 0,
                                         pitch: 0,
                                         heading: 0,
-                                        followUserLocation: followPulse,
                                     }
                                     : {})}
                                 maxBounds={undefined}
@@ -1800,8 +1796,14 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         {showStaticPuck && (
                             <MapLibreGL.UserLocation
                                 renderMode="native"
-                                androidRenderMode={puckRenderMode}
+                                androidRenderMode="compass"
                                 showsUserHeadingIndicator
+                                onUpdate={onUserLocationUpdate ? (loc: any) => {
+                                    const coords = loc?.coords;
+                                    if (coords) {
+                                        onUserLocationUpdate({ lat: coords.latitude, lng: coords.longitude });
+                                    }
+                                } : undefined}
                             />
                         )}
 

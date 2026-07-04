@@ -886,6 +886,15 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
 
                 userHeading={currentHeading}
                 showUserLocationMarker={!routeOrigin}
+                onUserLocationUpdate={(loc) => {
+                    if (
+                        !userLocation ||
+                        Math.abs(userLocation.lat - loc.lat) > 0.00005 ||
+                        Math.abs(userLocation.lng - loc.lng) > 0.00005
+                    ) {
+                        setUserLocation(loc);
+                    }
+                }}
                 routeOrigin={routeOrigin ? {
                     latitude: routeOrigin.latitude,
                     longitude: routeOrigin.longitude,

@@ -306,7 +306,6 @@ export const useNavigation = (
 
         const activeWaypoints = waypointsOverride ?? waypoints;
         const effectiveCosting = costingOverride ?? currentCosting;
-
         setIsNavigating(true);
         try {
             const navigationData = await navigationService.getNavigation({
