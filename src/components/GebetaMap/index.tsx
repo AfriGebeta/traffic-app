@@ -1,5 +1,5 @@
 import React, { forwardRef, useState, useImperativeHandle, useRef, useEffect, useLayoutEffect, memo, useMemo, useCallback } from 'react';
-import { View, StyleSheet, Alert, Text, Animated, Image } from 'react-native';
+import { View, StyleSheet, Alert, Text, Animated, Image, PixelRatio } from 'react-native';
 import MapLibreGL from '@maplibre/maplibre-react-native';
 import { GebetaMapRef, GebetaMapProps } from '@gebeta/tiles-react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -306,9 +306,11 @@ const NAV_ARROW_FWD_M = 15;
 const NAV_ARROW_TURN_TYPES = new Set([9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 20, 21, 26, 27]);
 const NAV_PUCK_SCREEN_FRACTION = 0.68;
 const NAV_PUCK_OVERLAY_SIZE = 48;
-const NAV_PUCK_FORWARD_PX = 14;
-const navCameraPaddingTop = (mapHeight: number) =>
-    Math.max(0, Math.round((2 * NAV_PUCK_SCREEN_FRACTION - 1) * mapHeight));
+const NAV_PUCK_FORWARD_PX = 4;
+const navCameraPaddingTop = (mapHeight: number) => {
+    const desiredDp = (2 * NAV_PUCK_SCREEN_FRACTION - 1) * mapHeight;
+    return Math.max(0, Math.round(desiredDp / PixelRatio.getFontScale()));
+};
 
 const NAV_HEADING_TAU = 0.10;
 const NAV_V_SMOOTH = 0.35;
