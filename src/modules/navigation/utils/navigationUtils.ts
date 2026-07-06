@@ -320,12 +320,18 @@ export const findCorners = (
  * @param routeCoordinates - Array of route coordinates
  * @returns Object with updated instruction and maneuver index
  */
+const PRE_TRANSITION_LEAD_TIME_SEC = 10;
+const PRE_TRANSITION_MIN_DISTANCE_M = 70;
+const PRE_TRANSITION_MAX_DISTANCE_M = 200; 
+const ADVANCE_THRESHOLD = 60;
+
 export const updateInstructionBasedOnPosition = (
     currentLat: number,
     currentLng: number,
     routeManeuvers: any[],
     currentManeuverIndex: number,
-    routeCoordinates: [number, number][]
+    routeCoordinates: [number, number][],
+    currentSpeedKmh: number = 0
 ): { instruction: string; newManeuverIndex: number } => {
     if (routeManeuvers.length === 0) {
         return { instruction: 'Continue ahead', newManeuverIndex: currentManeuverIndex };
@@ -349,9 +355,6 @@ export const updateInstructionBasedOnPosition = (
 
     const nextManeuver = routeManeuvers[closestManeuverIndex];
 
-    const TURN_APPROACH_DISTANCE = 200;
-    const ADVANCE_THRESHOLD = 60;
-
     if (minDistance < ADVANCE_THRESHOLD && closestManeuverIndex < routeManeuvers.length - 1) {
         const newManeuverIndex = closestManeuverIndex + 1;
         const newManeuver = routeManeuvers[newManeuverIndex];
@@ -359,9 +362,17 @@ export const updateInstructionBasedOnPosition = (
             instruction: newManeuver.instruction || 'Continue ahead',
             newManeuverIndex,
         };
-    } else if (minDistance < TURN_APPROACH_DISTANCE) {
+    }
+
+    const speedMps = Math.max(currentSpeedKmh, 0) / 3.6;
+    const preTransitionDistance = Math.min(
+        Math.max(speedMps * PRE_TRANSITION_LEAD_TIME_SEC, PRE_TRANSITION_MIN_DISTANCE_M),
+        PRE_TRANSITION_MAX_DISTANCE_M
+    );
+
+    if (minDistance < preTransitionDistance) {
         return {
-            instruction: nextManeuver.instruction || 'Continue ahead',
+            instruction: nextManeuver.verbal_pre_transition_instruction || nextManeuver.instruction || 'Continue ahead',
             newManeuverIndex: currentManeuverIndex,
         };
     } else {

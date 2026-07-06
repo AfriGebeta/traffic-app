@@ -73,8 +73,10 @@ export const useNavigation = (
 
     const currentCostingRef = useRef<'auto' | 'pedestrian'>('auto');
     const waypointsRef = useRef<GeocodingPlace[]>([]);
+    const currentSpeedRef = useRef(0);
     useEffect(() => { currentCostingRef.current = currentCosting; }, [currentCosting]);
     useEffect(() => { waypointsRef.current = waypoints; }, [waypoints]);
+    useEffect(() => { currentSpeedRef.current = currentSpeed; }, [currentSpeed]);
 
 
     useVoiceInstructions({
@@ -89,7 +91,8 @@ export const useNavigation = (
             currentLng,
             routeManeuvers.current,
             currentManeuverIndex.current,
-            routeCoordinates.current
+            routeCoordinates.current,
+            currentSpeedRef.current
         );
         setCurrentInstruction(result.instruction);
         currentManeuverIndex.current = result.newManeuverIndex;
