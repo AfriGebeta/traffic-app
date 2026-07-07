@@ -46,9 +46,19 @@ export default function SetPricingScreen() {
                 setStops(parsedStops);
                 setRouteName(params.routeName as string);
 
+                const lastIndex = parsedStops.length - 1;
+                const connectorIndices = parsedStops
+                    .map((stop: RouteStop, index: number) => ({ stop, index }))
+                    .filter(({ stop, index }: { stop: RouteStop; index: number }) =>
+                        stop.type === 'station' || index === 0 || index === lastIndex
+                    )
+                    .map(({ index }: { index: number }) => index);
+
                 const edges: EdgePrice[] = [];
-                for (let i = 0; i < parsedStops.length; i++) {
-                    for (let j = i + 1; j < parsedStops.length; j++) {
+                for (let a = 0; a < connectorIndices.length; a++) {
+                    for (let b = a + 1; b < connectorIndices.length; b++) {
+                        const i = connectorIndices[a];
+                        const j = connectorIndices[b];
                         edges.push({
                             from: i,
                             to: j,
