@@ -38,13 +38,15 @@ export class StreamingPcmPlayer {
         this.queue.connect(this.ctx.destination);
         this.queue.start();
         this.remainder = null;
-        this.startedAt = this.ctx.currentTime;
+        this.startedAt = 0;
         this.enqueuedSeconds = 0;
         console.log('[VoiceNav] player started — ctx sampleRate', this.ctx.sampleRate, 'state', this.ctx.state);
     }
 
     push(chunk: Uint8Array): void {
         if (!this.ctx || !this.queue || chunk.length === 0) return;
+
+        if (this.startedAt === 0) this.startedAt = this.ctx.currentTime;
 
         let bytes = chunk;
         if (this.remainder) {
@@ -82,13 +84,17 @@ export class StreamingPcmPlayer {
 
     finish(): void {
         if (!this.ctx || !this.queue) return;
+        if (this.startedAt === 0) {
+            this.stop();
+            return;
+        }
         const endsAt = this.startedAt + this.enqueuedSeconds;
-        const stopAt = Math.max(this.ctx.currentTime, endsAt);
+        const stopAt = Math.max(this.ctx.currentTime, endsAt) + 0.15;
         try {
             this.queue.stop(stopAt);
         } catch {
         }
-        const remaining = Math.max(0, endsAt - this.ctx.currentTime);
+        const remaining = Math.max(0, stopAt - this.ctx.currentTime);
         console.log('voicenav:player finish draining', remaining.toFixed(2), 's of buffered audio');
     }
 
