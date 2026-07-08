@@ -497,6 +497,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
             return;
         }
 
+        (mapRef.current as any).resumeFollow?.();
         mapRef.current.flyTo({
             center: [userLocation.lng, userLocation.lat],
             zoom: USER_LOCATION_ZOOM,

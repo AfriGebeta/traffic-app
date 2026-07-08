@@ -776,6 +776,8 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         const mapHeightRef = useRef(0);
         const hasStartedNavigating = useRef(false);
         const userHasZoomedOut = useRef(false);
+        const homeFollowPausedRef = useRef(false);
+        const lastHomeFollowPanAtRef = useRef(0);
         const cameraSuspendedRef = useRef(false);   
         const cameraResumeUntilRef = useRef(0);     
         const lastSetZoom = useRef<number>(NAV_ZOOM);
@@ -868,11 +870,17 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         }, []);
 
         const handleMapTouchForUnlock = useCallback(() => {
-            if (!isNavigating || userHasZoomedOut.current || navCameraFree) return;
+            if (!isNavigating) {
+                if (externalCameraControl) {
+                    homeFollowPausedRef.current = true;
+                }
+                return;
+            }
+            if (userHasZoomedOut.current || navCameraFree) return;
             const now = Date.now();
             if (now < navGraceUntilRef.current) return;
             unlockNavCamera('touch');
-        }, [isNavigating, navCameraFree, unlockNavCamera]);
+        }, [isNavigating, navCameraFree, unlockNavCamera, externalCameraControl]);
 
         const handleNavigationGestureUnlock = useCallback((e: any, source: string) => {
             if (!isNavigating || userHasZoomedOut.current || navCameraFree) return;
@@ -933,6 +941,22 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 unlockNavCamera(`${source}-pan`);
             }
         }, [isNavigating, navCameraFree, unlockNavCamera]);
+
+        useEffect(() => {
+            if (isNavigating || !externalCameraControl) return;
+            if (!userLocation || !cameraRef.current) return;
+            if (homeFollowPausedRef.current) return;
+
+            const now = Date.now();
+            if (now - lastHomeFollowPanAtRef.current < 400) return;
+            lastHomeFollowPanAtRef.current = now;
+
+            cameraRef.current.setCamera({
+                centerCoordinate: [userLocation.lng, userLocation.lat],
+                animationDuration: 500,
+                animationMode: 'easeTo',
+            });
+        }, [userLocation?.lat, userLocation?.lng, isNavigating, externalCameraControl]);
 
         const applyRecenterFlyTo = useCallback(() => {
             if (!cameraRef.current || !userLocation) return false;
@@ -1213,6 +1237,9 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         useImperativeHandle(ref, () => ({
             flyTo: (options: any) => {
                 applyFlyTo(options);
+            },
+            resumeFollow: () => {
+                homeFollowPausedRef.current = false;
             },
             recenterNavigation: () => {
                 userHasZoomedOut.current = false;
@@ -1800,12 +1827,12 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                 renderMode="native"
                                 androidRenderMode="compass"
                                 showsUserHeadingIndicator
-                                onUpdate={onUserLocationUpdate ? (loc: any) => {
+                                onUpdate={(loc: any) => {
                                     const coords = loc?.coords;
-                                    if (coords) {
+                                    if (coords && onUserLocationUpdate) {
                                         onUserLocationUpdate({ lat: coords.latitude, lng: coords.longitude });
                                     }
-                                } : undefined}
+                                }}
                             />
                         )}
 
