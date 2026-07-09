@@ -1,7 +1,10 @@
 import { requireOptionalNativeModule } from 'expo';
 import { Platform } from 'react-native';
 
-type NavNotificationNative = { update(body: string): Promise<boolean> };
+type NavNotificationNative = {
+  update(body: string): Promise<boolean>;
+  addListener(event: 'onNavExit', listener: () => void): { remove(): void };
+};
 
 //android only native
 const native =
@@ -16,4 +19,9 @@ export async function updateNativeNavNotification(body: string): Promise<boolean
   } catch {
     return false;
   }
+}
+
+export function addNavExitListener(listener: () => void): { remove(): void } {
+  if (!native) return { remove: () => undefined };
+  return native.addListener('onNavExit', listener);
 }

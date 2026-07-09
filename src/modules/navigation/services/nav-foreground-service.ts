@@ -59,6 +59,7 @@ export async function startNavService(initialBody = 'Navigating…'): Promise<vo
         .catch(() => false);
     if (already) {
         running = true;
+        void attachExitAction(token);
         return;
     }
 
@@ -68,6 +69,7 @@ export async function startNavService(initialBody = 'Navigating…'): Promise<vo
         try {
             await Location.startLocationUpdatesAsync(NAV_TASK, buildOptions(lastBody));
             running = true;
+            void attachExitAction(token);
             return;
         } catch (e) {
             if (attempt >= START_RETRY_DELAYS_MS.length) {
@@ -80,6 +82,15 @@ export async function startNavService(initialBody = 'Navigating…'): Promise<vo
         }
     }
 }
+async function attachExitAction(token: number): Promise<void> {
+    if (Platform.OS !== 'android') return;
+    for (let i = 0; i < 5; i++) {
+        await delay(500);
+        if (token !== startToken || !running) return;
+        if (await updateNativeNavNotification(lastBody)) return;
+    }
+}
+
 export async function updateNavNotification(body: string): Promise<void> {
     if (!running || !body || body === lastBody) return;
     const now = Date.now();

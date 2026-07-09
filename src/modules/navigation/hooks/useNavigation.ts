@@ -11,6 +11,7 @@ import { useLocationTracking } from './useLocationTracking';
 import { useRouteRecalculation } from './useRouteRecalculation';
 import { useVoiceInstructions } from './useVoiceInstructions';
 import { startNavService, stopNavService, updateNavNotification } from '../services/nav-foreground-service';
+import { addNavExitListener } from '../../../../modules/nav-notification';
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import { calculateBearing, calculateDistance, updateInstructionBasedOnPosition as updateInstruction } from '../utils/navigationUtils';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
@@ -77,6 +78,15 @@ export const useNavigation = (
     useEffect(() => { currentCostingRef.current = currentCosting; }, [currentCosting]);
     useEffect(() => { waypointsRef.current = waypoints; }, [waypoints]);
     useEffect(() => { currentSpeedRef.current = currentSpeed; }, [currentSpeed]);
+
+    useEffect(() => {
+        const sub = addNavExitListener(() => {
+            if (isNavigatingRef.current) {
+                stopNavigationRef.current?.();
+            }
+        });
+        return () => sub.remove();
+    }, []);
 
 
     useVoiceInstructions({
