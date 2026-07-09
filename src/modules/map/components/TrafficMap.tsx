@@ -126,6 +126,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         nextInstruction,
         remainingDistance,
         remainingTime,
+        totalRouteDistance,
         isOffRoute,
         isRecalculating,
         routeCoordinates,
@@ -941,6 +942,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     <NavigationOverlay
                         remainingTime={remainingTime}
                         remainingDistance={remainingDistance}
+                        totalRouteDistance={totalRouteDistance}
                         destination={selectedDestination.name}
                         destinationCoords={{ lat: selectedDestination.latitude, lng: selectedDestination.longitude }}
                         onReportPress={() => setShowReportOptions(true)}

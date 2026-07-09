@@ -759,6 +759,7 @@ export const useNavigation = (
         nextInstruction,
         remainingDistance,
         remainingTime,
+        totalRouteDistance: totalRouteDistance.current,
         currentSpeed,
         isOffRoute,
         isRecalculating,

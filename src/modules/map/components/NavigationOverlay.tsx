@@ -16,6 +16,7 @@ interface ActiveRule {
 interface NavigationOverlayProps {
     remainingTime?: number;
     remainingDistance?: number;
+    totalRouteDistance?: number;
     destination?: string;
     destinationCoords?: { lat: number; lng: number };
     currentSpeed?: number;
@@ -54,6 +55,8 @@ const formatTime = (seconds: number): string => {
 
 export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
     remainingTime,
+    remainingDistance,
+    totalRouteDistance,
     destination,
     destinationCoords,
     currentSpeed = 0,
@@ -75,6 +78,12 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
         const eta = new Date(Date.now() + remainingTime * 1000);
         return eta.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
     };
+
+    const routeProgress = (() => {
+        if (!totalRouteDistance || totalRouteDistance <= 0 || remainingDistance == null) return 0;
+        const traveled = totalRouteDistance - remainingDistance;
+        return Math.min(1, Math.max(0, traveled / totalRouteDistance));
+    })();
 
     return (
         <View className="absolute left-0 right-0 bottom-0">
@@ -245,54 +254,90 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                     paddingHorizontal: 20,
                     paddingTop: 16,
                     paddingBottom: insets.bottom + 16,
-                    flexDirection: 'row',
-                    alignItems: 'center',
                 }}
             >
-                <View
-                    style={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 24,
-                        backgroundColor: 'transparent',
-                        borderWidth: 2,
-                        borderColor: NAV_GREEN,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <Ionicons name={directionIcon} size={26} color={NAV_GREEN} />
-                </View>
+                {totalRouteDistance ? (
+                    <View style={{ height: 16, justifyContent: 'center', marginBottom: 14 }}>
+                        <View
+                            style={{
+                                position: 'absolute',
+                                left: 0,
+                                right: 0,
+                                height: 4,
+                                borderRadius: 2,
+                                backgroundColor: '#E5E7EB',
+                            }}
+                        />
+                        <View
+                            style={{
+                                position: 'absolute',
+                                left: 0,
+                                width: `${routeProgress * 100}%`,
+                                height: 4,
+                                borderRadius: 2,
+                                backgroundColor: NAV_GREEN,
+                            }}
+                        />
+                        <Image
+                            source={require('../../../../assets/images/progress-arrow.png')}
+                            style={{
+                                position: 'absolute',
+                                left: `${routeProgress * 100}%`,
+                                marginLeft: -7,
+                                width: 16,
+                                height: 16,
+                            }}
+                            resizeMode="contain"
+                        />
+                    </View>
+                ) : null}
 
-                <View style={{ flex: 1, alignItems: 'center' }}>
-                    <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827' }}>
-                        {remainingTime ? formatTime(remainingTime) : '-- min'}
-                        {'  ·  '}
-                        <Text style={{ fontSize: 16, fontWeight: '600' }}>ETA {getETA()}</Text>
-                    </Text>
-                    {destinationCoords && (
-                        <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>
-                            {destinationCoords.lat.toFixed(5)}, {destinationCoords.lng.toFixed(5)}
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View
+                        style={{
+                            width: 48,
+                            height: 48,
+                            borderRadius: 24,
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            borderColor: NAV_GREEN,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
+                    >
+                        <Ionicons name={directionIcon} size={26} color={NAV_GREEN} />
+                    </View>
+
+                    <View style={{ flex: 1, alignItems: 'center' }}>
+                        <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827' }}>
+                            {remainingTime ? formatTime(remainingTime) : '-- min'}
+                            {'  ·  '}
+                            <Text style={{ fontSize: 16, fontWeight: '600' }}>ETA {getETA()}</Text>
                         </Text>
-                    )}
-                </View>
+                        {destinationCoords && (
+                            <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>
+                                {destinationCoords.lat.toFixed(5)}, {destinationCoords.lng.toFixed(5)}
+                            </Text>
+                        )}
+                    </View>
 
-                <TouchableOpacity
-                    onPress={onExitPress}
-                    style={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 24,
-                        backgroundColor: '#fff',
-                        borderWidth: 2,
-                        borderColor: NAV_GREEN,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        marginLeft: 12,
-                    }}
-                >
-                    <Ionicons name="close" size={24} color={NAV_GREEN} />
-                </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={onExitPress}
+                        style={{
+                            width: 48,
+                            height: 48,
+                            borderRadius: 24,
+                            backgroundColor: '#fff',
+                            borderWidth: 2,
+                            borderColor: NAV_GREEN,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginLeft: 12,
+                        }}
+                    >
+                        <Ionicons name="close" size={24} color={NAV_GREEN} />
+                    </TouchableOpacity>
+                </View>
             </View>
         </View>
     );
