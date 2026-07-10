@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { StoredNavigation, RequestNavigationHistory, NavigationPoint } from '../types/tracking.types';
 import { getAppCheckToken } from '../../../shared/utils/appCheck';
+import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 
 const STORAGE_KEY = '@navigation_tracking';
 const LAST_SYNC_KEY = '@navigation_last_sync';
@@ -18,13 +19,17 @@ const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(r
 class NavigationTrackingService {
 
     private pendingPoints: Record<string, { points: Record<string, { lat: number; lng: number }>; startTime: number }> = {};
-    private flushTimer: ReturnType<typeof setInterval> | null = null;
+    private flushTimer: ReturnType<typeof setTimeout> | null = null;
     private lastRequestAt = 0;
 
     constructor() {
-        this.flushTimer = setInterval(() => {
-            this.flushPendingPoints();
-        }, 30_000);
+        this.scheduleFlush();
+    }
+
+    private scheduleFlush(): void {
+        this.flushTimer = setTimeout(() => {
+            this.flushPendingPoints().finally(() => this.scheduleFlush());
+        }, getAppConfig().trackingFlushIntervalMs);
     }
 
     private async flushPendingPoints(): Promise<void> {

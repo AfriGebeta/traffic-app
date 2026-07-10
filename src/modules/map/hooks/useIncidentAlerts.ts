@@ -3,9 +3,7 @@ import * as Haptics from 'expo-haptics';
 import { Incident } from '../../incidents/types/incident.types';
 import { getIncidentTranslationKey } from '../../incidents/utils/incidentTranslations';
 import { useTranslation } from 'react-i18next';
-
-const ALERT_DISTANCE_KM = 1;
-const CLEAR_DISTANCE_KM = 0.2;
+import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 
 const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
     const R = 6371;
@@ -133,7 +131,7 @@ export const useIncidentAlerts = (
                 routeCoordinates
             );
 
-            if (onRouteAhead && distance <= ALERT_DISTANCE_KM && distance < closestDistance) {
+            if (onRouteAhead && distance <= getAppConfig().incidentAlertDistanceKm && distance < closestDistance) {
                 closestIncident = incident;
                 closestDistance = distance;
             }
@@ -143,7 +141,7 @@ export const useIncidentAlerts = (
             const incidentId = closestIncident.id;
             const previousDistance = previousDistances.current.get(incidentId);
 
-            const reachedIncident = closestDistance <= CLEAR_DISTANCE_KM;
+            const reachedIncident = closestDistance <= getAppConfig().incidentClearDistanceKm;
             const isMovingAway = previousDistance !== undefined && closestDistance > previousDistance;
 
             if (reachedIncident && isMovingAway) {

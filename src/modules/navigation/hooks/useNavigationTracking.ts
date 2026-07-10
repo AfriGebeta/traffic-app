@@ -1,13 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { navigationTrackingService } from '../services/tracking.service';
+import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 
 interface UseNavigationTrackingProps {
     isNavigating: boolean;
     userLocation: { lat: number; lng: number } | null;
 }
-
-const TRACKING_POINT_INTERVAL_MS = 5000;
 
 export const useNavigationTracking = ({
     isNavigating,
@@ -21,7 +20,7 @@ export const useNavigationTracking = ({
         if (!isNavigating || !navigationIdRef.current || !userLocation) return;
 
         const now = Date.now();
-        if (now - lastPointTimeRef.current < TRACKING_POINT_INTERVAL_MS) return;
+        if (now - lastPointTimeRef.current < getAppConfig().trackingPointIntervalMs) return;
         lastPointTimeRef.current = now;
 
         console.log(

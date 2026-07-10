@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import * as Location from 'expo-location';
 import { navigationTrackingService } from '../../navigation/services/tracking.service';
+import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 
 interface UseCollectorTrackingProps {
     isCollecting: boolean; 
@@ -37,7 +38,7 @@ export const useCollectorTracking = ({
                         locationSubscriptionRef.current = await Location.watchPositionAsync(
                             {
                                 accuracy: Location.Accuracy.High,
-                                timeInterval: 5000, 
+                                timeInterval: getAppConfig().collectorTrackingIntervalMs,
                                 distanceInterval: 0,
                             },
                             (location) => {
