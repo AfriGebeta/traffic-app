@@ -9,6 +9,7 @@ import GebetaMap from '../../../components/GebetaMap';
 import { colors } from '../../../shared/theme/colors';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
+import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 
 export default function DestinationPickerScreen() {
     const router = useRouter();
@@ -50,7 +51,7 @@ export default function DestinationPickerScreen() {
                     ref={mapRef}
                     apiKey={apiKey || ''}
                     mapStyleUrl={`https://tiles.gebeta.app/styles/standard/style.json?apiKey=${apiKey}`}
-                    center={userLocation ? [userLocation.lng, userLocation.lat] : [38.7463, 9.0223]}
+                    center={userLocation ? [userLocation.lng, userLocation.lat] : [getAppConfig().defaultMapCenterLng, getAppConfig().defaultMapCenterLat]}
                     zoom={15}
                     onRegionCenterChange={([lng, lat]) => setSelectedLocation({ lat, lng })}
                     externalCameraControl={true}

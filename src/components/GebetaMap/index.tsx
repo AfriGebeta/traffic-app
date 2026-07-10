@@ -4,6 +4,7 @@ import MapLibreGL from '@maplibre/maplibre-react-native';
 import { GebetaMapRef, GebetaMapProps } from '@gebeta/tiles-react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../shared/theme/colors';
+import { getAppConfig } from '../../shared/config/remoteConfigValues';
 import { showToast } from '../../shared/utils/toast';
 import { decodePolyline } from '../../shared/utils/polyline';
 import {
@@ -328,7 +329,6 @@ const NAV_UNSNAP_DEBOUNCE_MS = 3000;
 const NAV_UNSNAP_HEADING_ANGLE = 70;  
 const NAV_UNSNAP_HEADING_MIN_DIST = 8;  
 const NAV_UNSNAP_HEADING_MIN_MOVE = 8;
-const NAV_ZOOM = 19;
 
 const angleDiff = (a: number, b: number) => {
     let diff = Math.abs(a - b);
@@ -778,8 +778,9 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         const userHasZoomedOut = useRef(false);
         const homeFollowPausedRef = useRef(false);
         const lastHomeFollowPanAtRef = useRef(0);
-        const cameraSuspendedRef = useRef(false);   
-        const cameraResumeUntilRef = useRef(0);     
+        const cameraSuspendedRef = useRef(false);
+        const cameraResumeUntilRef = useRef(0);
+        const NAV_ZOOM = getAppConfig().navZoom;
         const lastSetZoom = useRef<number>(NAV_ZOOM);
         const pulseAnim = useRef(new Animated.Value(1)).current;
         const [imagesLoaded, setImagesLoaded] = useState(false);

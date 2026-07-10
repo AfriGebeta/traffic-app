@@ -10,6 +10,7 @@ import React, {
 import { PermissionsAndroid, Platform } from 'react-native';
 import * as Location from 'expo-location';
 import { markLocationPermissionSettled } from '../../../shared/utils/permissionSequence';
+import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 
 export type UserLocationCoords = { lat: number; lng: number; accuracy?: number; speed?: number };
 
@@ -86,7 +87,7 @@ export function UserLocationProvider({ children }: { children: ReactNode }) {
             locationSubscription.current = await Location.watchPositionAsync(
                 {
                     accuracy: Location.Accuracy.Balanced,
-                    timeInterval: 5000,
+                    timeInterval: getAppConfig().userLocationIntervalMs,
                     distanceInterval: 0,
                 },
                 (location) => applyLocation(location.coords)

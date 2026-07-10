@@ -6,9 +6,7 @@ import type {
 } from '../types/navigation.types';
 import type { RouteSegment } from '../../taxi/types/taxi.types';
 import { calculateDistance } from '../utils/navigationUtils';
-
-const STATION_ARRIVAL_THRESHOLD = 50; //50 meters
-const WALKING_END_THRESHOLD = 20; // 20 meters
+import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 
 export const navigationService = {
     async geocodePlace(placeName: string): Promise<GeocodingPlace[]> {
@@ -150,10 +148,11 @@ export const navigationService = {
             endPoint.lng
         );
 
+        const cfg = getAppConfig();
         const threshold =
             currentSegment.mode === 'pedestrian' || currentSegment.type === 'walk'
-                ? WALKING_END_THRESHOLD
-                : STATION_ARRIVAL_THRESHOLD;
+                ? cfg.walkingEndThresholdM
+                : cfg.stationArrivalThresholdM;
 
         return distance < threshold;
     },

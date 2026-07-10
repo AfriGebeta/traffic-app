@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { getRemoteConfig, fetchAndActivate, getString, setDefaults, setConfigSettings } from '@react-native-firebase/remote-config';
+import { getRemoteConfig, fetchAndActivate, getString, getValue, setDefaults, setConfigSettings } from '@react-native-firebase/remote-config';
 import semver from 'semver';
 import * as Application from 'expo-application';
+import { buildRemoteConfigDefaults, hydrateAppConfig, getAppConfig, RC_KEYS } from '../config/remoteConfigValues';
 
 const FALLBACK_API_KEY = process.env.EXPO_PUBLIC_GEBETA_API_KEY ?? '';
 
@@ -48,9 +49,22 @@ export function RemoteConfigProvider({ children }: { children: ReactNode }) {
         min_android_version: '1.0.0',
         gebeta_api_key: FALLBACK_API_KEY,
         map_styles: JSON.stringify(FALLBACK_MAP_STYLES),
+        ...buildRemoteConfigDefaults(),
       });
       await setConfigSettings(rc, { minimumFetchIntervalMillis: 0 });
       await fetchAndActivate(rc);
+
+      hydrateAppConfig(rc);
+
+      const appConfig = getAppConfig();
+      const fromRemote = (Object.keys(RC_KEYS) as (keyof typeof RC_KEYS)[])
+        .filter((k) => getValue(rc, RC_KEYS[k]).getSource() === 'remote')
+        .map((k) => `${RC_KEYS[k]}=${appConfig[k]}`);
+      console.log(
+        `remoteconfig: tier2 ${fromRemote.length}/${Object.keys(RC_KEYS).length} keys from remote` +
+          (fromRemote.length ? ` → ${fromRemote.join(', ')}` : ' (all baked-in defaults)')
+      );
+      console.log('remoteconfig: tier2 resolved values:', JSON.stringify(appConfig));
 
       const apiKey = getString(rc, 'gebeta_api_key') || FALLBACK_API_KEY;
       const minVersion = getString(rc, 'min_android_version');

@@ -20,6 +20,7 @@ import { useUserLocation } from '../hooks/useUserLocation';
 import { useSearch } from '../hooks/useSearch';
 
 import { colors } from '../../../shared/theme/colors';
+import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 import { useNavigation } from '../../navigation/hooks/useNavigation';
 import { useVoiceNavigation } from '../../navigation/hooks/useVoiceNavigation';
 import { useNavigationTracking } from '../../navigation/hooks/useNavigationTracking';
@@ -56,7 +57,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     const sharedFlyToTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const router = useRouter();
 
-    const USER_LOCATION_ZOOM = 15;
+    const USER_LOCATION_ZOOM = getAppConfig().userLocationZoom;
 
     const initialMapCenterRef = useRef<[number, number] | null>(null);
     const [showReportOptions, setShowReportOptions] = useState(false);
