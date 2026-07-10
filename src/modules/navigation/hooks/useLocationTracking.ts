@@ -3,6 +3,7 @@ import * as Location from 'expo-location';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 import { showToast } from '../../../shared/utils/toast';
 import { buildSegmentedRoutesFromPosition, calculateBearing, calculateDistance } from '../utils/navigationUtils';
+import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 interface UseLocationTrackingProps {
     routeCoordinates: React.MutableRefObject<[number, number][]>;
     isNavigatingRef: React.MutableRefObject<boolean>;
@@ -46,7 +47,6 @@ interface UseLocationTrackingProps {
     onArrival?: () => void;
 }
 
-const ARRIVAL_DISTANCE_METERS = 80;
 
 export const useLocationTracking = ({
     routeCoordinates,
@@ -83,7 +83,7 @@ export const useLocationTracking = ({
     const lastOffRoutePosition = useRef<{ lat: number; lng: number } | null>(null);
     const headingDivergeStartRef = useRef<number | null>(null);  // when heading first diverged
     const headingDivergeDistRef = useRef<number>(0);             // distance-from-route at that moment
-    const currentGPSIntervalRef = useRef<number>(1000); //1s
+    const currentGPSIntervalRef = useRef<number>(getAppConfig().navGpsIntervalMs);
 
     const locationCallbackRef = useRef<((location: Location.LocationObject) => void) | null>(null);
     const lastRenderedMarkerRef = useRef<{ lat: number; lng: number } | null>(null);
@@ -99,7 +99,7 @@ export const useLocationTracking = ({
         offRouteStartTime.current = null;
         lastOffRoutePosition.current = null;
         headingDivergeStartRef.current = null;
-        currentGPSIntervalRef.current = 1000;
+        currentGPSIntervalRef.current = getAppConfig().navGpsIntervalMs;
         locationCallbackRef.current = null;
         hasArrivedRef.current = false;
     }, []);
@@ -226,13 +226,14 @@ export const useLocationTracking = ({
                     displayLat = snappedLat;
                     displayLng = snappedLng;
 
-                    const OFF_ROUTE_THRESHOLD = 30;
-                    const OFF_ROUTE_DELAY = 2000;
+                    const cfg = getAppConfig();
+                    const OFF_ROUTE_THRESHOLD = cfg.offRouteThresholdM;
+                    const OFF_ROUTE_DELAY = cfg.offRouteDelayMs;
 
-                    const HEADING_DIVERGE_ANGLE = 50;  
-                    const HEADING_DIVERGE_TIME = 3000; 
-                    const HEADING_MIN_SPEED = 3;     
-                    const HEADING_MIN_DISTANCE = 20; 
+                    const HEADING_DIVERGE_ANGLE = cfg.headingDivergeAngleDeg;
+                    const HEADING_DIVERGE_TIME = cfg.headingDivergeTimeMs;
+                    const HEADING_MIN_SPEED = cfg.headingMinSpeed;
+                    const HEADING_MIN_DISTANCE = cfg.headingMinDistanceM;
                     let divergedByHeading = false;
                     if (
                         (speed ?? 0) > HEADING_MIN_SPEED &&
@@ -404,7 +405,7 @@ export const useLocationTracking = ({
                             !hasArrivedRef.current &&
                             !isOffRouteRef.current &&
                             totalDistance > 0 &&
-                            totalDistance <= ARRIVAL_DISTANCE_METERS &&
+                            totalDistance <= getAppConfig().arrivalDistanceM &&
                             onArrival
                         ) {
                             hasArrivedRef.current = true;
@@ -446,7 +447,7 @@ export const useLocationTracking = ({
             locationSubscription.current = await Location.watchPositionAsync(
                 {
                     accuracy: Location.Accuracy.BestForNavigation,
-                    timeInterval: 1000,
+                    timeInterval: getAppConfig().navGpsIntervalMs,
                     distanceInterval: 0,
                     mayShowUserSettingsDialog: true,
                 },

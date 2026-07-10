@@ -6,6 +6,7 @@ import { showToast } from '../../../shared/utils/toast';
 import { voiceNavigationService } from '../services/voice-navigation.service';
 import { decodePolyline } from '../../../shared/utils/polyline';
 import { taxiService } from '../../taxi/services/taxi.service';
+import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 
 interface UseTaxiNavigationProps {
     taxiRoute: TaxiNavigationResponse;
@@ -15,10 +16,6 @@ interface UseTaxiNavigationProps {
     onNavigationComplete: () => void;
     onRouteUpdate?: (newRoute: TaxiNavigationResponse) => void;
 }
-
-const STATION_ARRIVAL_THRESHOLD = 80; // 50 meters
-const WALKING_END_THRESHOLD = 40; // 20 meters
-const OFF_ROUTE_THRESHOLD = 30; // 30 meters for taxi routes
 
 export const useTaxiNavigation = ({
     taxiRoute,
@@ -54,9 +51,10 @@ export const useTaxiNavigation = ({
             endPoint.lng
         );
 
+        const cfg = getAppConfig();
         const threshold = currentSegment.mode === 'pedestrian' || currentSegment.type === 'walk'
-            ? WALKING_END_THRESHOLD
-            : STATION_ARRIVAL_THRESHOLD;
+            ? cfg.taxiWalkingEndThresholdM
+            : cfg.taxiStationArrivalThresholdM;
 
         return distance < threshold;
     };

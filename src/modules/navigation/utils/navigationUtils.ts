@@ -1,4 +1,5 @@
 import { decodePolyline } from '../../../shared/utils/polyline';
+import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 
 export type TaxiSegmentInput = {
     polyline: string;
@@ -312,18 +313,13 @@ export const findCorners = (
 };
 
 /**
- * Update navigation instruction based on current position
- * @param currentLat - Current latitude
- * @param currentLng - Current longitude
- * @param routeManeuvers - Array of route maneuvers
- * @param currentManeuverIndex - Current maneuver index
- * @param routeCoordinates - Array of route coordinates
- * @returns Object with updated instruction and maneuver index
+ * @param currentLat - current lat
+ * @param currentLng - current lon
+ * @param routeManeuvers - array of route maneuvers
+ * @param currentManeuverIndex - current maneu idex
+ * @param routeCoordinates - array of route coordinates
+ * @returns obj with updated instruction and maneuver index
  */
-const PRE_TRANSITION_LEAD_TIME_SEC = 10;
-const PRE_TRANSITION_MIN_DISTANCE_M = 70;
-const PRE_TRANSITION_MAX_DISTANCE_M = 200; 
-const ADVANCE_THRESHOLD = 60;
 
 export const updateInstructionBasedOnPosition = (
     currentLat: number,
@@ -355,7 +351,9 @@ export const updateInstructionBasedOnPosition = (
 
     const nextManeuver = routeManeuvers[closestManeuverIndex];
 
-    if (minDistance < ADVANCE_THRESHOLD && closestManeuverIndex < routeManeuvers.length - 1) {
+    const cfg = getAppConfig();
+
+    if (minDistance < cfg.advanceThresholdM && closestManeuverIndex < routeManeuvers.length - 1) {
         const newManeuverIndex = closestManeuverIndex + 1;
         const newManeuver = routeManeuvers[newManeuverIndex];
         return {
@@ -366,8 +364,8 @@ export const updateInstructionBasedOnPosition = (
 
     const speedMps = Math.max(currentSpeedKmh, 0) / 3.6;
     const preTransitionDistance = Math.min(
-        Math.max(speedMps * PRE_TRANSITION_LEAD_TIME_SEC, PRE_TRANSITION_MIN_DISTANCE_M),
-        PRE_TRANSITION_MAX_DISTANCE_M
+        Math.max(speedMps * cfg.preTransitionLeadTimeSec, cfg.preTransitionMinDistanceM),
+        cfg.preTransitionMaxDistanceM
     );
 
     if (minDistance < preTransitionDistance) {

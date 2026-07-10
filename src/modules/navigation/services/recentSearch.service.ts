@@ -1,8 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { GeocodingPlace } from '../types/navigation.types';
+import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 
 const RECENT_SEARCHES_KEY = '@recent_searches';
-const MAX_RECENT_SEARCHES = 5;
 
 export interface RecentSearch extends GeocodingPlace {
     searchedAt: number;
@@ -34,7 +34,7 @@ export const recentSearchService = {
             return parsed
                 .map((item) => normalizePlace(item) as RecentSearch)
                 .filter((item) => Number.isFinite(item.latitude) && Number.isFinite(item.longitude))
-                .slice(0, MAX_RECENT_SEARCHES);
+                .slice(0, getAppConfig().maxRecentSearches);
         } catch {
             return [];
         }
@@ -51,7 +51,7 @@ export const recentSearchService = {
             };
 
             const filtered = current.filter((item) => !isSamePlace(item, normalizedPlace));
-            const updated = [entry, ...filtered].slice(0, MAX_RECENT_SEARCHES);
+            const updated = [entry, ...filtered].slice(0, getAppConfig().maxRecentSearches);
 
             await AsyncStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
             return updated;

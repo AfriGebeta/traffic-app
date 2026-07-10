@@ -3,9 +3,7 @@ import * as Haptics from 'expo-haptics';
 import { TrafficRuleReport } from '../../rules/types/rule.types';
 import { RULE_TRANSLATION_MAP } from '../../rules/utils/ruleTranslations';
 import { useTranslation } from 'react-i18next';
-
-const ALERT_DISTANCE_KM = 0.2; //200m
-const CLEAR_DISTANCE_KM = 0.05; //50m cleared when passed
+import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 
 const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
     const R = 6371;
@@ -101,7 +99,7 @@ export const useRuleAlerts = (
                 routeCoordinates
             );
 
-            if (onRouteAhead && distance <= ALERT_DISTANCE_KM && distance < closestDistance) {
+            if (onRouteAhead && distance <= getAppConfig().ruleAlertDistanceKm && distance < closestDistance) {
                 closestRule = rule;
                 closestDistance = distance;
             }
@@ -111,7 +109,7 @@ export const useRuleAlerts = (
             const ruleId = closestRule.id;
             const previousDistance = previousDistances.current.get(ruleId);
 
-            const reachedRule = closestDistance <= CLEAR_DISTANCE_KM;
+            const reachedRule = closestDistance <= getAppConfig().ruleClearDistanceKm;
             const isMovingAway = previousDistance !== undefined && closestDistance > previousDistance;
 
             if (reachedRule && isMovingAway) {
