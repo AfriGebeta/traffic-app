@@ -1,6 +1,9 @@
 import React, { useEffect, useRef } from 'react';
-import { View, TouchableOpacity, ActivityIndicator, Animated, Image } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { TouchableOpacity, ActivityIndicator, Animated } from 'react-native';
+import FloatingLocationIcon from '../../../../assets/images/floating-location.svg';
+import FloatingLayersIcon from '../../../../assets/images/floating-layers.svg';
+import FloatingTaxiIcon from '../../../../assets/images/floating-taxi.svg';
+import FloatingMicIcon from '../../../../assets/images/floating-mic.svg';
 import { colors } from '../../../shared/theme/colors';
 
 interface FloatingActionsProps {
@@ -26,10 +29,10 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
     isRoutePreviewActive = false,
     isPlaceDetailActive = false,
 }) => {
-    const bottomPosition = useRef(new Animated.Value(180)).current;
+    const bottomPosition = useRef(new Animated.Value(110)).current;
 
     useEffect(() => {
-        let targetBottom = 180;
+        let targetBottom = 160;
         if (isRoutePreviewActive) {
             targetBottom = 340;
         } else if (isPlaceDetailActive) {
@@ -47,27 +50,26 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
             <TouchableOpacity
                 onPress={onLocationPress}
                 className="bg-white rounded-full p-3 shadow-lg"
+                style={{ borderWidth: 1, borderColor: '#D1D5DB' }}
             >
-                <Ionicons name="locate" size={24} color="#F59E0B" />
+                <FloatingLocationIcon width={24} height={24} />
             </TouchableOpacity>
 
             <TouchableOpacity
                 onPress={onThemePress}
                 className="bg-white rounded-full p-3 shadow-lg"
+                style={{ borderWidth: 1, borderColor: '#D1D5DB' }}
             >
-                <Ionicons name="layers-outline" size={24} color="#6B7280" />
+                <FloatingLayersIcon width={24} height={24} />
             </TouchableOpacity>
 
             {!isRoutePreviewActive && (
                 <TouchableOpacity
                     onPress={onTaxiPress}
                     className="bg-white rounded-full p-3 shadow-lg"
+                    style={{ borderWidth: 1, borderColor: '#D1D5DB' }}
                 >
-                    <Image
-                        source={require('../../../../assets/images/minibus-unselected.png')}
-                        style={{ width: 24, height: 24 }}
-                        resizeMode="contain"
-                    />
+                    <FloatingTaxiIcon width={24} height={24} />
                 </TouchableOpacity>
             )}
 
@@ -78,6 +80,8 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
                     disabled={isProcessingVoice}
                     style={{
                         backgroundColor: isRecording || isProcessingVoice ? colors.primary.main : '#FFFFFF',
+                        borderWidth: 1,
+                        borderColor: '#D1D5DB',
                     }}
                     className="rounded-full p-3 shadow-lg"
                     activeOpacity={0.7}
@@ -85,11 +89,7 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
                     {isProcessingVoice ? (
                         <ActivityIndicator size="small" color="#FFFFFF" />
                     ) : (
-                        <Ionicons
-                            name={isRecording ? 'mic' : 'mic-outline'}
-                            size={24}
-                            color={isRecording ? '#FFFFFF' : '#6B7280'}
-                        />
+                        <FloatingMicIcon width={24} height={24} />
                     )}
                 </TouchableOpacity>
             )}

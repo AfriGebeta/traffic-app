@@ -54,10 +54,10 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
     return (
         <View
             className="absolute left-4 right-4"
-            style={{ bottom: Math.max(insets.bottom + 8, 36) }}
+            style={{ bottom: insets.bottom + 2 }}
         >
             <View
-                className="rounded-3xl bg-white flex-row items-center justify-between px-3 py-3"
+                className="rounded-full bg-white p-1"
                 style={{
                     shadowColor: '#000',
                     shadowOffset: { width: 0, height: 4 },
@@ -66,41 +66,50 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
                     elevation: 8,
                 }}
             >
+            <View
+                className="rounded-full flex-row items-center justify-between px-3"
+                style={{
+                    backgroundColor: '#F0F0F0',
+                    paddingTop: 12,
+                    paddingBottom: 12,
+                }}
+            >
                 {tabs.map((tab) => {
                     const isAi = tab.id === 'ai';
                     return (
                         <TouchableOpacity
                             key={tab.id}
                             onPress={() => handleTabPress(tab.id)}
-                            className="flex-1 items-center"
+                            className="flex-1 items-center justify-center"
+                            style={{ height: 48 }}
                             activeOpacity={0.7}
                         >
                             {isAi ? (
                                 <View
                                     className="items-center justify-center rounded-full"
-                                    style={{ width: 60, height: 60, backgroundColor: colors.primary.main }}
+                                    style={{ width: 58, height: 58, backgroundColor: colors.primary.main }}
                                 >
                                     <Image
                                         source={tab.icon}
-                                        style={{ width: 60, height: 60 }}
+                                        style={{ width: 58, height: 58 }}
                                         resizeMode="contain"
                                     />
                                 </View>
                             ) : (
                                 <>
                                     {tab.SvgIcon ? (
-                                        <tab.SvgIcon width={30} height={30} />
+                                        <tab.SvgIcon width={22} height={22} />
                                     ) : (
                                         <Image
                                             source={tab.icon}
-                                            style={{ width: 30, height: 30 }}
+                                            style={{ width: 22, height: 22 }}
                                             resizeMode="contain"
                                         />
                                     )}
                                     <Text
-                                        className="text-gray-700 text-xs mt-1.5"
+                                        className="text-gray-700 mt-1"
+                                        style={[{ fontSize: 10 }, fontsLoaded ? { fontFamily: 'PlusJakartaSans-Light' } : undefined]}
                                         numberOfLines={1}
-                                        style={fontsLoaded ? { fontFamily: 'PlusJakartaSans-Light' } : undefined}
                                     >
                                         {t(tab.translationKey)}
                                     </Text>
@@ -109,6 +118,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
                         </TouchableOpacity>
                     );
                 })}
+            </View>
             </View>
         </View>
     );
