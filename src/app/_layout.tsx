@@ -9,6 +9,7 @@ import { LocationProvider } from '../shared/contexts/LocationContext';
 import { useEffect, useRef } from 'react';
 import * as NavigationBar from 'expo-navigation-bar';
 import { AppState, AppStateStatus, Platform, PermissionsAndroid } from 'react-native';
+import { useFonts } from 'expo-font';
 import { useTelegramDeepLink } from '../shared/hooks/useTelegramDeepLink';
 import { useRemoteConfig, RemoteConfigProvider } from '../shared/contexts/RemoteConfigContext';
 import { initializeAppCheckSingleton } from '../shared/utils/appCheck';
@@ -18,8 +19,11 @@ import { dashboardEventsService } from '../shared/services/dashboard-events.serv
 import { locationPermissionSettled } from '../shared/utils/permissionSequence';
 import './globals.css';
 import '../shared/utils/localization/i18n';
+import { applyGlobalFont } from '../shared/utils/globalFont';
 
 import '../modules/navigation/services/nav-foreground-service';
+
+applyGlobalFont();
 
 const BACKGROUND_IDLE_MS = 30 * 60 * 1000;
 
@@ -97,9 +101,20 @@ function AppShell() {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    'PlusJakartaSans-Regular': require('../../assets/fonts/plus-jakarta-sans/PlusJakartaSans-Regular.ttf'),
+    'PlusJakartaSans-Medium': require('../../assets/fonts/plus-jakarta-sans/PlusJakartaSans-Medium.ttf'),
+    'PlusJakartaSans-SemiBold': require('../../assets/fonts/plus-jakarta-sans/PlusJakartaSans-SemiBold.ttf'),
+    'PlusJakartaSans-Bold': require('../../assets/fonts/plus-jakarta-sans/PlusJakartaSans-Bold.ttf'),
+  });
+
   useEffect(() => {
     initializeAppCheckSingleton();
   }, []);
+
+  if (!fontsLoaded) {
+    return null;
+  }
 
   return (
     <RemoteConfigProvider>
