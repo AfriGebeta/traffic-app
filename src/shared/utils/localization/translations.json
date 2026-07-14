@@ -140,6 +140,11 @@
         "AM": "ይጠቁሙ "
     },
     {
+        "key": "saved",
+        "EN_US": "Saved",
+        "AM": "የተቀመጡ"
+    },
+    {
         "key": "ahead",
         "EN_US": "Ahead",
         "AM": "በቅርብ ርቀት ላይ"
