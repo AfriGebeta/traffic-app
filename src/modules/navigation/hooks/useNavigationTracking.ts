@@ -17,11 +17,8 @@ export const useNavigationTracking = ({
     const navigationIdRef = useRef<string | null>(null);
     const previousNavigatingRef = useRef<boolean>(false);
     const lastPointTimeRef = useRef<number>(0);
-    const lastPointTimeRef = useRef<number>(0);
+    // const lastPointTimeRef = useRef<number>(0);
 
-    // Record points from location updates instead of setInterval: RN pauses JS
-    // timers while the app is backgrounded, but location updates keep arriving
-    // through the foreground service, so tracking continues in the background.
     useEffect(() => {
         if (!isNavigating || !navigationIdRef.current || !userLocation) return;
 
