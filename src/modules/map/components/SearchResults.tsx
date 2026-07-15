@@ -6,7 +6,8 @@ import { useRouter } from 'expo-router';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 import type { RecentSearch } from '../../navigation/services/recentSearch.service';
 import type { SavedPlace, SavedPlaceType } from '../../places/types/place.types';
-import { colors } from '../../../shared/theme/colors';
+import { useTheme } from '../../../shared/theme/ThemeContext';
+import type { ThemeColors } from '../../../shared/theme/colors';
 
 const Text = RNText;
 
@@ -64,14 +65,14 @@ interface SearchResultsProps {
 const PlaceListItem = ({
     place,
     icon,
-    iconBgClass,
+    theme,
     onSelectPlace,
     onPrepareSelect,
     onRemoveRecent,
 }: {
     place: GeocodingPlace;
     icon: keyof typeof Ionicons.glyphMap;
-    iconBgClass: string;
+    theme: ThemeColors;
     onSelectPlace: (place: GeocodingPlace) => void;
     onPrepareSelect?: () => void;
     onRemoveRecent?: (place: GeocodingPlace) => void;
@@ -83,24 +84,27 @@ const PlaceListItem = ({
     };
 
     return (
-        <View className="border-b border-gray-100 flex-row items-center">
+        <View className="flex-row items-center" style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}>
             <TouchableOpacity
-                className="flex-1 p-4 flex-row items-center active:bg-gray-50"
+                className="flex-1 p-4 flex-row items-center"
                 onPress={handleSelect}
                 activeOpacity={0.7}
             >
-                <View className={`w-10 h-10 rounded-full items-center justify-center mr-3 ${iconBgClass}`}>
-                    <Ionicons name={icon} size={20} color={icon === 'time-outline' ? '#6B7280' : '#F59E0B'} />
+                <View
+                    className="w-10 h-10 rounded-full items-center justify-center mr-3"
+                    style={{ backgroundColor: icon === 'time-outline' ? theme.background : theme.primaryMuted }}
+                >
+                    <Ionicons name={icon} size={20} color={icon === 'time-outline' ? theme.textSecondary : theme.primary} />
                 </View>
                 <View className="flex-1">
-                    <Text className="font-semibold text-gray-900" numberOfLines={1}>
+                    <Text className="font-semibold" style={{ color: theme.textPrimary }} numberOfLines={1}>
                         {place.name}
                     </Text>
-                    <Text className="text-sm text-gray-500" numberOfLines={1}>
+                    <Text className="text-sm" style={{ color: theme.textSecondary }} numberOfLines={1}>
                         {place.type} • {place.City}
                     </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+                <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
             </TouchableOpacity>
             {onRemoveRecent && (
                 <TouchableOpacity
@@ -108,7 +112,7 @@ const PlaceListItem = ({
                     className="p-4"
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                    <Ionicons name="close" size={18} color="#9CA3AF" />
+                    <Ionicons name="close" size={18} color={theme.textSecondary} />
                 </TouchableOpacity>
             )}
         </View>
@@ -117,10 +121,12 @@ const PlaceListItem = ({
 
 const SavedPlaceChips = ({
     savedPlaces,
+    theme,
     onSelectPlace,
     onPrepareSelect,
 }: {
     savedPlaces: SavedPlace[];
+    theme: ThemeColors;
     onSelectPlace: (place: GeocodingPlace) => void;
     onPrepareSelect?: () => void;
 }) => {
@@ -175,23 +181,23 @@ const SavedPlaceChips = ({
                                 paddingVertical: 10,
                                 paddingHorizontal: 6,
                                 borderRadius: 12,
-                                backgroundColor: isExpanded ? `${colors.primary.main}10` : colors.gray[50],
+                                backgroundColor: isExpanded ? theme.primaryMuted : theme.background,
                                 borderWidth: 1,
-                                borderColor: isExpanded ? colors.primary.main : colors.gray[200],
+                                borderColor: isExpanded ? theme.primary : theme.border,
                             }}
                         >
                             <View style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center', marginBottom: 5 }}>
                                 <Ionicons
                                     name={config.icon}
                                     size={22}
-                                    color={colors.primary.main}
+                                    color={theme.primary}
                                 />
                             </View>
                             <Text
                                 style={{
                                     fontSize: 12,
                                     fontWeight: '600',
-                                    color: colors.primary.dark,
+                                    color: theme.primary,
                                     textAlign: 'center',
                                 }}
                                 numberOfLines={1}
@@ -204,7 +210,7 @@ const SavedPlaceChips = ({
             </View>
 
             {expandedPlaces.length > 0 && (
-                <View style={{ borderTopWidth: 1, borderTopColor: colors.gray[100] }}>
+                <View style={{ borderTopWidth: 1, borderTopColor: theme.border }}>
                     {expandedPlaces.map((place) => (
                         <TouchableOpacity
                             key={place.id}
@@ -216,19 +222,19 @@ const SavedPlaceChips = ({
                                 paddingHorizontal: 16,
                                 paddingVertical: 12,
                                 borderBottomWidth: 1,
-                                borderBottomColor: colors.gray[100],
+                                borderBottomColor: theme.border,
                             }}
                         >
-                            <Ionicons name="location-outline" size={18} color={colors.primary.main} style={{ marginRight: 12 }} />
+                            <Ionicons name="location-outline" size={18} color={theme.primary} style={{ marginRight: 12 }} />
                             <View style={{ flex: 1 }}>
-                                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.gray[800] }} numberOfLines={1}>
+                                <Text style={{ fontSize: 14, fontWeight: '600', color: theme.textPrimary }} numberOfLines={1}>
                                     {place.label}
                                 </Text>
-                                <Text style={{ fontSize: 12, color: colors.gray[500], marginTop: 1 }} numberOfLines={1}>
+                                <Text style={{ fontSize: 12, color: theme.textSecondary, marginTop: 1 }} numberOfLines={1}>
                                     {place.lat.toFixed(4)}, {place.lng.toFixed(4)}
                                 </Text>
                             </View>
-                            <Ionicons name="chevron-forward" size={18} color={colors.gray[500]} />
+                            <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
                         </TouchableOpacity>
                     ))}
                 </View>
@@ -251,6 +257,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     onClose,
 }) => {
     const { t } = useTranslation();
+    const { colors: theme } = useTheme();
 
     if (!showContainer) return null;
 
@@ -258,30 +265,31 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     const hasRecentSearches = recentSearches.length > 0;
 
     return (
-        <View className="mt-3 bg-white rounded-3xl shadow-lg max-h-96 overflow-hidden">
+        <View className="mt-3 rounded-3xl shadow-lg max-h-96 overflow-hidden" style={{ backgroundColor: theme.surface }}>
             {isLoading ? (
                 <View className="p-8 items-center justify-center">
-                    <ActivityIndicator size="large" color="#F59E0B" />
-                    <Text className="text-gray-500 mt-2">{t('searching')}</Text>
+                    <ActivityIndicator size="large" color={theme.primary} />
+                    <Text className="mt-2" style={{ color: theme.textSecondary }}>{t('searching')}</Text>
                 </View>
             ) : showRecents ? (
                 <>
                     {onClose && (
-                        <View className="px-4 pt-3 pb-2 flex-row items-center justify-between border-b border-gray-100">
-                            <Text className="text-sm font-semibold text-gray-700">{t('quick-access') || 'Quick Access'}</Text>
+                        <View className="px-4 pt-3 pb-2 flex-row items-center justify-between" style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}>
+                            <Text className="text-sm font-semibold" style={{ color: theme.textPrimary }}>{t('quick-access') || 'Quick Access'}</Text>
                             <TouchableOpacity
                                 onPress={onClose}
                                 activeOpacity={0.7}
                                 className="p-1"
                                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                             >
-                                <Ionicons name="close" size={22} color="#6B7280" />
+                                <Ionicons name="close" size={22} color={theme.textSecondary} />
                             </TouchableOpacity>
                         </View>
                     )}
                     <ScrollView className="max-h-80" keyboardShouldPersistTaps="always">
                         <SavedPlaceChips
                             savedPlaces={savedPlaces}
+                            theme={theme}
                             onSelectPlace={onSelectPlace}
                             onPrepareSelect={onPrepareSelect}
                         />
@@ -289,12 +297,12 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
                         {hasRecentSearches ? (
                             <>
                                 <View className="px-4 pb-2 flex-row items-center justify-between">
-                                    <Text className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                                    <Text className="text-xs font-semibold uppercase tracking-wide" style={{ color: theme.textSecondary }}>
                                         {t('recent-searches')}
                                     </Text>
                                     {onClearRecent && (
                                         <TouchableOpacity onPress={onClearRecent} activeOpacity={0.7}>
-                                            <Text className="text-sm font-medium text-amber-600">{t('clear-recent')}</Text>
+                                            <Text className="text-sm font-medium" style={{ color: theme.primary }}>{t('clear-recent')}</Text>
                                         </TouchableOpacity>
                                     )}
                                 </View>
@@ -303,7 +311,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
                                         key={`${place.latitude}-${place.longitude}-${place.searchedAt}`}
                                         place={place}
                                         icon="time-outline"
-                                        iconBgClass="bg-gray-100"
+                                        theme={theme}
                                         onSelectPlace={onSelectPlace}
                                         onPrepareSelect={onPrepareSelect}
                                         onRemoveRecent={onRemoveRecent}
@@ -312,15 +320,15 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
                             </>
                         ) : (
                             <View className="px-4 pb-6 items-center">
-                                <Text className="text-gray-400 text-sm">{t('no-recent-searches')}</Text>
+                                <Text className="text-sm" style={{ color: theme.textSecondary }}>{t('no-recent-searches')}</Text>
                             </View>
                         )}
                     </ScrollView>
                 </>
             ) : results.length === 0 ? (
                 <View className="p-8 items-center justify-center">
-                    <Ionicons name="search-outline" size={48} color="#D1D5DB" />
-                    <Text className="text-gray-500 mt-2">{t('no-results-found')}</Text>
+                    <Ionicons name="search-outline" size={48} color={theme.border} />
+                    <Text className="mt-2" style={{ color: theme.textSecondary }}>{t('no-results-found')}</Text>
                 </View>
             ) : (
                 <ScrollView className="max-h-80" keyboardShouldPersistTaps="always">
@@ -329,7 +337,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
                             key={`${place.latitude}-${place.longitude}-${index}`}
                             place={place}
                             icon="location"
-                            iconBgClass="bg-yellow-100"
+                            theme={theme}
                             onSelectPlace={onSelectPlace}
                             onPrepareSelect={onPrepareSelect}
                         />

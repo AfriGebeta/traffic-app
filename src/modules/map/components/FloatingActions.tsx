@@ -4,7 +4,12 @@ import FloatingLocationIcon from '../../../../assets/images/floating-location.sv
 import FloatingLayersIcon from '../../../../assets/images/floating-layers.svg';
 import FloatingTaxiIcon from '../../../../assets/images/floating-taxi.svg';
 import FloatingMicIcon from '../../../../assets/images/floating-mic.svg';
+import DarkLocationIcon from '../../../../assets/images/dark-target.svg';
+import DarkLayersIcon from '../../../../assets/images/dark-layers.svg';
+import DarkTaxiIcon from '../../../../assets/images/dark-taxi.svg';
+import DarkMicIcon from '../../../../assets/images/dark-microphone.svg';
 import { colors } from '../../../shared/theme/colors';
+import { useTheme } from '../../../shared/theme/ThemeContext';
 
 interface FloatingActionsProps {
     onLocationPress?: () => void;
@@ -29,7 +34,13 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
     isRoutePreviewActive = false,
     isPlaceDetailActive = false,
 }) => {
+    const { colors: theme, isDark } = useTheme();
     const bottomPosition = useRef(new Animated.Value(110)).current;
+
+    const LocationIcon = isDark ? DarkLocationIcon : FloatingLocationIcon;
+    const LayersIcon = isDark ? DarkLayersIcon : FloatingLayersIcon;
+    const TaxiIcon = isDark ? DarkTaxiIcon : FloatingTaxiIcon;
+    const MicIcon = isDark ? DarkMicIcon : FloatingMicIcon;
 
     useEffect(() => {
         let targetBottom = 160;
@@ -49,27 +60,27 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
         <Animated.View className="absolute right-4 gap-3" style={{ bottom: bottomPosition }}>
             <TouchableOpacity
                 onPress={onLocationPress}
-                className="bg-white rounded-full p-3 shadow-lg"
-                style={{ borderWidth: 1, borderColor: '#D1D5DB' }}
+                className="rounded-full p-3 shadow-lg"
+                style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
             >
-                <FloatingLocationIcon width={24} height={24} />
+                <LocationIcon width={24} height={24} />
             </TouchableOpacity>
 
             <TouchableOpacity
                 onPress={onThemePress}
-                className="bg-white rounded-full p-3 shadow-lg"
-                style={{ borderWidth: 1, borderColor: '#D1D5DB' }}
+                className="rounded-full p-3 shadow-lg"
+                style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
             >
-                <FloatingLayersIcon width={24} height={24} />
+                <LayersIcon width={24} height={24} />
             </TouchableOpacity>
 
             {!isRoutePreviewActive && (
                 <TouchableOpacity
                     onPress={onTaxiPress}
-                    className="bg-white rounded-full p-3 shadow-lg"
-                    style={{ borderWidth: 1, borderColor: '#D1D5DB' }}
+                    className="rounded-full p-3 shadow-lg"
+                    style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
                 >
-                    <FloatingTaxiIcon width={24} height={24} />
+                    <TaxiIcon width={24} height={24} />
                 </TouchableOpacity>
             )}
 
@@ -79,9 +90,9 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
                     onPressOut={onVoicePressOut}
                     disabled={isProcessingVoice}
                     style={{
-                        backgroundColor: isRecording || isProcessingVoice ? colors.primary.main : '#FFFFFF',
+                        backgroundColor: isRecording || isProcessingVoice ? colors.primary.main : theme.surface,
                         borderWidth: 1,
-                        borderColor: '#D1D5DB',
+                        borderColor: theme.border,
                     }}
                     className="rounded-full p-3 shadow-lg"
                     activeOpacity={0.7}
@@ -89,7 +100,7 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
                     {isProcessingVoice ? (
                         <ActivityIndicator size="small" color="#FFFFFF" />
                     ) : (
-                        <FloatingMicIcon width={24} height={24} />
+                        <MicIcon width={24} height={24} />
                     )}
                 </TouchableOpacity>
             )}
