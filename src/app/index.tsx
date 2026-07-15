@@ -6,6 +6,7 @@ import { TrafficMap } from '../modules/map';
 import { useUserRegistration } from '../modules/register/hooks/useUserRegistration';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { parseLocationUrl, type SharedLocation } from '../shared/utils/deepLinking';
+import { useTheme } from '../shared/theme/ThemeContext';
 
 const GUEST_MODE_KEY = '@traffic_app_guest_mode';
 
@@ -30,6 +31,7 @@ function locationFromParams(params: RouteParams): SharedLocation | null {
 export default function Index() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { colors: theme } = useTheme();
   const [isChecking, setIsChecking] = useState(true);
 
   const [sharedLocation, setSharedLocation] = useState<SharedLocation | null>(() =>
@@ -84,8 +86,8 @@ export default function Index() {
 
   if (isChecking) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <ActivityIndicator size="large" color="#ffa500" />
+      <View className="flex-1 items-center justify-center" style={{ backgroundColor: theme.background }}>
+        <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }

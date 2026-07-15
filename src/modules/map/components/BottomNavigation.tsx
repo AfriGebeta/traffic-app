@@ -6,7 +6,12 @@ import DiscoveryIcon from '../../../../assets/images/Discovery.svg';
 import PlusIcon from '../../../../assets/images/Plus.svg';
 import BookmarkIcon from '../../../../assets/images/Bookmark.svg';
 import DangerTriangleIcon from '../../../../assets/images/Danger Triangle.svg';
+import DarkDiscoveryIcon from '../../../../assets/images/dark-explore.svg';
+import DarkPlusIcon from '../../../../assets/images/dark-plus.svg';
+import DarkBookmarkIcon from '../../../../assets/images/dark-saved.svg';
+import DarkDangerTriangleIcon from '../../../../assets/images/dark-report.svg';
 import { colors } from '../../../shared/theme/colors';
+import { useTheme } from '../../../shared/theme/ThemeContext';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 
 type TabId = 'explore' | 'contribute' | 'ai' | 'saved' | 'report';
@@ -16,14 +21,15 @@ interface Tab {
     translationKey: string;
     icon?: number;
     SvgIcon?: React.FC<{ width?: number; height?: number }>;
+    DarkSvgIcon?: React.FC<{ width?: number; height?: number }>;
 }
 
 const tabs: Tab[] = [
-    { id: 'explore', translationKey: 'explore', SvgIcon: DiscoveryIcon },
-    { id: 'contribute', translationKey: 'contribute', SvgIcon: PlusIcon },
+    { id: 'explore', translationKey: 'explore', SvgIcon: DiscoveryIcon, DarkSvgIcon: DarkDiscoveryIcon },
+    { id: 'contribute', translationKey: 'contribute', SvgIcon: PlusIcon, DarkSvgIcon: DarkPlusIcon },
     { id: 'ai', translationKey: '', icon: require('../../../../assets/images/home-ai.png') },
-    { id: 'saved', translationKey: 'saved', SvgIcon: BookmarkIcon },
-    { id: 'report', translationKey: 'report', SvgIcon: DangerTriangleIcon },
+    { id: 'saved', translationKey: 'saved', SvgIcon: BookmarkIcon, DarkSvgIcon: DarkBookmarkIcon },
+    { id: 'report', translationKey: 'report', SvgIcon: DangerTriangleIcon, DarkSvgIcon: DarkDangerTriangleIcon },
 ];
 
 interface BottomNavigationProps {
@@ -36,6 +42,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
     onAddPress,
 }) => {
     const { t } = useTranslation();
+    const { colors: theme, isDark } = useTheme();
     const [activeTab, setActiveTab] = useState<TabId | null>(null);
     const insets = useSafeAreaInsets();
     const [fontsLoaded] = useFonts({
@@ -57,8 +64,9 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
             style={{ bottom: insets.bottom + 2 }}
         >
             <View
-                className="rounded-full bg-white p-1"
+                className="rounded-full p-1"
                 style={{
+                    backgroundColor: isDark ? theme.background : theme.surface,
                     shadowColor: '#000',
                     shadowOffset: { width: 0, height: 4 },
                     shadowOpacity: 0.1,
@@ -69,13 +77,14 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
             <View
                 className="rounded-full flex-row items-center justify-between px-3"
                 style={{
-                    backgroundColor: '#F0F0F0',
+                    backgroundColor: isDark ? theme.surface : '#F0F0F0',
                     paddingTop: 12,
                     paddingBottom: 12,
                 }}
             >
                 {tabs.map((tab) => {
                     const isAi = tab.id === 'ai';
+                    const SvgIcon = isDark && tab.DarkSvgIcon ? tab.DarkSvgIcon : tab.SvgIcon;
                     return (
                         <TouchableOpacity
                             key={tab.id}
@@ -97,8 +106,8 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
                                 </View>
                             ) : (
                                 <>
-                                    {tab.SvgIcon ? (
-                                        <tab.SvgIcon width={22} height={22} />
+                                    {SvgIcon ? (
+                                        <SvgIcon width={22} height={22} />
                                     ) : (
                                         <Image
                                             source={tab.icon}
@@ -107,8 +116,8 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
                                         />
                                     )}
                                     <Text
-                                        className="text-gray-700 mt-1"
-                                        style={[{ fontSize: 10 }, fontsLoaded ? { fontFamily: 'PlusJakartaSans-Light' } : undefined]}
+                                        className="mt-1"
+                                        style={[{ fontSize: 10, color: theme.textPrimary }, fontsLoaded ? { fontFamily: 'PlusJakartaSans-Light' } : undefined]}
                                         numberOfLines={1}
                                     >
                                         {t(tab.translationKey)}

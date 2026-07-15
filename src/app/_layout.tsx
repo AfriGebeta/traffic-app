@@ -6,6 +6,7 @@ import { MapThemeProvider } from '../modules/map/context/MapThemeContext';
 import { UserLocationProvider } from '../modules/map/context/UserLocationContext';
 import { IncidentFiltersProvider } from '../modules/incidents/context/IncidentFiltersContext';
 import { LocationProvider } from '../shared/contexts/LocationContext';
+import { ThemeProvider } from '../shared/theme/ThemeContext';
 import { useEffect, useRef } from 'react';
 import * as NavigationBar from 'expo-navigation-bar';
 import { AppState, AppStateStatus, Platform, PermissionsAndroid } from 'react-native';
@@ -81,6 +82,7 @@ function AppShell() {
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <MapThemeProvider>
+        <ThemeProvider>
           <UserLocationProvider>
             <LocationProvider>
               <IncidentFiltersProvider>
@@ -94,6 +96,7 @@ function AppShell() {
               </IncidentFiltersProvider>
             </LocationProvider>
           </UserLocationProvider>
+        </ThemeProvider>
         </MapThemeProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>

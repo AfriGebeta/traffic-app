@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '../../../shared/theme/ThemeContext';
 
 interface Category {
     id: string;
@@ -31,6 +32,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
     selectedCategory: externalSelectedCategory
 }) => {
     const { t } = useTranslation();
+    const { colors: theme } = useTheme();
     const [internalSelectedCategory, setInternalSelectedCategory] = useState<string | null>(null);
 
     const selectedCategory = externalSelectedCategory !== undefined
@@ -62,21 +64,25 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
                             activeOpacity={0.8}
                         >
                             <View
-                                className={`px-4 py-2 flex-row items-center rounded-full  ${selectedCategory === category.id
-                                    ? 'bg-orange-400'
-                                    : 'bg-white/90'
-                                    }`}
+                                className="px-4 py-2 flex-row items-center rounded-full"
                                 style={{
+                                    backgroundColor: selectedCategory === category.id
+                                        ? theme.primary
+                                        : theme.surface,
                                     borderWidth: 0.5,
                                     borderColor: selectedCategory === category.id
-                                        ? 'rgba(59, 130, 246, 0.3)'
-                                        : 'rgba(156, 163, 175, 0.3)',
+                                        ? theme.primaryHover
+                                        : theme.border,
                                     borderRadius: 9999,
                                 }}
                             >
                                 <Text
-                                    className={`text-sm font-medium ${selectedCategory === category.id ? 'text-white' : 'text-gray-800'
-                                        }`}
+                                    className="text-sm font-medium"
+                                    style={{
+                                        color: selectedCategory === category.id
+                                            ? '#FFFFFF'
+                                            : theme.textPrimary,
+                                    }}
                                 >
                                     {t(category.nameKey)}
                                 </Text>
