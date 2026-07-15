@@ -133,10 +133,10 @@ export const ProfileScreen = () => {
                     <View style={[styles.gridItem, styles.gridBottomBorder]}>
                         <Icon name="curved-dark-light-edit-square" size={22} color="#34343A" />
                         <Text style={styles.gridLabel}>Reports</Text>
-                        <Text style={styles.gridValue}>{setReportsCount}</Text>
+                        <Text style={styles.gridValue}>{reportsCount}</Text>
                     </View>
                     <View style={[styles.gridItem, styles.gridRightBorder]}>
-                        <Icon name="curved-dark-outline-3-user" size={22} color="#34343A" />
+                        <Icon name="curved-dark-light-3-user" size={22} color="#34343A" />
                         <Text style={styles.gridLabel}>Rank</Text>
                         <Text style={styles.gridValue}>#{rank || '—'}</Text>
                     </View>
@@ -183,7 +183,7 @@ export const ProfileScreen = () => {
                     </TouchableOpacity>
                     <View style={styles.settingRow}>
                         <View style={styles.settingTitle}>
-                            <Icon name="curved-dark-outline-danger-triangle" size={22} color="#34343A" />
+                            <Icon name="curved-dark-light-danger-triangle" size={22} color="#34343A" />
                             <Text style={styles.settingLabel}>{t('show-rules-on-map')}</Text>
                         </View>
                         <Switch
