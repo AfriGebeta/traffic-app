@@ -25,7 +25,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "googleServicesFile": "./android/app/google-services.json",
+      "googleServicesFile": "./google-services.json",
       "package": "co.gebeta.apps.android.maps",
       "softwareKeyboardLayoutMode": "resize",
       "permissions": [

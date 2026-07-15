@@ -20,13 +20,8 @@ import { decodePolyline } from '../../../shared/utils/polyline';
 import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
 
 export default function TaxiNavigationScreen() {
-    useKeepAwake();
     const router = useRouter();
-    const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
-    const { currentTheme } = useMapTheme();
-    const { apiKey } = useRemoteConfig();
-    const mapRef = useRef<GebetaMapRef>(null);
 
     const routeData: TaxiNavigationResponse | null = params.routeData
         ? JSON.parse(params.routeData as string)
@@ -43,11 +38,33 @@ export default function TaxiNavigationScreen() {
         );
     }
 
+    return (
+        <TaxiNavigationContent
+            routeData={routeData}
+            simulateMovementEnabled={params.simulateMovement === 'true'}
+        />
+    );
+}
+
+function TaxiNavigationContent({
+    routeData,
+    simulateMovementEnabled,
+}: {
+    routeData: TaxiNavigationResponse;
+    simulateMovementEnabled: boolean;
+}) {
+    useKeepAwake();
+    const router = useRouter();
+    const insets = useSafeAreaInsets();
+    const { currentTheme } = useMapTheme();
+    const { apiKey } = useRemoteConfig();
+    const mapRef = useRef<GebetaMapRef>(null);
+
     const [mapReady, setMapReady] = useState(false);
     const [showArrivalModal, setShowArrivalModal] = useState(false);
     const [isNavigating, setIsNavigating] = useState(true);
     const [currentRoute, setCurrentRoute] = useState<TaxiNavigationResponse | null>(routeData);
-    const [simulateMovement, setSimulateMovement] = useState(params.simulateMovement === 'true');
+    const [simulateMovement] = useState(simulateMovementEnabled);
     const [routeGeoJSON, setRouteGeoJSON] = useState<any>(null);
     const [userHeading, setUserHeading] = useState(0);
     const [remainingDistance, setRemainingDistance] = useState(0);

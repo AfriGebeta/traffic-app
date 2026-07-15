@@ -1,4 +1,6 @@
 const { load: loadEnv } = require('@expo/env');
+const fs = require('fs');
+const path = require('path');
 const appJson = require('./app.json');
 
 loadEnv(__dirname);
@@ -11,6 +13,18 @@ if (!telegramClientId) {
 }
 const telegramLoginHost = `app${telegramClientId}-login.tg.dev`;
 const [mapsIntentFilter, ...otherIntentFilters] = appJson.expo.android.intentFilters;
+const googleServicesFile = process.env.GOOGLE_SERVICES_JSON?.trim() || appJson.expo.android.googleServicesFile;
+const googleServicesPath = path.resolve(__dirname, googleServicesFile);
+
+if (!fs.existsSync(googleServicesPath)) {
+  console.warn(
+    [
+      '[Firebase config]',
+      `google-services.json was not found at: ${googleServicesPath}`,
+      'Add the file there, or set GOOGLE_SERVICES_JSON to the correct relative/absolute path before running a native Android build.',
+    ].join(' ')
+  );
+}
 
 module.exports = {
   expo: {
@@ -34,7 +48,7 @@ module.exports = {
     },
     android: {
       ...appJson.expo.android,
-      googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? appJson.expo.android.googleServicesFile,
+      googleServicesFile,
       queries: [
         { scheme: 'tg' },
         { scheme: 'telegram' },

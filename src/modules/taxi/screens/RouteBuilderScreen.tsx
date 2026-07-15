@@ -341,7 +341,7 @@ export default function RouteBuilderScreen() {
                                 {t('unfinished-route-found')}
                             </Text>
                             <Text className="text-gray-700 text-sm">
-                                {t('restore-route-description')}: "{cachedRoute.routeName}"
+                                {t('restore-route-description')}: &quot;{cachedRoute.routeName}&quot;
                             </Text>
                         </View>
                     </View>

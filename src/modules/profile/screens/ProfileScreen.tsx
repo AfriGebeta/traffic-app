@@ -1,57 +1,64 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
+import {
+    Image,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUserRegistration } from '../../register/hooks/useUserRegistration';
 import { User } from '../../register/types/user.types';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
-import { LanguageSwitcher } from '../../../shared/components/LanguageSwitcher';
 import { leaderboardService } from '../../leaderboard/services/leaderboard.service';
 import { colors } from '../../../shared/theme/colors';
 import { IncidentFiltersModal } from '../../incidents/components/IncidentFiltersModal';
 import { useRulePreferences } from '../../rules/hooks/useRulePreferences';
 import { showToast } from '../../../shared/utils/toast';
+import { Icon } from '../../../components/icons';
+
+const PLACEHOLDER_COLORS = ['#BC6DD7', '#1976D2', '#B962D1'];
 
 export const ProfileScreen = () => {
     const router = useRouter();
     const { t } = useTranslation();
     const { getStoredUser, clearAuth } = useUserRegistration();
+    const insets = useSafeAreaInsets();
+    const { preferences: rulePreferences, toggleShowOnMap } = useRulePreferences();
+
+    const[level, setLevel] = useState('')
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
-    const insets = useSafeAreaInsets();
     const [showFiltersModal, setShowFiltersModal] = useState(false);
-
-    const [level, setLevel] = useState('');
     const [rank, setRank] = useState(0);
     const [reportsCount, setReportsCount] = useState(0);
     const [points, setPoints] = useState(0);
-
-    const { preferences: rulePreferences, toggleShowOnMap } = useRulePreferences();
+    const hasContributions = reportsCount > 0 || points > 0;
 
     useEffect(() => {
-        loadUser();
+        void loadUser();
     }, []);
 
     const loadUser = async () => {
         const storedUser = await getStoredUser();
-
-        if (storedUser && storedUser.name) {
+        if (storedUser?.name) {
             storedUser.name = storedUser.name.replace(/\s+undefined$/i, '').trim();
         }
-
         setUser(storedUser);
+        setPoints(storedUser?.points ?? 0);
 
         if (storedUser) {
             const stats = await leaderboardService.getUserStats(storedUser.id);
             if (stats) {
-                setLevel(stats.level);
+                setLevel(stats.level)
                 setRank(stats.rank);
                 setReportsCount(stats.reportsCount);
                 setPoints(stats.points);
             }
         }
-
         setLoading(false);
     };
 
@@ -60,328 +67,197 @@ export const ProfileScreen = () => {
         router.replace('/');
     };
 
-    const getInitial = (name: string): string => {
-        return name.charAt(0).toUpperCase();
+    const renderAvatar = () => {
+        if (user?.profileImage) {
+            return <Image source={{ uri: user.profileImage }} style={styles.avatarImage} />;
+        }
+        return (
+            <View style={styles.avatarPlaceholder}>
+                <Text style={styles.avatarInitial}>{user?.name?.charAt(0).toUpperCase() || ''}</Text>
+            </View>
+        );
     };
 
     if (loading) {
-        return (
-            <View className="flex-1 bg-white">
-                <View className="px-6 pt-12 pb-4 flex-row items-center justify-between">
-                    <View className="w-6 h-6 bg-gray-200 rounded-full" />
-                    <View className="w-32 h-10 bg-gray-200 rounded-xl" />
-                </View>
-
-                <View className="px-6">
-                    <View className="items-center mb-8 mt-4">
-                        <View className="bg-gray-200 rounded-full w-20 h-20 mb-4" />
-                        <View className="w-32 h-7 bg-gray-200 rounded-lg mb-2" />
-                        <View className="w-40 h-5 bg-gray-200 rounded-lg" />
-                    </View>
-
-                    <View className="flex-row mb-6 gap-3">
-                        <View className="flex-1 bg-gray-50 rounded-2xl p-4">
-                            <View className="w-6 h-6 bg-gray-200 rounded-full mb-2" />
-                            <View className="w-16 h-8 bg-gray-200 rounded-lg mb-1" />
-                            <View className="w-12 h-3 bg-gray-200 rounded" />
-                        </View>
-                        <View className="flex-1 bg-gray-50 rounded-2xl p-4">
-                            <View className="w-6 h-6 bg-gray-200 rounded-full mb-2" />
-                            <View className="w-16 h-8 bg-gray-200 rounded-lg mb-1" />
-                            <View className="w-12 h-3 bg-gray-200 rounded" />
-                        </View>
-                        <View className="flex-1 bg-gray-50 rounded-2xl p-4">
-                            <View className="w-6 h-6 bg-gray-200 rounded-full mb-2" />
-                            <View className="w-16 h-8 bg-gray-200 rounded-lg mb-1" />
-                            <View className="w-12 h-3 bg-gray-200 rounded" />
-                        </View>
-                    </View>
-
-                    <View className="bg-gray-50 rounded-2xl p-5 mb-6">
-                        <View className="flex-row items-center">
-                            <View className="w-9 h-9 bg-gray-200 rounded-full mr-3" />
-                            <View>
-                                <View className="w-20 h-3 bg-gray-200 rounded mb-2" />
-                                <View className="w-32 h-5 bg-gray-200 rounded-lg" />
-                            </View>
-                        </View>
-                    </View>
-
-                    <View className="bg-gray-50 rounded-2xl p-5 mb-6">
-                        <View className="flex-row items-center">
-                            <View className="w-6 h-6 bg-gray-200 rounded-full mr-3" />
-                            <View className="w-24 h-5 bg-gray-200 rounded-lg" />
-                        </View>
-                    </View>
-                </View>
-            </View>
-        );
+        return <View style={styles.loadingScreen} />;
     }
 
     if (!user) {
         return (
-            <View className="flex-1 bg-white">
-                <View className="px-6 pt-12 pb-6">
-                    <TouchableOpacity onPress={() => router.back()} className="mb-6">
-                        <Ionicons name="arrow-back" size={24} color="#1f2937" />
-                    </TouchableOpacity>
-                </View>
-
-                <View className="flex-1 items-center justify-center px-8 -mt-20">
-                    <View className="rounded-full w-24 h-24 items-center justify-center mb-6" style={{ backgroundColor: colors.primary.main }}>
-                        <Ionicons name="person-outline" size={48} color="#fff" />
-                    </View>
-                    <Text className="text-2xl font-bold text-gray-900 mb-3">
-                        {t('please-register')}
-                    </Text>
-                    <Text className="text-gray-500 text-center mb-8 text-base">
-                        {t('register-to-access-profile')}
-                    </Text>
-                    <TouchableOpacity
-                        onPress={() => router.push('/telegram-login')}
-                        className="px-12 py-4 rounded-full"
-                        style={{ minWidth: 160, backgroundColor: colors.primary.main }}
-                    >
-                        <Text className="text-white font-semibold text-base text-center">{t('register')}</Text>
-                    </TouchableOpacity>
-                </View>
+            <View style={[styles.emptyScreen, { paddingTop: insets.top + 24 }]}>
+                <Text style={styles.emptyTitle}>{t('please-register')}</Text>
+                <Text style={styles.emptyCopy}>{t('register-to-access-profile')}</Text>
+                <TouchableOpacity style={styles.registerButton} onPress={() => router.push('/telegram-login')}>
+                    <Text style={styles.registerButtonText}>{t('register')}</Text>
+                </TouchableOpacity>
             </View>
         );
     }
 
     return (
-        <View className="flex-1 bg-white">
-            <View className="px-6 pt-12 pb-4 flex-row items-center justify-between">
-                <TouchableOpacity onPress={() => router.back()}>
-                    <Ionicons name="arrow-back" size={24} color="#1f2937" />
-                </TouchableOpacity>
-                <LanguageSwitcher />
-            </View>
-
-            <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-                <View className="px-6">
-                    <View className="items-center mb-8 mt-4">
-                        {user.profileImage ? (
-                            <Image
-                                source={{ uri: user.profileImage }}
-                                style={{
-                                    width: 80,
-                                    height: 80,
-                                    borderRadius: 40,
-                                    marginBottom: 16,
-                                }}
-                            />
-                        ) : (
-                            <View
-                                className="rounded-full w-20 h-20 items-center justify-center mb-4"
-                                style={{ backgroundColor: colors.primary.main }}
-                            >
-                                <Text className="text-white text-3xl font-bold">
-                                    {getInitial(user.name)}
-                                </Text>
-                            </View>
-                        )}
-                        <Text className="text-2xl font-bold text-gray-900 mb-1">
-                            {user.name}
-                        </Text>
-                        {user.phoneNumber && !user.phoneNumber.startsWith('telegram:') && (
-                            <Text className="text-gray-500">{user.phoneNumber}</Text>
-                        )}
-                        {user.phoneNumber && user.phoneNumber.startsWith('telegram:') && (
-                            <View className="flex-row items-center">
-                                <Ionicons name="paper-plane" size={14} color="#0088cc" style={{ marginRight: 4 }} />
-                                <Text className="text-gray-500">Telegram User</Text>
-                            </View>
-                        )}
+        <View style={styles.screen}>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={[styles.content, { paddingTop: insets.top + 22, paddingBottom: insets.bottom + 32 }]}
+            >
+                <View style={styles.welcomeRow}>
+                    {renderAvatar()}
+                    <View style={styles.welcomeCopy}>
+                        <Text style={styles.welcomeLabel}>Welcome</Text>
+                        <Text style={styles.userName} numberOfLines={1}>{user.name}</Text>
                     </View>
-                    <View className="flex-row mb-6 gap-3">
-                        <View className="flex-1 bg-gray-50 rounded-2xl p-4">
-                            <Image
-                                source={require('../../../../assets/images/star.png')}
-                                style={{ width: 24, height: 24 }}
-                                resizeMode="contain"
-                            />
-                            <Text className="text-2xl font-bold text-gray-900 mt-2">{points}</Text>
-                            <Text className="text-gray-500 text-xs">{t('your-points')}</Text>
-                        </View>
-                        <View className="flex-1 bg-gray-50 rounded-2xl p-4">
-                            <Image
-                                source={require('../../../../assets/images/flag.png')}
-                                style={{ width: 24, height: 24 }}
-                                resizeMode="contain"
-                            />
-                            <Text className="text-2xl font-bold text-gray-900 mt-2">{reportsCount}</Text>
-                            <Text className="text-gray-500 text-xs">{t('reports')}</Text>
-                        </View>
-                        <View className="flex-1 bg-gray-50 rounded-2xl p-4">
-                            <Image
-                                source={require('../../../../assets/images/trophy.png')}
-                                style={{ width: 24, height: 24 }}
-                                resizeMode="contain"
-                            />
-                            <Text className="text-2xl font-bold text-gray-900 mt-2">#{rank}</Text>
-                            <Text className="text-gray-500 text-xs">{t('rank')}</Text>
-                        </View>
+                    <TouchableOpacity onPress={handleLogout} hitSlop={12} style={styles.logoutButton}>
+                        <Icon name="curved-dark-outline-logout" size={26} color="#D65D5D" />
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.levelCard}>
+                    <View style={styles.levelHeading}>
+                        <Icon name="curved-dark-light-activity" size={25} color="#34343A" />
+                        <Text style={styles.levelLabel}>{t('current-level')}</Text>
                     </View>
-                    <View className="bg-orange-50 rounded-2xl p-5 mb-6 border border-orange-200">
-                        <View className="flex-row items-center">
-                            <Image
-                                source={require('../../../../assets/images/rank.png')}
-                                style={{ width: 32, height: 32, marginRight: 12 }}
-                                resizeMode="contain"
-                            />
-                            <View>
-                                <Text className="text-gray-500 text-xs">{t('current-level')}</Text>
-                                <Text className="text-gray-900 font-bold text-lg">{level}</Text>
-                            </View>
-                        </View>
+                    <Text style={[styles.levelText, hasContributions && styles.legendaryLevelText]} numberOfLines={1}>
+                        {level || "No contribution yet"}
+                    </Text>
+                </View>
+
+                <View style={styles.divider} />
+
+                <Text style={styles.sectionTitle}>Community</Text>
+                <View style={styles.communityGrid}>
+                    <TouchableOpacity style={[styles.gridItem, styles.gridRightBorder, styles.gridBottomBorder]} activeOpacity={0.7}>
+                        <Icon name="curved-dark-outline-star" size={22} color="#34343A" />
+                        <Text style={styles.gridLabel}>Points</Text>
+                        <Text style={styles.gridValue}>{points}</Text>
+                    </TouchableOpacity>
+                    <View style={[styles.gridItem, styles.gridBottomBorder]}>
+                        <Icon name="curved-dark-outline-edit-square" size={22} color="#34343A" />
+                        <Text style={styles.gridLabel}>Reports</Text>
+                        <Text style={styles.gridValue}>{setReportsCount}</Text>
                     </View>
-
-                    <TouchableOpacity
-                        className="bg-gray-50 rounded-2xl p-5 mb-6 flex-row items-center justify-between"
-                        onPress={() => router.push('/leaderboard')}
-                    >
-                        <View className="flex-row items-center flex-1 mr-2">
-                            <Image
-                                source={require('../../../../assets/images/leaderboard.png')}
-                                style={{ width: 24, height: 24 }}
-                                resizeMode="contain"
-                            />
-                            <Text
-                                className="text-gray-900 font-semibold ml-3"
-                                numberOfLines={2}
-                                style={{ flex: 1 }}
-                            >
-                                {t('leaderboard')}
-                            </Text>
-                        </View>
-                        <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        className="bg-gray-50 rounded-2xl p-5 mb-6 flex-row items-center justify-between"
-                        onPress={() => router.push('/saved-places')}
-                    >
-                        <View className="flex-row items-center flex-1 mr-2">
-                            <Ionicons name="bookmark" size={24} color="#1f2937" />
-                            <View className="ml-3 flex-1">
-                                <Text className="text-gray-900 font-semibold" numberOfLines={1}>
-                                    {t('saved-places') || 'Saved Places'}
-                                </Text>
-                                <Text className="text-gray-500 text-xs mt-0.5" numberOfLines={1}>
-                                    {t('your-favorite-locations') || 'Your favorite locations'}
-                                </Text>
-                            </View>
-                        </View>
-                        <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        className="bg-gray-50 rounded-2xl p-5 mb-6 flex-row items-center justify-between"
-                        onPress={() => setShowFiltersModal(true)}
-                    >
-                        <View className="flex-row items-center flex-1 mr-2">
-                            <Ionicons name="filter" size={24} color="#1f2937" />
-                            <View className="ml-3 flex-1">
-                                <Text className="text-gray-900 font-semibold" numberOfLines={1}>
-                                    {t('incident-filters') || 'Incident Filters'}
-                                </Text>
-                                <Text className="text-gray-500 text-xs mt-0.5" numberOfLines={1}>
-                                    {t('select-incidents-to-see') || 'Customize what you see'}
-                                </Text>
-                            </View>
-                        </View>
-                        <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        className="bg-gray-50 rounded-2xl p-5 mb-6 flex-row items-center justify-between"
-                        onPress={async () => {
-                            try {
-                                const newValue = await toggleShowOnMap();
-                                showToast.success(
-                                    newValue
-                                        ? t('rules-shown-on-map')
-                                        : t('rules-hidden-on-map')
-                                );
-                            } catch (error) {
-                                showToast.error(t('error'), t('failed-to-update-settings'));
-                            }
-                        }}
-                    >
-                        <View className="flex-row items-center flex-1 mr-2">
-                            <Ionicons name="warning" size={24} color="#1f2937" />
-                            <View className="ml-3 flex-1">
-                                <Text className="text-gray-900 font-semibold" numberOfLines={1}>
-                                    {t('show-rules-on-map')}
-                                </Text>
-                                <Text className="text-gray-500 text-xs mt-0.5" numberOfLines={1}>
-                                    {t('display-traffic-rules-on-map')}
-                                </Text>
-                            </View>
-                        </View>
-                        <View className={`w-12 h-7 rounded-full justify-center ${rulePreferences.showOnMap ? '' : 'bg-gray-300'}`}
-                            style={rulePreferences.showOnMap ? { backgroundColor: colors.primary.main } : undefined}>
-                            <View className={`w-5 h-5 rounded-full bg-white ${rulePreferences.showOnMap ? 'ml-6' : 'ml-1'}`} />
-                        </View>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        className="bg-white rounded-2xl p-3 mb-6 flex-row items-center justify-between border border-red-200"
-                        onPress={handleLogout}
-                    >
-                        <View className="flex-row items-center flex-1 mr-2">
-                            <Ionicons name="log-out-outline" size={24} color="#ef4444" />
-                            <Text
-                                className="text-red-600 font-semibold ml-3"
-                                numberOfLines={2}
-                                style={{ flex: 1 }}
-                            >
-                                {t('logout')}
-                            </Text>
-                        </View>
-                    </TouchableOpacity>
-
-                    <View className="items-center mb-6">
-                        <View className="flex-row items-center">
-                            <TouchableOpacity onPress={() => router.push('/privacy-policy')}>
-                                <Text className="text-xs text-gray-600">
-                                    Privacy Policy
-                                </Text>
-                            </TouchableOpacity>
-                            <Text className="text-gray-400 text-xs mx-2">•</Text>
-                            <TouchableOpacity onPress={() => router.push('/terms-conditions')}>
-                                <Text className="text-xs text-gray-600">
-                                    Terms & Conditions
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
+                    <View style={[styles.gridItem, styles.gridRightBorder]}>
+                        <Icon name="curved-dark-outline-3-user" size={22} color="#34343A" />
+                        <Text style={styles.gridLabel}>Rank</Text>
+                        <Text style={styles.gridValue}>#{rank || '—'}</Text>
                     </View>
+                    <TouchableOpacity style={styles.gridItem} onPress={() => router.push('/leaderboard')} activeOpacity={0.7}>
+                        <Icon name="curved-dark-outline-chart" size={22} color="#34343A" />
+                        <Text style={styles.gridLabel}>Leaderboard</Text>
+                        <Text style={styles.chevron}>›</Text>
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.sectionRow}>
+                    <Text style={styles.sectionTitle}>Saved Places</Text>
+                    <TouchableOpacity style={styles.placesLinkButton} onPress={() => router.push('/saved-places')} activeOpacity={0.8}>
+                        <Text style={styles.placesLink}>View all ›</Text>
+                    </TouchableOpacity>
+                </View>
+
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.placesList}>
+                    {['Home', 'Office', 'Custom'].map((place, index) => (
+                        <TouchableOpacity key={place} style={styles.placeCard} onPress={() => router.push('/saved-places')} activeOpacity={0.75}>
+                            <View style={[styles.placeIconBadge, { backgroundColor: PLACEHOLDER_COLORS[index] }]}>
+                                <Icon
+                                    name={index === 0 ? 'curved-light-light-home' : index === 1 ? 'curved-light-light-work' : 'curved-light-light-bookmark'}
+                                    size={17}
+                                    color="#FFFFFF"
+                                />
+                            </View>
+                            <View style={styles.placeCardBottom}>
+                                <Text style={styles.placeName}>{place}</Text>
+                                <Text style={styles.openPlace}>↗</Text>
+                            </View>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+
+                <Text style={[styles.sectionTitle, styles.personalisationTitle]}>Personalisation</Text>
+                <View style={styles.settingsCard}>
+                    <TouchableOpacity style={styles.settingRow} onPress={() => setShowFiltersModal(true)}>
+                        <View style={styles.settingTitle}>
+                            <Icon name="curved-dark-light-filter-2" size={22} color="#34343A" />
+                            <Text style={styles.settingLabel}>{t('incident-filters') || 'Incident Filters'}</Text>
+                        </View>
+                        <Text style={styles.chevron}>›</Text>
+                    </TouchableOpacity>
+                    <View style={styles.settingRow}>
+                        <View style={styles.settingTitle}>
+                            <Icon name="curved-dark-outline-danger-triangle" size={22} color="#34343A" />
+                            <Text style={styles.settingLabel}>{t('show-rules-on-map')}</Text>
+                        </View>
+                        <Switch
+                            value={rulePreferences.showOnMap}
+                            onValueChange={async () => {
+                                try {
+                                    const visible = await toggleShowOnMap();
+                                    showToast.success(visible ? t('rules-shown-on-map') : t('rules-hidden-on-map'));
+                                } catch {
+                                    showToast.error(t('error'), t('failed-to-update-settings'));
+                                }
+                            }}
+                            trackColor={{ false: '#E5E7EB', true: '#F6AD12' }}
+                            thumbColor="#FFFFFF"
+                        />
+                    </View>
+                    <TouchableOpacity style={styles.settingRow}>
+                        <Text style={styles.settingLabel}>Language</Text>
+                        <Text style={styles.chevron}>›</Text>
+                    </TouchableOpacity>
                 </View>
             </ScrollView>
 
-            <View
-                className="items-center border-t border-gray-100"
-                style={{ paddingTop: 24, paddingBottom: Math.max(insets.bottom + 8, 24) }}
-            >
-                <View className="flex-row items-center mb-1">
-                    <Image
-                        source={require('../../../../assets/images/favicon.png')}
-                        style={{ width: 18, height: 18 }}
-                        resizeMode="contain"
-                    />
-                    <Text className="text-gray-900 font-semibold ml-2">GebetaMaps</Text>
-                </View>
-                <Text className="text-gray-400 text-xs">{t('powered-by-community')}</Text>
-            </View>
-
-            {/* Incident Filters Modal */}
-            <IncidentFiltersModal
-                visible={showFiltersModal}
-                onClose={() => setShowFiltersModal(false)}
-            />
+            <IncidentFiltersModal visible={showFiltersModal} onClose={() => setShowFiltersModal(false)} />
         </View>
     );
 };
+
+const styles = StyleSheet.create({
+    screen: { flex: 1, backgroundColor: '#FFFFFF' },
+    content: { paddingHorizontal: 24 },
+    loadingScreen: { flex: 1, backgroundColor: '#FFFFFF' },
+    emptyScreen: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, backgroundColor: '#FFFFFF' },
+    emptyTitle: { fontFamily: 'PlusJakartaSans-Bold', fontSize: 24, color: '#1D1D1F', marginBottom: 10 },
+    emptyCopy: { fontFamily: 'PlusJakartaSans-Regular', textAlign: 'center', color: '#71717A', marginBottom: 24 },
+    registerButton: { backgroundColor: colors.primary.main, borderRadius: 10, paddingVertical: 14, paddingHorizontal: 34 },
+    registerButtonText: { fontFamily: 'PlusJakartaSans-Bold', color: '#FFFFFF' },
+    welcomeRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 26 },
+    avatarImage: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#F1F1F1' },
+    avatarPlaceholder: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F3F4F6' },
+    avatarInitial: { fontFamily: 'PlusJakartaSans-Bold', fontSize: 18, color: '#5E5E63' },
+    welcomeCopy: { flex: 1, marginLeft: 12 },
+    welcomeLabel: { fontFamily: 'PlusJakartaSans-Regular', color: '#8A8A91', fontSize: 12, marginBottom: 2 },
+    userName: { fontFamily: 'PlusJakartaSans-Bold', color: '#222227', fontSize: 14 },
+    logoutButton: { paddingVertical: 8, paddingLeft: 12 },
+    levelCard: { paddingHorizontal: 20, paddingVertical: 16, borderWidth: 1, borderColor: '#E5E5E8', borderRadius: 8 },
+    levelHeading: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 7 },
+    levelLabel: { fontFamily: 'PlusJakartaSans-Regular', color: '#777780', fontSize: 12 },
+    levelText: { fontFamily: 'PlusJakartaSans-ExtraBold', color: '#08080A', fontSize: 24, lineHeight: 36, letterSpacing: 0.4 },
+    legendaryLevelText: { fontFamily: 'RammettoOne-Regular', fontSize: 22, letterSpacing: 0, lineHeight: 36 },
+    divider: { height: 1, backgroundColor: '#EEEEF0', marginVertical: 27 },
+    sectionTitle: { fontFamily: 'PlusJakartaSans-Bold', color: '#35353A', fontSize: 14, marginBottom: 10 },
+    communityGrid: { borderWidth: 1, borderColor: '#ECECEF', borderRadius: 10, overflow: 'hidden', flexDirection: 'row', flexWrap: 'wrap' },
+    gridItem: { width: '50%', minHeight: 74, paddingHorizontal: 16, paddingVertical: 13, flexDirection: 'row', alignItems: 'center', gap: 10 },
+    gridRightBorder: { borderRightWidth: 1, borderRightColor: '#ECECEF' },
+    gridBottomBorder: { borderBottomWidth: 1, borderBottomColor: '#ECECEF' },
+    gridLabel: { fontFamily: 'PlusJakartaSans-SemiBold', color: '#5F5F67', fontSize: 13 },
+    gridValue: { fontFamily: 'PlusJakartaSans-Bold', marginLeft: 'auto', color: '#27272C', fontSize: 13 },
+    chevron: { fontFamily: 'PlusJakartaSans-Regular', color: '#7A7A82', fontSize: 25, lineHeight: 25 },
+    sectionRow: { marginTop: 25, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    placesLinkButton: { backgroundColor: '#318CE7', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
+    placesLink: { fontFamily: 'PlusJakartaSans-Bold', color: '#FFFFFF', fontSize: 11 },
+    placesList: { gap: 10, paddingRight: 24 },
+    placeCard: { width: 140, height: 88, borderWidth: 1, borderColor: '#ECECEF', borderRadius: 10, padding: 14, justifyContent: 'space-between' },
+    placeIconBadge: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+    placeCardBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    placeName: { fontFamily: 'PlusJakartaSans-Bold', color: '#313137', fontSize: 13 },
+    openPlace: { fontFamily: 'PlusJakartaSans-Regular', color: '#4D4D55', fontSize: 18 },
+    personalisationTitle: { marginTop: 26 },
+    settingsCard: { borderWidth: 1, borderColor: '#ECECEF', borderRadius: 10, paddingHorizontal: 16 },
+    settingRow: { minHeight: 53, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#F1F1F3' },
+    lastSettingRow: { borderBottomWidth: 0 },
+    settingLabel: { fontFamily: 'PlusJakartaSans-SemiBold', color: '#45454D', fontSize: 13 },
+    settingTitle: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+});
 
 export default ProfileScreen;

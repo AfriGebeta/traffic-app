@@ -11,18 +11,12 @@ import { showToast } from '../../../shared/utils/toast';
 import { useMapTheme } from '../../map/context/MapThemeContext';
 import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
 import { TaxiNavigationResponse } from '../types/taxi.types';
+import { decodePolyline } from '../../../shared/utils/polyline';
 
 export default function TaxiRoutePreviewScreen() {
     const router = useRouter();
     const { t } = useTranslation();
-    const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
-    const { currentTheme } = useMapTheme();
-    const { apiKey } = useRemoteConfig();
-    const mapRef = useRef<GebetaMapRef>(null);
-
-    const [mapReady, setMapReady] = useState(false);
-    const [simulateMovement, setSimulateMovement] = useState(false);
 
     const routeData: TaxiNavigationResponse | null = params.routeData
         ? JSON.parse(params.routeData as string)
@@ -39,6 +33,20 @@ export default function TaxiRoutePreviewScreen() {
         );
     }
 
+    return <TaxiRoutePreviewContent routeData={routeData} />;
+}
+
+function TaxiRoutePreviewContent({ routeData }: { routeData: TaxiNavigationResponse }) {
+    const router = useRouter();
+    const { t } = useTranslation();
+    const insets = useSafeAreaInsets();
+    const { currentTheme } = useMapTheme();
+    const { apiKey } = useRemoteConfig();
+    const mapRef = useRef<GebetaMapRef>(null);
+
+    const [mapReady, setMapReady] = useState(false);
+    const [simulateMovement, setSimulateMovement] = useState(false);
+
     const { origin, destination, startNode, endNode, formattedPath, summary, originWalkRoute, destinationWalkRoute, segments } = routeData;
 
     const walkRoutes = segments?.filter(seg => seg.type === 'walk' || seg.mode === 'pedestrian').map((seg, idx) => ({
@@ -52,7 +60,6 @@ export default function TaxiRoutePreviewScreen() {
         walkRoutes: walkRoutes.map(r => ({ type: r.type, polylineLength: r.polyline.length }))
     });
 
-    const { decodePolyline } = require('../../../shared/utils/polyline');
     const taxiSegments = segments?.filter(seg => seg.type === 'taxi' || seg.mode === 'auto').map(seg => {
         const decoded = decodePolyline(seg.polyline, 6);
         return {

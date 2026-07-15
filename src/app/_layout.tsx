@@ -106,6 +106,8 @@ export default function RootLayout() {
     'PlusJakartaSans-Medium': require('../../assets/fonts/plus-jakarta-sans/PlusJakartaSans-Medium.ttf'),
     'PlusJakartaSans-SemiBold': require('../../assets/fonts/plus-jakarta-sans/PlusJakartaSans-SemiBold.ttf'),
     'PlusJakartaSans-Bold': require('../../assets/fonts/plus-jakarta-sans/PlusJakartaSans-Bold.ttf'),
+    'PlusJakartaSans-ExtraBold': require('../../assets/fonts/plus-jakarta-sans/PlusJakartaSans-ExtraBold.ttf'),
+    'RammettoOne-Regular': require('../../assets/fonts/RammettoOne-Regular.ttf'),
   });
 
   useEffect(() => {

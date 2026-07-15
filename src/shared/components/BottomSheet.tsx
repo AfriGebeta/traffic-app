@@ -16,7 +16,7 @@ interface BottomSheetProps {
     expandWhenOpen?: boolean;
 }
 
-export const BottomSheet: React.FC<BottomSheetProps> = React.memo(({ children, expandWhenOpen = false }) => {
+const BottomSheetComponent: React.FC<BottomSheetProps> = ({ children, expandWhenOpen = false }) => {
     const translateY = useSharedValue(SCREEN_HEIGHT - MIN_HEIGHT);
     const context = useSharedValue({ y: 0 });
 
@@ -89,7 +89,11 @@ export const BottomSheet: React.FC<BottomSheetProps> = React.memo(({ children, e
             </Animated.View>
         </GestureDetector>
     );
-});
+};
+
+BottomSheetComponent.displayName = 'BottomSheet';
+
+export const BottomSheet = React.memo(BottomSheetComponent);
 
 const styles = StyleSheet.create({
     container: {

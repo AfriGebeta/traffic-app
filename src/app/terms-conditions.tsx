@@ -43,7 +43,7 @@ export default function TermsConditionsScreen() {
                     2. Use of service
                 </Text>
                 <Text className="text-gray-700 mb-6 leading-6">
-                    You agree to use the service only for lawful purposes and in a way that does not infringe the rights of, restrict, or inhibit anyone else's use and enjoyment of the service.
+                    You agree to use the service only for lawful purposes and in a way that does not infringe the rights of, restrict, or inhibit anyone else&apos;s use and enjoyment of the service.
                 </Text>
 
                 <Text className="text-base text-gray-900 font-semibold mb-3">
