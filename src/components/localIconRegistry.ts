@@ -24,6 +24,7 @@ export const localIconRegistry = {
     "curved-dark-light-arrow-left": { type: "svg", source: require("../../assets/icons/curved/Dark/Light/Arrow - Left.svg") },
     "curved-dark-light-bookmark": { type: "svg", source: require("../../assets/icons/curved/Dark/Light/Bookmark.svg") },
     "curved-dark-light-chart": { type: "svg", source: require("../../assets/icons/curved/Dark/Light/Chart.svg") },
+    "curved-dark-light-edit-square": { type: "svg", source: require("../../assets/icons/curved/Dark/Light/Edit Square.svg") },
     "curved-dark-light-danger-triangle": { type: "svg", source: require("../../assets/icons/curved/Dark/Light/Danger Triangle.svg") },
     "curved-dark-light-filter-2": { type: "svg", source: require("../../assets/icons/curved/Dark/Light/Filter 2.svg") },
     "curved-dark-light-logout": { type: "svg", source: require("../../assets/icons/curved/Dark/Light/Logout.svg") },
