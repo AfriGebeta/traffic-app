@@ -234,6 +234,10 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                         onReportPress();
                     } else if (tabId === 'explore') {
                         onExplorePress();
+                    } else if (tabId === 'saved') {
+                        router.push('/saved-places');
+                    } else if (tabId === 'ai') {
+                        router.push('/ai-assistant');
                     } else {
                         showToast.info(t('coming-soon'), tabId);
                     }

@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { navigationService } from '../../navigation/services/navigation.service';
 import { colors } from '../../../shared/theme/colors';
 import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
+import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 
 export default function MapPickerScreen() {
     const router = useRouter();
@@ -153,7 +154,7 @@ export default function MapPickerScreen() {
                 ref={mapRef}
                 apiKey={apiKey!}
                 mapStyleUrl={`https://tiles.gebeta.app/styles/standard/style.json?apiKey=${apiKey}`}
-                center={userLocation ? [userLocation.lng, userLocation.lat] : [38.7463, 9.0223]}
+                center={userLocation ? [userLocation.lng, userLocation.lat] : [getAppConfig().defaultMapCenterLng, getAppConfig().defaultMapCenterLat]}
                 zoom={15}
                 onMapClick={handleMapClick}
                 selectedLocation={selectedLocation}

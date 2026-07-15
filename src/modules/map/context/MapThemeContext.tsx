@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
+import { useRemoteConfig, type RemoteMapStyle } from '../../../shared/contexts/RemoteConfigContext';
 
-export type MapThemeId = 'standard' | 'custom3' | 'dark' | 'raster';
+export type MapThemeId = string;
 
 export interface MapTheme {
     id: MapThemeId;
@@ -52,42 +52,6 @@ const processRemoteStyle = async (url: string, apiKey: string): Promise<Record<s
     }
 };
 
-const STYLE_URLS: Record<MapThemeId, string> = {
-    standard: 'https://tiles.gebeta.app/styles/standard/style.json',
-    custom3: 'https://tiles.gebeta.app/styles/standard/light.json',
-    dark: 'https://tiles.gebeta.app/styles/standard/dark.json',
-    raster: 'https://tiles.gebeta.app/styles/raster/raster.json',
-};
-
-const BASE_THEMES: (Omit<MapTheme, 'styleJson'> & { styleJson?: Record<string, unknown> })[] = [
-    {
-        id: 'standard',
-        name: 'Classic',
-        nameAmharic: 'ክላሲክ',
-        icon: 'map-outline',
-        styleUrl: `https://tiles.gebeta.app/styles/standard/style.json`,
-    },
-    {
-        id: 'custom3',
-        name: 'Standard',
-        nameAmharic: 'መደበኛ',
-        icon: 'color-palette-outline',
-    },
-    {
-        id: 'dark',
-        name: 'Dark',
-        nameAmharic: 'ጨለማ',
-        icon: 'moon-outline',
-    },
-    {
-        id: 'raster',
-        name: 'Satellite',
-        nameAmharic: 'ሳተላይት',
-        icon: 'globe-outline',
-        styleUrl: 'https://tiles.gebeta.app/styles/raster/raster.json',
-    },
-];
-
 interface MapThemeContextType {
     currentTheme: MapTheme;
     setTheme: (themeId: MapThemeId) => void;
@@ -97,48 +61,51 @@ interface MapThemeContextType {
 
 const MapThemeContext = createContext<MapThemeContextType | undefined>(undefined);
 
-const themeWithStyle = (base: (typeof BASE_THEMES)[number], styleJson: Record<string, unknown>): MapTheme => ({
-    ...(base as MapTheme),
+const remoteStyleToTheme = (style: RemoteMapStyle, styleJson: Record<string, unknown>): MapTheme => ({
+    id: style.id,
+    name: style.name,
+    nameAmharic: style.nameAmharic,
+    icon: style.icon,
+    styleUrl: style.url,
     styleJson,
 });
 
 export const MapThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const { apiKey } = useRemoteConfig();
+    const { apiKey, mapStyles } = useRemoteConfig();
+    const enabledStyles = mapStyles.filter(s => s.enabled);
+
     const [currentTheme, setCurrentTheme] = useState<MapTheme>({
-        ...BASE_THEMES[0],
-        styleUrl: undefined,
-        styleJson: undefined,
-    } as MapTheme);
-    const [themes, setThemes] = useState<MapTheme[]>(BASE_THEMES as MapTheme[]);
+        id: enabledStyles[0]?.id ?? 'standard',
+        name: enabledStyles[0]?.name ?? 'Classic',
+        nameAmharic: enabledStyles[0]?.nameAmharic ?? 'ክላሲክ',
+        icon: enabledStyles[0]?.icon ?? 'map-outline',
+    });
+    const [themes, setThemes] = useState<MapTheme[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
+        if (enabledStyles.length === 0) return;
+
         const loadThemes = async () => {
             try {
-                const savedThemeId = (await AsyncStorage.getItem(STORAGE_KEY)) as MapThemeId | null;
-                const activeThemeId: MapThemeId =
-                    savedThemeId && savedThemeId in STYLE_URLS ? savedThemeId : 'standard';
+                const savedThemeId = await AsyncStorage.getItem(STORAGE_KEY);
+                const activeStyle = enabledStyles.find(s => s.id === savedThemeId) ?? enabledStyles[0];
 
-                const activeStyle = await processRemoteStyle(STYLE_URLS[activeThemeId], apiKey);
-                const activeBase = BASE_THEMES.find((t) => t.id === activeThemeId) ?? BASE_THEMES[0];
-                const activeTheme = themeWithStyle(activeBase, activeStyle);
+                const activeStyleJson = await processRemoteStyle(activeStyle.url, apiKey);
+                const activeTheme = remoteStyleToTheme(activeStyle, activeStyleJson);
 
                 setCurrentTheme(activeTheme);
                 setIsLoading(false);
 
-                const otherIds = (Object.keys(STYLE_URLS) as MapThemeId[]).filter(
-                    (id) => id !== activeThemeId
-                );
-                const otherStyles = await Promise.all(
-                    otherIds.map((id) => processRemoteStyle(STYLE_URLS[id], apiKey))
+                const otherStyles = enabledStyles.filter(s => s.id !== activeStyle.id);
+                const otherStyleJsons = await Promise.all(
+                    otherStyles.map(s => processRemoteStyle(s.url, apiKey))
                 );
 
-                const loadedThemes: MapTheme[] = BASE_THEMES.map((base) => {
-                    if (base.id === activeThemeId) {
-                        return activeTheme;
-                    }
-                    const index = otherIds.indexOf(base.id as MapThemeId);
-                    return themeWithStyle(base, otherStyles[index]);
+                const loadedThemes: MapTheme[] = enabledStyles.map(s => {
+                    if (s.id === activeStyle.id) return activeTheme;
+                    const index = otherStyles.findIndex(o => o.id === s.id);
+                    return remoteStyleToTheme(s, otherStyleJsons[index]);
                 });
 
                 setThemes(loadedThemes);
@@ -149,7 +116,7 @@ export const MapThemeProvider: React.FC<{ children: ReactNode }> = ({ children }
         };
 
         loadThemes();
-    }, [apiKey]);
+    }, [apiKey, mapStyles]);
 
     const setTheme = useCallback(async (themeId: MapThemeId) => {
         const theme = themes.find(t => t.id === themeId);

@@ -6,20 +6,32 @@ import { MapThemeProvider } from '../modules/map/context/MapThemeContext';
 import { UserLocationProvider } from '../modules/map/context/UserLocationContext';
 import { IncidentFiltersProvider } from '../modules/incidents/context/IncidentFiltersContext';
 import { LocationProvider } from '../shared/contexts/LocationContext';
-import { useEffect } from 'react';
+import { ThemeProvider } from '../shared/theme/ThemeContext';
+import { useEffect, useRef } from 'react';
 import * as NavigationBar from 'expo-navigation-bar';
-import { Platform } from 'react-native';
+import { AppState, AppStateStatus, Platform, PermissionsAndroid } from 'react-native';
+import { useFonts } from 'expo-font';
 import { useTelegramDeepLink } from '../shared/hooks/useTelegramDeepLink';
 import { useRemoteConfig, RemoteConfigProvider } from '../shared/contexts/RemoteConfigContext';
 import { initializeAppCheckSingleton } from '../shared/utils/appCheck';
 import { ForceUpdateModal } from '../components/ForceUpdateModal';
 import telemetryApiService from '../shared/services/telemetry-api.service';
+import { dashboardEventsService } from '../shared/services/dashboard-events.service';
+import { locationPermissionSettled } from '../shared/utils/permissionSequence';
 import './globals.css';
 import '../shared/utils/localization/i18n';
+import { applyGlobalFont } from '../shared/utils/globalFont';
+
+import '../modules/navigation/services/nav-foreground-service';
+
+applyGlobalFont();
+
+const BACKGROUND_IDLE_MS = 30 * 60 * 1000;
 
 function AppShell() {
   useTelegramDeepLink();
   const { updateRequired } = useRemoteConfig();
+  const backgroundedAtRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (Platform.OS === 'android') {
@@ -32,12 +44,45 @@ function AppShell() {
     }
 
     telemetryApiService.trackAppLaunch();
+
+    // cold start
+    dashboardEventsService.sessionStart();
+    void dashboardEventsService.installOnce();
+  }, []);
+
+  useEffect(() => {
+    const handleAppStateChange = (nextState: AppStateStatus) => {
+      if (nextState === 'background' || nextState === 'inactive') {
+        backgroundedAtRef.current = Date.now();
+      } else if (nextState === 'active') {
+        const backgroundedAt = backgroundedAtRef.current;
+        if (backgroundedAt !== null && Date.now() - backgroundedAt >= BACKGROUND_IDLE_MS) {
+          dashboardEventsService.sessionStart();
+        }
+        backgroundedAtRef.current = null;
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription.remove();
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS === 'android' && Number(Platform.Version) >= 33) {
+      const timeout = new Promise<void>((resolve) => setTimeout(resolve, 30000));
+      Promise.race([locationPermissionSettled, timeout]).then(() => {
+        PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
+        ).catch(() => undefined);
+      });
+    }
   }, []);
 
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <MapThemeProvider>
+        <ThemeProvider>
           <UserLocationProvider>
             <LocationProvider>
               <IncidentFiltersProvider>
@@ -51,6 +96,7 @@ function AppShell() {
               </IncidentFiltersProvider>
             </LocationProvider>
           </UserLocationProvider>
+        </ThemeProvider>
         </MapThemeProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>
@@ -58,9 +104,20 @@ function AppShell() {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    'PlusJakartaSans-Regular': require('../../assets/fonts/plus-jakarta-sans/PlusJakartaSans-Regular.ttf'),
+    'PlusJakartaSans-Medium': require('../../assets/fonts/plus-jakarta-sans/PlusJakartaSans-Medium.ttf'),
+    'PlusJakartaSans-SemiBold': require('../../assets/fonts/plus-jakarta-sans/PlusJakartaSans-SemiBold.ttf'),
+    'PlusJakartaSans-Bold': require('../../assets/fonts/plus-jakarta-sans/PlusJakartaSans-Bold.ttf'),
+  });
+
   useEffect(() => {
     initializeAppCheckSingleton();
   }, []);
+
+  if (!fontsLoaded) {
+    return null;
+  }
 
   return (
     <RemoteConfigProvider>

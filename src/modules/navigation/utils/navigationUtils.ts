@@ -1,4 +1,5 @@
 import { decodePolyline } from '../../../shared/utils/polyline';
+import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 
 export type TaxiSegmentInput = {
     polyline: string;
@@ -164,6 +165,76 @@ export const headingAtDistance = (
     return calculateBearing(coords[i], coords[i + 1]);
 };
 
+export const smoothRouteCorners = (
+    coords: [number, number][],
+    radiusM = 10,
+    minAngleDeg = 8,
+    samples = 6
+): [number, number][] => {
+    if (coords.length < 3) return coords;
+    const out: [number, number][] = [coords[0]];
+    for (let i = 1; i < coords.length - 1; i++) {
+        const prev = coords[i - 1];
+        const cur = coords[i];
+        const next = coords[i + 1];
+        const bIn = calculateBearing(prev, cur);
+        const bOut = calculateBearing(cur, next);
+        let turn = Math.abs(bOut - bIn);
+        if (turn > 180) turn = 360 - turn;
+        if (turn < minAngleDeg) {
+            out.push(cur);
+            continue;
+        }
+        const lenIn = calculateDistance(prev[1], prev[0], cur[1], cur[0]);
+        const lenOut = calculateDistance(cur[1], cur[0], next[1], next[0]);
+        const d = Math.min(radiusM, lenIn / 2, lenOut / 2);
+        if (d < 0.5 || lenIn === 0 || lenOut === 0) {
+            out.push(cur);
+            continue;
+        }
+        const tIn = 1 - d / lenIn;
+        const p0: [number, number] = [
+            prev[0] + (cur[0] - prev[0]) * tIn,
+            prev[1] + (cur[1] - prev[1]) * tIn,
+        ];
+        const tOut = d / lenOut;
+        const p2: [number, number] = [
+            cur[0] + (next[0] - cur[0]) * tOut,
+            cur[1] + (next[1] - cur[1]) * tOut,
+        ];
+        for (let k = 0; k <= samples; k++) {
+            const t = k / samples;
+            const a = (1 - t) * (1 - t);
+            const b = 2 * t * (1 - t);
+            const c = t * t;
+            out.push([
+                a * p0[0] + b * cur[0] + c * p2[0],
+                a * p0[1] + b * cur[1] + c * p2[1],
+            ]);
+        }
+    }
+    out.push(coords[coords.length - 1]);
+    return out;
+};
+
+export const sliceRangeDistance = (
+    coords: [number, number][],
+    cum: number[],
+    s0: number,
+    s1: number
+): [number, number][] => {
+    if (coords.length < 2) return [];
+    const total = cum[cum.length - 1];
+    const a = Math.max(0, Math.min(s0, total));
+    const b = Math.max(0, Math.min(s1, total));
+    if (b - a < 0.5) return [];
+    const i0 = segmentIndexAtDistance(cum, a);
+    const i1 = segmentIndexAtDistance(cum, b);
+    const head = pointAtDistance(coords, cum, a);
+    const tail = pointAtDistance(coords, cum, b);
+    return [head, ...coords.slice(i0 + 1, i1 + 1), tail];
+};
+
 export const sliceFromDistance = (
     coords: [number, number][],
     cum: number[],
@@ -242,20 +313,21 @@ export const findCorners = (
 };
 
 /**
- * Update navigation instruction based on current position
- * @param currentLat - Current latitude
- * @param currentLng - Current longitude
- * @param routeManeuvers - Array of route maneuvers
- * @param currentManeuverIndex - Current maneuver index
- * @param routeCoordinates - Array of route coordinates
- * @returns Object with updated instruction and maneuver index
+ * @param currentLat - current lat
+ * @param currentLng - current lon
+ * @param routeManeuvers - array of route maneuvers
+ * @param currentManeuverIndex - current maneu idex
+ * @param routeCoordinates - array of route coordinates
+ * @returns obj with updated instruction and maneuver index
  */
+
 export const updateInstructionBasedOnPosition = (
     currentLat: number,
     currentLng: number,
     routeManeuvers: any[],
     currentManeuverIndex: number,
-    routeCoordinates: [number, number][]
+    routeCoordinates: [number, number][],
+    currentSpeedKmh: number = 0
 ): { instruction: string; newManeuverIndex: number } => {
     if (routeManeuvers.length === 0) {
         return { instruction: 'Continue ahead', newManeuverIndex: currentManeuverIndex };
@@ -279,19 +351,26 @@ export const updateInstructionBasedOnPosition = (
 
     const nextManeuver = routeManeuvers[closestManeuverIndex];
 
-    const TURN_APPROACH_DISTANCE = 200;
-    const ADVANCE_THRESHOLD = 60;
+    const cfg = getAppConfig();
 
-    if (minDistance < ADVANCE_THRESHOLD && closestManeuverIndex < routeManeuvers.length - 1) {
+    if (minDistance < cfg.advanceThresholdM && closestManeuverIndex < routeManeuvers.length - 1) {
         const newManeuverIndex = closestManeuverIndex + 1;
         const newManeuver = routeManeuvers[newManeuverIndex];
         return {
             instruction: newManeuver.instruction || 'Continue ahead',
             newManeuverIndex,
         };
-    } else if (minDistance < TURN_APPROACH_DISTANCE) {
+    }
+
+    const speedMps = Math.max(currentSpeedKmh, 0) / 3.6;
+    const preTransitionDistance = Math.min(
+        Math.max(speedMps * cfg.preTransitionLeadTimeSec, cfg.preTransitionMinDistanceM),
+        cfg.preTransitionMaxDistanceM
+    );
+
+    if (minDistance < preTransitionDistance) {
         return {
-            instruction: nextManeuver.instruction || 'Continue ahead',
+            instruction: nextManeuver.verbal_pre_transition_instruction || nextManeuver.instruction || 'Continue ahead',
             newManeuverIndex: currentManeuverIndex,
         };
     } else {

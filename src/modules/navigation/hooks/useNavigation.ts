@@ -10,6 +10,9 @@ import { useSimulation } from './useSimulation';
 import { useLocationTracking } from './useLocationTracking';
 import { useRouteRecalculation } from './useRouteRecalculation';
 import { useVoiceInstructions } from './useVoiceInstructions';
+import { startNavService, stopNavService, updateNavNotification } from '../services/nav-foreground-service';
+import { addNavExitListener } from '../../../../modules/nav-notification';
+import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import { calculateBearing, calculateDistance, updateInstructionBasedOnPosition as updateInstruction } from '../utils/navigationUtils';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 
@@ -28,10 +31,13 @@ export const useNavigation = (
     const [showRoutePreview, setShowRoutePreview] = useState(false);
     const [currentHeading, setCurrentHeading] = useState(0);
     const [simulateMovement, setSimulateMovement] = useState(false);
+
     const [currentInstruction, setCurrentInstruction] = useState<string>('');
     const [nextInstruction, setNextInstruction] = useState<string>('');
     const [remainingDistance, setRemainingDistance] = useState<number>(0);
     const [remainingTime, setRemainingTime] = useState<number>(0);
+
+    const [currentSpeed, setCurrentSpeed] = useState<number>(0);
     const [isOffRoute, setIsOffRoute] = useState(false);
     const [isRecalculating, setIsRecalculating] = useState(false);
     const [routeGeoJSON, setRouteGeoJSON] = useState<any>(null);
@@ -41,6 +47,20 @@ export const useNavigation = (
     const [routeOrigin, setRouteOrigin] = useState<GeocodingPlace | null>(null);
     const [routeManeuversList, setRouteManeuversList] = useState<Maneuver[]>([]);
     const [routeLegs, setRouteLegs] = useState<Leg[]>([]);
+
+    interface RouteOption {
+        geoJSON: any;
+        distance: number;
+        duration: number;
+        coordinates: [number, number][];
+        maneuvers: Maneuver[];
+        legs: Leg[];
+    }
+
+    const [allRouteOptions, setAllRouteOptions] = useState<RouteOption[]>([]);
+    const allRouteOptionsRef = useRef<RouteOption[]>([]);
+    const [selectedRouteIndex, setSelectedRouteIndex] = useState(0);
+    const [alternativeRoutesGeoJSON, setAlternativeRoutesGeoJSON] = useState<any[]>([]);
 
     const routeCoordinates = useRef<[number, number][]>([]);
     const isNavigatingRef = useRef(false);
@@ -54,8 +74,19 @@ export const useNavigation = (
 
     const currentCostingRef = useRef<'auto' | 'pedestrian'>('auto');
     const waypointsRef = useRef<GeocodingPlace[]>([]);
+    const currentSpeedRef = useRef(0);
     useEffect(() => { currentCostingRef.current = currentCosting; }, [currentCosting]);
     useEffect(() => { waypointsRef.current = waypoints; }, [waypoints]);
+    useEffect(() => { currentSpeedRef.current = currentSpeed; }, [currentSpeed]);
+
+    useEffect(() => {
+        const sub = addNavExitListener(() => {
+            if (isNavigatingRef.current) {
+                stopNavigationRef.current?.();
+            }
+        });
+        return () => sub.remove();
+    }, []);
 
 
     useVoiceInstructions({
@@ -70,7 +101,8 @@ export const useNavigation = (
             currentLng,
             routeManeuvers.current,
             currentManeuverIndex.current,
-            routeCoordinates.current
+            routeCoordinates.current,
+            currentSpeedRef.current
         );
         setCurrentInstruction(result.instruction);
         currentManeuverIndex.current = result.newManeuverIndex;
@@ -120,6 +152,7 @@ export const useNavigation = (
 
         setIsOffRoute,
         setIsRecalculating,
+        setCurrentSpeed,
         updateInstructionBasedOnPosition,
         recalculateRoute: (fromLocation?: { lat: number; lng: number }) => recalculateRoute(fromLocation),
         rerouteTimeout,
@@ -143,6 +176,7 @@ export const useNavigation = (
         waypointsRef,
         routeCoordinates,
         routeManeuvers,
+        currentManeuverIndexRef: currentManeuverIndex,
         totalRouteDistance,
         totalRouteDuration,
         rerouteTimeout,
@@ -154,6 +188,7 @@ export const useNavigation = (
         setIsOffRoute,
         setIsNavigating,
         isNavigatingRef,
+
         setRemainingDistance,
         setRemainingTime,
         setCurrentInstruction,
@@ -167,6 +202,89 @@ export const useNavigation = (
         resetClosestIndex,
         setUserLocation,
     });
+
+    const parseLegsIntoOption = (legs: Leg[]): Omit<RouteOption, 'geoJSON'> & { geoJSON: any } => {
+        const coords: [number, number][] = [];
+        const maneuvers: Maneuver[] = [];
+        let distance = 0;
+        let duration = 0;
+        for (let i = 0; i < legs.length; i++) {
+            const leg = legs[i];
+            const decoded = decodePolyline(leg.shape, 6);
+            const legCoords = decoded.map(c => [c[1], c[0]]) as [number, number][];
+            if (i === 0) coords.push(...legCoords);
+            else coords.push(...legCoords.slice(1));
+            maneuvers.push(...leg.maneuvers);
+            distance += leg.summary.length * 1000;
+            duration += leg.summary.time;
+        }
+        const geoJSON = {
+            type: 'Feature',
+            properties: { distance, duration },
+            geometry: { type: 'LineString', coordinates: coords },
+        };
+        return { geoJSON, distance, duration, coordinates: coords, maneuvers, legs };
+    };
+
+    const handleSelectRoute = (index: number) => {
+        const option = allRouteOptionsRef.current[index];
+        if (!option) return;
+        setRouteGeoJSON(option.geoJSON);
+        setRemainingDistance(option.distance);
+        setRemainingTime(option.duration);
+        routeCoordinates.current = option.coordinates;
+        setFullRouteCoordinates(option.coordinates);
+        totalRouteDistance.current = option.distance;
+        totalRouteDuration.current = option.duration;
+        routeManeuvers.current = option.maneuvers;
+        setRouteManeuversList(option.maneuvers);
+        setRouteLegs(option.legs);
+        setSelectedRouteIndex(index);
+        setAlternativeRoutesGeoJSON(
+            allRouteOptionsRef.current.filter((_, i) => i !== index).map(r => r.geoJSON)
+        );
+    };
+
+    const MAX_ROUTE_OPTIONS = 2; 
+
+    const fetchAlternativeRoutes = async (
+        originCoords: [number, number],
+        targetDestination: GeocodingPlace,
+        activeWaypoints: GeocodingPlace[],
+        primaryOption: RouteOption
+    ) => {
+        try {
+            const data = await navigationService.getNavigation({
+                origin: originCoords,
+                destination: [targetDestination.latitude, targetDestination.longitude],
+                costing: 'auto',
+                waypoints: activeWaypoints.length > 0
+                    ? activeWaypoints.map(wp => [wp.latitude, wp.longitude] as [number, number])
+                    : undefined,
+                alternative: true,
+            });
+
+            // Discard if the user has started a different navigation in the meantime.
+            if (allRouteOptionsRef.current[0] !== primaryOption) return;
+
+            const alts = data?.data?.alternates ?? [];
+            const routeOptions: RouteOption[] = [primaryOption];
+            for (const alt of alts) {
+                if (routeOptions.length >= MAX_ROUTE_OPTIONS) break;
+                const altLegs = alt.trip?.legs;
+                if (!altLegs || altLegs.length === 0) continue;
+                routeOptions.push(parseLegsIntoOption(altLegs));
+            }
+
+            if (routeOptions.length <= 1) return; // no usable alternatives
+
+            allRouteOptionsRef.current = routeOptions;
+            setAllRouteOptions(routeOptions);
+            setAlternativeRoutesGeoJSON(routeOptions.slice(1).map(r => r.geoJSON));
+        } catch {
+            // Alternatives are best-effort; keep the primary route on failure.
+        }
+    };
 
     const handleNavigate = async (
         setUserLocation?: (location: { lat: number; lng: number }) => void,
@@ -200,13 +318,13 @@ export const useNavigation = (
         }
 
         const activeWaypoints = waypointsOverride ?? waypoints;
-
+        const effectiveCosting = costingOverride ?? currentCosting;
         setIsNavigating(true);
         try {
             const navigationData = await navigationService.getNavigation({
                 origin: originCoords,
                 destination: [targetDestination.latitude, targetDestination.longitude],
-                costing: costingOverride ?? currentCosting,
+                costing: effectiveCosting,
                 waypoints: activeWaypoints.length > 0
                     ? activeWaypoints.map(wp => [wp.latitude, wp.longitude] as [number, number])
                     : undefined,
@@ -219,24 +337,13 @@ export const useNavigation = (
                 return;
             }
 
-            const allCoordinates: [number, number][] = [];
-            const allManeuvers: any[] = [];
-            let totalDistance = 0;
-            let totalDuration = 0;
+            const mainOption = parseLegsIntoOption(legs);
+            allRouteOptionsRef.current = [mainOption];
+            setAllRouteOptions([mainOption]);
+            setSelectedRouteIndex(0);
+            setAlternativeRoutesGeoJSON([]);
 
-            for (let i = 0; i < legs.length; i++) {
-                const leg = legs[i];
-                const decoded = decodePolyline(leg.shape, 6);
-                const legCoords = decoded.map(coord => [coord[1], coord[0]]) as [number, number][];
-                if (i === 0) {
-                    allCoordinates.push(...legCoords);
-                } else {
-                    allCoordinates.push(...legCoords.slice(1));
-                }
-                allManeuvers.push(...leg.maneuvers);
-                totalDistance += leg.summary.length * 1000;
-                totalDuration += leg.summary.time;
-            }
+            const { coordinates: allCoordinates, maneuvers: allManeuvers, distance: totalDistance, duration: totalDuration } = mainOption;
 
             routeManeuvers.current = allManeuvers;
             setRouteManeuversList(allManeuvers);
@@ -254,45 +361,23 @@ export const useNavigation = (
                 });
             }
 
-            const route = {
-                coordinates: allCoordinates,
-                distance: totalDistance,
-                duration: totalDuration,
-                instructions: allManeuvers.map((maneuver: any) => ({
-                    type: 'turn' as const,
-                    distance: maneuver.length * 1000,
-                    text: maneuver.instruction,
-                    coordinate: [0, 0] as [number, number],
-                })),
-            };
+            routeCoordinates.current = allCoordinates;
+            setFullRouteCoordinates(allCoordinates);
 
-            routeCoordinates.current = route.coordinates;
-            setFullRouteCoordinates(route.coordinates);
+            totalRouteDistance.current = totalDistance;
+            totalRouteDuration.current = totalDuration;
 
-            totalRouteDistance.current = route.distance;
-            totalRouteDuration.current = route.duration;
+            setRemainingDistance(totalDistance || 0);
+            setRemainingTime(totalDuration || 0);
 
-            setRemainingDistance(route.distance || 0);
-            setRemainingTime(route.duration || 0);
-            const geoJSON = {
-                type: 'Feature',
-                properties: {
-                    distance: route.distance,
-                    duration: route.duration,
-                },
-                geometry: {
-                    type: 'LineString',
-                    coordinates: route.coordinates,
-                }
-            };
-
-            setRouteGeoJSON(geoJSON);
+            setRouteGeoJSON(mainOption.geoJSON);
+            dashboardEventsService.routeGenerated();
 
             setShowRoutePreview(true);
             setIsNavigating(false);
 
-            if (route.coordinates.length > 0) {
-                const bounds = route.coordinates.reduce((acc: { minLng: number; maxLng: number; minLat: number; maxLat: number }, [lng, lat]: [number, number]) => {
+            if (allCoordinates.length > 0) {
+                const bounds = allCoordinates.reduce((acc: { minLng: number; maxLng: number; minLat: number; maxLat: number }, [lng, lat]: [number, number]) => {
                     return {
                         minLng: Math.min(acc.minLng, lng),
                         maxLng: Math.max(acc.maxLng, lng),
@@ -300,10 +385,10 @@ export const useNavigation = (
                         maxLat: Math.max(acc.maxLat, lat),
                     };
                 }, {
-                    minLng: route.coordinates[0][0],
-                    maxLng: route.coordinates[0][0],
-                    minLat: route.coordinates[0][1],
-                    maxLat: route.coordinates[0][1],
+                    minLng: allCoordinates[0][0],
+                    maxLng: allCoordinates[0][0],
+                    minLat: allCoordinates[0][1],
+                    maxLat: allCoordinates[0][1],
                 });
 
                 const latDiff = bounds.maxLat - bounds.minLat;
@@ -320,7 +405,9 @@ export const useNavigation = (
                 else if (maxDiff > 0.01) zoom = 14;
                 else zoom = 15;
 
-                const latShift = (bounds.maxLat - bounds.minLat) * 0.8; 
+                zoom = Math.max(zoom - 1, 10);
+
+                const latShift = (bounds.maxLat - bounds.minLat) * 1.3;
                 const centerLng = (bounds.minLng + bounds.maxLng) / 2;
                 const centerLat = (bounds.minLat + bounds.maxLat) / 2 - latShift;
 
@@ -330,6 +417,10 @@ export const useNavigation = (
                     duration: 1500,
                     pitch: 0,
                 });
+            }
+
+            if (effectiveCosting === 'auto') {
+                fetchAlternativeRoutes(originCoords, targetDestination, activeWaypoints, mainOption);
             }
         } catch (error) {
             console.error('Navigation error:', error);
@@ -361,38 +452,52 @@ export const useNavigation = (
                 return;
             }
 
-            const navigationData = await navigationService.getNavigation({
-                origin: [userLocation.lat, userLocation.lng],
-                destination: [selectedDestination.latitude, selectedDestination.longitude],
-                costing: currentCosting,
-                waypoints: waypoints.length > 0
-                    ? waypoints.map(wp => [wp.latitude, wp.longitude] as [number, number])
-                    : undefined,
-            });
+            let allCoordinates: [number, number][];
+            let allManeuvers: any[];
+            let totalDistance: number;
+            let totalDuration: number;
 
-            const legs = navigationData?.data?.trip?.legs;
-            if (!legs || legs.length === 0) {
-                showToast.error('Error', 'Could not calculate route');
-                return;
-            }
+            const hasSelectedOption = allRouteOptionsRef.current.length > 0 && routeCoordinates.current.length > 0;
 
-            const allCoordinates: [number, number][] = [];
-            const allManeuvers: any[] = [];
-            let totalDistance = 0;
-            let totalDuration = 0;
+            if (hasSelectedOption) {
+                allCoordinates = routeCoordinates.current;
+                allManeuvers = routeManeuvers.current;
+                totalDistance = totalRouteDistance.current;
+                totalDuration = totalRouteDuration.current;
+            } else {
+                const navigationData = await navigationService.getNavigation({
+                    origin: [userLocation.lat, userLocation.lng],
+                    destination: [selectedDestination.latitude, selectedDestination.longitude],
+                    costing: currentCosting,
+                    waypoints: waypoints.length > 0
+                        ? waypoints.map(wp => [wp.latitude, wp.longitude] as [number, number])
+                        : undefined,
+                });
 
-            for (let i = 0; i < legs.length; i++) {
-                const leg = legs[i];
-                const decoded = decodePolyline(leg.shape, 6);
-                const legCoords = decoded.map(coord => [coord[1], coord[0]]) as [number, number][];
-                if (i === 0) {
-                    allCoordinates.push(...legCoords);
-                } else {
-                    allCoordinates.push(...legCoords.slice(1));
+                const legs = navigationData?.data?.trip?.legs;
+                if (!legs || legs.length === 0) {
+                    showToast.error('Error', 'Could not calculate route');
+                    return;
                 }
-                allManeuvers.push(...leg.maneuvers);
-                totalDistance += leg.summary.length * 1000;
-                totalDuration += leg.summary.time;
+
+                allCoordinates = [];
+                allManeuvers = [];
+                totalDistance = 0;
+                totalDuration = 0;
+
+                for (let i = 0; i < legs.length; i++) {
+                    const leg = legs[i];
+                    const decoded = decodePolyline(leg.shape, 6);
+                    const legCoords = decoded.map(coord => [coord[1], coord[0]]) as [number, number][];
+                    if (i === 0) {
+                        allCoordinates.push(...legCoords);
+                    } else {
+                        allCoordinates.push(...legCoords.slice(1));
+                    }
+                    allManeuvers.push(...leg.maneuvers);
+                    totalDistance += leg.summary.length * 1000;
+                    totalDuration += leg.summary.time;
+                }
             }
 
             const instructionTexts = allManeuvers
@@ -530,6 +635,7 @@ export const useNavigation = (
                 showToast.info('Navigation Started', 'GPS simulation is running for testing');
             } else {
                 startLocationTracking();
+                void startNavService(currentInstruction || 'Navigating…');
             }
 
         } catch (error: any) {
@@ -554,6 +660,7 @@ export const useNavigation = (
 
         stopLocationTracking();
         stopSimulation();
+        void stopNavService();
 
         // Clear reroute timeout
         if (rerouteTimeout.current) {
@@ -565,6 +672,10 @@ export const useNavigation = (
         setSelectedDestination(null);
         setWaypoints([]);
         currentDestination.current = null;
+        allRouteOptionsRef.current = [];
+        setAllRouteOptions([]);
+        setSelectedRouteIndex(0);
+        setAlternativeRoutesGeoJSON([]);
         setCurrentInstruction('');
         setRemainingDistance(0);
         setRemainingTime(0);
@@ -595,6 +706,11 @@ export const useNavigation = (
         setRouteManeuversList([]);
         setRouteLegs([]);
         routeManeuvers.current = [];
+        allRouteOptionsRef.current = [];
+        setAllRouteOptions([]);
+        setSelectedRouteIndex(0);
+        setAlternativeRoutesGeoJSON([]);
+
         setCurrentInstruction('');
         setRemainingDistance(0);
         setRemainingTime(0);
@@ -616,12 +732,24 @@ export const useNavigation = (
         return () => {
             stopLocationTracking();
             stopSimulation();
+            void stopNavService();
 
             if (rerouteTimeout.current) {
                 clearTimeout(rerouteTimeout.current);
             }
         };
     }, [stopLocationTracking, stopSimulation]);
+
+    useEffect(() => {
+        if (!navigationMode) return;
+        const distanceText = remainingDistance >= 1000
+            ? `${(remainingDistance / 1000).toFixed(1)} km`
+            : `${Math.round(remainingDistance / 10) * 10} m`;
+        const minutes = Math.max(1, Math.round(remainingTime / 60));
+        const summary = `${distanceText} · ${minutes} min`;
+        const body = currentInstruction ? `${currentInstruction} · ${summary}` : summary;
+        void updateNavNotification(body);
+    }, [navigationMode, currentInstruction, remainingDistance, remainingTime]);
 
     return {
         selectedDestination,
@@ -636,12 +764,16 @@ export const useNavigation = (
         currentHeading,
         simulateMovement,
         setSimulateMovement,
+
         currentInstruction,
         nextInstruction,
         remainingDistance,
         remainingTime,
+        totalRouteDistance: totalRouteDistance.current,
+        currentSpeed,
         isOffRoute,
         isRecalculating,
+
         showArrivalModal,
         setShowArrivalModal,
         currentCosting,
@@ -653,6 +785,10 @@ export const useNavigation = (
         setRouteOrigin,
         routeManeuversList,
         routeLegs,
+        allRouteOptions,
+        selectedRouteIndex,
+        alternativeRoutesGeoJSON,
+        handleSelectRoute,
         handleNavigate,
         handleStartNavigation,
         handleStopNavigation,

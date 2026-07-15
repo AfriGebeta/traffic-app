@@ -3,14 +3,16 @@ import * as Location from 'expo-location';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 import { showToast } from '../../../shared/utils/toast';
 import { buildSegmentedRoutesFromPosition, calculateBearing, calculateDistance } from '../utils/navigationUtils';
+import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 interface UseLocationTrackingProps {
     routeCoordinates: React.MutableRefObject<[number, number][]>;
     isNavigatingRef: React.MutableRefObject<boolean>;
     mapRef: React.RefObject<GebetaMapRef | null>;
     isOffRoute: boolean;
-    setUserLocation?: (location: { lat: number; lng: number; accuracy?: number }) => void;
+    setUserLocation?: (location: { lat: number; lng: number; accuracy?: number; speed?: number }) => void;
     setCurrentHeading: (heading: number) => void;
     setRouteGeoJSON: (geoJSON: any) => void;
+
     setRemainingDistance: (distance: number) => void;
     setRemainingTime: (time: number) => void;
     setIsOffRoute: (value: boolean) => void;
@@ -22,6 +24,7 @@ interface UseLocationTrackingProps {
     totalRouteDuration: number;
     routeManeuversRef?: React.MutableRefObject<any[]>;
     currentManeuverIndexRef?: React.MutableRefObject<number>;
+    setCurrentSpeed?: (speed: number) => void;
     // Taxi-specific
     taxiSegments?: Array<{
         polyline: string;
@@ -42,6 +45,7 @@ interface UseLocationTrackingProps {
         }>
     ) => void;
     onArrival?: () => void;
+    onArrival?: () => void;
 }
 
 const ARRIVAL_DISTANCE_METERS = 80;
@@ -53,6 +57,7 @@ export const useLocationTracking = ({
     isOffRoute,
     setUserLocation,
     setCurrentHeading,
+
     setRouteGeoJSON,
     setRemainingDistance,
     setRemainingTime,
@@ -64,22 +69,28 @@ export const useLocationTracking = ({
     totalRouteDistance,
     totalRouteDuration,
     routeManeuversRef,
+
     currentManeuverIndexRef,
+    setCurrentSpeed,
     taxiSegments,
     setSegmentedRoutes,
     updateNavigationState,
+    onArrival,
     onArrival,
 }: UseLocationTrackingProps) => {
     const locationSubscription = useRef<Location.LocationSubscription | null>(null);
     const lastClosestIndex = useRef<number>(0);
     const isOffRouteRef = useRef<boolean>(false);
+
     const offRouteStartTime = useRef<number | null>(null);
     const lastOffRoutePosition = useRef<{ lat: number; lng: number } | null>(null);
     const headingDivergeStartRef = useRef<number | null>(null);  // when heading first diverged
     const headingDivergeDistRef = useRef<number>(0);             // distance-from-route at that moment
-    const currentGPSIntervalRef = useRef<number>(5000);
+    const currentGPSIntervalRef = useRef<number>(getAppConfig().navGpsIntervalMs);
+
     const locationCallbackRef = useRef<((location: Location.LocationObject) => void) | null>(null);
     const lastRenderedMarkerRef = useRef<{ lat: number; lng: number } | null>(null);
+    const hasArrivedRef = useRef<boolean>(false);
     const hasArrivedRef = useRef<boolean>(false);
 
     const stopLocationTracking = useCallback(() => {
@@ -92,8 +103,9 @@ export const useLocationTracking = ({
         offRouteStartTime.current = null;
         lastOffRoutePosition.current = null;
         headingDivergeStartRef.current = null;
-        currentGPSIntervalRef.current = 5000;
+        currentGPSIntervalRef.current = getAppConfig().navGpsIntervalMs;
         locationCallbackRef.current = null;
+        hasArrivedRef.current = false;
         hasArrivedRef.current = false;
     }, []);
 
@@ -111,8 +123,14 @@ export const useLocationTracking = ({
 
             hasArrivedRef.current = false;
 
+            hasArrivedRef.current = false;
+
             locationCallbackRef.current = (location: Location.LocationObject) => {
                 const { latitude, longitude, heading, speed } = location.coords;
+
+                if (speed !== null && speed >= 0) {
+                    setCurrentSpeed?.(Math.round(speed * 3.6)); // m/s → km/h
+                }
 
                 let displayLat = latitude;
                 let displayLng = longitude;
@@ -215,13 +233,14 @@ export const useLocationTracking = ({
                     displayLat = snappedLat;
                     displayLng = snappedLng;
 
-                    const OFF_ROUTE_THRESHOLD = 50;
-                    const OFF_ROUTE_DELAY = 2000;
+                    const cfg = getAppConfig();
+                    const OFF_ROUTE_THRESHOLD = cfg.offRouteThresholdM;
+                    const OFF_ROUTE_DELAY = cfg.offRouteDelayMs;
 
-                    const HEADING_DIVERGE_ANGLE = 50;  
-                    const HEADING_DIVERGE_TIME = 3000; 
-                    const HEADING_MIN_SPEED = 3;     
-                    const HEADING_MIN_DISTANCE = 20; 
+                    const HEADING_DIVERGE_ANGLE = cfg.headingDivergeAngleDeg;
+                    const HEADING_DIVERGE_TIME = cfg.headingDivergeTimeMs;
+                    const HEADING_MIN_SPEED = cfg.headingMinSpeed;
+                    const HEADING_MIN_DISTANCE = cfg.headingMinDistanceM;
                     let divergedByHeading = false;
                     if (
                         (speed ?? 0) > HEADING_MIN_SPEED &&
@@ -322,8 +341,6 @@ export const useLocationTracking = ({
                             const distToTurn = calculateDistance(displayLat, displayLng, mLat, mLng);
                             if (distToTurn < 100 && currentGPSIntervalRef.current !== 1000) {
                                 void restartAtInterval(1000);
-                            } else if (distToTurn > 150 && currentGPSIntervalRef.current !== 5000) {
-                                void restartAtInterval(5000);
                             }
                         }
                     }
@@ -356,7 +373,12 @@ export const useLocationTracking = ({
                             lastRenderedMarkerRef.current = { lat: displayLat, lng: displayLng };
 
                             if (setUserLocation) {
-                                setUserLocation({ lat: latitude, lng: longitude, accuracy: location.coords.accuracy ?? undefined });
+                                setUserLocation({
+                                    lat: displayLat,
+                                    lng: displayLng,
+                                    accuracy: location.coords.accuracy ?? undefined,
+                                    speed: speed ?? undefined,
+                                });
                             }
                         }
 
@@ -433,7 +455,7 @@ export const useLocationTracking = ({
             locationSubscription.current = await Location.watchPositionAsync(
                 {
                     accuracy: Location.Accuracy.BestForNavigation,
-                    timeInterval: 5000,
+                    timeInterval: getAppConfig().navGpsIntervalMs,
                     distanceInterval: 0,
                     mayShowUserSettingsDialog: true,
                 },
@@ -460,6 +482,7 @@ export const useLocationTracking = ({
         taxiSegments,
         setSegmentedRoutes,
         updateNavigationState,
+        onArrival,
         onArrival,
     ]);
 

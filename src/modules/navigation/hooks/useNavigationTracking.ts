@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { navigationTrackingService } from '../services/tracking.service';
+import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 
 interface UseNavigationTrackingProps {
     isNavigating: boolean;
@@ -15,6 +16,7 @@ export const useNavigationTracking = ({
 }: UseNavigationTrackingProps) => {
     const navigationIdRef = useRef<string | null>(null);
     const previousNavigatingRef = useRef<boolean>(false);
+    const lastPointTimeRef = useRef<number>(0);
     const lastPointTimeRef = useRef<number>(0);
 
     // Record points from location updates instead of setInterval: RN pauses JS
@@ -42,6 +44,7 @@ export const useNavigationTracking = ({
         if (isNavigating) {
             if (!navigationIdRef.current) {
                 navigationIdRef.current = `nav_${Date.now()}`;
+                lastPointTimeRef.current = 0;
                 lastPointTimeRef.current = 0;
                 console.log('[Tracking] Started tracking navigation:', navigationIdRef.current);
             }

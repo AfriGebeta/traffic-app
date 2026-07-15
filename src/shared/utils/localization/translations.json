@@ -10,6 +10,41 @@
         "AM": "እንኳን ደህና መጡ"
     },
     {
+        "key": "language-model",
+        "EN_US": "Language Model",
+        "AM": "የቋንቋ ሞዴል"
+    },
+    {
+        "key": "ai-greeting-part1",
+        "EN_US": "Hey, ",
+        "AM": "ሰላም, "
+    },
+    {
+        "key": "ai-greeting-highlight1",
+        "EN_US": "Where",
+        "AM": "የት"
+    },
+    {
+        "key": "ai-greeting-part2",
+        "EN_US": " do you feel like ",
+        "AM": " መሄድ ይፈልጋሉ "
+    },
+    {
+        "key": "ai-greeting-highlight2",
+        "EN_US": "Going",
+        "AM": "ማሰስ"
+    },
+    {
+        "key": "ai-greeting-part3",
+        "EN_US": " today?",
+        "AM": " ዛሬ?"
+    },
+    {
+        "key": "ai-suggestion-last-place",
+        "EN_US": "Take me to the last place I travelled to via the fastest route. And other preset message here.",
+        "AM": "ባለፈ ጊዜ ወደ ሄድኩበት ቦታ በፈጣኑ መንገድ ውሰደኝ።"
+    },
+    {
         "key": "next",
         "EN_US": "Next",
         "AM": "ይቀጥሉ"
@@ -138,6 +173,11 @@
         "key": "contribute",
         "EN_US": "Contribute",
         "AM": "ይጠቁሙ "
+    },
+    {
+        "key": "saved",
+        "EN_US": "Saved",
+        "AM": "የተቀመጡ"
     },
     {
         "key": "ahead",

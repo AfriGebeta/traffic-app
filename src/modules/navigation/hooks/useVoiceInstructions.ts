@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { voiceNavigationService } from '../services/voice-navigation.service';
+import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 
 interface UseVoiceInstructionsProps {
     currentInstruction: string;
@@ -14,7 +15,7 @@ export const useVoiceInstructions = ({
 }: UseVoiceInstructionsProps) => {
     const lastSpokenInstructionRef = useRef<string>('');
     const lastSpokenTimeRef = useRef<number>(0);
-    const MIN_SPEAK_INTERVAL_MS = 3000; 
+    const MIN_SPEAK_INTERVAL_MS = getAppConfig().voiceMinSpeakIntervalMs;
 
     useEffect(() => {
         if (!enabled || !isNavigating || !currentInstruction) {

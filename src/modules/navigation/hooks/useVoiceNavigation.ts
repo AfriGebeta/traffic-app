@@ -5,6 +5,7 @@ import { VoiceNavSocket, type VoiceNavEvent } from '../services/voice-nav-socket
 import { StreamingPcmPlayer } from '../utils/streamingPcmPlayer';
 import { showToast } from '../../../shared/utils/toast';
 import { generateSessionId } from '../../../shared/utils/session';
+import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 import type { VoiceNavigationData, NavigationOption } from '../types/voice-navigation.types';
 import type { GeocodingPlace } from '../types/navigation.types';

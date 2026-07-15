@@ -15,4 +15,9 @@ config.resolver.nodeModulesPaths = [
 // Fix for react-native-toast-message module resolution
 config.resolver.resolverMainFields = ['react-native', 'browser', 'main'];
 
+// Support importing .svg files as React components
+config.transformer.babelTransformerPath = require.resolve('react-native-svg-transformer');
+config.resolver.assetExts = config.resolver.assetExts.filter((ext) => ext !== 'svg');
+config.resolver.sourceExts.push('svg');
+
 module.exports = withNativeWind(config, { input: './src/app/globals.css' });
