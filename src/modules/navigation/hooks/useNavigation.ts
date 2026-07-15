@@ -670,6 +670,7 @@ export const useNavigation = (
         setIsNavigating(false);
         isNavigatingRef.current = false;
 
+        voiceNavigationService.stopSpeaking();
         voiceNavigationService.clearCache();
 
         stopLocationTracking();

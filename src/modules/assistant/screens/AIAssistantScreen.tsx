@@ -72,34 +72,27 @@ export default function AIAssistantScreen() {
 
     return (
         <View className="flex-1 bg-white" style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
-            <View className="flex-row items-center justify-between px-4 py-4">
+            <View className="flex-row items-center px-4 py-4">
                 <TouchableOpacity
                     onPress={() => router.back()}
                     className="flex-row items-center"
                     activeOpacity={0.7}
                 >
                     <Ionicons name="chevron-back" size={22} color="#111827" />
-                    <Text className="text-base text-gray-900 ml-1">{t('welcome')}</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    className="rounded-full border border-gray-200 px-4 py-2"
-                    activeOpacity={0.7}
-                >
-                    <Text className="text-xs text-gray-700">{t('language-model')}</Text>
+                    <Text className="text-base text-gray-900 ml-1" style={{ fontFamily: 'PlusJakartaSans-Medium' }}>{t('welcome')}</Text>
                 </TouchableOpacity>
             </View>
 
             {navStarting ? (
                 <View className="flex-1 items-center justify-center px-8">
                     <ActivityIndicator size="large" color={colors.primary.main} />
-                    <Text className="text-base text-gray-600 mt-4">{t('starting-navigation')}</Text>
+                    <Text className="text-base text-gray-600 mt-4" style={{ fontFamily: 'PlusJakartaSans-Medium' }}>{t('starting-navigation')}</Text>
                 </View>
             ) : isIdle ? (
                 <View className="flex-1 items-center justify-center px-8">
                     <AiIcon width={100} height={106} />
 
-                    <Text className="text-4xl font-extrabold text-center mt-6 leading-[44px]">
+                    <Text className="text-4xl text-center mt-6 leading-[44px]" style={{ fontFamily: 'PlusJakartaSans-ExtraBold' }}>
                         <Text className="text-gray-900">{t('ai-greeting-part1')}</Text>
                         <Text style={{ color: '#FFA500' }}>{t('ai-greeting-highlight1')}</Text>
                         <Text className="text-gray-900">{t('ai-greeting-part2')}</Text>
@@ -115,21 +108,21 @@ export default function AIAssistantScreen() {
                 >
                     {transcription ? (
                         <View className="self-end max-w-[85%] mb-3 px-4 py-3 rounded-2xl rounded-tr-sm bg-orange-50">
-                            <Text className="text-xs font-medium mb-1" style={{ color: colors.primary.main }}>
+                            <Text className="text-xs mb-1" style={{ color: colors.primary.main, fontFamily: 'PlusJakartaSans-Medium' }}>
                                 {t('you-said')}
                             </Text>
-                            <Text className="text-base text-gray-800">{transcription}</Text>
+                            <Text className="text-base text-gray-800" style={{ fontFamily: 'PlusJakartaSans-Regular' }}>{transcription}</Text>
                         </View>
                     ) : null}
 
                     {assistantMessage ? (
                         <View className="self-start max-w-[90%] mb-3 px-4 py-3 rounded-2xl rounded-tl-sm bg-gray-50">
-                            <Text className="text-base text-gray-800 leading-6">{assistantMessage}</Text>
+                            <Text className="text-base text-gray-800 leading-6" style={{ fontFamily: 'PlusJakartaSans-Regular' }}>{assistantMessage}</Text>
                         </View>
                     ) : null}
 
                     {showOptions && disambiguationMessage ? (
-                        <Text className="text-sm text-gray-500 text-center my-2">{disambiguationMessage}</Text>
+                        <Text className="text-sm text-gray-500 text-center my-2" style={{ fontFamily: 'PlusJakartaSans-Regular' }}>{disambiguationMessage}</Text>
                     ) : null}
 
                     {showOptions
@@ -147,9 +140,9 @@ export default function AIAssistantScreen() {
                                       <Ionicons name="location" size={20} color="white" />
                                   </View>
                                   <View className="flex-1">
-                                      <Text className="text-base font-medium text-gray-900">{option.name}</Text>
+                                      <Text className="text-base text-gray-900" style={{ fontFamily: 'PlusJakartaSans-Medium' }}>{option.name}</Text>
                                       {option.lat != null && option.lng != null && (
-                                          <Text className="text-sm text-gray-500 mt-1">
+                                          <Text className="text-sm text-gray-500 mt-1" style={{ fontFamily: 'PlusJakartaSans-Regular' }}>
                                               {option.lat.toFixed(6)}, {option.lng.toFixed(6)}
                                           </Text>
                                       )}
@@ -162,7 +155,7 @@ export default function AIAssistantScreen() {
                     {isProcessingVoice ? (
                         <View className="flex-row items-center self-start mb-3 px-4 py-3">
                             <ActivityIndicator size="small" color={colors.primary.main} />
-                            <Text className="text-sm text-gray-500 ml-2">{t('processing')}</Text>
+                            <Text className="text-sm text-gray-500 ml-2" style={{ fontFamily: 'PlusJakartaSans-Regular' }}>{t('processing')}</Text>
                         </View>
                     ) : null}
                 </ScrollView>
@@ -187,7 +180,7 @@ export default function AIAssistantScreen() {
                 >
                     <Ionicons name={isRecording ? 'mic' : 'mic-outline'} size={30} color={isRecording ? 'white' : '#FFA500'} />
                 </TouchableOpacity>
-                <Text className="text-xs text-gray-400 mt-3">
+                <Text className="text-xs text-gray-400 mt-3" style={{ fontFamily: 'PlusJakartaSans-Regular' }}>
                     {isProcessingVoice
                         ? t('processing')
                         : isRecording

@@ -26,9 +26,12 @@ function splitBinaryFrame(buf: Uint8Array): { header: VoiceNavEvent | null; payl
     return { header, payload: buf.subarray(sep + 1) };
 }
 
+const HEARTBEAT_INTERVAL_MS = 30_000;
+
 export class VoiceNavSocket {
     private ws: WebSocket | null = null;
     private handlers: VoiceNavSocketHandlers;
+    private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 
     constructor(handlers: VoiceNavSocketHandlers) {
         this.handlers = handlers;
@@ -39,27 +42,51 @@ export class VoiceNavSocket {
     }
 
     connect(url: string): void {
-        if (this.ws) return;
+        if (
+            this.ws &&
+            (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)
+        ) {
+            return;
+        }
 
         const ws = new WebSocket(url);
         ws.binaryType = 'arraybuffer';
         this.ws = ws;
 
-        ws.onopen = () => { console.log('voicenav: ws open', url); this.handlers.onOpen?.(); };
+        ws.onopen = () => {
+            console.log('voicenav: ws open', url);
+            this.startHeartbeat();
+            this.handlers.onOpen?.();
+        };
         ws.onerror = (e: any) => { console.log('voicenav: ws error', e?.message ?? e); this.handlers.onError?.(); };
         ws.onclose = (e: any) => {
             console.log('voicenav: ws close', e?.code, e?.reason);
+            this.stopHeartbeat();
             this.ws = null;
             this.handlers.onClose?.();
         };
         ws.onmessage = (event: WebSocketMessageEvent) => this.handleMessage(event);
     }
 
+    private startHeartbeat(): void {
+        this.stopHeartbeat();
+        this.heartbeatTimer = setInterval(() => this.sendJson('ping'), HEARTBEAT_INTERVAL_MS);
+    }
+
+    private stopHeartbeat(): void {
+        if (this.heartbeatTimer) {
+            clearInterval(this.heartbeatTimer);
+            this.heartbeatTimer = null;
+        }
+    }
+
     private handleMessage(event: WebSocketMessageEvent): void {
         if (event.data instanceof ArrayBuffer) {
             const { header, payload } = splitBinaryFrame(new Uint8Array(event.data));
             if (!header) { console.log('voicenav: binary frame: no header'); return; }
-            console.log('voicenav: binary', header.type, 'payload', payload.length);
+            if (header.type !== 'pong') {
+                console.log('voicenav: binary', header.type, 'payload', payload.length);
+            }
             if (header.type === 'tts_chunk') {
                 this.handlers.onPcm(payload);
             } else {
@@ -75,7 +102,9 @@ export class VoiceNavSocket {
                     : new TextDecoder().decode(event.data as any);
             const nl = raw.indexOf('\n');
             const json = JSON.parse(nl !== -1 ? raw.slice(0, nl) : raw);
-            console.log('voicenav: event', json?.type, JSON.stringify(json?.data)?.slice(0, 200));
+            if (json?.type !== 'pong') {
+                console.log('voicenav: event', json?.type, JSON.stringify(json?.data)?.slice(0, 200));
+            }
             this.handlers.onEvent(json);
         } catch (err) {
             console.log('voicenav: frame parse failed:', String(event.data).slice(0, 200), err);
@@ -99,6 +128,7 @@ export class VoiceNavSocket {
     }
 
     close(): void {
+        this.stopHeartbeat();
         const ws = this.ws;
         this.ws = null;
         if (ws) {

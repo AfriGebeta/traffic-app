@@ -129,7 +129,9 @@ export const useVoiceNavigation = ({
 
     const handleEvent = useCallback((event: VoiceNavEvent) => {
         const { type, data } = event;
-        vlog(`event «${type}» ${sinceReq()}`, data ? JSON.stringify(data).slice(0, 300) : '');
+        if (type !== 'pong') {
+            vlog(`event «${type}» ${sinceReq()}`, data ? JSON.stringify(data).slice(0, 300) : '');
+        }
 
         switch (type) {
             case 'connected': {
@@ -269,6 +271,9 @@ export const useVoiceNavigation = ({
                 break;
             }
 
+            case 'pong':
+                break;
+
             case 'origin_updated':
                 vlog('origin_updated:', data);
                 break;
@@ -292,9 +297,23 @@ export const useVoiceNavigation = ({
 
         playerRef.current = new StreamingPcmPlayer();
         let disposed = false;
+        let reconnectAttempt = 0;
+
+        const scheduleReconnect = () => {
+            if (disposed) return;
+            if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
+            const backoff = Math.min(30_000, 1_000 * 2 ** reconnectAttempt);
+            const delay = backoff / 2 + Math.random() * (backoff / 2);
+            reconnectAttempt += 1;
+            vlog(`socket closed — reconnecting in ${Math.round(delay)}ms (attempt ${reconnectAttempt})`);
+            reconnectTimer.current = setTimeout(connect, delay);
+        };
 
         const connect = () => {
             if (disposed) return;
+            if (socketRef.current?.isOpen) return;
+            socketRef.current?.close();
+
             const url = buildStreamUrl(sessionIdRef.current, wsLanguageRef.current, userLocationRef.current);
             streamUrlRef.current = url;
             vlog('connecting →', url);
@@ -309,13 +328,13 @@ export const useVoiceNavigation = ({
                     }
                     playerRef.current?.push(chunk);
                 },
+                onOpen: () => {
+                    reconnectAttempt = 0;
+                },
                 onClose: () => {
-                    socketRef.current = null;
+                    if (socketRef.current === socket) socketRef.current = null;
                     playerRef.current?.stop();
-                    if (!disposed) {
-                        vlog('socket closed — reconnecting in 2s');
-                        reconnectTimer.current = setTimeout(connect, 2000);
-                    }
+                    scheduleReconnect();
                 },
                 onError: () => {
                 },
