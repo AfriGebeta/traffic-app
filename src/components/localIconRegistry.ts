@@ -27,6 +27,7 @@ export const localIconRegistry = {
     "curved-dark-light-filter-2": { type: "svg", source: require("../../assets/icons/curved/Filter 2.svg") },
     "curved-dark-light-logout": { type: "svg", source: require("../../assets/icons/curved/Logout.svg") },
     "curved-dark-light-star": { type: "svg", source: require("../../assets/icons/curved/Star.svg") },
+    "curved-dark-light-chart": { type: "svg", source: require("../../assets/icons/curved/Chart.svg") },
     "curved-light-light-bookmark": { type: "svg", source: require("../../assets/icons/curved//Bookmark.svg") },
     "curved-light-light-home": { type: "svg", source: require("../../assets/icons/curved/Home.svg") },
     "curved-light-light-work": { type: "svg", source: require("../../assets/icons/curved/Work.svg") },
