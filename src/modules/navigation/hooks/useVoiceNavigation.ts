@@ -84,6 +84,7 @@ export const useVoiceNavigation = ({
     const [disambiguationMessage, setDisambiguationMessage] = useState<string>('');
     const [showVoiceModal, setShowVoiceModal] = useState(false);
     const [transcription, setTranscription] = useState<string>('');
+    const [assistantMessage, setAssistantMessage] = useState<string>('');
 
     const socketRef = useRef<VoiceNavSocket | null>(null);
     const playerRef = useRef<StreamingPcmPlayer | null>(null);
@@ -143,6 +144,7 @@ export const useVoiceNavigation = ({
             case 'processing':
                 setIsProcessing(true);
                 setTranscription('');
+                setAssistantMessage('');
                 break;
 
             case 'transcribed':
@@ -170,15 +172,14 @@ export const useVoiceNavigation = ({
                 break;
 
             case 'speak':
-
                 vlog(`speak (about to stream): "${data?.message ?? ''}"`);
+                if (data?.message) setAssistantMessage(data.message);
                 break;
 
             case 'disambiguate': {
                 const opts: NavigationOption[] = data?.options ?? [];
                 const current: NavigationOption | null = data?.current ?? null;
 
-                // Server narrowed to one confirmed place — auto-select, no UI interruption
                 if (data?.requiresConfirmation && opts.length === 0 && current) {
                     vlog(`disambiguate: auto-confirm "${current.name}"`);
                     const socket = socketRef.current;
@@ -186,7 +187,6 @@ export const useVoiceNavigation = ({
                         reqStartRef.current = Date.now();
                         socket.sendJson('select_option', { optionId: current.id, name: current.name });
                     }
-                    // Keep isProcessing true — navigation_ready/ready will clear it
                     break;
                 }
 
@@ -417,6 +417,7 @@ export const useVoiceNavigation = ({
         setOptions([]);
         setShowOptions(false);
         setTranscription('');
+        setAssistantMessage('');
     }, []);
 
     const handleOptionSelect = useCallback((optionId: number) => {
@@ -447,6 +448,7 @@ export const useVoiceNavigation = ({
         disambiguationMessage,
         showVoiceModal,
         transcription,
+        assistantMessage,
         handleVoicePress,
         handleVoiceStart,
         handleVoiceStop,

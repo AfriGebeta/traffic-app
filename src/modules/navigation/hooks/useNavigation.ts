@@ -429,7 +429,12 @@ export const useNavigation = (
         }
     };
 
-    const handleStartNavigation = async (setUserLocation?: (location: { lat: number; lng: number }) => void) => {
+    const handleStartNavigation = async (
+        setUserLocation?: (location: { lat: number; lng: number }) => void,
+        destinationOverride?: GeocodingPlace,
+    ) => {
+        const targetDestination = destinationOverride || selectedDestination;
+
         if (!mapRef.current) {
             showToast.error('Error', 'Map reference is not available');
             return;
@@ -440,7 +445,7 @@ export const useNavigation = (
             return;
         }
 
-        if (!selectedDestination) {
+        if (!targetDestination) {
             showToast.error('Error', 'Please select a destination first');
             return;
         }
@@ -465,14 +470,23 @@ export const useNavigation = (
                 totalDistance = totalRouteDistance.current;
                 totalDuration = totalRouteDuration.current;
             } else {
-                const navigationData = await navigationService.getNavigation({
-                    origin: [userLocation.lat, userLocation.lng],
-                    destination: [selectedDestination.latitude, selectedDestination.longitude],
-                    costing: currentCosting,
-                    waypoints: waypoints.length > 0
-                        ? waypoints.map(wp => [wp.latitude, wp.longitude] as [number, number])
-                        : undefined,
-                });
+                let navigationData: Awaited<ReturnType<typeof navigationService.getNavigation>> | null = null;
+                const prefetch = (globalThis as any).__voiceRoutePrefetch;
+                if (prefetch?.key === `${targetDestination.latitude},${targetDestination.longitude}`) {
+                    delete (globalThis as any).__voiceRoutePrefetch;
+                    navigationData = await prefetch.promise;
+                }
+
+                if (!navigationData) {
+                    navigationData = await navigationService.getNavigation({
+                        origin: [userLocation.lat, userLocation.lng],
+                        destination: [targetDestination.latitude, targetDestination.longitude],
+                        costing: currentCosting,
+                        waypoints: waypoints.length > 0
+                            ? waypoints.map(wp => [wp.latitude, wp.longitude] as [number, number])
+                            : undefined,
+                    });
+                }
 
                 const legs = navigationData?.data?.trip?.legs;
                 if (!legs || legs.length === 0) {
@@ -529,7 +543,7 @@ export const useNavigation = (
             totalRouteDistance.current = route.distance;
             totalRouteDuration.current = route.duration;
 
-            currentDestination.current = selectedDestination;
+            currentDestination.current = targetDestination;
             setShowRoutePreview(false);
 
             const initialGeoJSON = {

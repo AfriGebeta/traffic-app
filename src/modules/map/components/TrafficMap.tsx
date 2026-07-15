@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, LogBox, BackHandler, StatusBar } from 'react-native';
+import { View, Text, LogBox, BackHandler, StatusBar, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useFocusEffect, useRouter } from 'expo-router';
 import CustomGebetaMap from '../../../components/GebetaMap';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
@@ -48,12 +48,15 @@ interface TrafficMapProps {
     sharedLocation?: SharedLocation | null;
     taxiDestination?: { lat: number; lng: number; name: string };
     showTaxiMode?: boolean;
+    voiceDestination?: { lat: number; lng: number; name: string };
 }
 
-export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMode }: TrafficMapProps) {
+export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMode, voiceDestination }: TrafficMapProps) {
     const mapRef = useRef<GebetaMapRef>(null);
     const searchMarkerRef = useRef<any>(null);
     const processedSharedLocationRef = useRef<SharedLocation | null>(null);
+    const processedVoiceDestRef = useRef<string | null>(null);
+    const [voiceNavStarting, setVoiceNavStarting] = useState(false);
     const sharedFlyToTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const router = useRouter();
 
@@ -273,7 +276,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         handleStartNavigation(setUserLocation);
     };
 
-    const handleSelectPlace = (place: GeocodingPlace, autoNavigate: boolean = false, saveToRecents: boolean = false) => {
+    const handleSelectPlace = (place: GeocodingPlace, autoNavigate: boolean = false, saveToRecents: boolean = false, skipPreview: boolean = false) => {
         const queryForRecent = searchQuery.trim() || undefined;
 
         import('../../navigation/services/searchLog.service').then(({ searchLogService }) => {
@@ -323,9 +326,14 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
 
         if (autoNavigate) {
             setShowPlaceDetail(false);
-            setTimeout(() => {
-                handleNavigate(setUserLocation, place);
-            }, 300);
+            if (skipPreview) {
+                // destination passed explicitly — no need to wait for state commit
+                handleStartNavigation(setUserLocation, place);
+            } else {
+                setTimeout(() => {
+                    handleNavigate(setUserLocation, place);
+                }, 300);
+            }
         } else {
             setShowPlaceDetail(true);
             setShowRoutePreview(false);
@@ -387,7 +395,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         mapRef,
         userLocation,
         language: 'amh',
-        onDestinationFound: handleSelectPlace,
+        onDestinationFound: (place) => handleSelectPlace(place, true, false, true),
     });
 
     const handleExploreCategory = async (categoryId: string) => {
@@ -616,6 +624,48 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
             }
         }
     }, [taxiDestination, userLocation]);
+
+    useEffect(() => {
+        if (!voiceDestination || !userLocation) return;
+
+        const key = `${voiceDestination.lat},${voiceDestination.lng}`;
+        if (processedVoiceDestRef.current === key) return;
+        processedVoiceDestRef.current = key;
+
+        const place: GeocodingPlace = {
+            id: `voice-dest-${voiceDestination.lat}-${voiceDestination.lng}`,
+            name: voiceDestination.name,
+            display_name: voiceDestination.name,
+            category: 'destination',
+            location: { lat: voiceDestination.lat, lng: voiceDestination.lng },
+            address: { city: '', country: '', country_code: '' },
+            latitude: voiceDestination.lat,
+            longitude: voiceDestination.lng,
+            type: 'destination',
+            City: '',
+            Country: '',
+        };
+
+        handleSelectPlace(place, true, false, true);
+    }, [voiceDestination, userLocation]);
+
+    useFocusEffect(
+        React.useCallback(() => {
+            if ((globalThis as any).__voiceRoutePrefetch) {
+                setVoiceNavStarting(true);
+            }
+        }, [])
+    );
+
+    useEffect(() => {
+        if (navigationMode) setVoiceNavStarting(false);
+    }, [navigationMode]);
+
+    useEffect(() => {
+        if (!voiceNavStarting) return;
+        const timer = setTimeout(() => setVoiceNavStarting(false), 15000);
+        return () => clearTimeout(timer);
+    }, [voiceNavStarting]);
 
     useEffect(() => {
         if (!taxiRouteData) {
@@ -1159,6 +1209,16 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 destinationName={selectedDestination?.name}
                 onClose={() => setShowArrivalModal(false)}
             />
+
+            {voiceNavStarting && (
+                <View
+                    className="absolute inset-0 items-center justify-center bg-white"
+                    style={{ zIndex: 9999, elevation: 20 }}
+                >
+                    <ActivityIndicator size="large" color={colors.primary.main} />
+                    <Text className="text-base text-gray-600 mt-4">{t('starting-navigation')}</Text>
+                </View>
+            )}
         </View>
     );
 }

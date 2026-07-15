@@ -595,6 +595,11 @@
         "AM": "በመጫን ላይ..."
     },
     {
+        "key": "starting-navigation",
+        "EN_US": "Starting navigation...",
+        "AM": "ጉዞ በመጀመር ላይ..."
+    },
+    {
         "key": "all-time",
         "EN_US": "All Time",
         "AM": "የሁሉም ጊዜ"
