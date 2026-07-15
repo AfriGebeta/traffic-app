@@ -107,7 +107,7 @@ export const ProfileScreen = () => {
                         <Text style={styles.userName} numberOfLines={1}>{user.name}</Text>
                     </View>
                     <TouchableOpacity onPress={handleLogout} hitSlop={12} style={styles.logoutButton}>
-                        <Icon name="curved-dark-outline-logout" size={26} color="#D65D5D" />
+                        <Icon name="curved-dark-light-logout" size={26} color="#D65D5D" />
                     </TouchableOpacity>
                 </View>
 
@@ -126,12 +126,12 @@ export const ProfileScreen = () => {
                 <Text style={styles.sectionTitle}>Community</Text>
                 <View style={styles.communityGrid}>
                     <TouchableOpacity style={[styles.gridItem, styles.gridRightBorder, styles.gridBottomBorder]} activeOpacity={0.7}>
-                        <Icon name="curved-dark-outline-star" size={22} color="#34343A" />
+                        <Icon name="curved-dark-light-star" size={22} color="#34343A" />
                         <Text style={styles.gridLabel}>Points</Text>
                         <Text style={styles.gridValue}>{points}</Text>
                     </TouchableOpacity>
                     <View style={[styles.gridItem, styles.gridBottomBorder]}>
-                        <Icon name="curved-dark-outline-edit-square" size={22} color="#34343A" />
+                        <Icon name="curved-dark-light-edit-square" size={22} color="#34343A" />
                         <Text style={styles.gridLabel}>Reports</Text>
                         <Text style={styles.gridValue}>{setReportsCount}</Text>
                     </View>
@@ -141,7 +141,7 @@ export const ProfileScreen = () => {
                         <Text style={styles.gridValue}>#{rank || '—'}</Text>
                     </View>
                     <TouchableOpacity style={styles.gridItem} onPress={() => router.push('/leaderboard')} activeOpacity={0.7}>
-                        <Icon name="curved-dark-outline-chart" size={22} color="#34343A" />
+                        <Icon name="curved-dark-light-chart" size={22} color="#34343A" />
                         <Text style={styles.gridLabel}>Leaderboard</Text>
                         <Text style={styles.chevron}>›</Text>
                     </TouchableOpacity>
