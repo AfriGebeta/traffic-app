@@ -12,7 +12,6 @@ module.exports = function (api) {
                     root: ['./'],
                     alias: {
                         '@': './src',
-                        '@expo/vector-icons': './src/components/localIconCompatibility',
                     },
                     extensions: [
                         '.ios.ts',
@@ -31,4 +30,3 @@ module.exports = function (api) {
         ],
     };
 };
-
