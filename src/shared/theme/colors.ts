@@ -52,7 +52,7 @@ export const darkTheme = {
     error: '#FF6B6B',
 } as const;
 
-export type ThemeColors = typeof lightTheme;
+export type ThemeColors = { [K in keyof typeof lightTheme]: string };
 
 export const tailwindColors = {
     primary: 'orange-500',
