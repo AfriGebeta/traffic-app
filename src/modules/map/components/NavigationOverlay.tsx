@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeepAwake } from 'expo-keep-awake';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import NavigationDirectionBackground from '../../../../assets/images/navigation-direction-background.svg';
@@ -73,8 +74,10 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
 }) => {
     useKeepAwake();
     const insets = useSafeAreaInsets();
+    const { t } = useTranslation();
     const { colors: theme, isDark } = useTheme();
     const directionIcon = getDirectionIcon(currentInstruction);
+    const [showReportHint, setShowReportHint] = useState(true);
 
     const getETA = () => {
         if (!remainingTime) return '--:--';
@@ -181,24 +184,51 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                     </View>
                 </View>
 
-                <TouchableOpacity
-                    onPress={onReportPress}
-                    style={{
-                        width: 52,
-                        height: 52,
-                        borderRadius: 26,
-                        backgroundColor: colors.primary.main,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        shadowColor: '#000',
-                        shadowOpacity: 0.15,
-                        shadowRadius: 6,
-                        shadowOffset: { width: 0, height: 2 },
-                        elevation: 4,
-                    }}
-                >
-                    <Ionicons name="warning-outline" size={24} color="#fff" />
-                </TouchableOpacity>
+                <View className="flex-row items-center">
+                    {showReportHint && (
+                        <TouchableOpacity
+                            onPress={() => setShowReportHint(false)}
+                            activeOpacity={0.7}
+                            style={{
+                                backgroundColor: theme.surface,
+                                borderTopLeftRadius: 16,
+                                borderBottomLeftRadius: 16,
+                                paddingVertical: 8,
+                                paddingHorizontal: 12,
+                                paddingRight: 18,
+                                marginRight: -14,
+                                maxWidth: 150,
+                                shadowColor: '#000',
+                                shadowOpacity: 0.15,
+                                shadowRadius: 6,
+                                shadowOffset: { width: 0, height: 2 },
+                                elevation: 4,
+                            }}
+                        >
+                            <Text style={{ color: theme.textPrimary, fontSize: 13, fontWeight: '600' }}>
+                                {t('share-what-you-see')}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+                    <TouchableOpacity
+                        onPress={onReportPress}
+                        style={{
+                            width: 52,
+                            height: 52,
+                            borderRadius: 26,
+                            backgroundColor: colors.primary.main,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            shadowColor: '#000',
+                            shadowOpacity: 0.15,
+                            shadowRadius: 6,
+                            shadowOffset: { width: 0, height: 2 },
+                            elevation: 4,
+                        }}
+                    >
+                        <Ionicons name="warning-outline" size={24} color="#fff" />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {destination && (

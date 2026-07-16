@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { View, Text, LogBox, BackHandler, StatusBar, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useFocusEffect, useRouter } from 'expo-router';
 import CustomGebetaMap from '../../../components/GebetaMap';
@@ -903,6 +903,51 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         ? [sharedLocation.lng, sharedLocation.lat]
         : initialMapCenterRef.current ?? undefined;
 
+    const showAlternativeRoutes = !isNavigationMinimized && !taxiRouteData && !navigationMode && allRouteOptions.length > 1;
+
+    const routeTimeLabels = useMemo(() => {
+        if (!showAlternativeRoutes) return undefined;
+
+        const selected = allRouteOptions[selectedRouteIndex];
+        if (!selected) return undefined;
+
+        const formatMinutes = (seconds: number) => Math.max(1, Math.floor(seconds / 60));
+
+        const midpointOf = (coords: [number, number][]): [number, number] | null => {
+            if (!coords || coords.length === 0) return null;
+            return coords[Math.floor(coords.length / 2)];
+        };
+
+        const labels: Array<{ coordinate: [number, number]; label: string; isPrimary: boolean }> = [];
+
+        const selectedMidpoint = midpointOf(selected.coordinates);
+        if (selectedMidpoint) {
+            labels.push({
+                coordinate: selectedMidpoint,
+                label: `${formatMinutes(selected.duration)} min`,
+                isPrimary: true,
+            });
+        }
+
+        allRouteOptions.forEach((option, index) => {
+            if (index === selectedRouteIndex) return;
+
+            const midpoint = midpointOf(option.coordinates);
+            if (!midpoint) return;
+
+            const deltaSeconds = option.duration - selected.duration;
+            const deltaMinutes = Math.round(Math.abs(deltaSeconds) / 60);
+
+            const label = deltaMinutes === 0
+                ? 'Same time'
+                : `${deltaMinutes} min ${deltaSeconds > 0 ? 'slower' : 'faster'}`;
+
+            labels.push({ coordinate: midpoint, label, isPrimary: false });
+        });
+
+        return labels;
+    }, [showAlternativeRoutes, allRouteOptions, selectedRouteIndex]);
+
     return (
         <View className="flex-1">
             <StatusBar barStyle="dark-content" backgroundColor="#ffffff" translucent={false} />
@@ -926,6 +971,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                         ? alternativeRoutesGeoJSON
                         : undefined
                 }
+                routeTimeLabels={routeTimeLabels}
                 routeStyle={{
                     color: navigationMode ? '#3B82F6' : colors.primary.main,
                     width: 5,
@@ -1162,6 +1208,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     routeOptions={allRouteOptions.length > 1 ? allRouteOptions.map(r => ({ distance: r.distance, duration: r.duration })) : undefined}
                     selectedRouteIndex={selectedRouteIndex}
                     onSelectRoute={handleSelectRoute}
+                    isFetchingRoute={isNavigating}
                 />
             )}
 

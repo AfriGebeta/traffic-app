@@ -176,6 +176,7 @@ interface ExtendedGebetaMapProps extends Omit<GebetaMapProps, 'center'> {
         west: number;
     } | null;
     alternativeRoutesGeoJSON?: any[];
+    routeTimeLabels?: Array<{ coordinate: [number, number]; label: string; isPrimary: boolean }>;
 }
 
 
@@ -788,7 +789,7 @@ AnimatedNavLayer.displayName = 'AnimatedNavLayer';
 
 
 const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
-    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, maneuvers, boundingBox, alternativeRoutesGeoJSON }, ref) => {
+    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, maneuvers, boundingBox, alternativeRoutesGeoJSON, routeTimeLabels }, ref) => {
         const { isDark } = useTheme();
         const [mapStyleState, setMapStyleState] = useState<Record<string, unknown> | null>(() =>
             mapStyleJson ? ensureStyleBackgroundLayer(mapStyleJson as Record<string, any>) : null
@@ -1601,9 +1602,9 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                 <MapLibreGL.LineLayer
                                     id={`route-alternative-layer-${i}`}
                                     style={{
-                                        lineColor: '#FDBA74',
-                                        lineWidth: 6,
-                                        lineOpacity: 0.9,
+                                        lineColor: colors.primary.main,
+                                        lineWidth: 5,
+                                        lineOpacity: 0.5,
                                         lineCap: 'round',
                                         lineJoin: 'round',
                                     }}
@@ -1611,14 +1612,66 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             </MapLibreGL.ShapeSource>
                         ))}
 
+                        {hasAlternativeRoutes && routeTimeLabels?.map((item, i) => (
+                            <MapLibreGL.PointAnnotation
+                                key={`route-time-label-${i}`}
+                                id={`route-time-label-${i}`}
+                                coordinate={item.coordinate}
+                                anchor={{ x: 0.5, y: 1 }}
+                            >
+                                <View collapsable={false} style={{ width: 120, height: 44, alignItems: 'center', justifyContent: 'flex-end' }}>
+                                    <View
+                                        collapsable={false}
+                                        style={{
+                                            backgroundColor: '#FFFFFF',
+                                            paddingHorizontal: 10,
+                                            paddingVertical: 5,
+                                            borderRadius: 14,
+                                            borderWidth: 1,
+                                            borderColor: item.isPrimary ? colors.primary.main : '#D1D5DB',
+                                            shadowColor: '#000',
+                                            shadowOpacity: 0.2,
+                                            shadowRadius: 4,
+                                            shadowOffset: { width: 0, height: 1 },
+                                            elevation: 3,
+                                        }}
+                                    >
+                                        <Text
+                                            style={{
+                                                color: '#374151',
+                                                fontSize: 12,
+                                                fontWeight: '700',
+                                            }}
+                                            numberOfLines={1}
+                                        >
+                                            {item.label}
+                                        </Text>
+                                    </View>
+                                    <View
+                                        style={{
+                                            width: 0,
+                                            height: 0,
+                                            borderLeftWidth: 5,
+                                            borderRightWidth: 5,
+                                            borderTopWidth: 6,
+                                            borderLeftColor: 'transparent',
+                                            borderRightColor: 'transparent',
+                                            borderTopColor: item.isPrimary ? colors.primary.main : '#D1D5DB',
+                                            marginTop: -1,
+                                        }}
+                                    />
+                                </View>
+                            </MapLibreGL.PointAnnotation>
+                        ))}
+
                         {!isNavigating && routeGeoJSON && !segmentedRoutes && (
                             <MapLibreGL.ShapeSource
                                 key={`route-preview-${routeStyle?.isDotted ? 'dotted' : 'solid'}`}
-                                id="route-preview-source"
+                                id={`route-preview-source-${routeStyle?.isDotted ? 'dotted' : 'solid'}`}
                                 shape={routeGeoJSON}
                             >
                                 <MapLibreGL.LineLayer
-                                    id="route-preview-layer"
+                                    id={`route-preview-layer-${routeStyle?.isDotted ? 'dotted' : 'solid'}`}
                                     style={{
                                         lineColor: defaultRouteStyle.color,
                                         lineWidth: routeStyle?.isDotted ? 6 : defaultRouteStyle.width,

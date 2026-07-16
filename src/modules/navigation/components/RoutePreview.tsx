@@ -38,6 +38,7 @@ interface RoutePreviewProps {
     routeOptions?: Array<{ distance: number; duration: number }>;
     selectedRouteIndex?: number;
     onSelectRoute?: (index: number) => void;
+    isFetchingRoute?: boolean;
 }
 
 const formatDistance = (meters: number): string => {
@@ -90,6 +91,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
     routeOptions,
     selectedRouteIndex = 0,
     onSelectRoute,
+    isFetchingRoute = false,
 }) => {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
@@ -434,9 +436,9 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                         onPress={() => onSelectRoute?.(i)}
                                         className="rounded-2xl p-4"
                                         style={{
-                                            borderWidth: 2,
+                                            borderWidth: 1,
                                             borderColor: isSelected ? colors.primary.main : theme.border,
-                                            backgroundColor: isSelected ? theme.primaryMuted : theme.surface,
+                                            backgroundColor: theme.surface,
                                         }}
                                     >
                                         <View className="flex-row items-center justify-between">
@@ -649,7 +651,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                     <View className="px-6 py-3 mb-2" style={{ borderTopWidth: 1, borderTopColor: theme.border }}>
                         <View className="rounded-2xl p-4" style={{ backgroundColor: isDark ? theme.surface : '#E5E7EB' }}>
                             <View className="flex-row items-start justify-between">
-                                <View className="flex-1 mr-3">
+                                <View className="flex-1 mr-3" style={{ opacity: isFetchingRoute && transportMode !== 'taxi' ? 0.4 : 1 }}>
                                     {transportMode === 'taxi' && taxiRoute && taxiRoute.summary ? (
                                         <>
                                             <Text className="text-3xl font-bold" style={{ color: colors.primary.main }}>
@@ -664,9 +666,14 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                         </>
                                     ) : (
                                         <>
-                                            <Text className="text-3xl font-bold" style={{ color: theme.textPrimary }}>
-                                                {formatTime(duration)}
-                                            </Text>
+                                            <View className="flex-row items-center">
+                                                <Text className="text-3xl font-bold" style={{ color: theme.textPrimary }}>
+                                                    {formatTime(duration)}
+                                                </Text>
+                                                {isFetchingRoute && (
+                                                    <ActivityIndicator size="small" color={colors.primary.main} style={{ marginLeft: 10 }} />
+                                                )}
+                                            </View>
                                             <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>
                                                 {t('eta')} {formatETA(duration)} • {formatDistance(distance)}
                                             </Text>
