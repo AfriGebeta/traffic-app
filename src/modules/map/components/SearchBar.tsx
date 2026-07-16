@@ -1,7 +1,9 @@
-import React from 'react';
-import { View, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { View, TextInput, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from 'expo-router';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { useUserRegistration } from '../../register/hooks/useUserRegistration';
 
 interface SearchBarProps {
     value: string;
@@ -25,16 +27,30 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     isLoading = false,
 }) => {
     const { colors: theme } = useTheme();
+    const { getStoredUser } = useUserRegistration();
+    const [profileImage, setProfileImage] = useState<string | null>(null);
+
+    useFocusEffect(
+        useCallback(() => {
+            getStoredUser().then((user) => {
+                setProfileImage(user?.profileImage ?? null);
+            });
+        }, [getStoredUser])
+    );
 
     return (
         <View className="flex-row items-center gap-3">
             <TouchableOpacity
-                className="rounded-2xl shadow-lg p-2"
-                style={{ backgroundColor: theme.surface }}
+                className="rounded-2xl shadow-lg overflow-hidden"
+                style={{ backgroundColor: theme.surface, width: 39, height: 39, alignItems: 'center', justifyContent: 'center' }}
                 onPress={onProfilePress}
                 activeOpacity={0.7}
             >
-                <Ionicons name="person" size={23} color={theme.textPrimary} />
+                {profileImage ? (
+                    <Image source={{ uri: profileImage }} style={{ width: 39, height: 39 }} />
+                ) : (
+                    <Ionicons name="person" size={23} color={theme.textPrimary} />
+                )}
             </TouchableOpacity>
 
             <View
