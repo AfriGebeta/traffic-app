@@ -22,22 +22,22 @@
     {
         "key": "ai-greeting-highlight1",
         "EN_US": "Where",
-        "AM": "የት"
+        "AM": "ዛሬ "
     },
     {
         "key": "ai-greeting-part2",
         "EN_US": " do you feel like ",
-        "AM": " መሄድ ይፈልጋሉ "
+        "AM": "የት መሄድ ይፈልጋሉ "
     },
     {
         "key": "ai-greeting-highlight2",
         "EN_US": "Going",
-        "AM": "ማሰስ"
+        "AM": " "
     },
     {
         "key": "ai-greeting-part3",
         "EN_US": " today?",
-        "AM": " ዛሬ?"
+        "AM": "?"
     },
     {
         "key": "ai-suggestion-last-place",
