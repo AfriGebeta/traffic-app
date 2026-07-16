@@ -1655,6 +1655,11 @@
         "AM": "መስመር ይፍጠሩ"
     },
     {
+        "key": "please-select-start-and-one-more-stop",
+        "EN_US": "Please add a start station and at least one more stop",
+        "AM": "እባክዎ መነሻ ጣቢያ እና ቢያንስ አንድ ተጨማሪ ማቆሚያ ይጨምሩ"
+    },
+    {
         "key": "please-select-start-end-stations",
         "EN_US": "Please select start and end stations",
         "AM": "እባክዎ መነሻ እና መድረሻ ጣቢያዎችን ይምረጡ"

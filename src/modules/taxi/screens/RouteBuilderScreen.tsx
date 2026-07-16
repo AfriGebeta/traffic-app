@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import Animated, { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -40,6 +41,10 @@ export default function RouteBuilderScreen() {
         endCollectorTracking,
     } = useRouteBuilder();
     const { userLocation } = useUserLocation();
+    const keyboard = useAnimatedKeyboard();
+    const keyboardAnimatedStyle = useAnimatedStyle(() => ({
+        marginBottom: keyboard.height.value,
+    }));
 
     const [routeName, setRouteName] = useState('');
     const [startStation, setStartStation] = useState<RouteStop | null>(null);
@@ -292,21 +297,25 @@ export default function RouteBuilderScreen() {
     };
 
     const handleSubmit = () => {
-        if (!routeName.trim()) {
-            Alert.alert(t('error'), t('please-enter-route-name'));
+        const stops = [
+            ...(startStation ? [startStation] : []),
+            ...intermediateStops,
+            ...(endStation ? [endStation] : []),
+        ];
+
+        if (!startStation || stops.length < 2) {
+            Alert.alert(t('error'), t('please-select-start-and-one-more-stop'));
             return;
         }
 
-        if (!startStation || !endStation) {
-            Alert.alert(t('error'), t('please-select-start-end-stations'));
-            return;
-        }
+        const finalRouteName =
+            routeName.trim() || `${stops[0].name} - ${stops[stops.length - 1].name}`;
 
         router.push({
             pathname: '/taxi/set-pricing',
             params: {
-                routeName: routeName.trim(),
-                stops: JSON.stringify([startStation, ...intermediateStops, endStation]),
+                routeName: finalRouteName,
+                stops: JSON.stringify(stops),
             },
         });
     };
@@ -364,10 +373,15 @@ export default function RouteBuilderScreen() {
                 </View>
             )}
 
-            <ScrollView className="flex-1 p-4" contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}>
+            <Animated.View style={[{ flex: 1 }, keyboardAnimatedStyle]}>
+            <ScrollView
+                className="flex-1 p-4"
+                contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+                keyboardShouldPersistTaps="handled"
+            >
                 <View className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                     <View className="mb-6">
-                        <Text className="text-gray-700 font-semibold mb-2">{t('route-name')} *</Text>
+                        <Text className="text-gray-700 font-semibold mb-2">{t('route-name')} ({t('optional')})</Text>
                         <TextInput
                             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900"
                             placeholder={t('enter-route-name-example')}
@@ -691,7 +705,7 @@ export default function RouteBuilderScreen() {
                     </View>
 
                     <View className="mb-6">
-                        <Text className="text-gray-700 font-semibold mb-2">{t('end-station')} *</Text>
+                        <Text className="text-gray-700 font-semibold mb-2">{t('end-station')} ({t('optional')})</Text>
                         {endStation ? (
                             <View className="bg-red-50 border border-red-200 rounded-xl p-4">
                                 <View className="flex-row items-center justify-between">
@@ -855,6 +869,7 @@ export default function RouteBuilderScreen() {
                     </TouchableOpacity>
                 </View>
             </ScrollView >
+            </Animated.View>
         </View >
     );
 }
