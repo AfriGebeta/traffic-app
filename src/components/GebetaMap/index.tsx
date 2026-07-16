@@ -297,7 +297,7 @@ interface AnimatedNavLayerProps {
 const NAV_LINE_MS = 33;
 const NAV_LINE_TRIM_AHEAD_M = 0;
 const NAV_LINE_LAG_COMP_S = 0.15;
-const NAV_TAXI_RENDER_MS = 50;
+const NAV_TAXI_RENDER_MS = NAV_LINE_MS;
 const NAV_CAMERA_MS = 0;
 
 const NAV_ARROW_SHOW_M = 300;  
@@ -352,10 +352,10 @@ const AnimatedNavLayer = memo(({
 }: AnimatedNavLayerProps) => {
     const rawCoords: [number, number][] | undefined = routeGeoJSON?.geometry?.coordinates;
     const coords = useMemo(
-        () => (rawCoords && rawCoords.length > 2 ? smoothRouteCorners(rawCoords) : rawCoords),
-        [rawCoords]
+        () => (!isTaxiNavigation && rawCoords && rawCoords.length > 2 ? smoothRouteCorners(rawCoords) : rawCoords),
+        [rawCoords, isTaxiNavigation]
     );
-    const useRouteModel = !isTaxiNavigation && !!coords && coords.length > 1;
+    const useRouteModel = !!coords && coords.length > 1;
 
     const cum = useMemo(
         () => (coords && coords.length > 1 ? buildCumulativeDistances(coords) : null),
@@ -604,7 +604,7 @@ const AnimatedNavLayer = memo(({
                 setRender({ lat, lng, heading });
             }
 
-            if (useRouteModel && coords && cum && now - lastLine >= NAV_LINE_MS) {
+            if (useRouteModel && !isTaxiNavigation && coords && cum && now - lastLine >= NAV_LINE_MS) {
                 lastLine = now;
                 lineSrcRef.current?.setNativeProps({
                     shape: JSON.stringify({
@@ -669,7 +669,7 @@ const AnimatedNavLayer = memo(({
     }, [useRouteModel, coords, cum, arrowIdx, maneuverS]);
 
     const lineShape = useMemo(() => {
-        if (!useRouteModel || !coords || !cum) return null;
+        if (!useRouteModel || isTaxiNavigation || !coords || !cum) return null;
         return {
             type: 'Feature' as const,
             properties: {},
@@ -678,7 +678,7 @@ const AnimatedNavLayer = memo(({
                 coordinates: sliceFromDistance(coords, cum, lineS + NAV_LINE_TRIM_AHEAD_M),
             },
         };
-    }, [useRouteModel, coords, cum, lineS]);
+    }, [useRouteModel, isTaxiNavigation, coords, cum, lineS]);
 
     return (
         <>

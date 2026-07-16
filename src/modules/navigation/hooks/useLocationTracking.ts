@@ -37,7 +37,7 @@ interface UseLocationTrackingProps {
         segmentIndex: number;
     }>) => void;
     updateNavigationState?: (
-        location: { lat: number; lng: number },
+        location: { lat: number; lng: number; accuracy?: number; speed?: number },
         routes: Array<{
             geoJSON: any;
             isWalking: boolean;
@@ -360,12 +360,19 @@ export const useLocationTracking = ({
 
                             lastRenderedMarkerRef.current = { lat: displayLat, lng: displayLng };
 
+                            const taxiFix = {
+                                lat: displayLat,
+                                lng: displayLng,
+                                accuracy: location.coords.accuracy ?? undefined,
+                                speed: speed ?? undefined,
+                            };
+
                             if (updateNavigationState) {
-                                updateNavigationState({ lat: displayLat, lng: displayLng }, updatedSegments);
+                                updateNavigationState(taxiFix, updatedSegments);
                             } else {
                                 setSegmentedRoutes(updatedSegments);
                                 if (setUserLocation) {
-                                    setUserLocation({ lat: displayLat, lng: displayLng });
+                                    setUserLocation(taxiFix);
                                 }
                             }
                         } else {

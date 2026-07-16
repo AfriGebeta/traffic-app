@@ -59,7 +59,7 @@ export default function TaxiNavigationScreen() {
 
 
     const [navigationState, setNavigationState] = useState<{
-        userLocation: { lat: number; lng: number } | null;
+        userLocation: { lat: number; lng: number; accuracy?: number; speed?: number } | null;
         segmentedRoutes: Array<{
             geoJSON: any;
             isWalking: boolean;
@@ -73,7 +73,7 @@ export default function TaxiNavigationScreen() {
     const { userLocation: bgUserLocation, setUserLocation: setBgUserLocation, stopLocationTracking: stopBackgroundTracking } = useUserLocation();
 
     const updateNavigationState = useCallback((
-        location: { lat: number; lng: number },
+        location: { lat: number; lng: number; accuracy?: number; speed?: number },
         routes: Array<{
             geoJSON: any;
             isWalking: boolean;
@@ -86,7 +86,7 @@ export default function TaxiNavigationScreen() {
         });
     }, []);
 
-    const setUserLocation = useCallback((location: { lat: number; lng: number }) => {
+    const setUserLocation = useCallback((location: { lat: number; lng: number; accuracy?: number; speed?: number }) => {
         setNavigationState(prev => ({
             ...prev,
             userLocation: location
@@ -383,6 +383,7 @@ export default function TaxiNavigationScreen() {
                     onMapLoaded={() => setMapReady(true)}
                     isNavigating={isNavigating}
                     isTaxiNavigation={true}
+                    routeGeoJSON={routeGeoJSON}
                     currentTaxiSegmentIndex={currentSegmentIndex}
                     userLocation={userLocation}
                     userHeading={userHeading}
@@ -416,32 +417,26 @@ export default function TaxiNavigationScreen() {
                 <View className="absolute left-4 right-4" style={{ top: insets.top + 18 }}>
                     <View
                         style={{
-                            backgroundColor: isDark ? theme.surface : 'rgba(255, 255, 255, 0.95)',
-                            borderRadius: 20,
+                            backgroundColor: '#0F9D58',
+                            borderTopLeftRadius: 20,
+                            borderTopRightRadius: 20,
+                            borderBottomLeftRadius: 20,
+                            borderBottomRightRadius: 0,
                             padding: 20,
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.1,
-                            shadowRadius: 12,
-                            elevation: 5,
                         }}
                     >
-                        <View className="flex-row items-start justify-between mb-3">
-                            <View className="flex-1">
-                                <Text className="text-3xl font-bold mb-1" style={{ color: theme.textPrimary }}>
-                                    {currentInstruction || (isOnTaxi ? 'Stay on taxi' : 'Walk to station')}
-                                </Text>
-                                <Text className="text-base" style={{ color: theme.textSecondary }}>
-                                    for {formatDistance(remainingDistance)}
-                                </Text>
-                            </View>
-                        </View>
+                        <Text className="text-white text-3xl font-bold mb-1">
+                            {currentInstruction || (isOnTaxi ? 'Stay on taxi' : 'Walk to station')}
+                        </Text>
+                        <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 16 }}>
+                            for {formatDistance(remainingDistance)}
+                        </Text>
 
-                        <View className="flex-row items-center gap-3">
+                        <View className="flex-row items-center gap-3 mt-3">
                             <View className="flex-row items-center">
                                 <View
                                     className="w-6 h-6 rounded-full items-center justify-center"
-                                    style={{ backgroundColor: isOnTaxi ? colors.primary.main : theme.blue }}
+                                    style={{ backgroundColor: 'rgba(255,255,255,0.25)' }}
                                 >
                                     <Ionicons
                                         name={isOnTaxi ? 'car' : 'walk'}
@@ -449,13 +444,13 @@ export default function TaxiNavigationScreen() {
                                         color="white"
                                     />
                                 </View>
-                                <Text className="text-xs font-semibold ml-1.5" style={{ color: theme.textPrimary }}>
+                                <Text className="text-xs font-semibold ml-1.5 text-white">
                                     {isOnTaxi ? 'On Taxi' : 'Walking'}
                                 </Text>
                             </View>
                             <View className="flex-row items-center">
-                                <Ionicons name="cash" size={14} color={colors.primary.main} />
-                                <Text className="font-bold ml-1 text-sm" style={{ color: colors.primary.main }}>
+                                <Ionicons name="cash" size={14} color="white" />
+                                <Text className="font-bold ml-1 text-sm text-white">
                                     {totalFare} {currency}
                                 </Text>
                             </View>
