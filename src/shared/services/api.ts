@@ -8,6 +8,7 @@ export interface ApiResponse<T> {
     data?: T;
     error?: string;
     message?: string;
+    status?: number;
 }
 
 class ApiService {
@@ -57,6 +58,7 @@ class ApiService {
             if (!contentType || !contentType.includes('application/json')) {
                 return {
                     error: `Server returned non-JSON response (${response.status})`,
+                    status: response.status,
                 };
             }
 
@@ -64,9 +66,11 @@ class ApiService {
 
             if (!response.ok) {
                 const errorMessage = data.message || data.error || `Request failed with status ${response.status}`;
+                console.error(`API ${options.method || 'GET'} ${endpoint} failed (${response.status}):`, JSON.stringify(data));
                 return {
                     error: errorMessage,
                     message: data.message,
+                    status: response.status,
                 };
             }
 

@@ -157,7 +157,7 @@ export const taxiService = {
         );
 
         if (response.error) {
-            throw new Error(response.error);
+            throw new Error(response.status ? `${response.error} (HTTP ${response.status})` : response.error);
         }
 
         if (!response.data) {

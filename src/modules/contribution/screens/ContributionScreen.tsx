@@ -4,11 +4,13 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../../shared/theme/ThemeContext';
 
 export default function ContributionScreen() {
     const router = useRouter();
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
+    const { colors: theme } = useTheme();
 
     const contributionOptions = [
         {
@@ -42,19 +44,19 @@ export default function ContributionScreen() {
     ];
 
     return (
-        <View className="flex-1 bg-gray-50" style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
-            <View className="px-4 py-6 border-b border-gray-50">
+        <View className="flex-1" style={{ paddingTop: insets.top, paddingBottom: insets.bottom, backgroundColor: theme.background }}>
+            <View className="px-4 py-6" style={{ borderBottomWidth: 1, borderBottomColor: theme.background }}>
                 <View className="flex-row items-center mb-2">
                     <TouchableOpacity
                         onPress={() => router.back()}
                         className="mr-4"
                         activeOpacity={0.7}
                     >
-                        <Ionicons name="arrow-back" size={28} color="#FFA500" />
+                        <Ionicons name="arrow-back" size={28} color={theme.primary} />
                     </TouchableOpacity>
-                    <Text className="text-2xl font-bold text-gray-900">{t('contribute')}</Text>
+                    <Text className="text-2xl font-bold" style={{ color: theme.textPrimary }}>{t('contribute')}</Text>
                 </View>
-                <Text className="text-gray-600 mt-2">{t('choose-what-to-contribute')}</Text>
+                <Text className="mt-2" style={{ color: theme.textSecondary }}>{t('choose-what-to-contribute')}</Text>
             </View>
 
             <ScrollView className="flex-1 p-4">
@@ -62,7 +64,8 @@ export default function ContributionScreen() {
                     {contributionOptions.map((option) => (
                         <TouchableOpacity
                             key={option.id}
-                            className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
+                            className="rounded-2xl p-6 shadow-sm"
+                            style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
                             onPress={() => router.push(option.route as any)}
                             activeOpacity={0.7}
                         >
@@ -75,14 +78,14 @@ export default function ContributionScreen() {
                                     />
                                 </View>
                                 <View className="flex-1">
-                                    <Text className="text-xl font-semibold text-gray-900 mb-1">
+                                    <Text className="text-xl font-semibold mb-1" style={{ color: theme.textPrimary }}>
                                         {t(option.titleKey)}
                                     </Text>
-                                    <Text className="text-gray-500 text-sm">
+                                    <Text className="text-sm" style={{ color: theme.textSecondary }}>
                                         {t(option.descriptionKey)}
                                     </Text>
                                 </View>
-                                <Ionicons name="chevron-forward" size={24} color="#9CA3AF" />
+                                <Ionicons name="chevron-forward" size={24} color={theme.textSecondary} />
                             </View>
                         </TouchableOpacity>
                     ))}

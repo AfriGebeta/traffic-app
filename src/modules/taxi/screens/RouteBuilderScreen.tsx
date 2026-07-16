@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouteBuilder } from '../contexts/RouteBuilderContext';
 import { colors } from '../../../shared/theme/colors';
+import { useTheme } from '../../../shared/theme/ThemeContext';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { showToast } from '../../../shared/utils/toast';
 import { taxiService } from '../services/taxi.service';
@@ -28,6 +29,7 @@ export default function RouteBuilderScreen() {
     const router = useRouter();
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
+    const { colors: theme, isDark } = useTheme();
     const {
         pendingStop,
         setPendingStop,
@@ -325,8 +327,8 @@ export default function RouteBuilderScreen() {
     };
 
     return (
-        <View className="flex-1 bg-gray-50" style={{ paddingTop: insets.top }}>
-            <View className="px-4 py-6 border-b border-gray-50">
+        <View className="flex-1" style={{ paddingTop: insets.top, backgroundColor: theme.background }}>
+            <View className="px-4 py-6" style={{ borderBottomWidth: 1, borderBottomColor: theme.background }}>
                 <View className="flex-row items-center mb-2">
                     <TouchableOpacity
                         onPress={() => router.back()}
@@ -335,30 +337,31 @@ export default function RouteBuilderScreen() {
                     >
                         <Ionicons name="arrow-back" size={28} color={colors.primary.main} />
                     </TouchableOpacity>
-                    <Text className="text-2xl font-bold text-gray-900">{t('build-route')}</Text>
+                    <Text className="text-2xl font-bold" style={{ color: theme.textPrimary }}>{t('build-route')}</Text>
                 </View>
-                <Text className="text-gray-600 mt-2">{t('create-route-with-stops')}</Text>
+                <Text className="mt-2" style={{ color: theme.textSecondary }}>{t('create-route-with-stops')}</Text>
             </View>
 
             {showRestorePrompt && cachedRoute && (
-                <View className="mx-4 mt-4 bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                <View className="mx-4 mt-4 rounded-xl p-4 shadow-sm" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
                     <View className="flex-row items-start mb-3">
                         <Ionicons name="information-circle" size={24} color={colors.primary.main} />
                         <View className="flex-1 ml-3">
-                            <Text className="text-gray-900 font-semibold text-base mb-1">
+                            <Text className="font-semibold text-base mb-1" style={{ color: theme.textPrimary }}>
                                 {t('unfinished-route-found')}
                             </Text>
-                            <Text className="text-gray-700 text-sm">
+                            <Text className="text-sm" style={{ color: theme.textSecondary }}>
                                 {t('restore-route-description')}: "{cachedRoute.routeName}"
                             </Text>
                         </View>
                     </View>
                     <View className="flex-row gap-2">
                         <TouchableOpacity
-                            className="flex-1 bg-gray-100 py-3 rounded-lg"
+                            className="flex-1 py-3 rounded-lg"
+                            style={{ backgroundColor: isDark ? theme.background : '#F3F4F6' }}
                             onPress={dismissRestorePrompt}
                         >
-                            <Text className="text-gray-700 text-center font-semibold">
+                            <Text className="text-center font-semibold" style={{ color: theme.textPrimary }}>
                                 {t('start-new')}
                             </Text>
                         </TouchableOpacity>
@@ -379,11 +382,13 @@ export default function RouteBuilderScreen() {
                 contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
                 keyboardShouldPersistTaps="handled"
             >
-                <View className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <View className="rounded-2xl p-6 shadow-sm" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
                     <View className="mb-6">
-                        <Text className="text-gray-700 font-semibold mb-2">{t('route-name')} ({t('optional')})</Text>
+                        <Text className="font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('route-name')} ({t('optional')})</Text>
                         <TextInput
-                            className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900"
+                            className="rounded-xl px-4 py-3"
+                            style={{ backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border, color: theme.textPrimary }}
+                            placeholderTextColor={theme.textSecondary}
                             placeholder={t('enter-route-name-example')}
                             value={routeName}
                             onChangeText={setRouteName}
@@ -391,23 +396,23 @@ export default function RouteBuilderScreen() {
                     </View>
 
                     <View className="mb-4">
-                        <Text className="text-gray-700 font-semibold mb-2">{t('start-station')} *</Text>
+                        <Text className="font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('start-station')} *</Text>
                         {startStation ? (
-                            <View className="bg-green-50 border border-green-200 rounded-xl p-4">
+                            <View className="rounded-xl p-4" style={{ backgroundColor: isDark ? theme.greenMuted : '#F0FDF4', borderWidth: 1, borderColor: theme.green }}>
                                 <View className="flex-row items-center justify-between">
                                     <View className="flex-1">
-                                        <Text className="text-gray-900 font-semibold">{startStation.name}</Text>
-                                        <Text className="text-gray-500 text-sm">
+                                        <Text className="font-semibold" style={{ color: theme.textPrimary }}>{startStation.name}</Text>
+                                        <Text className="text-sm" style={{ color: theme.textSecondary }}>
                                             {startStation.lat.toFixed(7)}, {startStation.lng.toFixed(7)}
                                         </Text>
                                     </View>
                                     <TouchableOpacity onPress={() => setStartStation(null)}>
-                                        <Ionicons name="close-circle" size={24} color="#EF4444" />
+                                        <Ionicons name="close-circle" size={24} color={theme.error} />
                                     </TouchableOpacity>
                                 </View>
                             </View>
                         ) : showStartNameInput ? (
-                            <View className="bg-white border-2 rounded-xl p-4" style={{ borderColor: colors.primary.main }}>
+                            <View className="border-2 rounded-xl p-4" style={{ backgroundColor: theme.surface, borderColor: colors.primary.main }}>
                                 <View className="flex-row items-center mb-2">
                                     <Ionicons name="location" size={20} color={colors.primary.main} />
                                     <Text className="font-semibold ml-2" style={{ color: colors.primary.main }}>{t('using-current-location')}</Text>
@@ -417,20 +422,21 @@ export default function RouteBuilderScreen() {
                                 </Text>
 
                                 {selectedExisting && (
-                                    <View className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3 flex-row items-center justify-between">
+                                    <View className="rounded-lg p-3 mb-3 flex-row items-center justify-between" style={{ backgroundColor: isDark ? theme.greenMuted : '#F0FDF4', borderWidth: 1, borderColor: theme.green }}>
                                         <View className="flex-1">
-                                            <Text className="text-green-700 font-semibold text-sm">{t('using-existing-station')}</Text>
-                                            <Text className="text-green-600 text-xs">{selectedExisting.name}</Text>
+                                            <Text className="font-semibold text-sm" style={{ color: theme.green }}>{t('using-existing-station')}</Text>
+                                            <Text className="text-xs" style={{ color: theme.green }}>{selectedExisting.name}</Text>
                                         </View>
                                         <TouchableOpacity onPress={() => { setSelectedExisting(null); setStartStationName(''); }}>
-                                            <Ionicons name="close-circle" size={20} color="#10B981" />
+                                            <Ionicons name="close-circle" size={20} color={theme.green} />
                                         </TouchableOpacity>
                                     </View>
                                 )}
 
                                 <TextInput
-                                    className="bg-white border-2 rounded-lg px-4 py-3 text-gray-900 mb-3"
-                                    style={{ borderColor: colors.primary.main }}
+                                    className="border-2 rounded-lg px-4 py-3 mb-3"
+                                    style={{ backgroundColor: theme.background, borderColor: colors.primary.main, color: theme.textPrimary }}
+                                    placeholderTextColor={theme.textSecondary}
                                     placeholder={t('enter-station-name')}
                                     value={startStationName}
                                     onChangeText={setStartStationName}
@@ -439,26 +445,27 @@ export default function RouteBuilderScreen() {
                                 />
 
                                 {!selectedExisting && nearbyStations.length > 0 && (
-                                    <View className="mb-3 bg-white border border-gray-200 rounded-lg overflow-hidden">
-                                        <View className="bg-white px-3 py-2 border-b border-gray-200">
-                                            <Text className="text-gray-700 font-semibold text-xs">{t('nearby-existing-stations')}</Text>
+                                    <View className="mb-3 rounded-lg overflow-hidden" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
+                                        <View className="px-3 py-2" style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}>
+                                            <Text className="font-semibold text-xs" style={{ color: theme.textPrimary }}>{t('nearby-existing-stations')}</Text>
                                         </View>
                                         <ScrollView style={{ maxHeight: 120 }} nestedScrollEnabled>
                                             {nearbyStations.map((station) => (
                                                 <TouchableOpacity
                                                     key={station.id}
-                                                    className="px-3 py-2 border-b border-gray-100"
+                                                    className="px-3 py-2"
+                                                    style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}
                                                     onPress={() => handleSelectExisting(station, 'start')}
                                                 >
                                                     <View className="flex-row items-center">
-                                                        <Text className="text-gray-900 font-semibold flex-1 text-sm">{station.name}</Text>
+                                                        <Text className="font-semibold flex-1 text-sm" style={{ color: theme.textPrimary }}>{station.name}</Text>
                                                         {station.nodeType && (
-                                                            <View className="px-2 py-1 rounded bg-orange-100">
-                                                                <Text className="text-xs font-medium text-orange-700">{station.nodeType}</Text>
+                                                            <View className="px-2 py-1 rounded" style={{ backgroundColor: theme.primaryMuted }}>
+                                                                <Text className="text-xs font-medium" style={{ color: isDark ? theme.primary : '#C2410C' }}>{station.nodeType}</Text>
                                                             </View>
                                                         )}
                                                     </View>
-                                                    <Text className="text-gray-500 text-xs mt-1">{station.distance}m away</Text>
+                                                    <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>{station.distance}m away</Text>
                                                 </TouchableOpacity>
                                             ))}
                                         </ScrollView>
@@ -466,26 +473,28 @@ export default function RouteBuilderScreen() {
                                 )}
 
                                 {loadingNearby && (
-                                    <Text className="text-gray-500 text-xs mb-3">{t('loading-nearby-stations')}</Text>
+                                    <Text className="text-xs mb-3" style={{ color: theme.textSecondary }}>{t('loading-nearby-stations')}</Text>
                                 )}
 
                                 {!selectedExisting && (
                                     <View className="mb-3">
-                                        <Text className="text-gray-700 font-semibold mb-2">{t('type')}</Text>
+                                        <Text className="font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('type')}</Text>
                                         <View className="flex-row gap-3">
                                             <TouchableOpacity
-                                                className={`flex-1 py-3 rounded-xl border-2 ${startStationType === 'station' ? 'bg-orange-50 border-orange-500' : 'bg-gray-50 border-gray-200'}`}
+                                                className="flex-1 py-3 rounded-xl border-2"
+                                                style={{ backgroundColor: startStationType === 'station' ? theme.primaryMuted : theme.background, borderColor: startStationType === 'station' ? theme.primary : theme.border }}
                                                 onPress={() => setStartStationType('station')}
                                             >
-                                                <Text className={`text-center font-semibold ${startStationType === 'station' ? 'text-orange-500' : 'text-gray-600'}`}>
+                                                <Text className="text-center font-semibold" style={{ color: startStationType === 'station' ? theme.primary : theme.textSecondary }}>
                                                     {t('station')}
                                                 </Text>
                                             </TouchableOpacity>
                                             <TouchableOpacity
-                                                className={`flex-1 py-3 rounded-xl border-2 ${startStationType === 'stop' ? 'bg-orange-50 border-orange-500' : 'bg-gray-50 border-gray-200'}`}
+                                                className="flex-1 py-3 rounded-xl border-2"
+                                                style={{ backgroundColor: startStationType === 'stop' ? theme.primaryMuted : theme.background, borderColor: startStationType === 'stop' ? theme.primary : theme.border }}
                                                 onPress={() => setStartStationType('stop')}
                                             >
-                                                <Text className={`text-center font-semibold ${startStationType === 'stop' ? 'text-orange-500' : 'text-gray-600'}`}>
+                                                <Text className="text-center font-semibold" style={{ color: startStationType === 'stop' ? theme.primary : theme.textSecondary }}>
                                                     {t('stop')}
                                                 </Text>
                                             </TouchableOpacity>
@@ -495,9 +504,11 @@ export default function RouteBuilderScreen() {
 
                                 {!selectedExisting && (
                                     <View className="mb-3">
-                                        <Text className="text-gray-700 font-semibold mb-2">{t('landmark')}</Text>
+                                        <Text className="font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('landmark')}</Text>
                                         <TextInput
-                                            className="bg-white border border-gray-200 rounded-lg px-4 py-3 text-gray-900"
+                                            className="rounded-lg px-4 py-3"
+                                            style={{ backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border, color: theme.textPrimary }}
+                                            placeholderTextColor={theme.textSecondary}
                                             placeholder={t('enter-landmark-description')}
                                             value={startStationLandmark}
                                             onChangeText={setStartStationLandmark}
@@ -509,10 +520,11 @@ export default function RouteBuilderScreen() {
 
                                 <View className="flex-row gap-2">
                                     <TouchableOpacity
-                                        className="flex-1 bg-gray-200 py-2 rounded-lg"
+                                        className="flex-1 py-2 rounded-lg"
+                                        style={{ backgroundColor: isDark ? theme.background : '#E5E7EB' }}
                                         onPress={() => cancelCurrentLocation('start')}
                                     >
-                                        <Text className="text-gray-700 text-center font-semibold">{t('cancel')}</Text>
+                                        <Text className="text-center font-semibold" style={{ color: theme.textPrimary }}>{t('cancel')}</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity
                                         className="flex-1 py-2 rounded-lg"
@@ -536,37 +548,38 @@ export default function RouteBuilderScreen() {
                                     <Text className="text-white font-semibold ml-2">{t('use-current-location')}</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
-                                    className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-4 flex-row items-center justify-center"
+                                    className="rounded-xl p-4 flex-row items-center justify-center"
+                                    style={{ backgroundColor: theme.surface, borderWidth: 2, borderStyle: 'dashed', borderColor: theme.border }}
                                     onPress={() => handlePickLocation('start')}
                                 >
                                     <Ionicons name="map" size={24} color={colors.primary.main} />
-                                    <Text className="text-gray-600 ml-2">{t('or-pick-on-map')}</Text>
+                                    <Text className="ml-2" style={{ color: theme.textSecondary }}>{t('or-pick-on-map')}</Text>
                                 </TouchableOpacity>
                             </View>
                         )}
                     </View>
 
                     <View className="mb-4">
-                        <Text className="text-gray-700 font-semibold mb-2">
+                        <Text className="font-semibold mb-2" style={{ color: theme.textPrimary }}>
                             {t('intermediate-stops')} ({intermediateStops.length})
                         </Text>
                         {intermediateStops.map((stop, index) => (
-                            <View key={stop.id} className="bg-white border-2 rounded-xl p-4 mb-2" style={{ borderColor: colors.primary.main }}>
+                            <View key={stop.id} className="border-2 rounded-xl p-4 mb-2" style={{ backgroundColor: theme.surface, borderColor: colors.primary.main }}>
                                 <View className="flex-row items-center justify-between">
                                     <View className="flex-1">
-                                        <Text className="text-gray-900 font-semibold">{stop.name}</Text>
-                                        <Text className="text-gray-500 text-sm">
+                                        <Text className="font-semibold" style={{ color: theme.textPrimary }}>{stop.name}</Text>
+                                        <Text className="text-sm" style={{ color: theme.textSecondary }}>
                                             {stop.lat.toFixed(7)}, {stop.lng.toFixed(7)}
                                         </Text>
                                     </View>
                                     <TouchableOpacity onPress={() => removeIntermediateStop(index)}>
-                                        <Ionicons name="close-circle" size={24} color="#EF4444" />
+                                        <Ionicons name="close-circle" size={24} color={theme.error} />
                                     </TouchableOpacity>
                                 </View>
                             </View>
                         ))}
                         {showIntermediateNameInput ? (
-                            <View className="bg-white border-2 rounded-xl p-4 mb-2" style={{ borderColor: colors.primary.main }}>
+                            <View className="border-2 rounded-xl p-4 mb-2" style={{ backgroundColor: theme.surface, borderColor: colors.primary.main }}>
                                 <View className="flex-row items-center mb-2">
                                     <Ionicons name="location" size={20} color={colors.primary.main} />
                                     <Text className="font-semibold ml-2" style={{ color: colors.primary.main }}>{t('using-current-location')}</Text>
@@ -576,19 +589,21 @@ export default function RouteBuilderScreen() {
                                 </Text>
 
                                 {selectedExisting && (
-                                    <View className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3 flex-row items-center justify-between">
+                                    <View className="rounded-lg p-3 mb-3 flex-row items-center justify-between" style={{ backgroundColor: isDark ? theme.greenMuted : '#F0FDF4', borderWidth: 1, borderColor: theme.green }}>
                                         <View className="flex-1">
-                                            <Text className="text-green-700 font-semibold text-sm">{t('using-existing-station')}</Text>
-                                            <Text className="text-green-600 text-xs">{selectedExisting.name}</Text>
+                                            <Text className="font-semibold text-sm" style={{ color: theme.green }}>{t('using-existing-station')}</Text>
+                                            <Text className="text-xs" style={{ color: theme.green }}>{selectedExisting.name}</Text>
                                         </View>
                                         <TouchableOpacity onPress={() => { setSelectedExisting(null); setIntermediateStopName(''); }}>
-                                            <Ionicons name="close-circle" size={20} color="#10B981" />
+                                            <Ionicons name="close-circle" size={20} color={theme.green} />
                                         </TouchableOpacity>
                                     </View>
                                 )}
 
                                 <TextInput
-                                    className="bg-white border-2 rounded-lg px-4 py-3 text-gray-900 mb-3"
+                                    className="border-2 rounded-lg px-4 py-3 mb-3"
+                                    style={{ backgroundColor: theme.background, borderColor: colors.primary.main, color: theme.textPrimary }}
+                                    placeholderTextColor={theme.textSecondary}
                                     placeholder={t('enter-stop-name')}
                                     value={intermediateStopName}
                                     onChangeText={setIntermediateStopName}
@@ -597,26 +612,27 @@ export default function RouteBuilderScreen() {
                                 />
 
                                 {!selectedExisting && nearbyStations.length > 0 && (
-                                    <View className="mb-3 bg-white border border-gray-200 rounded-lg overflow-hidden">
-                                        <View className="bg-white px-3 py-2 border-b border-gray-200">
-                                            <Text className="text-gray-700 font-semibold text-xs">{t('nearby-existing-stations')}</Text>
+                                    <View className="mb-3 rounded-lg overflow-hidden" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
+                                        <View className="px-3 py-2" style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}>
+                                            <Text className="font-semibold text-xs" style={{ color: theme.textPrimary }}>{t('nearby-existing-stations')}</Text>
                                         </View>
                                         <ScrollView style={{ maxHeight: 120 }} nestedScrollEnabled>
                                             {nearbyStations.map((station) => (
                                                 <TouchableOpacity
                                                     key={station.id}
-                                                    className="px-3 py-2 border-b border-gray-100"
+                                                    className="px-3 py-2"
+                                                    style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}
                                                     onPress={() => handleSelectExisting(station, 'intermediate')}
                                                 >
                                                     <View className="flex-row items-center">
-                                                        <Text className="text-gray-900 font-semibold flex-1 text-sm">{station.name}</Text>
+                                                        <Text className="font-semibold flex-1 text-sm" style={{ color: theme.textPrimary }}>{station.name}</Text>
                                                         {station.nodeType && (
-                                                            <View className="px-2 py-1 rounded bg-orange-100">
-                                                                <Text className="text-xs font-medium text-orange-700">{station.nodeType}</Text>
+                                                            <View className="px-2 py-1 rounded" style={{ backgroundColor: theme.primaryMuted }}>
+                                                                <Text className="text-xs font-medium" style={{ color: isDark ? theme.primary : '#C2410C' }}>{station.nodeType}</Text>
                                                             </View>
                                                         )}
                                                     </View>
-                                                    <Text className="text-gray-500 text-xs mt-1">{station.distance}m away</Text>
+                                                    <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>{station.distance}m away</Text>
                                                 </TouchableOpacity>
                                             ))}
                                         </ScrollView>
@@ -624,26 +640,28 @@ export default function RouteBuilderScreen() {
                                 )}
 
                                 {loadingNearby && (
-                                    <Text className="text-gray-500 text-xs mb-3">{t('loading-nearby-stations')}</Text>
+                                    <Text className="text-xs mb-3" style={{ color: theme.textSecondary }}>{t('loading-nearby-stations')}</Text>
                                 )}
 
                                 {!selectedExisting && (
                                     <View className="mb-3">
-                                        <Text className="text-gray-700 font-semibold mb-2">{t('type')}</Text>
+                                        <Text className="font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('type')}</Text>
                                         <View className="flex-row gap-3">
                                             <TouchableOpacity
-                                                className={`flex-1 py-3 rounded-xl border-2 ${intermediateStopType === 'station' ? 'bg-orange-50 border-orange-500' : 'bg-gray-50 border-gray-200'}`}
+                                                className="flex-1 py-3 rounded-xl border-2"
+                                                style={{ backgroundColor: intermediateStopType === 'station' ? theme.primaryMuted : theme.background, borderColor: intermediateStopType === 'station' ? theme.primary : theme.border }}
                                                 onPress={() => setIntermediateStopType('station')}
                                             >
-                                                <Text className={`text-center font-semibold ${intermediateStopType === 'station' ? 'text-orange-500' : 'text-gray-600'}`}>
+                                                <Text className="text-center font-semibold" style={{ color: intermediateStopType === 'station' ? theme.primary : theme.textSecondary }}>
                                                     {t('station')}
                                                 </Text>
                                             </TouchableOpacity>
                                             <TouchableOpacity
-                                                className={`flex-1 py-3 rounded-xl border-2 ${intermediateStopType === 'stop' ? 'bg-orange-50 border-orange-500' : 'bg-gray-50 border-gray-200'}`}
+                                                className="flex-1 py-3 rounded-xl border-2"
+                                                style={{ backgroundColor: intermediateStopType === 'stop' ? theme.primaryMuted : theme.background, borderColor: intermediateStopType === 'stop' ? theme.primary : theme.border }}
                                                 onPress={() => setIntermediateStopType('stop')}
                                             >
-                                                <Text className={`text-center font-semibold ${intermediateStopType === 'stop' ? 'text-orange-500' : 'text-gray-600'}`}>
+                                                <Text className="text-center font-semibold" style={{ color: intermediateStopType === 'stop' ? theme.primary : theme.textSecondary }}>
                                                     {t('stop')}
                                                 </Text>
                                             </TouchableOpacity>
@@ -653,9 +671,11 @@ export default function RouteBuilderScreen() {
 
                                 {!selectedExisting && (
                                     <View className="mb-3">
-                                        <Text className="text-gray-700 font-semibold mb-2">{t('landmark')}</Text>
+                                        <Text className="font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('landmark')}</Text>
                                         <TextInput
-                                            className="bg-white border border-gray-200 rounded-lg px-4 py-3 text-gray-900"
+                                            className="rounded-lg px-4 py-3"
+                                            style={{ backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border, color: theme.textPrimary }}
+                                            placeholderTextColor={theme.textSecondary}
                                             placeholder={t('enter-landmark-description')}
                                             value={intermediateStopLandmark}
                                             onChangeText={setIntermediateStopLandmark}
@@ -667,10 +687,11 @@ export default function RouteBuilderScreen() {
 
                                 <View className="flex-row gap-2">
                                     <TouchableOpacity
-                                        className="flex-1 bg-gray-200 py-2 rounded-lg"
+                                        className="flex-1 py-2 rounded-lg"
+                                        style={{ backgroundColor: isDark ? theme.background : '#E5E7EB' }}
                                         onPress={() => cancelCurrentLocation('intermediate')}
                                     >
-                                        <Text className="text-gray-700 text-center font-semibold">{t('cancel')}</Text>
+                                        <Text className="text-center font-semibold" style={{ color: theme.textPrimary }}>{t('cancel')}</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity
                                         className="flex-1 py-2 rounded-lg"
@@ -694,34 +715,35 @@ export default function RouteBuilderScreen() {
                                     <Text className="text-white font-semibold ml-2">{t('use-current-location')}</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
-                                    className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-4 flex-row items-center justify-center"
+                                    className="rounded-xl p-4 flex-row items-center justify-center"
+                                    style={{ backgroundColor: theme.surface, borderWidth: 2, borderStyle: 'dashed', borderColor: theme.border }}
                                     onPress={() => handlePickLocation('intermediate')}
                                 >
                                     <Ionicons name="add-circle" size={24} color={colors.primary.main} />
-                                    <Text className="text-gray-600 ml-2">{t('or-pick-on-map')}</Text>
+                                    <Text className="ml-2" style={{ color: theme.textSecondary }}>{t('or-pick-on-map')}</Text>
                                 </TouchableOpacity>
                             </View>
                         )}
                     </View>
 
                     <View className="mb-6">
-                        <Text className="text-gray-700 font-semibold mb-2">{t('end-station')} ({t('optional')})</Text>
+                        <Text className="font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('end-station')} ({t('optional')})</Text>
                         {endStation ? (
-                            <View className="bg-red-50 border border-red-200 rounded-xl p-4">
+                            <View className="rounded-xl p-4" style={{ backgroundColor: isDark ? theme.surface : '#FEF2F2', borderWidth: 1, borderColor: theme.error }}>
                                 <View className="flex-row items-center justify-between">
                                     <View className="flex-1">
-                                        <Text className="text-gray-900 font-semibold">{endStation.name}</Text>
-                                        <Text className="text-gray-500 text-sm">
+                                        <Text className="font-semibold" style={{ color: theme.textPrimary }}>{endStation.name}</Text>
+                                        <Text className="text-sm" style={{ color: theme.textSecondary }}>
                                             {endStation.lat.toFixed(7)}, {endStation.lng.toFixed(7)}
                                         </Text>
                                     </View>
                                     <TouchableOpacity onPress={() => setEndStation(null)}>
-                                        <Ionicons name="close-circle" size={24} color="#EF4444" />
+                                        <Ionicons name="close-circle" size={24} color={theme.error} />
                                     </TouchableOpacity>
                                 </View>
                             </View>
                         ) : showEndNameInput ? (
-                            <View className="bg-white border-2 rounded-xl p-4" style={{ borderColor: colors.primary.main }}>
+                            <View className="border-2 rounded-xl p-4" style={{ backgroundColor: theme.surface, borderColor: colors.primary.main }}>
                                 <View className="flex-row items-center mb-2">
                                     <Ionicons name="location" size={20} color={colors.primary.main} />
                                     <Text className="font-semibold ml-2" style={{ color: colors.primary.main }}>{t('using-current-location')}</Text>
@@ -731,19 +753,21 @@ export default function RouteBuilderScreen() {
                                 </Text>
 
                                 {selectedExisting && (
-                                    <View className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3 flex-row items-center justify-between">
+                                    <View className="rounded-lg p-3 mb-3 flex-row items-center justify-between" style={{ backgroundColor: isDark ? theme.greenMuted : '#F0FDF4', borderWidth: 1, borderColor: theme.green }}>
                                         <View className="flex-1">
-                                            <Text className="text-green-700 font-semibold text-sm">{t('using-existing-station')}</Text>
-                                            <Text className="text-green-600 text-xs">{selectedExisting.name}</Text>
+                                            <Text className="font-semibold text-sm" style={{ color: theme.green }}>{t('using-existing-station')}</Text>
+                                            <Text className="text-xs" style={{ color: theme.green }}>{selectedExisting.name}</Text>
                                         </View>
                                         <TouchableOpacity onPress={() => { setSelectedExisting(null); setEndStationName(''); }}>
-                                            <Ionicons name="close-circle" size={20} color="#10B981" />
+                                            <Ionicons name="close-circle" size={20} color={theme.green} />
                                         </TouchableOpacity>
                                     </View>
                                 )}
 
                                 <TextInput
-                                    className="bg-white border border-blue-300 rounded-lg px-4 py-3 text-gray-900 mb-3"
+                                    className="border rounded-lg px-4 py-3 mb-3"
+                                    style={{ backgroundColor: theme.background, borderColor: theme.blue, color: theme.textPrimary }}
+                                    placeholderTextColor={theme.textSecondary}
                                     placeholder={t('enter-station-name')}
                                     value={endStationName}
                                     onChangeText={setEndStationName}
@@ -752,26 +776,27 @@ export default function RouteBuilderScreen() {
                                 />
 
                                 {!selectedExisting && nearbyStations.length > 0 && (
-                                    <View className="mb-3 bg-white border border-gray-200 rounded-lg overflow-hidden">
-                                        <View className="bg-white px-3 py-2 border-b border-gray-200">
-                                            <Text className="text-gray-700 font-semibold text-xs">{t('nearby-existing-stations')}</Text>
+                                    <View className="mb-3 rounded-lg overflow-hidden" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
+                                        <View className="px-3 py-2" style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}>
+                                            <Text className="font-semibold text-xs" style={{ color: theme.textPrimary }}>{t('nearby-existing-stations')}</Text>
                                         </View>
                                         <ScrollView style={{ maxHeight: 120 }} nestedScrollEnabled>
                                             {nearbyStations.map((station) => (
                                                 <TouchableOpacity
                                                     key={station.id}
-                                                    className="px-3 py-2 border-b border-gray-100"
+                                                    className="px-3 py-2"
+                                                    style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}
                                                     onPress={() => handleSelectExisting(station, 'end')}
                                                 >
                                                     <View className="flex-row items-center">
-                                                        <Text className="text-gray-900 font-semibold flex-1 text-sm">{station.name}</Text>
+                                                        <Text className="font-semibold flex-1 text-sm" style={{ color: theme.textPrimary }}>{station.name}</Text>
                                                         {station.nodeType && (
-                                                            <View className="px-2 py-1 rounded bg-orange-100">
-                                                                <Text className="text-xs font-medium text-orange-700">{station.nodeType}</Text>
+                                                            <View className="px-2 py-1 rounded" style={{ backgroundColor: theme.primaryMuted }}>
+                                                                <Text className="text-xs font-medium" style={{ color: isDark ? theme.primary : '#C2410C' }}>{station.nodeType}</Text>
                                                             </View>
                                                         )}
                                                     </View>
-                                                    <Text className="text-gray-500 text-xs mt-1">{station.distance}m away</Text>
+                                                    <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>{station.distance}m away</Text>
                                                 </TouchableOpacity>
                                             ))}
                                         </ScrollView>
@@ -779,26 +804,28 @@ export default function RouteBuilderScreen() {
                                 )}
 
                                 {loadingNearby && (
-                                    <Text className="text-gray-500 text-xs mb-3">{t('loading-nearby-stations')}</Text>
+                                    <Text className="text-xs mb-3" style={{ color: theme.textSecondary }}>{t('loading-nearby-stations')}</Text>
                                 )}
 
                                 {!selectedExisting && (
                                     <View className="mb-3">
-                                        <Text className="text-gray-700 font-semibold mb-2">{t('type')}</Text>
+                                        <Text className="font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('type')}</Text>
                                         <View className="flex-row gap-3">
                                             <TouchableOpacity
-                                                className={`flex-1 py-3 rounded-xl border-2 ${endStationType === 'station' ? 'bg-orange-50 border-orange-500' : 'bg-gray-50 border-gray-200'}`}
+                                                className="flex-1 py-3 rounded-xl border-2"
+                                                style={{ backgroundColor: endStationType === 'station' ? theme.primaryMuted : theme.background, borderColor: endStationType === 'station' ? theme.primary : theme.border }}
                                                 onPress={() => setEndStationType('station')}
                                             >
-                                                <Text className={`text-center font-semibold ${endStationType === 'station' ? 'text-orange-500' : 'text-gray-600'}`}>
+                                                <Text className="text-center font-semibold" style={{ color: endStationType === 'station' ? theme.primary : theme.textSecondary }}>
                                                     {t('station')}
                                                 </Text>
                                             </TouchableOpacity>
                                             <TouchableOpacity
-                                                className={`flex-1 py-3 rounded-xl border-2 ${endStationType === 'stop' ? 'bg-orange-50 border-orange-500' : 'bg-gray-50 border-gray-200'}`}
+                                                className="flex-1 py-3 rounded-xl border-2"
+                                                style={{ backgroundColor: endStationType === 'stop' ? theme.primaryMuted : theme.background, borderColor: endStationType === 'stop' ? theme.primary : theme.border }}
                                                 onPress={() => setEndStationType('stop')}
                                             >
-                                                <Text className={`text-center font-semibold ${endStationType === 'stop' ? 'text-orange-500' : 'text-gray-600'}`}>
+                                                <Text className="text-center font-semibold" style={{ color: endStationType === 'stop' ? theme.primary : theme.textSecondary }}>
                                                     {t('stop')}
                                                 </Text>
                                             </TouchableOpacity>
@@ -808,9 +835,11 @@ export default function RouteBuilderScreen() {
 
                                 {!selectedExisting && (
                                     <View className="mb-3">
-                                        <Text className="text-gray-700 font-semibold mb-2">{t('landmark')}</Text>
+                                        <Text className="font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('landmark')}</Text>
                                         <TextInput
-                                            className="bg-white border border-gray-200 rounded-lg px-4 py-3 text-gray-900"
+                                            className="rounded-lg px-4 py-3"
+                                            style={{ backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border, color: theme.textPrimary }}
+                                            placeholderTextColor={theme.textSecondary}
                                             placeholder={t('enter-landmark-description')}
                                             value={endStationLandmark}
                                             onChangeText={setEndStationLandmark}
@@ -822,10 +851,11 @@ export default function RouteBuilderScreen() {
 
                                 <View className="flex-row gap-2">
                                     <TouchableOpacity
-                                        className="flex-1 bg-gray-200 py-2 rounded-lg"
+                                        className="flex-1 py-2 rounded-lg"
+                                        style={{ backgroundColor: isDark ? theme.background : '#E5E7EB' }}
                                         onPress={() => cancelCurrentLocation('end')}
                                     >
-                                        <Text className="text-gray-700 text-center font-semibold">{t('cancel')}</Text>
+                                        <Text className="text-center font-semibold" style={{ color: theme.textPrimary }}>{t('cancel')}</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity
                                         className="flex-1 py-2 rounded-lg"
@@ -849,11 +879,12 @@ export default function RouteBuilderScreen() {
                                     <Text className="text-white font-semibold ml-2">{t('use-current-location')}</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
-                                    className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-4 flex-row items-center justify-center"
+                                    className="rounded-xl p-4 flex-row items-center justify-center"
+                                    style={{ backgroundColor: theme.surface, borderWidth: 2, borderStyle: 'dashed', borderColor: theme.border }}
                                     onPress={() => handlePickLocation('end')}
                                 >
                                     <Ionicons name="map" size={24} color={colors.primary.main} />
-                                    <Text className="text-gray-600 ml-2">{t('or-pick-on-map')}</Text>
+                                    <Text className="ml-2" style={{ color: theme.textSecondary }}>{t('or-pick-on-map')}</Text>
                                 </TouchableOpacity>
                             </View>
                         )}
