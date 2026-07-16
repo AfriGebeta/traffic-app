@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeepAwake } from 'expo-keep-awake';
 import { colors } from '../../../shared/theme/colors';
+import NavigationDirectionBackground from '../../../../assets/images/navigation-direction-background.svg';
 
 const NAV_GREEN = '#1E5438';
 
@@ -297,14 +298,15 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                         style={{
                             width: 48,
                             height: 48,
-                            borderRadius: 24,
-                            backgroundColor: 'transparent',
-                            borderWidth: 2,
-                            borderColor: NAV_GREEN,
                             alignItems: 'center',
                             justifyContent: 'center',
                         }}
                     >
+                        <NavigationDirectionBackground
+                            width={48}
+                            height={48}
+                            style={{ position: 'absolute' }}
+                        />
                         <Ionicons name={directionIcon} size={26} color={NAV_GREEN} />
                     </View>
 
