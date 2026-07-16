@@ -19,6 +19,10 @@ export const voiceNavigationService = {
         ttsCacheService.clearCache();
     },
 
+    stopSpeaking(): void {
+        void ttsCacheService.stopAll();
+    },
+
     async processVoiceNavigation(
         audioUri: string,
         language: string,

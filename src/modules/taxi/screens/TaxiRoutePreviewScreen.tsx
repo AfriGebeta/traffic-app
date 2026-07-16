@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import GebetaMap from '../../../components/GebetaMap';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 import { colors } from '../../../shared/theme/colors';
+import { useTheme } from '../../../shared/theme/ThemeContext';
 import { showToast } from '../../../shared/utils/toast';
 import { useMapTheme } from '../../map/context/MapThemeContext';
 import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
@@ -18,6 +19,7 @@ export default function TaxiRoutePreviewScreen() {
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
     const { currentTheme } = useMapTheme();
+    const { colors: theme, isDark } = useTheme();
     const { apiKey } = useRemoteConfig();
     const mapRef = useRef<GebetaMapRef>(null);
 
@@ -30,10 +32,10 @@ export default function TaxiRoutePreviewScreen() {
 
     if (!routeData) {
         return (
-            <View className="flex-1 bg-gray-50 items-center justify-center">
-                <Text className="text-gray-600">{t('error')}</Text>
+            <View className="flex-1 items-center justify-center" style={{ backgroundColor: theme.background }}>
+                <Text style={{ color: theme.textSecondary }}>{t('error')}</Text>
                 <TouchableOpacity onPress={() => router.back()} className="mt-4">
-                    <Text className="text-orange-500">{t('go-back')}</Text>
+                    <Text style={{ color: theme.primary }}>{t('go-back')}</Text>
                 </TouchableOpacity>
             </View>
         );
@@ -157,7 +159,7 @@ export default function TaxiRoutePreviewScreen() {
     };
 
     return (
-        <View className="flex-1 bg-gray-50">
+        <View className="flex-1" style={{ backgroundColor: theme.background }}>
             <View className="flex-1">
                 <GebetaMap
                     ref={mapRef}
@@ -173,35 +175,35 @@ export default function TaxiRoutePreviewScreen() {
                 />
 
                 {!mapReady && (
-                    <View className="absolute inset-0 items-center justify-center bg-gray-100">
+                    <View className="absolute inset-0 items-center justify-center" style={{ backgroundColor: theme.background }}>
                         <ActivityIndicator size="large" color={colors.primary.main} />
                     </View>
                 )}
 
                 <View
-                    className="absolute left-4 bg-white rounded-full shadow-lg"
-                    style={{ top: insets.top + 16 }}
+                    className="absolute left-4 rounded-full shadow-lg"
+                    style={{ top: insets.top + 16, backgroundColor: theme.surface }}
                 >
                     <TouchableOpacity
                         onPress={() => router.back()}
                         className="w-12 h-12 items-center justify-center"
                         activeOpacity={0.7}
                     >
-                        <Ionicons name="arrow-back" size={24} color="#374151" />
+                        <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
                     </TouchableOpacity>
                 </View>
             </View>
 
             <View
-                className="bg-white rounded-t-3xl shadow-2xl"
-                style={{ paddingBottom: insets.bottom + 16 }}
+                className="rounded-t-3xl shadow-2xl"
+                style={{ paddingBottom: insets.bottom + 16, backgroundColor: theme.background }}
             >
                 <ScrollView className="max-h-96" showsVerticalScrollIndicator={false}>
-                    <View className="px-6 pt-6 pb-4 border-b border-gray-200">
-                        <Text className="text-2xl font-bold text-gray-900 mb-2">
+                    <View className="px-6 pt-6 pb-4" style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}>
+                        <Text className="text-2xl font-bold mb-2" style={{ color: theme.textPrimary }}>
                             {t('taxi-route')}
                         </Text>
-                        <Text className="text-gray-600">{formattedPath}</Text>
+                        <Text style={{ color: theme.textSecondary }}>{formattedPath}</Text>
                     </View>
 
                     <View className="px-6 py-4">
@@ -214,21 +216,21 @@ export default function TaxiRoutePreviewScreen() {
                                 return (
                                     <View key={index} className="mb-4">
                                         <View className="flex-row items-center mb-2">
-                                            <View className="w-8 h-8 rounded-full bg-blue-100 items-center justify-center">
-                                                <Ionicons name="walk" size={18} color="#3B82F6" />
+                                            <View className="w-8 h-8 rounded-full items-center justify-center" style={{ backgroundColor: theme.blueMuted }}>
+                                                <Ionicons name="walk" size={18} color={theme.blue} />
                                             </View>
-                                            <Text className="text-gray-900 font-semibold ml-3 flex-1">
+                                            <Text className="font-semibold ml-3 flex-1" style={{ color: theme.textPrimary }}>
                                                 {index === 0 ? t('walk-to-boarding-point') : t('walk-to-destination')}
                                             </Text>
-                                            <Text className="text-gray-600 text-sm">
+                                            <Text className="text-sm" style={{ color: theme.textSecondary }}>
                                                 {formatDistance(segment.distance * 1000)}
                                             </Text>
                                         </View>
-                                        <View className="ml-4 pl-4 border-l-2 border-blue-200">
-                                            <Text className="text-gray-600 text-sm">
+                                        <View className="ml-4 pl-4" style={{ borderLeftWidth: 2, borderLeftColor: theme.blueMuted }}>
+                                            <Text className="text-sm" style={{ color: theme.textSecondary }}>
                                                 {segment.toNode?.name || (index === 0 ? startNode.name : t('final-destination'))}
                                             </Text>
-                                            <Text className="text-gray-500 text-xs mt-1">
+                                            <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>
                                                 {formatTime(segment.time)}
                                             </Text>
                                         </View>
@@ -246,7 +248,7 @@ export default function TaxiRoutePreviewScreen() {
                                             >
                                                 <Ionicons name="car" size={18} color={colors.primary.main} />
                                             </View>
-                                            <Text className="text-gray-900 font-semibold ml-3 flex-1">
+                                            <Text className="font-semibold ml-3 flex-1" style={{ color: theme.textPrimary }}>
                                                 {t('taxi-ride')}
                                             </Text>
                                             <Text
@@ -260,10 +262,10 @@ export default function TaxiRoutePreviewScreen() {
                                             className="ml-4 pl-4 border-l-2"
                                             style={{ borderLeftColor: colors.primary.light }}
                                         >
-                                            <Text className="text-gray-600 text-sm">
+                                            <Text className="text-sm" style={{ color: theme.textSecondary }}>
                                                 {segment.fromNode?.name || startNode.name} → {segment.toNode?.name || endNode.name}
                                             </Text>
-                                            <Text className="text-gray-500 text-xs mt-1">
+                                            <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>
                                                 {formatDistance(segment.distance * 1000)} • {formatTime(segment.time)}
                                             </Text>
                                         </View>
@@ -279,21 +281,21 @@ export default function TaxiRoutePreviewScreen() {
                                 {originWalkRoute && (
                                     <View className="mb-4">
                                         <View className="flex-row items-center mb-2">
-                                            <View className="w-8 h-8 rounded-full bg-blue-100 items-center justify-center">
-                                                <Ionicons name="walk" size={18} color="#3B82F6" />
+                                            <View className="w-8 h-8 rounded-full items-center justify-center" style={{ backgroundColor: theme.blueMuted }}>
+                                                <Ionicons name="walk" size={18} color={theme.blue} />
                                             </View>
-                                            <Text className="text-gray-900 font-semibold ml-3 flex-1">
+                                            <Text className="font-semibold ml-3 flex-1" style={{ color: theme.textPrimary }}>
                                                 {t('walk-to-boarding-point')}
                                             </Text>
-                                            <Text className="text-gray-600 text-sm">
+                                            <Text className="text-sm" style={{ color: theme.textSecondary }}>
                                                 {formatDistance(originWalkRoute.trip.summary.length)}
                                             </Text>
                                         </View>
-                                        <View className="ml-4 pl-4 border-l-2 border-blue-200">
-                                            <Text className="text-gray-600 text-sm">
+                                        <View className="ml-4 pl-4" style={{ borderLeftWidth: 2, borderLeftColor: theme.blueMuted }}>
+                                            <Text className="text-sm" style={{ color: theme.textSecondary }}>
                                                 {startNode.name}
                                             </Text>
-                                            <Text className="text-gray-500 text-xs mt-1">
+                                            <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>
                                                 {formatTime(originWalkRoute.trip.summary.time)}
                                             </Text>
                                         </View>
@@ -308,7 +310,7 @@ export default function TaxiRoutePreviewScreen() {
                                         >
                                             <Ionicons name="car" size={18} color={colors.primary.main} />
                                         </View>
-                                        <Text className="text-gray-900 font-semibold ml-3 flex-1">
+                                        <Text className="font-semibold ml-3 flex-1" style={{ color: theme.textPrimary }}>
                                             {t('taxi-ride')}
                                         </Text>
                                         <Text
@@ -322,10 +324,10 @@ export default function TaxiRoutePreviewScreen() {
                                         className="ml-4 pl-4 border-l-2"
                                         style={{ borderLeftColor: colors.primary.light }}
                                     >
-                                        <Text className="text-gray-600 text-sm">
+                                        <Text className="text-sm" style={{ color: theme.textSecondary }}>
                                             {startNode.name} → {endNode.name}
                                         </Text>
-                                        <Text className="text-gray-500 text-xs mt-1">
+                                        <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>
                                             {summary.taxiSegments} {t('stops')} • {startNode.route_name}
                                         </Text>
                                     </View>
@@ -334,21 +336,21 @@ export default function TaxiRoutePreviewScreen() {
                                 {destinationWalkRoute && (
                                     <View className="mb-4">
                                         <View className="flex-row items-center mb-2">
-                                            <View className="w-8 h-8 rounded-full bg-green-100 items-center justify-center">
-                                                <Ionicons name="walk" size={18} color="#10B981" />
+                                            <View className="w-8 h-8 rounded-full items-center justify-center" style={{ backgroundColor: theme.greenMuted }}>
+                                                <Ionicons name="walk" size={18} color={theme.green} />
                                             </View>
-                                            <Text className="text-gray-900 font-semibold ml-3 flex-1">
+                                            <Text className="font-semibold ml-3 flex-1" style={{ color: theme.textPrimary }}>
                                                 {t('walk-to-destination')}
                                             </Text>
-                                            <Text className="text-gray-600 text-sm">
+                                            <Text className="text-sm" style={{ color: theme.textSecondary }}>
                                                 {formatDistance(destinationWalkRoute.trip.summary.length)}
                                             </Text>
                                         </View>
-                                        <View className="ml-4 pl-4 border-l-2 border-green-200">
-                                            <Text className="text-gray-600 text-sm">
+                                        <View className="ml-4 pl-4" style={{ borderLeftWidth: 2, borderLeftColor: theme.greenMuted }}>
+                                            <Text className="text-sm" style={{ color: theme.textSecondary }}>
                                                 {t('final-destination')}
                                             </Text>
-                                            <Text className="text-gray-500 text-xs mt-1">
+                                            <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>
                                                 {formatTime(destinationWalkRoute.trip.summary.time)}
                                             </Text>
                                         </View>
@@ -358,7 +360,7 @@ export default function TaxiRoutePreviewScreen() {
                         )}
                     </View>
 
-                    <View className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                    <View className="px-6 py-4" style={{ backgroundColor: theme.surface, borderTopWidth: 1, borderTopColor: theme.border }}>
                         {__DEV__ && (
                             <TouchableOpacity
                                 onPress={() => setSimulateMovement(!simulateMovement)}
@@ -369,9 +371,9 @@ export default function TaxiRoutePreviewScreen() {
                                     <Ionicons
                                         name={simulateMovement ? "checkmark-circle" : "ellipse-outline"}
                                         size={24}
-                                        color={simulateMovement ? colors.primary.main : "#9CA3AF"}
+                                        color={simulateMovement ? colors.primary.main : theme.textSecondary}
                                     />
-                                    <Text className="text-gray-700 font-medium ml-3">
+                                    <Text className="font-medium ml-3" style={{ color: theme.textPrimary }}>
                                         Simulate Movement (testing)
                                     </Text>
                                 </View>
@@ -379,7 +381,7 @@ export default function TaxiRoutePreviewScreen() {
                         )}
 
                         <View className="flex-row items-center justify-between mb-2">
-                            <Text className="text-gray-600">{t('total-fare')}</Text>
+                            <Text style={{ color: theme.textSecondary }}>{t('total-fare')}</Text>
                             <Text
                                 className="text-2xl font-bold"
                                 style={{ color: colors.primary.main }}
@@ -388,10 +390,10 @@ export default function TaxiRoutePreviewScreen() {
                             </Text>
                         </View>
                         <View className="flex-row items-center justify-between">
-                            <Text className="text-gray-500 text-sm">
+                            <Text className="text-sm" style={{ color: theme.textSecondary }}>
                                 {summary.taxiSegments} {t('taxi-segments')} • {summary.walkSegments} {t('walk-segments')}
                             </Text>
-                            <Text className="text-gray-500 text-sm">
+                            <Text className="text-sm" style={{ color: theme.textSecondary }}>
                                 {summary.pricingSource}
                             </Text>
                         </View>

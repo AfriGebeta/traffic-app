@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { colors } from '../../../shared/theme/colors';
+import { useTheme } from '../../../shared/theme/ThemeContext';
 import type { GeocodingPlace } from '../types/navigation.types';
 import { navigationService } from '../services/navigation.service';
 import { useRouter } from 'expo-router';
@@ -30,6 +31,7 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const router = useRouter();
+    const { colors: theme, isDark } = useTheme();
 
     const [showPlaceSearch, setShowPlaceSearch] = useState(false);
     const [placeSearchMode, setPlaceSearchMode] = useState<'origin' | 'stop'>('stop');
@@ -95,7 +97,7 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
         <>
             <View
                 className="rounded-3xl shadow-lg overflow-hidden"
-                style={{ backgroundColor: 'white' }}
+                style={{ backgroundColor: theme.surface }}
             >
                 <View className="flex-row items-center px-4 py-3">
                     <TouchableOpacity
@@ -103,27 +105,27 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
                         className="mr-3"
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     >
-                        <Ionicons name="arrow-back" size={24} color="#374151" />
+                        <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
                     </TouchableOpacity>
 
                     <View className="flex-1">
                         <View className="flex-row items-center mb-2">
-                            <View className="w-4 h-4 rounded-full bg-blue-500 mr-3" />
+                            <View className="w-4 h-4 rounded-full mr-3" style={{ backgroundColor: theme.blue }} />
                             <TouchableOpacity
                                 className="flex-1 flex-row items-center justify-between"
                                 onPress={() => openPlaceSearch('origin')}
                                 activeOpacity={0.7}
                             >
-                                <Text className="text-gray-900 font-medium flex-1" numberOfLines={1}>
+                                <Text className="font-medium flex-1" style={{ color: theme.textPrimary }} numberOfLines={1}>
                                     {origin ? origin.name : t('your-location')}
                                 </Text>
-                                <Ionicons name="ellipsis-horizontal" size={20} color="#9CA3AF" />
+                                <Ionicons name="ellipsis-horizontal" size={20} color={theme.textSecondary} />
                             </TouchableOpacity>
                         </View>
 
                         <View className="flex-row items-center">
                             <View className="w-4 items-center mr-3">
-                                <View style={{ width: 2, height: 16, backgroundColor: '#D1D5DB' }}>
+                                <View style={{ width: 2, height: 16, backgroundColor: theme.border }}>
                                     <View style={{
                                         position: 'absolute',
                                         left: 0,
@@ -131,7 +133,7 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
                                         top: 0,
                                         bottom: 0,
                                         borderLeftWidth: 2,
-                                        borderColor: '#D1D5DB',
+                                        borderColor: theme.border,
                                         borderStyle: 'dotted',
                                     }} />
                                 </View>
@@ -146,19 +148,19 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
                                         style={{ width: 16, height: 16, marginRight: 12 }}
                                         resizeMode="contain"
                                     />
-                                    <Text className="text-gray-900 font-medium flex-1" numberOfLines={1}>
+                                    <Text className="font-medium flex-1" style={{ color: theme.textPrimary }} numberOfLines={1}>
                                         {wp.name}
                                     </Text>
                                     <TouchableOpacity
                                         onPress={() => handleRemoveStop(index)}
                                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                                     >
-                                        <Ionicons name="close" size={20} color="#9CA3AF" />
+                                        <Ionicons name="close" size={20} color={theme.textSecondary} />
                                     </TouchableOpacity>
                                 </View>
                                 <View className="flex-row items-center">
                                     <View className="w-4 items-center mr-3">
-                                        <View style={{ width: 2, height: 16, backgroundColor: '#D1D5DB' }}>
+                                        <View style={{ width: 2, height: 16, backgroundColor: theme.border }}>
                                             <View style={{
                                                 position: 'absolute',
                                                 left: 0,
@@ -166,7 +168,7 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
                                                 top: 0,
                                                 bottom: 0,
                                                 borderLeftWidth: 2,
-                                                borderColor: '#D1D5DB',
+                                                borderColor: theme.border,
                                                 borderStyle: 'dotted',
                                             }} />
                                         </View>
@@ -180,7 +182,7 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
                                 <View className="flex-row items-center mb-2">
                                     <View
                                         className="w-4 h-4 rounded-full mr-3 items-center justify-center"
-                                        style={{ backgroundColor: `${colors.primary.main}20` }}
+                                        style={{ backgroundColor: theme.primaryMuted }}
                                     >
                                         <Ionicons name="add" size={12} color={colors.primary.main} />
                                     </View>
@@ -197,7 +199,7 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
 
                                 <View className="flex-row items-center">
                                     <View className="w-4 items-center mr-3">
-                                        <View style={{ width: 2, height: 16, backgroundColor: '#D1D5DB' }}>
+                                        <View style={{ width: 2, height: 16, backgroundColor: theme.border }}>
                                             <View style={{
                                                 position: 'absolute',
                                                 left: 0,
@@ -205,7 +207,7 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
                                                 top: 0,
                                                 bottom: 0,
                                                 borderLeftWidth: 2,
-                                                borderColor: '#D1D5DB',
+                                                borderColor: theme.border,
                                                 borderStyle: 'dotted',
                                             }} />
                                         </View>
@@ -216,7 +218,7 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
 
                         <View className="flex-row items-center">
                             <Ionicons name="location" size={20} color={colors.primary.main} className="mr-3" />
-                            <Text className="text-gray-900 font-semibold flex-1" numberOfLines={1}>
+                            <Text className="font-semibold flex-1" style={{ color: theme.textPrimary }} numberOfLines={1}>
                                 {destination?.name || t('choose-destination')}
                             </Text>
                         </View>
@@ -237,7 +239,7 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
                 >
                     <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' }}>
                         <View style={{
-                            backgroundColor: 'white',
+                            backgroundColor: theme.background,
                             borderTopLeftRadius: 24,
                             borderTopRightRadius: 24,
                             borderBottomLeftRadius: 24,
@@ -254,7 +256,7 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
                                 paddingTop: 20,
                                 paddingBottom: 12
                             }}>
-                                <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827', flex: 1 }}>
+                                <Text style={{ fontSize: 18, fontWeight: '700', color: theme.textPrimary, flex: 1 }}>
                                     {placeSearchMode === 'origin' ? t('set-starting-point') : t('add-a-stop')}
                                 </Text>
                                 <TouchableOpacity
@@ -263,12 +265,12 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
                                         width: 36,
                                         height: 36,
                                         borderRadius: 18,
-                                        backgroundColor: '#F3F4F6',
+                                        backgroundColor: isDark ? theme.surface : '#F3F4F6',
                                         alignItems: 'center',
                                         justifyContent: 'center'
                                     }}
                                 >
-                                    <Ionicons name="close" size={20} color="#374151" />
+                                    <Ionicons name="close" size={20} color={theme.textPrimary} />
                                 </TouchableOpacity>
                             </View>
 
@@ -282,7 +284,7 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
                                         marginBottom: 8,
                                         paddingVertical: 14,
                                         borderBottomWidth: 1,
-                                        borderBottomColor: '#F3F4F6',
+                                        borderBottomColor: theme.border,
                                     }}
                                     activeOpacity={0.7}
                                 >
@@ -290,14 +292,14 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
                                         width: 36,
                                         height: 36,
                                         borderRadius: 18,
-                                        backgroundColor: `${colors.primary.main}15`,
+                                        backgroundColor: theme.primaryMuted,
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         marginRight: 14,
                                     }}>
                                         <Ionicons name="locate" size={18} color={colors.primary.main} />
                                     </View>
-                                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
+                                    <Text style={{ fontSize: 14, fontWeight: '600', color: theme.textPrimary }}>
                                         {t('your-location')}
                                     </Text>
                                 </TouchableOpacity>
@@ -320,7 +322,7 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
                                     marginBottom: 8,
                                     paddingVertical: 14,
                                     borderBottomWidth: 1,
-                                    borderBottomColor: '#F3F4F6',
+                                    borderBottomColor: theme.border,
                                 }}
                                 activeOpacity={0.7}
                             >
@@ -328,14 +330,14 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
                                     width: 36,
                                     height: 36,
                                     borderRadius: 18,
-                                    backgroundColor: `${colors.primary.main}15`,
+                                    backgroundColor: theme.primaryMuted,
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     marginRight: 14,
                                 }}>
                                     <Ionicons name="map-outline" size={18} color={colors.primary.main} />
                                 </View>
-                                <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
+                                <Text style={{ fontSize: 14, fontWeight: '600', color: theme.textPrimary }}>
                                     {placeSearchMode === 'origin' ? t('pick-on-map') : t('pick-stop-on-map')}
                                 </Text>
                             </TouchableOpacity>
@@ -345,19 +347,19 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
                                 alignItems: 'center',
                                 marginHorizontal: 20,
                                 marginBottom: 8,
-                                backgroundColor: '#F3F4F6',
+                                backgroundColor: isDark ? theme.surface : '#F3F4F6',
                                 borderRadius: 14,
                                 paddingHorizontal: 14,
                                 paddingVertical: 10
                             }}>
-                                <Ionicons name="search" size={18} color="#9CA3AF" />
+                                <Ionicons name="search" size={18} color={theme.textSecondary} />
                                 <TextInput
                                     autoFocus
                                     placeholder={placeSearchMode === 'origin' ? t('search-starting-point') : t('search-for-a-place')}
-                                    placeholderTextColor="#9CA3AF"
+                                    placeholderTextColor={theme.textSecondary}
                                     value={placeSearchQuery}
                                     onChangeText={handlePlaceSearchChange}
-                                    style={{ flex: 1, marginLeft: 10, fontSize: 15, color: '#111827' }}
+                                    style={{ flex: 1, marginLeft: 10, fontSize: 15, color: theme.textPrimary }}
                                     returnKeyType="search"
                                 />
                                 {placeSearchQuery.length > 0 && (
@@ -365,7 +367,7 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
                                         setPlaceSearchQuery('');
                                         setPlaceSearchResults([]);
                                     }}>
-                                        <Ionicons name="close-circle" size={18} color="#9CA3AF" />
+                                        <Ionicons name="close-circle" size={18} color={theme.textSecondary} />
                                     </TouchableOpacity>
                                 )}
                             </View>
@@ -383,7 +385,7 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
                                     ListEmptyComponent={
                                         placeSearchQuery.length >= 2 ? (
                                             <View style={{ paddingVertical: 24, alignItems: 'center' }}>
-                                                <Text style={{ color: '#9CA3AF', fontSize: 14 }}>
+                                                <Text style={{ color: theme.textSecondary, fontSize: 14 }}>
                                                     {t('no-results-found')}
                                                 </Text>
                                             </View>
@@ -398,7 +400,7 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
                                                 paddingHorizontal: 20,
                                                 paddingVertical: 14,
                                                 borderTopWidth: 1,
-                                                borderTopColor: '#F3F4F6'
+                                                borderTopColor: theme.border
                                             }}
                                             activeOpacity={0.7}
                                         >
@@ -406,7 +408,7 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
                                                 width: 36,
                                                 height: 36,
                                                 borderRadius: 18,
-                                                backgroundColor: `${colors.primary.main}15`,
+                                                backgroundColor: theme.primaryMuted,
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
                                                 marginRight: 14
@@ -415,13 +417,13 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
                                             </View>
                                             <View style={{ flex: 1 }}>
                                                 <Text
-                                                    style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}
+                                                    style={{ fontSize: 14, fontWeight: '600', color: theme.textPrimary }}
                                                     numberOfLines={1}
                                                 >
                                                     {item.name}
                                                 </Text>
                                                 <Text
-                                                    style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}
+                                                    style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}
                                                     numberOfLines={1}
                                                 >
                                                     {[item.City, item.Country].filter(Boolean).join(', ')}

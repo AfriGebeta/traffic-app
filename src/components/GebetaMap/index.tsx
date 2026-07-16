@@ -4,6 +4,7 @@ import MapLibreGL from '@maplibre/maplibre-react-native';
 import { GebetaMapRef, GebetaMapProps } from '@gebeta/tiles-react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import { getAppConfig } from '../../shared/config/remoteConfigValues';
 import { showToast } from '../../shared/utils/toast';
 import { decodePolyline } from '../../shared/utils/polyline';
@@ -18,6 +19,26 @@ import {
     calculateDistance,
     calculateBearing,
 } from '../../modules/navigation/utils/navigationUtils';
+import AccidentLightIcon from '../../../assets/images/accident-light.svg';
+import AccidentDarkIcon from '../../../assets/images/accident-dark.svg';
+import BadWeatherLightIcon from '../../../assets/images/bad-weather-light.svg';
+import BadWeatherDarkIcon from '../../../assets/images/bad-weather-dark.svg';
+import BrokenRoadLightIcon from '../../../assets/images/broken-road-light.svg';
+import BrokenRoadDarkIcon from '../../../assets/images/broken-road-dark.svg';
+import ClosureLightIcon from '../../../assets/images/closure-light.svg';
+import ClosureDarkIcon from '../../../assets/images/closure-dark.svg';
+import CrashLightIcon from '../../../assets/images/crash-light.svg';
+import CrashDarkIcon from '../../../assets/images/crash-dark.svg';
+import GatedCommunityLightIcon from '../../../assets/images/gated-community-light.svg';
+import GatedCommunityDarkIcon from '../../../assets/images/gated-community-dark.svg';
+import HazardLightIcon from '../../../assets/images/hazard-light.svg';
+import HazardDarkIcon from '../../../assets/images/hazard-dark.svg';
+import OtherLightIcon from '../../../assets/images/other-light.svg';
+import OtherDarkIcon from '../../../assets/images/other-dark.svg';
+import RadarLightIcon from '../../../assets/images/radar-light.svg';
+import RadarDarkIcon from '../../../assets/images/radar-dark.svg';
+import TrafficJamLightIcon from '../../../assets/images/traffic-jam-light.svg';
+import TrafficJamDarkIcon from '../../../assets/images/traffic-jam-dark.svg';
 
 const MAPPIN_IMAGE = require('../../../assets/images/Mappin.png');
 const NAV_ARROWHEAD_IMAGE = require('../../../assets/images/nav-arrowhead.png');
@@ -25,6 +46,7 @@ const PIN_NORMAL_IMAGE = require('../../../assets/images/pin-normal.png');
 const RED_PIN_IMAGE = require('../../../assets/images/red-pin.png');
 const WAYPOINT_PIN_IMAGE = require('../../../assets/images/location-pin-2.png');
 const MINIBUS_SELECTED_IMAGE = require('../../../assets/images/minibus-selected.png');
+const TAXI_MARKER_IMAGE = require('../../../assets/images/taxi-marker.png');
 
 const EXPLORE_IMAGES = {
     restaurants: require('../../../assets/images/restaurant.png'),
@@ -36,17 +58,17 @@ const EXPLORE_IMAGES = {
     atm: require('../../../assets/images/atm.png'),
 };
 
-const INCIDENT_IMAGES = {
-    ROAD_CLOSURE: require('../../../assets/images/closure.png'),
-    ACCIDENT: require('../../../assets/images/accident.png'),
-    TRAFFIC_JAM: require('../../../assets/images/traffic-jam.png'),
-    BAD_WEATHER: require('../../../assets/images/bad-weather.png'),
-    HAZARD: require('../../../assets/images/hazard.png'),
-    CRASH: require('../../../assets/images/crash.png'),
-    GATED_COMMUNITY: require('../../../assets/images/gated-community.png'),
-    BROKEN_ROAD: require('../../../assets/images/broken-road.png'),
-    RADAR: require('../../../assets/images/radar.png'),
-    OTHER: require('../../../assets/images/other.png'),
+const INCIDENT_SVG_ICONS: Record<string, { light: React.FC<{ width?: number; height?: number }>; dark: React.FC<{ width?: number; height?: number }> }> = {
+    ROAD_CLOSURE: { light: ClosureLightIcon, dark: ClosureDarkIcon },
+    ACCIDENT: { light: AccidentLightIcon, dark: AccidentDarkIcon },
+    TRAFFIC_JAM: { light: TrafficJamLightIcon, dark: TrafficJamDarkIcon },
+    BAD_WEATHER: { light: BadWeatherLightIcon, dark: BadWeatherDarkIcon },
+    HAZARD: { light: HazardLightIcon, dark: HazardDarkIcon },
+    CRASH: { light: CrashLightIcon, dark: CrashDarkIcon },
+    GATED_COMMUNITY: { light: GatedCommunityLightIcon, dark: GatedCommunityDarkIcon },
+    BROKEN_ROAD: { light: BrokenRoadLightIcon, dark: BrokenRoadDarkIcon },
+    RADAR: { light: RadarLightIcon, dark: RadarDarkIcon },
+    OTHER: { light: OtherLightIcon, dark: OtherDarkIcon },
 };
 
 const MAP_TILE_LOADING_BACKGROUND = colors.gray[200];
@@ -154,6 +176,7 @@ interface ExtendedGebetaMapProps extends Omit<GebetaMapProps, 'center'> {
         west: number;
     } | null;
     alternativeRoutesGeoJSON?: any[];
+    routeTimeLabels?: Array<{ coordinate: [number, number]; label: string; isPrimary: boolean }>;
 }
 
 
@@ -296,7 +319,7 @@ interface AnimatedNavLayerProps {
 const NAV_LINE_MS = 33;
 const NAV_LINE_TRIM_AHEAD_M = 0;
 const NAV_LINE_LAG_COMP_S = 0.15;
-const NAV_TAXI_RENDER_MS = 50;
+const NAV_TAXI_RENDER_MS = NAV_LINE_MS;
 const NAV_CAMERA_MS = 0;
 
 const NAV_ARROW_SHOW_M = 300;  
@@ -351,10 +374,10 @@ const AnimatedNavLayer = memo(({
 }: AnimatedNavLayerProps) => {
     const rawCoords: [number, number][] | undefined = routeGeoJSON?.geometry?.coordinates;
     const coords = useMemo(
-        () => (rawCoords && rawCoords.length > 2 ? smoothRouteCorners(rawCoords) : rawCoords),
-        [rawCoords]
+        () => (!isTaxiNavigation && rawCoords && rawCoords.length > 2 ? smoothRouteCorners(rawCoords) : rawCoords),
+        [rawCoords, isTaxiNavigation]
     );
-    const useRouteModel = !isTaxiNavigation && !!coords && coords.length > 1;
+    const useRouteModel = !!coords && coords.length > 1;
 
     const cum = useMemo(
         () => (coords && coords.length > 1 ? buildCumulativeDistances(coords) : null),
@@ -603,7 +626,7 @@ const AnimatedNavLayer = memo(({
                 setRender({ lat, lng, heading });
             }
 
-            if (useRouteModel && coords && cum && now - lastLine >= NAV_LINE_MS) {
+            if (useRouteModel && !isTaxiNavigation && coords && cum && now - lastLine >= NAV_LINE_MS) {
                 lastLine = now;
                 lineSrcRef.current?.setNativeProps({
                     shape: JSON.stringify({
@@ -668,7 +691,7 @@ const AnimatedNavLayer = memo(({
     }, [useRouteModel, coords, cum, arrowIdx, maneuverS]);
 
     const lineShape = useMemo(() => {
-        if (!useRouteModel || !coords || !cum) return null;
+        if (!useRouteModel || isTaxiNavigation || !coords || !cum) return null;
         return {
             type: 'Feature' as const,
             properties: {},
@@ -677,7 +700,7 @@ const AnimatedNavLayer = memo(({
                 coordinates: sliceFromDistance(coords, cum, lineS + NAV_LINE_TRIM_AHEAD_M),
             },
         };
-    }, [useRouteModel, coords, cum, lineS]);
+    }, [useRouteModel, isTaxiNavigation, coords, cum, lineS]);
 
     return (
         <>
@@ -766,7 +789,8 @@ AnimatedNavLayer.displayName = 'AnimatedNavLayer';
 
 
 const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
-    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, maneuvers, boundingBox, alternativeRoutesGeoJSON }, ref) => {
+    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, maneuvers, boundingBox, alternativeRoutesGeoJSON, routeTimeLabels }, ref) => {
+        const { isDark } = useTheme();
         const [mapStyleState, setMapStyleState] = useState<Record<string, unknown> | null>(() =>
             mapStyleJson ? ensureStyleBackgroundLayer(mapStyleJson as Record<string, any>) : null
         );
@@ -943,6 +967,24 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             }
         }, [isNavigating, navCameraFree, unlockNavCamera]);
 
+        const centerLng = center?.[0];
+        const centerLat = center?.[1];
+        const exploreCenterAppliedRef = useRef(false);
+        useEffect(() => {
+            if (isNavigating || !externalCameraControl) return;
+            if (centerLng == null || centerLat == null || !cameraRef.current) return;
+            if (homeFollowPausedRef.current) return;
+
+            const firstApply = !exploreCenterAppliedRef.current;
+            exploreCenterAppliedRef.current = true;
+            cameraRef.current.setCamera({
+                centerCoordinate: [centerLng, centerLat],
+                ...(firstApply ? { zoomLevel: zoom ?? 15 } : {}),
+                animationDuration: firstApply ? 0 : 500,
+                animationMode: firstApply ? 'moveTo' : 'easeTo',
+            });
+        }, [centerLng, centerLat, isNavigating, externalCameraControl]);
+
         useEffect(() => {
             if (isNavigating || !externalCameraControl) return;
             if (!userLocation || !cameraRef.current) return;
@@ -1046,9 +1088,6 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         ...Object.values(EXPLORE_IMAGES).map(img =>
                             Image.prefetch(Image.resolveAssetSource(img).uri)
                         ),
-                        ...Object.values(INCIDENT_IMAGES).map(img =>
-                            Image.prefetch(Image.resolveAssetSource(img).uri)
-                        ),
                     ]);
                     await new Promise(resolve => setTimeout(resolve, 100));
                     setImagesLoaded(true);
@@ -1129,13 +1168,23 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             }
         }, [waypointMarkers]);
 
-        useEffect(() => {
-            if (imagesLoaded && taxiStations && taxiStations.length > 0) {
-                setRenderKey(prev => prev + 1);
-                setTimeout(() => setRenderKey(prev => prev + 1), 100);
-                setTimeout(() => setRenderKey(prev => prev + 1), 200);
-            }
-        }, [taxiStations, imagesLoaded]);
+        const taxiStationsKey = useMemo(
+            () => (taxiStations && taxiStations.length > 0
+                ? taxiStations.map((s) => s.id).join(',')
+                : null),
+            [taxiStations]
+        );
+        const taxiStationsShape = useMemo(() => {
+            if (!taxiStations || taxiStations.length === 0) return null;
+            return {
+                type: 'FeatureCollection' as const,
+                features: taxiStations.map((station) => ({
+                    type: 'Feature' as const,
+                    properties: { name: station.name },
+                    geometry: { type: 'Point' as const, coordinates: [station.lng, station.lat] },
+                })),
+            };
+        }, [taxiStationsKey]);
 
 
         useEffect(() => {
@@ -1500,16 +1549,6 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             <MapLibreGL.Camera
                                 key={showFollowCamera ? 'nav-follow-camera' : 'explore-camera'}
                                 ref={cameraRef}
-                                {...(showExploreCamera
-                                    ? {
-                                        centerCoordinate: center,
-                                        zoomLevel: zoom ?? 15,
-                                        animationMode: 'moveTo' as const,
-                                        animationDuration: 0,
-                                        pitch: 0,
-                                        heading: 0,
-                                    }
-                                    : {})}
                                 maxBounds={undefined}
                                 defaultSettings={{
                                     centerCoordinate: showExploreCamera && lastFreeCameraRef.current
@@ -1523,7 +1562,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             />
                         )}
 
-                        <MapLibreGL.Images images={{ navPuck: MAPPIN_IMAGE, navArrowHead: NAV_ARROWHEAD_IMAGE }} />
+                        <MapLibreGL.Images images={{ navPuck: MAPPIN_IMAGE, navArrowHead: NAV_ARROWHEAD_IMAGE, taxiStation: TAXI_MARKER_IMAGE }} />
 
 
                         {!(isNavigating && isTaxiNavigation) && segmentedRoutes && segmentedRoutes.length > 0 && segmentedRoutes.map((route) => {
@@ -1563,9 +1602,9 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                 <MapLibreGL.LineLayer
                                     id={`route-alternative-layer-${i}`}
                                     style={{
-                                        lineColor: '#FDBA74',
-                                        lineWidth: 6,
-                                        lineOpacity: 0.9,
+                                        lineColor: colors.primary.main,
+                                        lineWidth: 5,
+                                        lineOpacity: 0.5,
                                         lineCap: 'round',
                                         lineJoin: 'round',
                                     }}
@@ -1573,14 +1612,66 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             </MapLibreGL.ShapeSource>
                         ))}
 
+                        {hasAlternativeRoutes && routeTimeLabels?.map((item, i) => (
+                            <MapLibreGL.PointAnnotation
+                                key={`route-time-label-${i}`}
+                                id={`route-time-label-${i}`}
+                                coordinate={item.coordinate}
+                                anchor={{ x: 0.5, y: 1 }}
+                            >
+                                <View collapsable={false} style={{ width: 120, height: 44, alignItems: 'center', justifyContent: 'flex-end' }}>
+                                    <View
+                                        collapsable={false}
+                                        style={{
+                                            backgroundColor: '#FFFFFF',
+                                            paddingHorizontal: 10,
+                                            paddingVertical: 5,
+                                            borderRadius: 14,
+                                            borderWidth: 1,
+                                            borderColor: item.isPrimary ? colors.primary.main : '#D1D5DB',
+                                            shadowColor: '#000',
+                                            shadowOpacity: 0.2,
+                                            shadowRadius: 4,
+                                            shadowOffset: { width: 0, height: 1 },
+                                            elevation: 3,
+                                        }}
+                                    >
+                                        <Text
+                                            style={{
+                                                color: '#374151',
+                                                fontSize: 12,
+                                                fontWeight: '700',
+                                            }}
+                                            numberOfLines={1}
+                                        >
+                                            {item.label}
+                                        </Text>
+                                    </View>
+                                    <View
+                                        style={{
+                                            width: 0,
+                                            height: 0,
+                                            borderLeftWidth: 5,
+                                            borderRightWidth: 5,
+                                            borderTopWidth: 6,
+                                            borderLeftColor: 'transparent',
+                                            borderRightColor: 'transparent',
+                                            borderTopColor: item.isPrimary ? colors.primary.main : '#D1D5DB',
+                                            marginTop: -1,
+                                        }}
+                                    />
+                                </View>
+                            </MapLibreGL.PointAnnotation>
+                        ))}
+
                         {!isNavigating && routeGeoJSON && !segmentedRoutes && (
                             <MapLibreGL.ShapeSource
                                 key={`route-preview-${routeStyle?.isDotted ? 'dotted' : 'solid'}`}
-                                id="route-preview-source"
+                                id={`route-preview-source-${routeStyle?.isDotted ? 'dotted' : 'solid'}`}
                                 shape={routeGeoJSON}
                             >
                                 <MapLibreGL.LineLayer
-                                    id="route-preview-layer"
+                                    id={`route-preview-layer-${routeStyle?.isDotted ? 'dotted' : 'solid'}`}
                                     style={{
                                         lineColor: defaultRouteStyle.color,
                                         lineWidth: routeStyle?.isDotted ? 6 : defaultRouteStyle.width,
@@ -1838,7 +1929,8 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         )}
 
                         {incidents && imagesLoaded && incidents.map((incident) => {
-                            const imageSource = INCIDENT_IMAGES[incident.type.name as keyof typeof INCIDENT_IMAGES];
+                            const iconPair = INCIDENT_SVG_ICONS[incident.type.name as keyof typeof INCIDENT_SVG_ICONS];
+                            const IncidentSvgIcon = iconPair ? (isDark ? iconPair.dark : iconPair.light) : null;
 
                             return (
                                 <MapLibreGL.PointAnnotation
@@ -1850,22 +1942,15 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                     }}
                                 >
                                     <View style={{
-                                        width: 40,
-                                        height: 40,
+                                        width: 28,
+                                        height: 28,
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                     }}>
-                                        {imageSource ? (
-                                            <Image
-                                                source={imageSource}
-                                                style={{
-                                                    width: 36,
-                                                    height: 36,
-                                                }}
-                                                resizeMode="contain"
-                                            />
+                                        {IncidentSvgIcon ? (
+                                            <IncidentSvgIcon width={24} height={24} />
                                         ) : (
-                                            <Ionicons name="alert-circle" size={32} color="#F97316" />
+                                            <Ionicons name="alert-circle" size={22} color="#F97316" />
                                         )}
                                     </View>
                                 </MapLibreGL.PointAnnotation>
@@ -1880,8 +1965,8 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                     coordinate={[rule.lng, rule.lat]}
                                 >
                                     <View style={{
-                                        width: 40,
-                                        height: 40,
+                                        width: 28,
+                                        height: 28,
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                     }}>
@@ -1889,13 +1974,13 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                             <Image
                                                 source={{ uri: rule.type.img }}
                                                 style={{
-                                                    width: 36,
-                                                    height: 36,
+                                                    width: 24,
+                                                    height: 24,
                                                 }}
                                                 resizeMode="contain"
                                             />
                                         ) : (
-                                            <Ionicons name="warning" size={32} color="#EF4444" />
+                                            <Ionicons name="warning" size={22} color="#EF4444" />
                                         )}
                                     </View>
                                 </MapLibreGL.PointAnnotation>
@@ -2042,81 +2127,30 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             );
                         })}
 
-                        {taxiStations && imagesLoaded && taxiStations.map((station) => {
-
-                            const getStationStyle = () => {
-                                switch (station.type) {
-                                    case 'start':
-                                        return {
-                                            color: colors.primary.main,
-                                            size: 50
-                                        };
-                                    case 'end':
-                                        return {
-                                            color: colors.primary.main,
-                                            size: 50
-                                        };
-                                    case 'intermediate':
-                                        return {
-                                            color: colors.primary.main,
-                                            size: 46
-                                        };
-                                }
-                            };
-
-                            const style = getStationStyle();
-
-                            return (
-                                <React.Fragment key={`taxi-station-fragment-${station.id}`}>
-                                    <MapLibreGL.PointAnnotation
-                                        key={`taxi-station-${station.type}-${station.id}-${renderKey}`}
-                                        id={`taxi-station-${station.type}-${station.id}`}
-                                        coordinate={[station.lng, station.lat]}
-                                    >
-                                        <View style={{
-                                            width: style.size,
-                                            height: style.size,
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                        }}>
-                                            <Image
-                                                source={MINIBUS_SELECTED_IMAGE}
-                                                style={{
-                                                    width: style.size,
-                                                    height: style.size,
-                                                }}
-                                                resizeMode="contain"
-                                            />
-                                        </View>
-                                    </MapLibreGL.PointAnnotation>
-                                    <MapLibreGL.PointAnnotation
-                                        key={`taxi-station-label-${station.id}-${renderKey}`}
-                                        id={`taxi-station-label-${station.id}`}
-                                        coordinate={[station.lng, station.lat]}
-                                        anchor={{ x: 0.5, y: -0.8 }}
-                                    >
-                                        <View style={{
-                                            backgroundColor: '#FFFFFF',
-                                            paddingHorizontal: 10,
-                                            paddingVertical: 5,
-                                            borderRadius: 10,
-                                            borderWidth: 2,
-                                            borderColor: style.color,
-                                            maxWidth: 120,
-                                        }}>
-                                            <Text style={{
-                                                fontSize: 12,
-                                                fontWeight: 'bold',
-                                                color: '#1F2937',
-                                                textAlign: 'center',
-                                            }} numberOfLines={2}>
-                                                {station.name}
-                                            </Text>
-                                        </View>
-                                    </MapLibreGL.PointAnnotation>
-                                </React.Fragment>
-                            );
-                        })}
+                        {taxiStationsShape && imagesLoaded && (
+                            <MapLibreGL.ShapeSource id="taxi-stations-source" shape={taxiStationsShape}>
+                                <MapLibreGL.SymbolLayer
+                                    id="taxi-stations-layer"
+                                    style={{
+                                        iconImage: 'taxiStation',
+                                        iconSize: 0.9,
+                                        iconAnchor: 'bottom',
+                                        iconAllowOverlap: true,
+                                        iconIgnorePlacement: true,
+                                        textField: ['get', 'name'],
+                                        textFont: ['JakartaSans'],
+                                        textSize: 12,
+                                        textColor: '#1F2937',
+                                        textHaloColor: '#FFFFFF',
+                                        textHaloWidth: 1.5,
+                                        textAnchor: 'bottom',
+                                        textOffset: [0, -4.8],
+                                        textMaxWidth: 8,
+                                        textOptional: true,
+                                    }}
+                                />
+                            </MapLibreGL.ShapeSource>
+                        )}
                     </MapLibreGL.MapView>
 
                     {showFollowCamera && !!userLocation && imagesLoaded && mapHeight > 0 && (

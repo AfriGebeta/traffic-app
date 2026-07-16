@@ -1,5 +1,25 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image, BackHandler } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, BackHandler } from 'react-native';
+import AccidentLightIcon from '../../../../assets/images/accident-light.svg';
+import AccidentDarkIcon from '../../../../assets/images/accident-dark.svg';
+import BadWeatherLightIcon from '../../../../assets/images/bad-weather-light.svg';
+import BadWeatherDarkIcon from '../../../../assets/images/bad-weather-dark.svg';
+import BrokenRoadLightIcon from '../../../../assets/images/broken-road-light.svg';
+import BrokenRoadDarkIcon from '../../../../assets/images/broken-road-dark.svg';
+import ClosureLightIcon from '../../../../assets/images/closure-light.svg';
+import ClosureDarkIcon from '../../../../assets/images/closure-dark.svg';
+import CrashLightIcon from '../../../../assets/images/crash-light.svg';
+import CrashDarkIcon from '../../../../assets/images/crash-dark.svg';
+import GatedCommunityLightIcon from '../../../../assets/images/gated-community-light.svg';
+import GatedCommunityDarkIcon from '../../../../assets/images/gated-community-dark.svg';
+import HazardLightIcon from '../../../../assets/images/hazard-light.svg';
+import HazardDarkIcon from '../../../../assets/images/hazard-dark.svg';
+import OtherLightIcon from '../../../../assets/images/other-light.svg';
+import OtherDarkIcon from '../../../../assets/images/other-dark.svg';
+import RadarLightIcon from '../../../../assets/images/radar-light.svg';
+import RadarDarkIcon from '../../../../assets/images/radar-dark.svg';
+import TrafficJamLightIcon from '../../../../assets/images/traffic-jam-light.svg';
+import TrafficJamDarkIcon from '../../../../assets/images/traffic-jam-dark.svg';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
@@ -7,6 +27,22 @@ import { BottomSheet } from '../../../shared/components';
 import { INCIDENT_TYPES } from '../../incidents/types/incident.types';
 import { getIncidentTranslationKey } from '../../incidents/utils/incidentTranslations';
 import { getAppCheckToken } from '../../../shared/utils/appCheck';
+import { useTheme } from '../../../shared/theme/ThemeContext';
+
+type IncidentIcon = React.FC<{ width?: number; height?: number }>;
+
+const INCIDENT_ICON_MAP: Record<string, { light: IncidentIcon; dark: IncidentIcon }> = {
+    'ROAD_CLOSURE': { light: ClosureLightIcon, dark: ClosureDarkIcon },
+    'ACCIDENT': { light: AccidentLightIcon, dark: AccidentDarkIcon },
+    'TRAFFIC_JAM': { light: TrafficJamLightIcon, dark: TrafficJamDarkIcon },
+    'BAD_WEATHER': { light: BadWeatherLightIcon, dark: BadWeatherDarkIcon },
+    'HAZARD': { light: HazardLightIcon, dark: HazardDarkIcon },
+    'CRASH': { light: CrashLightIcon, dark: CrashDarkIcon },
+    'GATED_COMMUNITY': { light: GatedCommunityLightIcon, dark: GatedCommunityDarkIcon },
+    'BROKEN_ROAD': { light: BrokenRoadLightIcon, dark: BrokenRoadDarkIcon },
+    'RADAR': { light: RadarLightIcon, dark: RadarDarkIcon },
+    'OTHER': { light: OtherLightIcon, dark: OtherDarkIcon },
+};
 
 interface IncidentReportSheetProps {
     isVisible: boolean;
@@ -25,6 +61,7 @@ export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
 }) => {
     const { t } = useTranslation();
     const router = useRouter();
+    const { colors: theme, isDark } = useTheme();
     const [incidentTypes, setIncidentTypes] = React.useState(INCIDENT_TYPES);
 
     React.useEffect(() => {
@@ -99,14 +136,15 @@ export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
                 <View className="flex-row items-center mb-6">
                     <TouchableOpacity
                         onPress={onClose}
-                        className="mr-4 bg-gray-100 rounded-full p-2"
+                        className="mr-4 rounded-full p-2"
+                        style={{ backgroundColor: isDark ? theme.surface : '#F3F4F6' }}
                         activeOpacity={0.7}
                     >
-                        <Ionicons name="arrow-back" size={22} color="#374151" />
+                        <Ionicons name="arrow-back" size={22} color={theme.textPrimary} />
                     </TouchableOpacity>
                     <View className="flex-1">
-                        <Text className="text-2xl font-bold text-gray-900">{t('share-what-you-see')}</Text>
-                        <Text className="text-gray-500 text-sm mt-1">
+                        <Text className="text-2xl font-bold" style={{ color: theme.textPrimary }}>{t('share-what-you-see')}</Text>
+                        <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>
                             {t('help-other-drivers-by-reporting-incidents')}
                         </Text>
                     </View>
@@ -115,28 +153,19 @@ export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
                     <View className="flex-row flex-wrap gap-3">
                         {incidentTypes.map((incidentType) => {
-                            const incidentImageMap: Record<string, any> = {
-                                'ROAD_CLOSURE': require('../../../../assets/images/closure.png'),
-                                'ACCIDENT': require('../../../../assets/images/accident.png'),
-                                'TRAFFIC_JAM': require('../../../../assets/images/traffic-jam.png'),
-                                'BAD_WEATHER': require('../../../../assets/images/bad-weather.png'),
-                                'HAZARD': require('../../../../assets/images/hazard.png'),
-                                'CRASH': require('../../../../assets/images/crash.png'),
-                                'GATED_COMMUNITY': require('../../../../assets/images/gated-community.png'),
-                                'BROKEN_ROAD': require('../../../../assets/images/broken-road.png'),
-                                'RADAR': require('../../../../assets/images/radar.png'),
-                                'OTHER': require('../../../../assets/images/other.png'),
-                            };
-
-                            const imageSource = incidentImageMap[incidentType.name];
+                            const iconPair = INCIDENT_ICON_MAP[incidentType.name];
+                            const IncidentSvgIcon = iconPair ? (isDark ? iconPair.dark : iconPair.light) : null;
 
                             return (
                                 <TouchableOpacity
                                     key={incidentType.name}
-                                    className="bg-white rounded-2xl p-4 items-center border-2 border-gray-100 active:border-orange-200 active:bg-orange-50"
+                                    className="rounded-2xl p-4 items-center"
                                     onPress={() => handleIncidentOptionPress(incidentType.name)}
                                     activeOpacity={0.7}
                                     style={{
+                                        backgroundColor: theme.surface,
+                                        borderWidth: 2,
+                                        borderColor: theme.border,
                                         width: '48%',
                                         minHeight: 120,
                                         shadowColor: '#000',
@@ -149,22 +178,16 @@ export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
                                     <View
                                         className="w-16 h-16 items-center justify-center mb-3"
                                     >
-                                        {imageSource ? (
-                                            <Image
-                                                source={imageSource}
-                                                style={{
-                                                    width: 48,
-                                                    height: 48,
-                                                }}
-                                                resizeMode="contain"
-                                            />
+                                        {IncidentSvgIcon ? (
+                                            <IncidentSvgIcon width={48} height={48} />
                                         ) : (
                                             <Ionicons name={incidentType.icon} size={28} color={incidentType.color} />
                                         )}
                                     </View>
                                     <View style={{ width: '100%', paddingHorizontal: 4 }}>
                                         <Text
-                                            className="text-sm font-semibold text-gray-900 text-center"
+                                            className="text-sm font-semibold text-center"
+                                            style={{ color: theme.textPrimary }}
                                             numberOfLines={2}
                                             ellipsizeMode="tail"
                                         >

@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { taxiService } from '../services/taxi.service';
 import { colors } from '../../../shared/theme/colors';
+import { useTheme } from '../../../shared/theme/ThemeContext';
 import { routeCacheService } from '../services/route-cache.service';
 import { showToast } from '../../../shared/utils/toast';
 
@@ -33,6 +34,7 @@ export default function SetPricingScreen() {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
+    const { colors: theme, isDark } = useTheme();
 
     const [stops, setStops] = useState<RouteStop[]>([]);
     const [routeName, setRouteName] = useState('');
@@ -150,7 +152,7 @@ export default function SetPricingScreen() {
                         routeName: routeName,
                         landmark: stop.landmark,
                     });
-                    const node = await taxiService.createNode({
+                    const node = await taxiService.createNodeForRoute({
                         name: stop.name,
                         lat: stop.lat,
                         lng: stop.lng,
@@ -223,11 +225,9 @@ export default function SetPricingScreen() {
             });
         } catch (error: any) {
             console.error('Route creation error:', error);
-            console.error('Error response:', error.response?.data);
-            console.error('Error status:', error.response?.status);
             Alert.alert(
                 t('error'),
-                error.response?.data?.message || error.message || t('failed-to-create-route')
+                error.message || t('failed-to-create-route')
             );
         } finally {
             setLoading(false);
@@ -235,20 +235,20 @@ export default function SetPricingScreen() {
     };
 
     return (
-        <View className="flex-1 bg-gray-50" style={{ paddingTop: insets.top }}>
-            <View className="px-4 py-6 border-b border-gray-50">
+        <View className="flex-1" style={{ paddingTop: insets.top, backgroundColor: theme.background }}>
+            <View className="px-4 py-6" style={{ borderBottomWidth: 1, borderBottomColor: theme.background }}>
                 <View className="flex-row items-center mb-2">
                     <TouchableOpacity onPress={() => router.back()} className="mr-4" activeOpacity={0.7}>
                         <Ionicons name="arrow-back" size={28} color={colors.primary.main} />
                     </TouchableOpacity>
-                    <Text className="text-2xl font-bold text-gray-900">{t('set-prices')}</Text>
+                    <Text className="text-2xl font-bold" style={{ color: theme.textPrimary }}>{t('set-prices')}</Text>
                 </View>
-                <Text className="text-gray-600 mt-2">{t('set-prices-description')}</Text>
+                <Text className="mt-2" style={{ color: theme.textSecondary }}>{t('set-prices-description')}</Text>
             </View>
 
             <ScrollView className="flex-1 p-4" contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}>
-                <View className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                    <Text className="text-lg font-bold text-gray-900 mb-4">
+                <View className="rounded-2xl p-6 shadow-sm" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
+                    <Text className="text-lg font-bold mb-4" style={{ color: theme.textPrimary }}>
                         {routeName} ({stops.length} {t('stops')})
                     </Text>
 
@@ -257,13 +257,14 @@ export default function SetPricingScreen() {
                         return (
                             <View
                                 key={index}
-                                className={`mb-4 p-4 rounded-xl ${isMainRoute ? 'bg-white border' : 'bg-gray-50'
-                                    }`}
-                                style={isMainRoute ? { borderColor: colors.primary.main } : undefined}
+                                className="mb-4 p-4 rounded-xl"
+                                style={isMainRoute
+                                    ? { backgroundColor: theme.surface, borderWidth: 1, borderColor: colors.primary.main }
+                                    : { backgroundColor: isDark ? theme.background : '#F9FAFB' }}
                             >
                                 <View className="flex-row items-center justify-between mb-2">
                                     <View className="flex-1">
-                                        <Text className="text-gray-900 font-semibold">
+                                        <Text className="font-semibold" style={{ color: theme.textPrimary }}>
                                             {edge.fromName} → {edge.toName}
                                         </Text>
                                         {isMainRoute && (
@@ -274,7 +275,9 @@ export default function SetPricingScreen() {
                                     </View>
                                 </View>
                                 <TextInput
-                                    className="bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900"
+                                    className="rounded-xl px-4 py-3"
+                                    style={{ backgroundColor: isDark ? theme.surface : '#FFFFFF', borderWidth: 1, borderColor: theme.border, color: theme.textPrimary }}
+                                    placeholderTextColor={theme.textSecondary}
                                     placeholder={isMainRoute ? t('required') : t('optional')}
                                     value={edge.cost}
                                     onChangeText={(text) => updateEdgePrice(index, text)}
@@ -285,8 +288,8 @@ export default function SetPricingScreen() {
                     })}
 
                     <TouchableOpacity
-                        className={`py-4 rounded-xl mt-4 ${loading ? 'bg-gray-400' : ''}`}
-                        style={!loading ? { backgroundColor: colors.primary.main } : undefined}
+                        className="py-4 rounded-xl mt-4"
+                        style={{ backgroundColor: loading ? theme.border : colors.primary.main }}
                         onPress={handleSubmit}
                         disabled={loading}
                         activeOpacity={0.7}

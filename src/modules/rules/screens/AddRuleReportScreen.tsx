@@ -11,10 +11,12 @@ import { useLocation } from '../../../shared/contexts/LocationContext';
 import { useTranslation } from 'react-i18next';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { colors } from '../../../shared/theme/colors';
+import { useTheme } from '../../../shared/theme/ThemeContext';
 
 export default function AddRuleReportScreen() {
     const router = useRouter();
     const { t } = useTranslation();
+    const { colors: theme, isDark } = useTheme();
     const params = useLocalSearchParams();
     const { typeId, typeName, typeDescription, typeImg } = params;
     const { selectedLocation, setSelectedLocation } = useLocation();
@@ -84,23 +86,23 @@ export default function AddRuleReportScreen() {
     };
 
     return (
-        <View className="flex-1 bg-gray-50">
-            <View className="bg-white px-6 pt-16 pb-4 border-b border-gray-100">
+        <View className="flex-1" style={{ backgroundColor: theme.background }}>
+            <View className="px-6 pt-16 pb-4" style={{ backgroundColor: theme.background, borderBottomWidth: 1, borderBottomColor: theme.border }}>
                 <View className="flex-row items-center">
                     <TouchableOpacity
                         onPress={() => router.back()}
                         className="mr-4"
                         activeOpacity={0.7}
                     >
-                        <Ionicons name="arrow-back" size={24} color="#000000" />
+                        <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
                     </TouchableOpacity>
-                    <Text className="text-xl font-bold text-gray-900">{t('report-traffic-rule')}</Text>
+                    <Text className="text-xl font-bold" style={{ color: theme.textPrimary }}>{t('report-traffic-rule')}</Text>
                 </View>
             </View>
 
-            <View className="bg-white mx-6 mt-6 mb-4 rounded-2xl p-4 border border-gray-100">
+            <View className="mx-6 mt-6 mb-4 rounded-2xl p-4" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
                 <View className="flex-row items-center">
-                    <View className="w-14 h-14 items-center justify-center mr-4 bg-gray-100 rounded-xl overflow-hidden">
+                    <View className="w-14 h-14 items-center justify-center mr-4 rounded-xl overflow-hidden" style={{ backgroundColor: isDark ? '#FFFFFF' : '#F3F4F6' }}>
                         {typeImg && typeof typeImg === 'string' && typeImg.length > 0 ? (
                             <Image
                                 source={{ uri: typeImg }}
@@ -112,8 +114,8 @@ export default function AddRuleReportScreen() {
                         )}
                     </View>
                     <View className="flex-1">
-                        <Text className="text-lg font-bold text-gray-900">{typeName || 'Traffic Rule'}</Text>
-                        <Text className="text-gray-500 text-sm" numberOfLines={2}>
+                        <Text className="text-lg font-bold" style={{ color: theme.textPrimary }}>{typeName || 'Traffic Rule'}</Text>
+                        <Text className="text-sm" style={{ color: theme.textSecondary }} numberOfLines={2}>
                             {typeDescription || 'Report a traffic rule violation'}
                         </Text>
                     </View>
@@ -123,8 +125,8 @@ export default function AddRuleReportScreen() {
             <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
                 <View className="gap-5 pb-6">
                     <View>
-                        <Text className="text-sm font-semibold text-gray-700 mb-2">
-                            {t('punishment')} <Text className="text-orange-500">*</Text>
+                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
+                            {t('punishment')} <Text style={{ color: theme.primary }}>*</Text>
                         </Text>
                         <Input
                             placeholder={t('punishment-placeholder')}
@@ -133,38 +135,41 @@ export default function AddRuleReportScreen() {
                             multiline
                             numberOfLines={3}
                         />
-                        <Text className="text-xs text-gray-500 mt-1">
+                        <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>
                             {t('punishment-description')}
                         </Text>
                     </View>
 
                     <View>
-                        <Text className="text-sm font-semibold text-gray-700 mb-2">
-                            {t('location')} <Text className="text-orange-500">*</Text>
+                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
+                            {t('location')} <Text style={{ color: theme.primary }}>*</Text>
                         </Text>
                         {coordinates ? (
-                            <View className="bg-green-50 border border-green-200 rounded-xl p-4">
+                            <View className="rounded-xl p-4" style={{ backgroundColor: isDark ? theme.greenMuted : '#F0FDF4', borderWidth: 1, borderColor: theme.green }}>
                                 <View className="flex-row items-center justify-between">
                                     <View className="flex-1">
-                                        <Text className="text-gray-900 font-semibold">
+                                        <Text className="font-semibold" style={{ color: theme.textPrimary }}>
                                             {usingCurrentLocation ? t('current-location') : t('location-selected')}
                                         </Text>
-                                        <Text className="text-gray-500 text-sm">
+                                        <Text className="text-sm" style={{ color: theme.textSecondary }}>
                                             {coordinates.lat.toFixed(7)}, {coordinates.lng.toFixed(7)}
                                         </Text>
                                     </View>
                                     <TouchableOpacity onPress={() => { setCoordinates(null); setUsingCurrentLocation(false); }}>
-                                        <Ionicons name="close-circle" size={24} color="#EF4444" />
+                                        <Ionicons name="close-circle" size={24} color={theme.error} />
                                     </TouchableOpacity>
                                 </View>
                             </View>
                         ) : (
                             <View>
                                 <TouchableOpacity
-                                    className="bg-white border-2 border-gray-200 rounded-2xl p-4 flex-row items-center justify-between active:border-orange-200 mb-2"
+                                    className="rounded-2xl p-4 flex-row items-center justify-between mb-2"
                                     onPress={handlePickLocation}
                                     activeOpacity={0.7}
                                     style={{
+                                        backgroundColor: theme.surface,
+                                        borderWidth: 2,
+                                        borderColor: theme.border,
                                         shadowColor: '#000',
                                         shadowOffset: { width: 0, height: 1 },
                                         shadowOpacity: 0.05,
@@ -173,21 +178,21 @@ export default function AddRuleReportScreen() {
                                     }}
                                 >
                                     <View className="flex-row items-center flex-1">
-                                        <View className="w-10 h-10 rounded-full items-center justify-center bg-gray-100">
-                                            <Ionicons name="map" size={20} color="#9CA3AF" />
+                                        <View className="w-10 h-10 rounded-full items-center justify-center" style={{ backgroundColor: isDark ? theme.background : '#F3F4F6' }}>
+                                            <Ionicons name="map" size={20} color={theme.textSecondary} />
                                         </View>
                                         <View className="ml-3 flex-1">
-                                            <Text className="text-sm font-medium text-gray-500">
+                                            <Text className="text-sm font-medium" style={{ color: theme.textSecondary }}>
                                                 {t('pick-location-on-map')}
                                             </Text>
                                         </View>
                                     </View>
-                                    <Ionicons name="chevron-forward" size={20} color="#D1D5DB" />
+                                    <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
                                 </TouchableOpacity>
                                 <View className="flex-row items-center justify-center my-2">
-                                    <View className="flex-1 h-px bg-gray-200" />
-                                    <Text className="text-gray-400 text-sm mx-3">{t('or')}</Text>
-                                    <View className="flex-1 h-px bg-gray-200" />
+                                    <View className="flex-1 h-px" style={{ backgroundColor: theme.border }} />
+                                    <Text className="text-sm mx-3" style={{ color: theme.textSecondary }}>{t('or')}</Text>
+                                    <View className="flex-1 h-px" style={{ backgroundColor: theme.border }} />
                                 </View>
                                 <TouchableOpacity
                                     className="py-3 rounded-xl flex-row items-center justify-center"
@@ -205,7 +210,7 @@ export default function AddRuleReportScreen() {
                 </View>
             </ScrollView>
 
-            <View className="bg-white px-6 pt-4 border-t border-gray-100" style={{ paddingBottom: insets.bottom + 16 }}>
+            <View className="px-6 pt-4" style={{ paddingBottom: insets.bottom + 16, backgroundColor: theme.background, borderTopWidth: 1, borderTopColor: theme.border }}>
                 <Button
                     title={submitting ? t('submitting') : t('submit-report')}
                     onPress={handleSubmit}

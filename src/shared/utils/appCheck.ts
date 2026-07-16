@@ -48,6 +48,7 @@ export async function getAppCheckToken(): Promise<string | null> {
   tokenFetchPromise = (async () => {
     try {
       const { token } = await getToken(appCheckInstance!);
+      // console.log('AppCheck token:', token); 
       cachedToken = token;
       tokenExpiresAt = Date.now() + 55 * 60 * 1000;
       return token;

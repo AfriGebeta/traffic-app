@@ -37,7 +37,7 @@ interface UseLocationTrackingProps {
         segmentIndex: number;
     }>) => void;
     updateNavigationState?: (
-        location: { lat: number; lng: number },
+        location: { lat: number; lng: number; accuracy?: number; speed?: number },
         routes: Array<{
             geoJSON: any;
             isWalking: boolean;
@@ -45,8 +45,10 @@ interface UseLocationTrackingProps {
         }>
     ) => void;
     onArrival?: () => void;
+    // onArrival?: () => void;
 }
 
+const ARRIVAL_DISTANCE_METERS = 80;
 
 export const useLocationTracking = ({
     routeCoordinates,
@@ -74,6 +76,7 @@ export const useLocationTracking = ({
     setSegmentedRoutes,
     updateNavigationState,
     onArrival,
+    // onArrival,
 }: UseLocationTrackingProps) => {
     const locationSubscription = useRef<Location.LocationSubscription | null>(null);
     const lastClosestIndex = useRef<number>(0);
@@ -88,6 +91,7 @@ export const useLocationTracking = ({
     const locationCallbackRef = useRef<((location: Location.LocationObject) => void) | null>(null);
     const lastRenderedMarkerRef = useRef<{ lat: number; lng: number } | null>(null);
     const hasArrivedRef = useRef<boolean>(false);
+    // const hasArrivedRef = useRef<boolean>(false);
 
     const stopLocationTracking = useCallback(() => {
         if (locationSubscription.current) {
@@ -102,6 +106,7 @@ export const useLocationTracking = ({
         currentGPSIntervalRef.current = getAppConfig().navGpsIntervalMs;
         locationCallbackRef.current = null;
         hasArrivedRef.current = false;
+        hasArrivedRef.current = false;
     }, []);
 
     const startLocationTracking = useCallback(async () => {
@@ -115,6 +120,8 @@ export const useLocationTracking = ({
             if (locationSubscription.current) {
                 locationSubscription.current.remove();
             }
+
+            hasArrivedRef.current = false;
 
             hasArrivedRef.current = false;
 
@@ -353,12 +360,19 @@ export const useLocationTracking = ({
 
                             lastRenderedMarkerRef.current = { lat: displayLat, lng: displayLng };
 
+                            const taxiFix = {
+                                lat: displayLat,
+                                lng: displayLng,
+                                accuracy: location.coords.accuracy ?? undefined,
+                                speed: speed ?? undefined,
+                            };
+
                             if (updateNavigationState) {
-                                updateNavigationState({ lat: displayLat, lng: displayLng }, updatedSegments);
+                                updateNavigationState(taxiFix, updatedSegments);
                             } else {
                                 setSegmentedRoutes(updatedSegments);
                                 if (setUserLocation) {
-                                    setUserLocation({ lat: displayLat, lng: displayLng });
+                                    setUserLocation(taxiFix);
                                 }
                             }
                         } else {
@@ -405,13 +419,14 @@ export const useLocationTracking = ({
                             !hasArrivedRef.current &&
                             !isOffRouteRef.current &&
                             totalDistance > 0 &&
-                            totalDistance <= getAppConfig().arrivalDistanceM &&
+                            totalDistance <= ARRIVAL_DISTANCE_METERS &&
                             onArrival
                         ) {
                             hasArrivedRef.current = true;
                             onArrival();
                         }
                     } else if (!hasArrivedRef.current && onArrival) {
+                        // Snapped past the last route coordinate — end of route reached.
                         hasArrivedRef.current = true;
                         onArrival();
                     }
@@ -474,6 +489,7 @@ export const useLocationTracking = ({
         taxiSegments,
         setSegmentedRoutes,
         updateNavigationState,
+        onArrival,
         onArrival,
     ]);
 

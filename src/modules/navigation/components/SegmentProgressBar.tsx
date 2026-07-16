@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../../shared/theme/colors';
+import { useTheme } from '../../../shared/theme/ThemeContext';
 
 interface SegmentProgressBarProps {
     segments: Array<{ type: 'walk' | 'taxi'; label: string }>;
@@ -12,6 +13,9 @@ export const SegmentProgressBar: React.FC<SegmentProgressBarProps> = ({
     segments,
     currentIndex,
 }) => {
+    const { colors: theme, isDark } = useTheme();
+    const futureColor = isDark ? theme.border : '#E5E7EB';
+
     return (
         <View className="flex-row items-center justify-between">
             {segments.map((segment, index) => {
@@ -28,11 +32,11 @@ export const SegmentProgressBar: React.FC<SegmentProgressBarProps> = ({
                                 style={{
                                     backgroundColor: isActive
                                         ? isWalk
-                                            ? '#3B82F6'
+                                            ? theme.blue
                                             : colors.primary.main
                                         : isCompleted
-                                            ? '#10B981'
-                                            : '#E5E7EB'
+                                            ? theme.green
+                                            : futureColor
                                 }}
                             >
                                 <Ionicons
@@ -44,13 +48,13 @@ export const SegmentProgressBar: React.FC<SegmentProgressBarProps> = ({
                                                 : 'car'
                                     }
                                     size={20}
-                                    color={isFuture ? '#9CA3AF' : 'white'}
+                                    color={isFuture ? theme.textSecondary : 'white'}
                                 />
                             </View>
                             <Text
                                 className={`text-xs mt-1 ${isActive ? 'font-bold' : 'font-normal'}`}
                                 style={{
-                                    color: isActive || isCompleted ? '#374151' : '#9CA3AF'
+                                    color: isActive || isCompleted ? theme.textPrimary : theme.textSecondary
                                 }}
                             >
                                 {segment.label}
@@ -60,7 +64,7 @@ export const SegmentProgressBar: React.FC<SegmentProgressBarProps> = ({
                         {index < segments.length - 1 && (
                             <View
                                 className="flex-1 h-1 mx-2"
-                                style={{ backgroundColor: isCompleted ? '#10B981' : '#E5E7EB' }}
+                                style={{ backgroundColor: isCompleted ? theme.green : futureColor }}
                             />
                         )}
                     </React.Fragment>

@@ -150,14 +150,14 @@ export const taxiService = {
         return response.data;
     },
 
-    async createNodeForRoute(data: { name: string; lat: number; lng: number }): Promise<TaxiNode> {
+    async createNodeForRoute(data: { name: string; lat: number; lng: number; nodeType?: string; routeName?: string; landmark?: string }): Promise<TaxiNode> {
         const response = await apiService.post<any>(
             '/api/taxi/nodes',
             data
         );
 
         if (response.error) {
-            throw new Error(response.error);
+            throw new Error(response.status ? `${response.error} (HTTP ${response.status})` : response.error);
         }
 
         if (!response.data) {

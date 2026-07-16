@@ -1,6 +1,7 @@
 import React from 'react';
 import { ActivityIndicator, Text, TextStyle, TouchableOpacity, ViewStyle, View } from 'react-native';
 import { colors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 
 interface ButtonProps {
     title: string;
@@ -24,13 +25,14 @@ export const Button: React.FC<ButtonProps> = ({
     icon,
 }) => {
     const isDisabled = disabled || loading;
+    const { colors: theme, isDark } = useTheme();
 
     const getVariantStyles = () => {
         switch (variant) {
             case 'primary':
                 return { backgroundColor: colors.primary.main };
             case 'secondary':
-                return { backgroundColor: colors.gray[100] };
+                return { backgroundColor: isDark ? theme.surface : colors.gray[100] };
             case 'outline':
                 return {
                     backgroundColor: 'transparent',
@@ -47,7 +49,7 @@ export const Button: React.FC<ButtonProps> = ({
             case 'primary':
                 return colors.white;
             case 'secondary':
-                return colors.gray[800];
+                return isDark ? theme.textPrimary : colors.gray[800];
             case 'outline':
                 return colors.primary.main;
             default:

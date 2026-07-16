@@ -65,6 +65,8 @@ export const useNavigation = (
     const routeCoordinates = useRef<[number, number][]>([]);
     const isNavigatingRef = useRef(false);
     const rerouteTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const navigateRequestIdRef = useRef(0);
+    const previewRouteCacheRef = useRef<Map<string, RouteOption[]>>(new Map());
     const currentDestination = useRef<GeocodingPlace | null>(null);
     const routeManeuvers = useRef<any[]>([]);
     const currentManeuverIndex = useRef(0);
@@ -245,13 +247,44 @@ export const useNavigation = (
         );
     };
 
-    const MAX_ROUTE_OPTIONS = 2; 
+    const MAX_ROUTE_OPTIONS = 2;
+
+    const buildPreviewCacheKey = (
+        costing: 'auto' | 'pedestrian',
+        targetDestination: GeocodingPlace,
+        activeWaypoints: GeocodingPlace[],
+        customOrigin: GeocodingPlace | null
+    ) => [
+        costing,
+        `${targetDestination.latitude},${targetDestination.longitude}`,
+        activeWaypoints.map(wp => `${wp.latitude},${wp.longitude}`).join(';'),
+        customOrigin ? `${customOrigin.latitude},${customOrigin.longitude}` : 'user-location',
+    ].join('|');
+
+    const applyRouteOptions = (routeOptions: RouteOption[]) => {
+        const main = routeOptions[0];
+        allRouteOptionsRef.current = routeOptions;
+        setAllRouteOptions(routeOptions);
+        setSelectedRouteIndex(0);
+        setAlternativeRoutesGeoJSON(routeOptions.slice(1).map(r => r.geoJSON));
+        routeManeuvers.current = main.maneuvers;
+        setRouteManeuversList(main.maneuvers);
+        setRouteLegs(main.legs);
+        routeCoordinates.current = main.coordinates;
+        setFullRouteCoordinates(main.coordinates);
+        totalRouteDistance.current = main.distance;
+        totalRouteDuration.current = main.duration;
+        setRemainingDistance(main.distance);
+        setRemainingTime(main.duration);
+        setRouteGeoJSON(main.geoJSON);
+    };
 
     const fetchAlternativeRoutes = async (
         originCoords: [number, number],
         targetDestination: GeocodingPlace,
         activeWaypoints: GeocodingPlace[],
-        primaryOption: RouteOption
+        primaryOption: RouteOption,
+        previewCacheKey?: string
     ) => {
         try {
             const data = await navigationService.getNavigation({
@@ -281,6 +314,9 @@ export const useNavigation = (
             allRouteOptionsRef.current = routeOptions;
             setAllRouteOptions(routeOptions);
             setAlternativeRoutesGeoJSON(routeOptions.slice(1).map(r => r.geoJSON));
+            if (previewCacheKey) {
+                previewRouteCacheRef.current.set(previewCacheKey, routeOptions);
+            }
         } catch {
             // Alternatives are best-effort; keep the primary route on failure.
         }
@@ -319,6 +355,18 @@ export const useNavigation = (
 
         const activeWaypoints = waypointsOverride ?? waypoints;
         const effectiveCosting = costingOverride ?? currentCosting;
+
+        const previewCacheKey = buildPreviewCacheKey(effectiveCosting, targetDestination, activeWaypoints, effectiveOrigin);
+        const cachedOptions = previewRouteCacheRef.current.get(previewCacheKey);
+        if (cachedOptions && cachedOptions.length > 0) {
+            navigateRequestIdRef.current++;
+            applyRouteOptions(cachedOptions);
+            setShowRoutePreview(true);
+            setIsNavigating(false);
+            return;
+        }
+
+        const requestId = ++navigateRequestIdRef.current;
         setIsNavigating(true);
         try {
             const navigationData = await navigationService.getNavigation({
@@ -329,6 +377,8 @@ export const useNavigation = (
                     ? activeWaypoints.map(wp => [wp.latitude, wp.longitude] as [number, number])
                     : undefined,
             });
+
+            if (requestId !== navigateRequestIdRef.current) return;
 
             const legs = navigationData?.data?.trip?.legs;
             if (!legs || legs.length === 0) {
@@ -342,6 +392,7 @@ export const useNavigation = (
             setAllRouteOptions([mainOption]);
             setSelectedRouteIndex(0);
             setAlternativeRoutesGeoJSON([]);
+            previewRouteCacheRef.current.set(previewCacheKey, [mainOption]);
 
             const { coordinates: allCoordinates, maneuvers: allManeuvers, distance: totalDistance, duration: totalDuration } = mainOption;
 
@@ -420,7 +471,7 @@ export const useNavigation = (
             }
 
             if (effectiveCosting === 'auto') {
-                fetchAlternativeRoutes(originCoords, targetDestination, activeWaypoints, mainOption);
+                fetchAlternativeRoutes(originCoords, targetDestination, activeWaypoints, mainOption, previewCacheKey);
             }
         } catch (error) {
             console.error('Navigation error:', error);
@@ -429,7 +480,12 @@ export const useNavigation = (
         }
     };
 
-    const handleStartNavigation = async (setUserLocation?: (location: { lat: number; lng: number }) => void) => {
+    const handleStartNavigation = async (
+        setUserLocation?: (location: { lat: number; lng: number }) => void,
+        destinationOverride?: GeocodingPlace,
+    ) => {
+        const targetDestination = destinationOverride || selectedDestination;
+
         if (!mapRef.current) {
             showToast.error('Error', 'Map reference is not available');
             return;
@@ -440,7 +496,7 @@ export const useNavigation = (
             return;
         }
 
-        if (!selectedDestination) {
+        if (!targetDestination) {
             showToast.error('Error', 'Please select a destination first');
             return;
         }
@@ -465,14 +521,23 @@ export const useNavigation = (
                 totalDistance = totalRouteDistance.current;
                 totalDuration = totalRouteDuration.current;
             } else {
-                const navigationData = await navigationService.getNavigation({
-                    origin: [userLocation.lat, userLocation.lng],
-                    destination: [selectedDestination.latitude, selectedDestination.longitude],
-                    costing: currentCosting,
-                    waypoints: waypoints.length > 0
-                        ? waypoints.map(wp => [wp.latitude, wp.longitude] as [number, number])
-                        : undefined,
-                });
+                let navigationData: Awaited<ReturnType<typeof navigationService.getNavigation>> | null = null;
+                const prefetch = (globalThis as any).__voiceRoutePrefetch;
+                if (prefetch?.key === `${targetDestination.latitude},${targetDestination.longitude}`) {
+                    delete (globalThis as any).__voiceRoutePrefetch;
+                    navigationData = await prefetch.promise;
+                }
+
+                if (!navigationData) {
+                    navigationData = await navigationService.getNavigation({
+                        origin: [userLocation.lat, userLocation.lng],
+                        destination: [targetDestination.latitude, targetDestination.longitude],
+                        costing: currentCosting,
+                        waypoints: waypoints.length > 0
+                            ? waypoints.map(wp => [wp.latitude, wp.longitude] as [number, number])
+                            : undefined,
+                    });
+                }
 
                 const legs = navigationData?.data?.trip?.legs;
                 if (!legs || legs.length === 0) {
@@ -529,7 +594,7 @@ export const useNavigation = (
             totalRouteDistance.current = route.distance;
             totalRouteDuration.current = route.duration;
 
-            currentDestination.current = selectedDestination;
+            currentDestination.current = targetDestination;
             setShowRoutePreview(false);
 
             const initialGeoJSON = {
@@ -656,6 +721,7 @@ export const useNavigation = (
         setIsNavigating(false);
         isNavigatingRef.current = false;
 
+        voiceNavigationService.stopSpeaking();
         voiceNavigationService.clearCache();
 
         stopLocationTracking();
@@ -676,6 +742,7 @@ export const useNavigation = (
         setAllRouteOptions([]);
         setSelectedRouteIndex(0);
         setAlternativeRoutesGeoJSON([]);
+        previewRouteCacheRef.current.clear();
         setCurrentInstruction('');
         setRemainingDistance(0);
         setRemainingTime(0);
@@ -710,6 +777,7 @@ export const useNavigation = (
         setAllRouteOptions([]);
         setSelectedRouteIndex(0);
         setAlternativeRoutesGeoJSON([]);
+        previewRouteCacheRef.current.clear();
 
         setCurrentInstruction('');
         setRemainingDistance(0);

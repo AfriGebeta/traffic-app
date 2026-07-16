@@ -101,7 +101,14 @@
       ],
       "expo-secure-store",
       "@react-native-firebase/app",
-      "@react-native-firebase/app-check"
+      "@react-native-firebase/app-check",
+      [
+        "react-native-audio-api",
+        {
+          "iosBackgroundMode": false,
+          "androidForegroundService": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

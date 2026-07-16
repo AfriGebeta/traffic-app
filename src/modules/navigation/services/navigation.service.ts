@@ -8,6 +8,10 @@ import type { RouteSegment } from '../../taxi/types/taxi.types';
 import { calculateDistance } from '../utils/navigationUtils';
 import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 
+const NAVIGATION_CACHE_TTL_MS = 2 * 60 * 1000;
+const navigationCache = new Map<string, { timestamp: number; data: NavigationResponse }>();
+const navigationInFlight = new Map<string, Promise<NavigationResponse | null>>();
+
 export const navigationService = {
     async geocodePlace(placeName: string): Promise<GeocodingPlace[]> {
         const response = await apiService.post<{ response: any[] }>('/api/navigation/request-geocoding', {
@@ -125,13 +129,35 @@ export const navigationService = {
             payload.alternative = "t";
         }
 
-        const response = await apiService.post<NavigationResponse>('/api/navigation/request-navigation', payload);
+        const cacheKey = JSON.stringify(payload);
 
-        if (response.error || !response.data) {
-            return null;
+        const cached = navigationCache.get(cacheKey);
+        if (cached && Date.now() - cached.timestamp < NAVIGATION_CACHE_TTL_MS) {
+            return cached.data;
         }
 
-        return response.data;
+        const inFlight = navigationInFlight.get(cacheKey);
+        if (inFlight) {
+            return inFlight;
+        }
+
+        const requestPromise = (async () => {
+            const response = await apiService.post<NavigationResponse>('/api/navigation/request-navigation', payload);
+
+            if (response.error || !response.data) {
+                return null;
+            }
+
+            navigationCache.set(cacheKey, { timestamp: Date.now(), data: response.data });
+            return response.data;
+        })();
+
+        navigationInFlight.set(cacheKey, requestPromise);
+        try {
+            return await requestPromise;
+        } finally {
+            navigationInFlight.delete(cacheKey);
+        }
     },
 
     //taxi navigation helpers

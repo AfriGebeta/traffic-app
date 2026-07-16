@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../../shared/theme/colors';
+import { useTheme } from '../../../shared/theme/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 
@@ -68,6 +69,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
     const [distance, setDistance] = useState<number>(0);
     const insets = useSafeAreaInsets();
     const { t } = useTranslation();
+    const { colors: theme } = useTheme();
 
     useEffect(() => {
         if (userLocation) {
@@ -119,7 +121,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                 <View className="absolute -right-0.5" style={{ top: '100%' }}>
                     <View
                         style={{
-                            backgroundColor: '#fff',
+                            backgroundColor: theme.surface,
                             borderTopLeftRadius: 0,
                             borderTopRightRadius: 0,
                             borderBottomLeftRadius: 12,

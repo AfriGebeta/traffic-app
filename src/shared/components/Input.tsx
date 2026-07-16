@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { Text, TextInput, TextInputProps, TouchableOpacity, View } from 'react-native';
 import { colors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 
 interface InputProps extends TextInputProps {
     label?: string;
@@ -25,21 +26,24 @@ export const Input: React.FC<InputProps> = ({
 }) => {
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
+    const { colors: theme, isDark } = useTheme();
+
+    const restingBackground = isDark ? theme.surface : colors.gray[50];
 
     const getBorderStyle = () => {
         if (isFocused) {
-            return { borderColor: colors.primary.main, backgroundColor: colors.white };
+            return { borderColor: theme.primary, backgroundColor: isDark ? theme.surface : colors.white };
         }
         if (error) {
-            return { borderColor: colors.error.main, backgroundColor: colors.gray[50] };
+            return { borderColor: theme.error, backgroundColor: restingBackground };
         }
-        return { borderColor: colors.gray[200], backgroundColor: colors.gray[50] };
+        return { borderColor: theme.border, backgroundColor: restingBackground };
     };
 
     return (
         <View className={label || error ? "mb-4" : ""}>
             {label && (
-                <Text className="mb-2 text-sm font-semibold text-gray-700">
+                <Text className="mb-2 text-sm font-semibold" style={{ color: theme.textPrimary }}>
                     {label}
                 </Text>
             )}
@@ -56,11 +60,12 @@ export const Input: React.FC<InputProps> = ({
                     />
                 )}
                 <TextInput
-                    className={`flex-1 text-lg font-bold text-black py-0 ${className || ''}`}
+                    className={`flex-1 text-lg font-bold py-0 ${className || ''}`}
+                    style={{ color: theme.textPrimary }}
                     secureTextEntry={secureTextEntry && !isPasswordVisible}
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
-                    placeholderTextColor={colors.gray[500]}
+                    placeholderTextColor={theme.textSecondary}
                     {...props}
                 />
                 {showClearButton && props.value && (
@@ -71,7 +76,7 @@ export const Input: React.FC<InputProps> = ({
                         <Ionicons
                             name="close"
                             size={20}
-                            color="#9CA3AF"
+                            color={theme.textSecondary}
                         />
                     </TouchableOpacity>
                 )}
@@ -83,7 +88,7 @@ export const Input: React.FC<InputProps> = ({
                         <Ionicons
                             name={isPasswordVisible ? 'eye-off' : 'eye'}
                             size={20}
-                            color="#6B7280"
+                            color={theme.textSecondary}
                         />
                     </TouchableOpacity>
                 )}
