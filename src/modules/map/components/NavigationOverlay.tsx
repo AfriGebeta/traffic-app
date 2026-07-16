@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeepAwake } from 'expo-keep-awake';
 import { colors } from '../../../shared/theme/colors';
+import { useTheme } from '../../../shared/theme/ThemeContext';
 import NavigationDirectionBackground from '../../../../assets/images/navigation-direction-background.svg';
 
 const NAV_GREEN = '#1E5438';
@@ -72,6 +73,7 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
 }) => {
     useKeepAwake();
     const insets = useSafeAreaInsets();
+    const { colors: theme, isDark } = useTheme();
     const directionIcon = getDirectionIcon(currentInstruction);
 
     const getETA = () => {
@@ -91,8 +93,9 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
             {isRecalculating && (
                 <View className="items-center mb-3">
                     <View
-                        className="flex-row items-center bg-white rounded-full"
+                        className="flex-row items-center rounded-full"
                         style={{
+                            backgroundColor: theme.surface,
                             paddingVertical: 12,
                             paddingHorizontal: 22,
                             shadowColor: '#000',
@@ -105,7 +108,7 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                         <ActivityIndicator size="small" color="#0F9D58" />
                         <Text
                             className="font-semibold ml-2"
-                            style={{ color: '#1F2937', fontSize: 16 }}
+                            style={{ color: theme.textPrimary, fontSize: 16 }}
                         >
                             Recalculating route
                         </Text>
@@ -135,7 +138,7 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                                 width: 48,
                                 height: 48,
                                 borderRadius: 24,
-                                backgroundColor: '#fff',
+                                backgroundColor: theme.surface,
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 overflow: 'hidden',
@@ -161,7 +164,7 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                             width: 52,
                             height: 52,
                             borderRadius: 26,
-                            backgroundColor: '#fff',
+                            backgroundColor: theme.surface,
                             alignItems: 'center',
                             justifyContent: 'center',
                             shadowColor: '#000',
@@ -171,10 +174,10 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                             elevation: 4,
                         }}
                     >
-                        <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827' }}>
+                        <Text style={{ fontSize: 16, fontWeight: '700', color: theme.textPrimary }}>
                             {currentSpeed}
                         </Text>
-                        <Text style={{ fontSize: 9, color: '#6B7280' }}>km/h</Text>
+                        <Text style={{ fontSize: 9, color: theme.textSecondary }}>km/h</Text>
                     </View>
                 </View>
 
@@ -202,7 +205,7 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                 <View style={{ alignItems: 'center', marginBottom: 8 }}>
                     <View
                         style={{
-                            backgroundColor: '#fff',
+                            backgroundColor: theme.surface,
                             borderRadius: 20,
                             paddingHorizontal: 16,
                             paddingVertical: 6,
@@ -225,8 +228,9 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                     <TouchableOpacity
                         activeOpacity={0.85}
                         onPress={onRecenter}
-                        className="flex-row items-center bg-white rounded-full"
+                        className="flex-row items-center rounded-full"
                         style={{
+                            backgroundColor: theme.surface,
                             paddingVertical: 12,
                             paddingHorizontal: 22,
                             shadowColor: '#000',
@@ -239,7 +243,7 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                         <Ionicons name="navigate" size={20} color="#0F9D58" />
                         <Text
                             className="font-semibold ml-2"
-                            style={{ color: '#1F2937', fontSize: 16 }}
+                            style={{ color: theme.textPrimary, fontSize: 16 }}
                         >
                             Re-center
                         </Text>
@@ -249,7 +253,7 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
 
             <View
                 style={{
-                    backgroundColor: '#fff',
+                    backgroundColor: theme.surface,
                     borderTopLeftRadius: 20,
                     borderTopRightRadius: 20,
                     paddingHorizontal: 20,
@@ -266,7 +270,7 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                                 right: 0,
                                 height: 4,
                                 borderRadius: 2,
-                                backgroundColor: '#E5E7EB',
+                                backgroundColor: theme.border,
                             }}
                         />
                         <View
@@ -311,13 +315,13 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                     </View>
 
                     <View style={{ flex: 1, alignItems: 'center' }}>
-                        <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827' }}>
+                        <Text style={{ fontSize: 18, fontWeight: '700', color: theme.textPrimary }}>
                             {remainingTime ? formatTime(remainingTime) : '-- min'}
                             {'  ·  '}
                             <Text style={{ fontSize: 16, fontWeight: '600' }}>ETA {getETA()}</Text>
                         </Text>
                         {destinationCoords && (
-                            <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>
+                            <Text style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>
                                 {destinationCoords.lat.toFixed(5)}, {destinationCoords.lng.toFixed(5)}
                             </Text>
                         )}
@@ -329,7 +333,7 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                             width: 48,
                             height: 48,
                             borderRadius: 24,
-                            backgroundColor: '#fff',
+                            backgroundColor: theme.surface,
                             borderWidth: 2,
                             borderColor: NAV_GREEN,
                             alignItems: 'center',

@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { colors } from '../../../shared/theme/colors';
+import { useTheme } from '../../../shared/theme/ThemeContext';
 import type { GeocodingPlace } from '../types/navigation.types';
 import { SavePlaceModal } from '../../places/components/SavePlaceModal';
 import { placeService } from '../../places/services/place.service';
@@ -77,6 +78,7 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
 }) => {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
+    const { colors: theme, isDark } = useTheme();
     const [showSaveModal, setShowSaveModal] = useState(false);
     const [savedPlace, setSavedPlace] = useState<SavedPlace | null>(null);
     const router = useRouter();
@@ -207,14 +209,15 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
                 alignSelf: 'center',
             }}
         >
-            <BlurView intensity={100} tint="light" style={{ flex: 1, borderRadius: 24 }}>
-                <View style={{ backgroundColor: 'rgba(255, 255, 255, 0.4)', borderRadius: 24 }}>
+            <BlurView intensity={100} tint={isDark ? 'dark' : 'light'} style={{ flex: 1, borderRadius: 24 }}>
+                <View style={{ backgroundColor: isDark ? 'rgba(30, 30, 30, 0.6)' : 'rgba(255, 255, 255, 0.4)', borderRadius: 24 }}>
                     <View className="px-5 pt-4 flex-row items-center justify-end">
                         <TouchableOpacity
                             onPress={onClose}
-                            className="w-9 h-9 items-center justify-center rounded-full bg-gray-100"
+                            className="w-9 h-9 items-center justify-center rounded-full"
+                            style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : '#F3F4F6' }}
                         >
-                            <Ionicons name="close" size={22} color="#374151" />
+                            <Ionicons name="close" size={22} color={theme.textPrimary} />
                         </TouchableOpacity>
                     </View>
 
@@ -258,11 +261,11 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
                             </TouchableOpacity>
                         </View>
 
-                        <Text className="text-xl font-bold text-gray-900 mb-1" numberOfLines={2}>
+                        <Text className="text-xl font-bold mb-1" style={{ color: theme.textPrimary }} numberOfLines={2}>
                             {place.name}
                         </Text>
 
-                        <Text className="text-xs text-gray-600 mb-1" numberOfLines={1}>
+                        <Text className="text-xs mb-1" style={{ color: theme.textSecondary }} numberOfLines={1}>
                             {categoryLabel}
                             {locationLine ? ` • ${locationLine}` : ''}
                         </Text>

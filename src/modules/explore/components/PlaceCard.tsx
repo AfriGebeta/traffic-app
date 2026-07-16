@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../../../shared/theme/colors';
+import { useTheme } from '../../../shared/theme/ThemeContext';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 
 interface PlaceCardProps {
@@ -10,29 +10,34 @@ interface PlaceCardProps {
 }
 
 export const PlaceCard: React.FC<PlaceCardProps> = ({ place, onPress }) => {
+    const { colors: theme, isDark } = useTheme();
+    const imagePlaceholder = isDark ? theme.border : '#E5E7EB';
+
     return (
         <TouchableOpacity
             onPress={() => onPress(place)}
-            className="bg-white rounded-xl mr-3 border border-gray-200 w-52 overflow-hidden"
+            className="rounded-xl mr-3 w-52 overflow-hidden"
+            style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
         >
             {place.image ? (
                 <Image
                     source={{ uri: place.image }}
-                    className="w-full h-24 bg-gray-200"
+                    className="w-full h-24"
+                    style={{ backgroundColor: imagePlaceholder }}
                     resizeMode="cover"
                 />
             ) : (
-                <View className="w-full h-24 bg-gray-200 items-center justify-center">
-                    <Ionicons name="image-outline" size={32} color="#9CA3AF" />
+                <View className="w-full h-24 items-center justify-center" style={{ backgroundColor: imagePlaceholder }}>
+                    <Ionicons name="image-outline" size={32} color={theme.textSecondary} />
                 </View>
             )}
 
             <View className="p-3">
-                <Text className="text-sm font-semibold text-gray-900 mb-1" numberOfLines={2}>
+                <Text className="text-sm font-semibold mb-1" style={{ color: theme.textPrimary }} numberOfLines={2}>
                     {place.name}
                 </Text>
                 {(place.City || place.Country) && (
-                    <Text className="text-xs text-gray-600" numberOfLines={1}>
+                    <Text className="text-xs" style={{ color: theme.textSecondary }} numberOfLines={1}>
                         {[place.City, place.Country].filter(Boolean).join(', ')}
                     </Text>
                 )}

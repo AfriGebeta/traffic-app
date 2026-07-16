@@ -6,6 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Button } from '../../../shared/components';
 import { useIncidentReport } from '../hooks/useIncidentReport';
 import { colors } from '../../../shared/theme/colors';
+import { useTheme } from '../../../shared/theme/ThemeContext';
 import { showToast } from '../../../shared/utils/toast';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { getIncidentTranslationKey } from '../utils/incidentTranslations';
@@ -16,6 +17,7 @@ export default function IncidentReportScreen() {
     const { t } = useTranslation();
     const router = useRouter();
     const params = useLocalSearchParams();
+    const { colors: theme, isDark } = useTheme();
     const incidentTypeName = params.typeName as string;
     const passedLat = params.lat ? parseFloat(params.lat as string) : null;
     const passedLng = params.lng ? parseFloat(params.lng as string) : null;
@@ -124,7 +126,7 @@ export default function IncidentReportScreen() {
     const color = colors.primary.main;
 
     return (
-        <ScrollView className="flex-1 bg-white">
+        <ScrollView className="flex-1" style={{ backgroundColor: theme.background }}>
             <View className="px-6 pt-12 pb-6">
                 <View
                     className="w-16 h-16 rounded-full items-center justify-center mb-4"
@@ -133,27 +135,27 @@ export default function IncidentReportScreen() {
                     <Ionicons name="warning" size={32} color={color} />
                 </View>
 
-                <Text className="text-3xl font-bold text-gray-800 mb-2">
+                <Text className="text-3xl font-bold mb-2" style={{ color: theme.textPrimary }}>
                     {t('report')}: {t(getIncidentTranslationKey(iconName))}
                 </Text>
 
                 {location ? (
-                    <Text className="text-gray-500 mb-6">
+                    <Text className="mb-6" style={{ color: theme.textSecondary }}>
                         {t('location')}: {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
                     </Text>
                 ) : (
-                    <Text className="text-gray-400 mb-6">{t('getting-location')}</Text>
+                    <Text className="mb-6" style={{ color: theme.textSecondary }}>{t('getting-location')}</Text>
                 )}
 
-                <Text className="text-sm font-semibold text-gray-700 mb-2">
+                <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
                     {t('description')}
                 </Text>
 
                 <TextInput
-                    className="bg-gray-50 border-2 rounded-xl p-4 text-base text-gray-800 min-h-32 mb-4"
-                    style={{ borderColor: colors.gray[200], textAlignVertical: 'top' }}
+                    className="border-2 rounded-xl p-4 text-base min-h-32 mb-4"
+                    style={{ backgroundColor: theme.surface, borderColor: theme.border, color: theme.textPrimary, textAlignVertical: 'top' }}
                     placeholder={t('describe-situation')}
-                    placeholderTextColor={colors.gray[500]}
+                    placeholderTextColor={theme.textSecondary}
                     value={description}
                     onChangeText={setDescription}
                     multiline
@@ -161,58 +163,60 @@ export default function IncidentReportScreen() {
                     maxLength={500}
                 />
 
-                <Text className="text-gray-400 text-xs mb-4">
+                <Text className="text-xs mb-4" style={{ color: theme.textSecondary }}>
                     {description.length}/500 {t('characters')}
                 </Text>
 
-                <Text className="text-sm font-semibold text-gray-700 mb-2">
+                <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
                     {t('direction-optional')}
                 </Text>
 
                 <TextInput
-                    className="bg-gray-50 border-2 rounded-xl p-4 text-base text-gray-800 mb-6"
-                    style={{ borderColor: colors.gray[200] }}
+                    className="border-2 rounded-xl p-4 text-base mb-6"
+                    style={{ backgroundColor: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
                     placeholder={t('north-south')}
-                    placeholderTextColor={colors.gray[500]}
+                    placeholderTextColor={theme.textSecondary}
                     value={direction}
                     onChangeText={setDirection}
                     maxLength={50}
                 />
 
-                <Text className="text-sm font-semibold text-gray-700 mb-2">
+                <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
                     {t('photos')} ({t('optional')})
                 </Text>
 
                 <View className="flex-row gap-3 mb-3">
                     <TouchableOpacity
-                        className="bg-white border-2 border-dashed border-gray-300 rounded-2xl w-28 h-28 items-center justify-center active:border-orange-300 active:bg-orange-50"
+                        className="rounded-2xl w-28 h-28 items-center justify-center"
+                        style={{ backgroundColor: theme.surface, borderWidth: 2, borderStyle: 'dashed', borderColor: theme.border }}
                         onPress={takePhoto}
                         disabled={uploading}
                         activeOpacity={0.7}
                     >
-                        <View className="bg-gray-100 rounded-full p-3 mb-2">
-                            <Ionicons name="camera" size={24} color="#6B7280" />
+                        <View className="rounded-full p-3 mb-2" style={{ backgroundColor: isDark ? theme.background : '#F3F4F6' }}>
+                            <Ionicons name="camera" size={24} color={theme.textSecondary} />
                         </View>
-                        <Text className="text-xs font-medium text-gray-600">{t('camera')}</Text>
+                        <Text className="text-xs font-medium" style={{ color: theme.textSecondary }}>{t('camera')}</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        className="bg-white border-2 border-dashed border-gray-300 rounded-2xl w-28 h-28 items-center justify-center active:border-orange-300 active:bg-orange-50"
+                        className="rounded-2xl w-28 h-28 items-center justify-center"
+                        style={{ backgroundColor: theme.surface, borderWidth: 2, borderStyle: 'dashed', borderColor: theme.border }}
                         onPress={pickImage}
                         disabled={uploading}
                         activeOpacity={0.7}
                     >
-                        <View className="bg-gray-100 rounded-full p-3 mb-2">
-                            <Ionicons name="images" size={24} color="#6B7280" />
+                        <View className="rounded-full p-3 mb-2" style={{ backgroundColor: isDark ? theme.background : '#F3F4F6' }}>
+                            <Ionicons name="images" size={24} color={theme.textSecondary} />
                         </View>
-                        <Text className="text-xs font-medium text-gray-600">{t('gallery')}</Text>
+                        <Text className="text-xs font-medium" style={{ color: theme.textSecondary }}>{t('gallery')}</Text>
                     </TouchableOpacity>
                 </View>
 
                 {uploading && (
-                    <View className="flex-row items-center mb-3 bg-blue-50 rounded-xl p-3">
-                        <ActivityIndicator size="small" color="#3B82F6" />
-                        <Text className="text-sm text-blue-700 ml-2 font-medium">{t('uploading')}</Text>
+                    <View className="flex-row items-center mb-3 rounded-xl p-3" style={{ backgroundColor: theme.blueMuted }}>
+                        <ActivityIndicator size="small" color={theme.blue} />
+                        <Text className="text-sm ml-2 font-medium" style={{ color: theme.blue }}>{t('uploading')}</Text>
                     </View>
                 )}
 

@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../../../shared/theme/colors';
+import { useTheme } from '../../../shared/theme/ThemeContext';
 import { PlaceCard } from './PlaceCard';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 import type { ExploreCategoryId } from '../types/explore.types';
@@ -33,6 +34,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
     isExpanded = false,
 }) => {
     const { t } = useTranslation();
+    const { colors: theme } = useTheme();
     const displayPlaces = isExpanded ? places : places.slice(0, 5);
 
     if (places.length === 0) {
@@ -43,7 +45,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
         <View className="mb-6">
             <View className="flex-row items-center justify-between mb-3">
                 <View className="flex-row items-center flex-1">
-                    <Text className="text-lg font-bold text-gray-900">
+                    <Text className="text-lg font-bold" style={{ color: theme.textPrimary }}>
                         {t(`${categoryId}-nearby`)}
                     </Text>
                 </View>

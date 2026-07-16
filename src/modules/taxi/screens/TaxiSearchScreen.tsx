@@ -7,12 +7,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { taxiService } from '../services/taxi.service';
 import { TaxiNode, TaxiNavigationRequest } from '../types/taxi.types';
+import { useTheme } from '../../../shared/theme/ThemeContext';
 
 export default function TaxiSearchScreen() {
     const router = useRouter();
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { userLocation } = useUserLocation();
+    const { colors: theme, isDark } = useTheme();
 
     const [originName, setOriginName] = useState('');
     const [destinationName, setDestinationName] = useState('');
@@ -231,46 +233,49 @@ export default function TaxiSearchScreen() {
     };
 
     return (
-        <View className="flex-1 bg-gray-50" style={{ paddingTop: insets.top }}>
-            <View className="px-4 py-6 bg-white border-b border-gray-200">
+        <View className="flex-1" style={{ paddingTop: insets.top, backgroundColor: theme.background }}>
+            <View className="px-4 py-6" style={{ backgroundColor: theme.background, borderBottomWidth: 1, borderBottomColor: theme.border }}>
                 <View className="flex-row items-center mb-2">
                     <TouchableOpacity onPress={() => router.back()} className="mr-4" activeOpacity={0.7}>
                         <Ionicons name="arrow-back" size={28} color="#FFA500" />
                     </TouchableOpacity>
-                    <Text className="text-2xl font-bold text-gray-900">{t('taxi-navigation')}</Text>
+                    <Text className="text-2xl font-bold" style={{ color: theme.textPrimary }}>{t('taxi-navigation')}</Text>
                 </View>
-                <Text className="text-gray-600 mt-2">{t('find-taxi-route-to-destination')}</Text>
+                <Text className="mt-2" style={{ color: theme.textSecondary }}>{t('find-taxi-route-to-destination')}</Text>
             </View>
 
             <ScrollView className="flex-1 p-4" keyboardShouldPersistTaps="handled">
-                <View className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <View className="rounded-2xl p-6 shadow-sm" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
                     <View className="mb-4">
-                        <Text className="text-gray-700 font-semibold mb-2">{t('from')}</Text>
+                        <Text className="font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('from')}</Text>
 
                         {!selectedOriginCoords && !isSelectingOrigin ? (
                             <TouchableOpacity
-                                className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex-row items-center justify-between"
+                                className="rounded-xl px-4 py-3 flex-row items-center justify-between"
+                                style={{ backgroundColor: isDark ? theme.greenMuted : '#F0FDF4', borderWidth: 1, borderColor: theme.green }}
                                 onPress={() => {
                                     setIsSelectingOrigin(true);
                                 }}
                                 activeOpacity={0.7}
                             >
                                 <View className="flex-row items-center flex-1">
-                                    <Ionicons name="location" size={20} color="#10B981" />
-                                    <Text className="text-green-700 ml-2 flex-1">
+                                    <Ionicons name="location" size={20} color={theme.green} />
+                                    <Text className="ml-2 flex-1" style={{ color: theme.green }}>
                                         {userLocation
                                             ? t('current-location')
                                             : t('waiting-for-location')}
                                     </Text>
                                 </View>
-                                <Text className="text-green-600 text-xs font-semibold">
+                                <Text className="text-xs font-semibold" style={{ color: theme.green }}>
                                     {t('change')}
                                 </Text>
                             </TouchableOpacity>
                         ) : (
                             <View>
                                 <TextInput
-                                    className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 mb-2"
+                                    className="rounded-xl px-4 py-3 mb-2"
+                                    style={{ backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border, color: theme.textPrimary }}
+                                    placeholderTextColor={theme.textSecondary}
                                     placeholder={t('enter-origin-station')}
                                     value={originName}
                                     onChangeText={(text) => {
@@ -281,9 +286,9 @@ export default function TaxiSearchScreen() {
                                 />
 
                                 {filteredOriginStations.length > 0 && isSelectingOrigin && (
-                                    <View className="mb-2 bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
-                                        <View className="bg-blue-50 px-4 py-2 border-b border-blue-200">
-                                            <Text className="text-blue-700 font-semibold text-sm">
+                                    <View className="mb-2 rounded-xl overflow-hidden" style={{ backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border }}>
+                                        <View className="px-4 py-2" style={{ backgroundColor: theme.blueMuted, borderBottomWidth: 1, borderBottomColor: theme.blue }}>
+                                            <Text className="font-semibold text-sm" style={{ color: theme.blue }}>
                                                 {t('available-stations')}
                                             </Text>
                                         </View>
@@ -291,12 +296,13 @@ export default function TaxiSearchScreen() {
                                             {filteredOriginStations.slice(0, 10).map((station) => (
                                                 <TouchableOpacity
                                                     key={station.id}
-                                                    className="px-4 py-3 border-b border-gray-100"
+                                                    className="px-4 py-3"
+                                                    style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}
                                                     onPress={() => handleStationSelect(station)}
                                                 >
-                                                    <Text className="text-gray-900 font-semibold">{station.name}</Text>
+                                                    <Text className="font-semibold" style={{ color: theme.textPrimary }}>{station.name}</Text>
                                                     {station.routeName && (
-                                                        <Text className="text-gray-500 text-xs mt-1">
+                                                        <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>
                                                             {station.routeName}
                                                         </Text>
                                                     )}
@@ -311,8 +317,8 @@ export default function TaxiSearchScreen() {
                                     onPress={handleUseMyLocation}
                                     activeOpacity={0.7}
                                 >
-                                    <Ionicons name="locate" size={16} color="#10B981" />
-                                    <Text className="text-green-600 text-sm font-semibold ml-2">
+                                    <Ionicons name="locate" size={16} color={theme.green} />
+                                    <Text className="text-sm font-semibold ml-2" style={{ color: theme.green }}>
                                         {t('use-my-location')}
                                     </Text>
                                 </TouchableOpacity>
@@ -321,9 +327,11 @@ export default function TaxiSearchScreen() {
                     </View>
 
                     <View className="mb-4">
-                        <Text className="text-gray-700 font-semibold mb-2">{t('to')} *</Text>
+                        <Text className="font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('to')} *</Text>
                         <TextInput
-                            className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900"
+                            className="rounded-xl px-4 py-3"
+                            style={{ backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border, color: theme.textPrimary }}
+                            placeholderTextColor={theme.textSecondary}
                             placeholder={t('enter-destination-name')}
                             value={destinationName}
                             onChangeText={(text) => {
@@ -334,9 +342,9 @@ export default function TaxiSearchScreen() {
                         />
 
                         {filteredStations.length > 0 && !isSelectingOrigin && (
-                            <View className="mt-2 bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
-                                <View className="bg-blue-50 px-4 py-2 border-b border-blue-200">
-                                    <Text className="text-blue-700 font-semibold text-sm">
+                            <View className="mt-2 rounded-xl overflow-hidden" style={{ backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border }}>
+                                <View className="px-4 py-2" style={{ backgroundColor: theme.blueMuted, borderBottomWidth: 1, borderBottomColor: theme.blue }}>
+                                    <Text className="font-semibold text-sm" style={{ color: theme.blue }}>
                                         {t('available-stations')}
                                     </Text>
                                 </View>
@@ -344,12 +352,13 @@ export default function TaxiSearchScreen() {
                                     {filteredStations.slice(0, 10).map((station) => (
                                         <TouchableOpacity
                                             key={station.id}
-                                            className="px-4 py-3 border-b border-gray-100"
+                                            className="px-4 py-3"
+                                            style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}
                                             onPress={() => handleStationSelect(station)}
                                         >
-                                            <Text className="text-gray-900 font-semibold">{station.name}</Text>
+                                            <Text className="font-semibold" style={{ color: theme.textPrimary }}>{station.name}</Text>
                                             {station.routeName && (
-                                                <Text className="text-gray-500 text-xs mt-1">
+                                                <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>
                                                     {station.routeName}
                                                 </Text>
                                             )}
@@ -360,21 +369,23 @@ export default function TaxiSearchScreen() {
                         )}
 
                         {loadingStations && (
-                            <Text className="text-gray-500 text-sm mt-2">{t('loading-stations')}</Text>
+                            <Text className="text-sm mt-2" style={{ color: theme.textSecondary }}>{t('loading-stations')}</Text>
                         )}
                     </View>
 
                     <TouchableOpacity
-                        className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-4 flex-row items-center justify-center mb-6"
+                        className="rounded-xl p-4 flex-row items-center justify-center mb-6"
+                        style={{ backgroundColor: theme.surface, borderWidth: 2, borderStyle: 'dashed', borderColor: theme.border }}
                         onPress={handleMapPicker}
                         activeOpacity={0.7}
                     >
                         <Ionicons name="map" size={24} color="#FFA500" />
-                        <Text className="text-gray-600 ml-2">{t('or-pick-on-map')}</Text>
+                        <Text className="ml-2" style={{ color: theme.textSecondary }}>{t('or-pick-on-map')}</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        className={`py-4 rounded-xl ${loading || (!selectedOriginCoords && !userLocation) ? 'bg-gray-400' : 'bg-orange-500'}`}
+                        className="py-4 rounded-xl"
+                        style={{ backgroundColor: loading || (!selectedOriginCoords && !userLocation) ? theme.border : '#F97316' }}
                         onPress={handleSearch}
                         disabled={loading || (!selectedOriginCoords && !userLocation)}
                         activeOpacity={0.7}

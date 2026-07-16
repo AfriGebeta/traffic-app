@@ -6,6 +6,7 @@ import Animated, {
     useAnimatedStyle,
     withSpring,
 } from 'react-native-reanimated';
+import { useTheme } from '../theme/ThemeContext';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const MIN_HEIGHT = 200;
@@ -17,6 +18,7 @@ interface BottomSheetProps {
 }
 
 export const BottomSheet: React.FC<BottomSheetProps> = React.memo(({ children, expandWhenOpen = false }) => {
+    const { colors: theme, isDark } = useTheme();
     const translateY = useSharedValue(SCREEN_HEIGHT - MIN_HEIGHT);
     const context = useSharedValue({ y: 0 });
 
@@ -81,9 +83,9 @@ export const BottomSheet: React.FC<BottomSheetProps> = React.memo(({ children, e
 
     return (
         <GestureDetector gesture={gesture}>
-            <Animated.View style={[styles.container, animatedStyle]}>
+            <Animated.View style={[styles.container, { backgroundColor: theme.background }, animatedStyle]}>
                 <View style={styles.handle}>
-                    <View style={styles.handleBar} />
+                    <View style={[styles.handleBar, isDark && { backgroundColor: theme.border }]} />
                 </View>
                 <View style={styles.content}>{children}</View>
             </Animated.View>
@@ -98,6 +100,7 @@ const styles = StyleSheet.create({
         right: 0,
         bottom: 0,
         height: MAX_HEIGHT,
+        zIndex: 30,
         backgroundColor: 'white',
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
@@ -105,7 +108,7 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: -2 },
         shadowOpacity: 0.25,
         shadowRadius: 8,
-        elevation: 5,
+        elevation: 30,
     },
     handle: {
         alignItems: 'center',

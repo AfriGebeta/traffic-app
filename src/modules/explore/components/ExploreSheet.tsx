@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../../shared/theme/colors';
+import { useTheme } from '../../../shared/theme/ThemeContext';
 import { CategorySection } from './CategorySection';
 import { CategorySkeleton } from './CategorySkeleton';
 import { useExploreCategories } from '../hooks/useExploreCategories';
@@ -25,6 +26,7 @@ export const ExploreSheet: React.FC<ExploreSheetProps> = ({
 }) => {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
+    const { colors: theme } = useTheme();
     const { isLoading, categories, error, fetchCategories, fetchMorePlaces } =
         useExploreCategories(userLocation);
     const [expandedCategories, setExpandedCategories] = useState<Set<ExploreCategoryId>>(new Set());
@@ -57,21 +59,21 @@ export const ExploreSheet: React.FC<ExploreSheetProps> = ({
         <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
             <Pressable className="flex-1 justify-end bg-black/50" onPress={onClose}>
                 <Pressable
-                    className="bg-white rounded-t-3xl max-h-[85%]"
-                    style={{ paddingBottom: insets.bottom }}
+                    className="rounded-t-3xl max-h-[85%]"
+                    style={{ paddingBottom: insets.bottom, backgroundColor: theme.background }}
                     onPress={(e) => e.stopPropagation()}
                 >
-                    <View className="p-6 border-b border-gray-200">
-                        <View className="w-12 h-1 bg-gray-300 rounded-full self-center mb-4" />
+                    <View className="p-6" style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}>
+                        <View className="w-12 h-1 rounded-full self-center mb-4" style={{ backgroundColor: theme.border }} />
                         <View className="flex-row items-center justify-between">
                             <View className="flex-row items-center">
                                 <Ionicons name="compass" size={24} color={colors.primary.main} />
-                                <Text className="text-2xl font-bold text-gray-900 ml-2">
+                                <Text className="text-2xl font-bold ml-2" style={{ color: theme.textPrimary }}>
                                     {t('explore-nearby')}
                                 </Text>
                             </View>
                             <Pressable onPress={onClose} className="p-2">
-                                <Ionicons name="close" size={24} color="#6B7280" />
+                                <Ionicons name="close" size={24} color={theme.textSecondary} />
                             </Pressable>
                         </View>
                     </View>
@@ -91,8 +93,8 @@ export const ExploreSheet: React.FC<ExploreSheetProps> = ({
                             </>
                         ) : error ? (
                             <View className="py-20 items-center">
-                                <Ionicons name="alert-circle" size={48} color="#EF4444" />
-                                <Text className="text-gray-600 mt-4">{error}</Text>
+                                <Ionicons name="alert-circle" size={48} color={theme.error} />
+                                <Text className="mt-4" style={{ color: theme.textSecondary }}>{error}</Text>
                             </View>
                         ) : (
                             <>

@@ -9,6 +9,7 @@ import { useVoiceNavigation } from '../../navigation/hooks/useVoiceNavigation';
 import { navigationService } from '../../navigation/services/navigation.service';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { colors } from '../../../shared/theme/colors';
+import { useTheme } from '../../../shared/theme/ThemeContext';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 
@@ -147,6 +148,7 @@ export default function AIAssistantScreen() {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { userLocation } = useUserLocation();
+    const { colors: theme, isDark } = useTheme();
 
     const dummyMapRef = useRef<GebetaMapRef | null>(null);
     const [navStarting, setNavStarting] = useState(false);
@@ -203,22 +205,22 @@ export default function AIAssistantScreen() {
     const isRecordingBlank = isRecording && !transcription && !assistantMessage && !showOptions;
 
     return (
-        <View className="flex-1 bg-white" style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
+        <View className="flex-1" style={{ paddingTop: insets.top, paddingBottom: insets.bottom, backgroundColor: theme.background }}>
             <View className="flex-row items-center px-4 py-4">
                 <TouchableOpacity
                     onPress={() => router.back()}
                     className="flex-row items-center"
                     activeOpacity={0.7}
                 >
-                    <Ionicons name="chevron-back" size={22} color="#111827" />
-                    <Text className="text-base text-gray-900 ml-1" style={{ fontFamily: 'PlusJakartaSans-Medium' }}>{t('welcome')}</Text>
+                    <Ionicons name="chevron-back" size={22} color={theme.textPrimary} />
+                    <Text className="text-base ml-1" style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Medium' }}>{t('welcome')}</Text>
                 </TouchableOpacity>
             </View>
 
             {navStarting ? (
                 <View className="flex-1 items-center justify-center px-8">
                     <ActivityIndicator size="large" color={colors.primary.main} />
-                    <Text className="text-base text-gray-600 mt-4" style={{ fontFamily: 'PlusJakartaSans-Medium' }}>{t('starting-navigation')}</Text>
+                    <Text className="text-base mt-4" style={{ color: theme.textSecondary, fontFamily: 'PlusJakartaSans-Medium' }}>{t('starting-navigation')}</Text>
                 </View>
             ) : isRecordingBlank ? (
                 <View className="flex-1 items-center justify-center px-8">
@@ -232,11 +234,11 @@ export default function AIAssistantScreen() {
                     <AiIcon width={100} height={106} />
 
                     <Text className="text-4xl text-center mt-6 leading-[44px]" style={{ fontFamily: 'PlusJakartaSans-ExtraBold' }}>
-                        <Text className="text-gray-900">{t('ai-greeting-part1')}</Text>
+                        <Text style={{ color: theme.textPrimary }}>{t('ai-greeting-part1')}</Text>
                         <Text style={{ color: '#FFA500' }}>{t('ai-greeting-highlight1')}</Text>
-                        <Text className="text-gray-900">{t('ai-greeting-part2')}</Text>
+                        <Text style={{ color: theme.textPrimary }}>{t('ai-greeting-part2')}</Text>
                         <Text style={{ color: '#FFA500' }}>{t('ai-greeting-highlight2')}</Text>
-                        <Text className="text-gray-900">{t('ai-greeting-part3')}</Text>
+                        <Text style={{ color: theme.textPrimary }}>{t('ai-greeting-part3')}</Text>
                     </Text>
                 </View>
             ) : (
@@ -246,22 +248,22 @@ export default function AIAssistantScreen() {
                     keyboardShouldPersistTaps="handled"
                 >
                     {transcription ? (
-                        <View className="self-end max-w-[85%] mb-3 px-4 py-3 rounded-2xl rounded-tr-sm bg-orange-50">
+                        <View className="self-end max-w-[85%] mb-3 px-4 py-3 rounded-2xl rounded-tr-sm" style={{ backgroundColor: theme.primaryMuted }}>
                             <Text className="text-xs mb-1" style={{ color: colors.primary.main, fontFamily: 'PlusJakartaSans-Medium' }}>
                                 {t('you-said')}
                             </Text>
-                            <Text className="text-base text-gray-800" style={{ fontFamily: 'PlusJakartaSans-Regular' }}>{transcription}</Text>
+                            <Text className="text-base" style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Regular' }}>{transcription}</Text>
                         </View>
                     ) : null}
 
                     {assistantMessage ? (
-                        <View className="self-start max-w-[90%] mb-3 px-4 py-3 rounded-2xl rounded-tl-sm bg-gray-50">
-                            <Text className="text-base text-gray-800 leading-6" style={{ fontFamily: 'PlusJakartaSans-Regular' }}>{assistantMessage}</Text>
+                        <View className="self-start max-w-[90%] mb-3 px-4 py-3 rounded-2xl rounded-tl-sm" style={{ backgroundColor: theme.surface }}>
+                            <Text className="text-base leading-6" style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Regular' }}>{assistantMessage}</Text>
                         </View>
                     ) : null}
 
                     {showOptions && disambiguationMessage ? (
-                        <Text className="text-sm text-gray-500 text-center my-2" style={{ fontFamily: 'PlusJakartaSans-Regular' }}>{disambiguationMessage}</Text>
+                        <Text className="text-sm text-center my-2" style={{ color: theme.textSecondary, fontFamily: 'PlusJakartaSans-Regular' }}>{disambiguationMessage}</Text>
                     ) : null}
 
                     {showOptions
@@ -269,7 +271,8 @@ export default function AIAssistantScreen() {
                               <TouchableOpacity
                                   key={option.id}
                                   onPress={() => handleOptionSelect(option.id)}
-                                  className="flex-row items-center p-4 mb-2 bg-gray-50 rounded-xl active:bg-gray-100"
+                                  className="flex-row items-center p-4 mb-2 rounded-xl"
+                                  style={{ backgroundColor: theme.surface }}
                                   activeOpacity={0.7}
                               >
                                   <View
@@ -279,14 +282,14 @@ export default function AIAssistantScreen() {
                                       <Ionicons name="location" size={20} color="white" />
                                   </View>
                                   <View className="flex-1">
-                                      <Text className="text-base text-gray-900" style={{ fontFamily: 'PlusJakartaSans-Medium' }}>{option.name}</Text>
+                                      <Text className="text-base" style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Medium' }}>{option.name}</Text>
                                       {option.lat != null && option.lng != null && (
-                                          <Text className="text-sm text-gray-500 mt-1" style={{ fontFamily: 'PlusJakartaSans-Regular' }}>
+                                          <Text className="text-sm mt-1" style={{ color: theme.textSecondary, fontFamily: 'PlusJakartaSans-Regular' }}>
                                               {option.lat.toFixed(6)}, {option.lng.toFixed(6)}
                                           </Text>
                                       )}
                                   </View>
-                                  <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+                                  <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
                               </TouchableOpacity>
                           ))
                         : null}
@@ -294,7 +297,7 @@ export default function AIAssistantScreen() {
                     {isProcessingVoice ? (
                         <View className="flex-row items-center self-start mb-3 px-4 py-3">
                             <ActivityIndicator size="small" color={colors.primary.main} />
-                            <Text className="text-sm text-gray-500 ml-2" style={{ fontFamily: 'PlusJakartaSans-Regular' }}>{t('processing')}</Text>
+                            <Text className="text-sm ml-2" style={{ color: theme.textSecondary, fontFamily: 'PlusJakartaSans-Regular' }}>{t('processing')}</Text>
                         </View>
                     ) : null}
                 </ScrollView>
@@ -324,7 +327,7 @@ export default function AIAssistantScreen() {
                         <Ionicons name={isRecording ? 'mic' : 'mic-outline'} size={30} color={isRecording ? 'white' : '#FFA500'} />
                     </TouchableOpacity>
                 </View>
-                <Text className="text-xs text-gray-400 mt-3" style={{ fontFamily: 'PlusJakartaSans-Regular' }}>
+                <Text className="text-xs mt-3" style={{ color: theme.textSecondary, fontFamily: 'PlusJakartaSans-Regular' }}>
                     {isProcessingVoice
                         ? t('processing')
                         : isRecording
