@@ -2,9 +2,12 @@ import { useState, useRef } from 'react';
 import { Audio } from 'expo-av';
 import { showToast } from '../../../shared/utils/toast';
 
+const METERING_FLOOR_DB = -60;
+
 export const useVoiceRecording = () => {
     const [isRecording, setIsRecording] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [meteringLevel, setMeteringLevel] = useState(0);
     const recordingRef = useRef<Audio.Recording | null>(null);
 
     const startRecording = async (): Promise<boolean> => {
@@ -23,6 +26,7 @@ export const useVoiceRecording = () => {
             });
 
             const recordingOptions = {
+                isMeteringEnabled: true,
                 android: {
                     extension: '.m4a',
                     outputFormat: Audio.AndroidOutputFormat.MPEG_4,
@@ -49,6 +53,19 @@ export const useVoiceRecording = () => {
 
             recordingRef.current = recording;
             setIsRecording(true);
+            setMeteringLevel(0);
+
+            recording.setProgressUpdateInterval(100);
+            recording.setOnRecordingStatusUpdate((recStatus) => {
+                if (typeof recStatus.metering === 'number') {
+                    const normalized = Math.min(
+                        1,
+                        Math.max(0, (recStatus.metering - METERING_FLOOR_DB) / -METERING_FLOOR_DB)
+                    );
+                    setMeteringLevel(normalized);
+                }
+            });
+
             return true;
         } catch (error) {
             console.error('Failed to start recording:', error);
@@ -64,6 +81,7 @@ export const useVoiceRecording = () => {
             }
 
             setIsRecording(false);
+            setMeteringLevel(0);
 
             const status = await recordingRef.current.getStatusAsync();
             const durationMillis = status.durationMillis || 0;
@@ -98,6 +116,7 @@ export const useVoiceRecording = () => {
         try {
             if (recordingRef.current) {
                 setIsRecording(false);
+                setMeteringLevel(0);
                 await recordingRef.current.stopAndUnloadAsync();
                 await Audio.setAudioModeAsync({
                     allowsRecordingIOS: false,
@@ -113,6 +132,7 @@ export const useVoiceRecording = () => {
         isRecording,
         isProcessing,
         setIsProcessing,
+        meteringLevel,
         startRecording,
         stopRecording,
         cancelRecording,

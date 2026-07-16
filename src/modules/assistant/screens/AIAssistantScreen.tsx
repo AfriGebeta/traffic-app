@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Animated, Easing } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -11,6 +11,136 @@ import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { colors } from '../../../shared/theme/colors';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
+
+const WAVEFORM_BARS = 9;
+const BAR_HEIGHT = 72;
+
+function VoiceWaveform({ active }: { active: boolean }) {
+    const anims = useRef(
+        Array.from({ length: WAVEFORM_BARS }, () => new Animated.Value(0.25))
+    ).current;
+    const loopsRef = useRef<Animated.CompositeAnimation[]>([]);
+
+    useEffect(() => {
+        if (!active) {
+            loopsRef.current.forEach((loop) => loop.stop());
+            loopsRef.current = [];
+            anims.forEach((anim) => anim.setValue(0.25));
+            return;
+        }
+
+        loopsRef.current = anims.map((anim, i) => {
+            const duration = 350 + Math.random() * 250;
+            const loop = Animated.loop(
+                Animated.sequence([
+                    Animated.timing(anim, {
+                        toValue: 0.3 + Math.random() * 0.7,
+                        duration,
+                        easing: Easing.inOut(Easing.ease),
+                        useNativeDriver: true,
+                        delay: i * 40,
+                    }),
+                    Animated.timing(anim, {
+                        toValue: 0.15 + Math.random() * 0.3,
+                        duration,
+                        easing: Easing.inOut(Easing.ease),
+                        useNativeDriver: true,
+                    }),
+                ])
+            );
+            loop.start();
+            return loop;
+        });
+
+        return () => {
+            loopsRef.current.forEach((loop) => loop.stop());
+            loopsRef.current = [];
+        };
+    }, [active]);
+
+    return (
+        <View className="flex-row items-center justify-center" style={{ height: BAR_HEIGHT, gap: 6 }}>
+            {anims.map((anim, i) => (
+                <Animated.View
+                    key={i}
+                    style={{
+                        width: 8,
+                        height: BAR_HEIGHT,
+                        borderRadius: 4,
+                        backgroundColor: '#FFA500',
+                        transform: [{ scaleY: anim }],
+                    }}
+                />
+            ))}
+        </View>
+    );
+}
+
+const MIC_SIZE = 72;
+
+function MicPulse({ active, level }: { active: boolean; level: number }) {
+    const outerAnim = useRef(new Animated.Value(0)).current;
+    const innerAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        if (!active) {
+            Animated.parallel([
+                Animated.timing(outerAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
+                Animated.timing(innerAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
+            ]).start();
+            return;
+        }
+
+        Animated.parallel([
+            Animated.timing(outerAnim, {
+                toValue: level,
+                duration: 100,
+                easing: Easing.out(Easing.ease),
+                useNativeDriver: true,
+            }),
+            Animated.timing(innerAnim, {
+                toValue: level,
+                duration: 100,
+                easing: Easing.out(Easing.ease),
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, [active, level]);
+
+    const outerScale = outerAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 2.1] });
+    const outerOpacity = outerAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.18] });
+    const innerScale = innerAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.55] });
+    const innerOpacity = innerAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.3] });
+
+    return (
+        <View style={{ width: MIC_SIZE, height: MIC_SIZE, alignItems: 'center', justifyContent: 'center' }}>
+            <Animated.View
+                pointerEvents="none"
+                style={{
+                    position: 'absolute',
+                    width: MIC_SIZE,
+                    height: MIC_SIZE,
+                    borderRadius: MIC_SIZE / 2,
+                    backgroundColor: '#FFA500',
+                    opacity: outerOpacity,
+                    transform: [{ scale: outerScale }],
+                }}
+            />
+            <Animated.View
+                pointerEvents="none"
+                style={{
+                    position: 'absolute',
+                    width: MIC_SIZE,
+                    height: MIC_SIZE,
+                    borderRadius: MIC_SIZE / 2,
+                    backgroundColor: '#FFA500',
+                    opacity: innerOpacity,
+                    transform: [{ scale: innerScale }],
+                }}
+            />
+        </View>
+    );
+}
 
 export default function AIAssistantScreen() {
     const router = useRouter();
@@ -26,6 +156,7 @@ export default function AIAssistantScreen() {
         isProcessingVoice,
         transcription,
         assistantMessage,
+        meteringLevel,
         options,
         showOptions,
         disambiguationMessage,
@@ -69,6 +200,7 @@ export default function AIAssistantScreen() {
     });
 
     const isIdle = !isRecording && !isProcessingVoice && !transcription && !assistantMessage && !showOptions;
+    const isRecordingBlank = isRecording && !transcription && !assistantMessage && !showOptions;
 
     return (
         <View className="flex-1 bg-white" style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
@@ -87,6 +219,13 @@ export default function AIAssistantScreen() {
                 <View className="flex-1 items-center justify-center px-8">
                     <ActivityIndicator size="large" color={colors.primary.main} />
                     <Text className="text-base text-gray-600 mt-4" style={{ fontFamily: 'PlusJakartaSans-Medium' }}>{t('starting-navigation')}</Text>
+                </View>
+            ) : isRecordingBlank ? (
+                <View className="flex-1 items-center justify-center px-8">
+                    <VoiceWaveform active={isRecording} />
+                    <Text className="text-base mt-6" style={{ color: colors.primary.main, fontFamily: 'PlusJakartaSans-Medium' }}>
+                        {t('listening')}
+                    </Text>
                 </View>
             ) : isIdle ? (
                 <View className="flex-1 items-center justify-center px-8">
@@ -163,23 +302,28 @@ export default function AIAssistantScreen() {
 
             {!navStarting && (
             <View className="items-center pb-6 pt-2">
-                <TouchableOpacity
-                    onPressIn={handleVoiceStart}
-                    onPressOut={handleVoiceStop}
-                    disabled={isProcessingVoice}
-                    className="items-center justify-center rounded-full"
-                    style={{
-                        width: 72,
-                        height: 72,
-                        backgroundColor: isRecording ? '#FFA500' : 'transparent',
-                        borderWidth: 1,
-                        borderColor: '#FFA500',
-                        opacity: isProcessingVoice ? 0.5 : 1,
-                    }}
-                    activeOpacity={0.7}
-                >
-                    <Ionicons name={isRecording ? 'mic' : 'mic-outline'} size={30} color={isRecording ? 'white' : '#FFA500'} />
-                </TouchableOpacity>
+                <View style={{ width: MIC_SIZE, height: MIC_SIZE, alignItems: 'center', justifyContent: 'center' }}>
+                    <View style={{ position: 'absolute' }}>
+                        <MicPulse active={isRecording} level={meteringLevel} />
+                    </View>
+                    <TouchableOpacity
+                        onPressIn={handleVoiceStart}
+                        onPressOut={handleVoiceStop}
+                        disabled={isProcessingVoice}
+                        className="items-center justify-center rounded-full"
+                        style={{
+                            width: MIC_SIZE,
+                            height: MIC_SIZE,
+                            backgroundColor: isRecording ? '#FFA500' : 'transparent',
+                            borderWidth: 1,
+                            borderColor: '#FFA500',
+                            opacity: isProcessingVoice ? 0.5 : 1,
+                        }}
+                        activeOpacity={0.7}
+                    >
+                        <Ionicons name={isRecording ? 'mic' : 'mic-outline'} size={30} color={isRecording ? 'white' : '#FFA500'} />
+                    </TouchableOpacity>
+                </View>
                 <Text className="text-xs text-gray-400 mt-3" style={{ fontFamily: 'PlusJakartaSans-Regular' }}>
                     {isProcessingVoice
                         ? t('processing')
