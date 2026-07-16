@@ -22,7 +22,6 @@ export default function NeighborhoodContributionScreen() {
     const { contributeNeighborhood, loading } = useNeighborhoodContribution();
 
     const [name, setName] = useState('');
-    const [localName, setLocalName] = useState('');
     const [slug, setSlug] = useState('');
     const [description, setDescription] = useState('');
     const [city, setCity] = useState('');
@@ -85,7 +84,6 @@ export default function NeighborhoodContributionScreen() {
         try {
             const contributionData = {
                 name: name.trim(),
-                localName: localName.trim() || undefined,
                 slug: slug.trim(),
                 description: description.trim() || undefined,
                 lat: coordinates.lat,
@@ -134,17 +132,6 @@ export default function NeighborhoodContributionScreen() {
                             placeholder={t('neighborhood-name-placeholder')}
                             value={name}
                             onChangeText={handleNameChange}
-                        />
-                    </View>
-
-                    <View>
-                        <Text className="text-sm font-semibold text-gray-700 mb-2">
-                            {t('local-name')}
-                        </Text>
-                        <Input
-                            placeholder={t('local-name-placeholder')}
-                            value={localName}
-                            onChangeText={setLocalName}
                         />
                     </View>
 
