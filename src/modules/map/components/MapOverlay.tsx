@@ -193,10 +193,6 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                 onLocationPress={onLocationPress}
                 onTaxiPress={onTaxiPress}
                 onThemePress={() => setShowThemeSelector(true)}
-                onVoicePressIn={onVoicePress}
-                onVoicePressOut={onVoiceRelease}
-                isRecording={isRecording}
-                isProcessingVoice={isProcessingVoice}
                 isRoutePreviewActive={showRoutePreview}
                 isPlaceDetailActive={showPlaceDetail}
             />

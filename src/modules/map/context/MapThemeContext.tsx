@@ -15,7 +15,10 @@ export interface MapTheme {
 
 const STORAGE_KEY = '@map_theme';
 
-const processRemoteStyle = async (url: string, apiKey: string): Promise<Record<string, unknown>> => {
+const isDarkStyle = (styleId: string, url: string): boolean =>
+    /dark|night/i.test(styleId) || /dark|night/i.test(url);
+
+const processRemoteStyle = async (url: string, apiKey: string, styleId: string): Promise<Record<string, unknown>> => {
     try {
         const response = await fetch(url);
         const style = await response.json();
@@ -39,7 +42,7 @@ const processRemoteStyle = async (url: string, apiKey: string): Promise<Record<s
                 {
                     id: 'gebeta-map-background',
                     type: 'background',
-                    paint: { 'background-color': '#E5E7EB' },
+                    paint: { 'background-color': isDarkStyle(styleId, url) ? '#1F2937' : '#E5E7EB' },
                 },
                 ...layers,
             ];
@@ -91,7 +94,7 @@ export const MapThemeProvider: React.FC<{ children: ReactNode }> = ({ children }
                 const savedThemeId = await AsyncStorage.getItem(STORAGE_KEY);
                 const activeStyle = enabledStyles.find(s => s.id === savedThemeId) ?? enabledStyles[0];
 
-                const activeStyleJson = await processRemoteStyle(activeStyle.url, apiKey);
+                const activeStyleJson = await processRemoteStyle(activeStyle.url, apiKey, activeStyle.id);
                 const activeTheme = remoteStyleToTheme(activeStyle, activeStyleJson);
 
                 setCurrentTheme(activeTheme);
@@ -99,7 +102,7 @@ export const MapThemeProvider: React.FC<{ children: ReactNode }> = ({ children }
 
                 const otherStyles = enabledStyles.filter(s => s.id !== activeStyle.id);
                 const otherStyleJsons = await Promise.all(
-                    otherStyles.map(s => processRemoteStyle(s.url, apiKey))
+                    otherStyles.map(s => processRemoteStyle(s.url, apiKey, s.id))
                 );
 
                 const loadedThemes: MapTheme[] = enabledStyles.map(s => {

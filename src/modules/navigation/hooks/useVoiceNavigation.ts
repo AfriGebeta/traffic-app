@@ -110,7 +110,7 @@ export const useVoiceNavigation = ({
         setIsProcessing(false);
     }, [setIsProcessing]);
 
-    const handleDestination = useCallback((dest: any, routeToast?: { distanceKm: string; durationMin: number }) => {
+    const handleDestination = useCallback((dest: any) => {
         const place = toGeocodingPlace(dest);
         if (!place) {
             showToast.error('Invalid location', 'Could not get coordinates for this place');
@@ -123,9 +123,6 @@ export const useVoiceNavigation = ({
         setShowVoiceModal(false);
         setTranscription('');
         onDestinationFoundRef.current?.(place);
-        if (routeToast) {
-            showToast.success('Route Found', `${routeToast.distanceKm} km • ${routeToast.durationMin} min`);
-        }
     }, []);
 
     const handleEvent = useCallback((event: VoiceNavEvent) => {
@@ -154,7 +151,6 @@ export const useVoiceNavigation = ({
                 vlog(`transcription: "${data?.text ?? ''}"`);
                 if (data?.text) {
                     setTranscription(data.text);
-                    showToast.success('Understood', data.text);
                 }
                 break;
 
@@ -213,7 +209,7 @@ export const useVoiceNavigation = ({
                     destination: data?.destination ?? null,
                     route: data?.route ? { trip: data.route.trip ?? data.route } : null,
                 });
-                handleDestination(data?.destination, { distanceKm, durationMin });
+                handleDestination(data?.destination);
                 finishProcessing();
                 break;
             }
@@ -233,7 +229,6 @@ export const useVoiceNavigation = ({
 
             case 'busy':
                 vlog('busy:', data?.message);
-                showToast.info('Please wait', data?.message ?? 'Still processing previous command');
                 break;
 
             case 'ready':

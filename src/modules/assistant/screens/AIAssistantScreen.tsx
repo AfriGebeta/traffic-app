@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Audio } from 'expo-av';
 import AiIcon from '../../../../assets/images/ai-icon.svg';
 import { useVoiceNavigation } from '../../navigation/hooks/useVoiceNavigation';
 import { navigationService } from '../../navigation/services/navigation.service';
@@ -151,7 +152,10 @@ export default function AIAssistantScreen() {
     const { colors: theme, isDark } = useTheme();
 
     const dummyMapRef = useRef<GebetaMapRef | null>(null);
-    const [navStarting, setNavStarting] = useState(false);
+
+    useEffect(() => {
+        Audio.requestPermissionsAsync().catch(() => {});
+    }, []);
 
     const {
         isRecording,
@@ -161,7 +165,6 @@ export default function AIAssistantScreen() {
         meteringLevel,
         options,
         showOptions,
-        disambiguationMessage,
         handleVoiceStart,
         handleVoiceStop,
         handleOptionSelect,
@@ -170,9 +173,6 @@ export default function AIAssistantScreen() {
         userLocation,
         language: 'amh',
         onDestinationFound: (place: GeocodingPlace) => {
-            setNavStarting(true);
-
-            let prefetch: Promise<unknown> = Promise.resolve(null);
             if (userLocation) {
                 const promise = navigationService
                     .getNavigation({
@@ -185,19 +185,16 @@ export default function AIAssistantScreen() {
                     key: `${place.latitude},${place.longitude}`,
                     promise,
                 };
-                prefetch = promise;
             }
 
-            prefetch.finally(() => {
-                router.back();
-                setTimeout(() => {
-                    router.setParams({
-                        voiceDestLat: String(place.latitude),
-                        voiceDestLng: String(place.longitude),
-                        voiceDestName: place.name,
-                    });
-                }, 0);
-            });
+            router.back();
+            setTimeout(() => {
+                router.setParams({
+                    voiceDestLat: String(place.latitude),
+                    voiceDestLng: String(place.longitude),
+                    voiceDestName: place.name,
+                });
+            }, 0);
         },
     });
 
@@ -217,12 +214,7 @@ export default function AIAssistantScreen() {
                 </TouchableOpacity>
             </View>
 
-            {navStarting ? (
-                <View className="flex-1 items-center justify-center px-8">
-                    <ActivityIndicator size="large" color={colors.primary.main} />
-                    <Text className="text-base mt-4" style={{ color: theme.textSecondary, fontFamily: 'PlusJakartaSans-Medium' }}>{t('starting-navigation')}</Text>
-                </View>
-            ) : isRecordingBlank ? (
+            {isRecordingBlank ? (
                 <View className="flex-1 items-center justify-center px-8">
                     <VoiceWaveform active={isRecording} />
                     <Text className="text-base mt-6" style={{ color: colors.primary.main, fontFamily: 'PlusJakartaSans-Medium' }}>
@@ -262,10 +254,6 @@ export default function AIAssistantScreen() {
                         </View>
                     ) : null}
 
-                    {showOptions && disambiguationMessage ? (
-                        <Text className="text-sm text-center my-2" style={{ color: theme.textSecondary, fontFamily: 'PlusJakartaSans-Regular' }}>{disambiguationMessage}</Text>
-                    ) : null}
-
                     {showOptions
                         ? options.map((option) => (
                               <TouchableOpacity
@@ -303,7 +291,6 @@ export default function AIAssistantScreen() {
                 </ScrollView>
             )}
 
-            {!navStarting && (
             <View className="items-center pb-6 pt-2">
                 <View style={{ width: MIC_SIZE, height: MIC_SIZE, alignItems: 'center', justifyContent: 'center' }}>
                     <View style={{ position: 'absolute' }}>
@@ -337,7 +324,6 @@ export default function AIAssistantScreen() {
                             : t('push-to-talk')}
                 </Text>
             </View>
-            )}
         </View>
     );
 }
