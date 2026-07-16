@@ -96,5 +96,9 @@ export default function Index() {
     lat: parseFloat(params.taxiDestLat as string),
     lng: parseFloat(params.taxiDestLng as string),
     name: params.taxiDestName as string || 'Destination',
-  } : undefined} showTaxiMode={params.showTaxiMode === 'true'} />;
+  } : undefined} showTaxiMode={params.showTaxiMode === 'true'} voiceDestination={params.voiceDestLat && params.voiceDestLng ? {
+    lat: parseFloat(params.voiceDestLat as string),
+    lng: parseFloat(params.voiceDestLng as string),
+    name: params.voiceDestName as string || 'Destination',
+  } : undefined} />;
 }

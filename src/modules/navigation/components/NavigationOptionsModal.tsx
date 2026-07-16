@@ -10,16 +10,24 @@ interface NavigationOptionsModalProps {
     visible: boolean;
     options: NavigationOption[];
     transcription?: string;
+    disambiguationMessage?: string;
+    isRecording?: boolean;
     onSelectOption: (optionId: number) => void;
     onClose: () => void;
+    onPressIn?: () => void;
+    onPressOut?: () => void;
 }
 
 export const NavigationOptionsModal: React.FC<NavigationOptionsModalProps> = ({
     visible,
     options,
     transcription,
+    disambiguationMessage,
+    isRecording = false,
     onSelectOption,
     onClose,
+    onPressIn,
+    onPressOut,
 }) => {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
@@ -50,26 +58,29 @@ export const NavigationOptionsModal: React.FC<NavigationOptionsModalProps> = ({
                         <Text className="text-lg font-semibold text-gray-900">
                             {t('choose-destination')}
                         </Text>
-                        <TouchableOpacity
-                            onPress={onClose}
-                            className="p-2"
-                        >
+                        <TouchableOpacity onPress={onClose} className="p-2">
                             <Ionicons name="close" size={24} color="#6B7280" />
                         </TouchableOpacity>
                     </View>
 
-                    {transcription && (
-                        <View className="px-4 py-4 bg-orange-50 border-b border-orange-100">
-                            <Text className="text-xs font-medium mb-2 text-center" style={{ color: colors.primary.main }}>
+                    {transcription ? (
+                        <View className="px-4 py-3 bg-orange-50 border-b border-orange-100">
+                            <Text className="text-xs font-medium mb-1 text-center" style={{ color: colors.primary.main }}>
                                 {t('you-said')}
                             </Text>
-                            <Text className="text-lg font-medium text-center text-gray-800">
+                            <Text className="text-base font-medium text-center text-gray-800">
                                 {transcription}
                             </Text>
                         </View>
-                    )}
+                    ) : null}
 
-                    <ScrollView className="px-4 pb-4">
+                    {disambiguationMessage ? (
+                        <View className="px-4 py-3 border-b border-gray-100">
+                            <Text className="text-sm text-gray-600 text-center">{disambiguationMessage}</Text>
+                        </View>
+                    ) : null}
+
+                    <ScrollView className="px-4 pt-2 pb-2">
                         {options.map((option) => (
                             <TouchableOpacity
                                 key={option.id}
@@ -96,6 +107,34 @@ export const NavigationOptionsModal: React.FC<NavigationOptionsModalProps> = ({
                             </TouchableOpacity>
                         ))}
                     </ScrollView>
+
+                    {(onPressIn || onPressOut) ? (
+                        <View className="items-center py-4 border-t border-gray-100">
+                            <Text className="text-xs text-gray-400 mb-3">{t('or-speak-your-answer')}</Text>
+                            <TouchableOpacity
+                                onPressIn={onPressIn}
+                                onPressOut={onPressOut}
+                                activeOpacity={0.8}
+                                className="w-14 h-14 rounded-full items-center justify-center"
+                                style={{
+                                    backgroundColor: isRecording ? colors.primary.main : 'transparent',
+                                    borderWidth: 1.5,
+                                    borderColor: isRecording ? colors.primary.main : colors.primary.light,
+                                }}
+                            >
+                                <Ionicons
+                                    name={isRecording ? 'mic' : 'mic-outline'}
+                                    size={28}
+                                    color={isRecording ? 'white' : colors.primary.main}
+                                />
+                            </TouchableOpacity>
+                            {isRecording && (
+                                <Text className="text-xs mt-2" style={{ color: colors.primary.main }}>
+                                    {t('listening')}
+                                </Text>
+                            )}
+                        </View>
+                    ) : null}
                 </View>
             </View>
         </Modal>

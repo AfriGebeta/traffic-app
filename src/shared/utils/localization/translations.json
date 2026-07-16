@@ -22,22 +22,22 @@
     {
         "key": "ai-greeting-highlight1",
         "EN_US": "Where",
-        "AM": "የት"
+        "AM": "ዛሬ "
     },
     {
         "key": "ai-greeting-part2",
         "EN_US": " do you feel like ",
-        "AM": " መሄድ ይፈልጋሉ "
+        "AM": "የት መሄድ ይፈልጋሉ "
     },
     {
         "key": "ai-greeting-highlight2",
         "EN_US": "Going",
-        "AM": "ማሰስ"
+        "AM": " "
     },
     {
         "key": "ai-greeting-part3",
         "EN_US": " today?",
-        "AM": " ዛሬ?"
+        "AM": "?"
     },
     {
         "key": "ai-suggestion-last-place",
@@ -595,6 +595,11 @@
         "AM": "በመጫን ላይ..."
     },
     {
+        "key": "starting-navigation",
+        "EN_US": "Starting navigation...",
+        "AM": "ጉዞ በመጀመር ላይ..."
+    },
+    {
         "key": "all-time",
         "EN_US": "All Time",
         "AM": "የሁሉም ጊዜ"
@@ -948,6 +953,11 @@
         "key": "hold-to-speak-instruction",
         "EN_US": "Press and hold the microphone button to speak your destination",
         "AM": "መድረሻዎን ለመናገር ማይክሮፎኑን ተጭነው ይያዙ"
+    },
+    {
+        "key": "or-speak-your-answer",
+        "EN_US": "or hold mic to speak",
+        "AM": "ወይም ማይክሮፎን ተጭነው ይናገሩ"
     },
     {
         "key": "still-there",
@@ -1643,6 +1653,11 @@
         "key": "create-route",
         "EN_US": "Create Route",
         "AM": "መስመር ይፍጠሩ"
+    },
+    {
+        "key": "please-select-start-and-one-more-stop",
+        "EN_US": "Please add a start station and at least one more stop",
+        "AM": "እባክዎ መነሻ ጣቢያ እና ቢያንስ አንድ ተጨማሪ ማቆሚያ ይጨምሩ"
     },
     {
         "key": "please-select-start-end-stations",

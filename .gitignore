@@ -47,3 +47,8 @@ app-example
 modules/*/android/build/
 modules/*/android/.cxx/
 modules/*/android/.gradle/
+
+# local native module build output (source is committed; build output is not)
+modules/*/android/build/
+modules/*/android/.cxx/
+modules/*/android/.gradle/

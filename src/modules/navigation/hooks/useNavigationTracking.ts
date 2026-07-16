@@ -8,6 +8,8 @@ interface UseNavigationTrackingProps {
     userLocation: { lat: number; lng: number } | null;
 }
 
+const TRACKING_POINT_INTERVAL_MS = 5000;
+
 export const useNavigationTracking = ({
     isNavigating,
     userLocation,
@@ -15,16 +17,17 @@ export const useNavigationTracking = ({
     const navigationIdRef = useRef<string | null>(null);
     const previousNavigatingRef = useRef<boolean>(false);
     const lastPointTimeRef = useRef<number>(0);
+    // const lastPointTimeRef = useRef<number>(0);
 
     useEffect(() => {
         if (!isNavigating || !navigationIdRef.current || !userLocation) return;
 
         const now = Date.now();
-        if (now - lastPointTimeRef.current < getAppConfig().trackingPointIntervalMs) return;
+        if (now - lastPointTimeRef.current < TRACKING_POINT_INTERVAL_MS) return;
         lastPointTimeRef.current = now;
 
         console.log(
-            `[tracking] ${navigationIdRef.current} point @ ${new Date(now).toISOString()} →`,
+            `[Tracking] ${navigationIdRef.current} point @ ${new Date(now).toISOString()} →`,
             `lat: ${userLocation.lat}, lng: ${userLocation.lng}`
         );
         navigationTrackingService.addNavigationPoint(
@@ -38,6 +41,7 @@ export const useNavigationTracking = ({
         if (isNavigating) {
             if (!navigationIdRef.current) {
                 navigationIdRef.current = `nav_${Date.now()}`;
+                lastPointTimeRef.current = 0;
                 lastPointTimeRef.current = 0;
                 console.log('[Tracking] Started tracking navigation:', navigationIdRef.current);
             }

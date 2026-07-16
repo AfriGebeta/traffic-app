@@ -12,6 +12,8 @@ class TTSCacheService {
     private cache: Map<string, CachedAudio> = new Map();
     private readonly CACHE_EXPIRY_MS = 30 * 60 * 1000;
     private fetchQueue: Map<string, Promise<boolean>> = new Map();
+    private activeSounds: Set<Audio.Sound> = new Set();
+    private playGeneration = 0;
 
     async prefetchInstructions(instructions: string[]): Promise<void> {
         const batchSize = 3;
@@ -79,6 +81,7 @@ class TTSCacheService {
     }
 
     async playInstruction(text: string): Promise<boolean> {
+        const generation = this.playGeneration;
         try {
             let cached = this.cache.get(text);
 
@@ -98,6 +101,10 @@ class TTSCacheService {
                 if (!cached) return false;
             }
 
+            if (generation !== this.playGeneration) {
+                return false;
+            }
+
             await Audio.setAudioModeAsync({
                 allowsRecordingIOS: false,
                 playsInSilentModeIOS: true,
@@ -111,8 +118,15 @@ class TTSCacheService {
                 { shouldPlay: true, volume: 1.0 }
             );
 
+            if (generation !== this.playGeneration) {
+                await sound.unloadAsync().catch(() => {});
+                return false;
+            }
+
+            this.activeSounds.add(sound);
             sound.setOnPlaybackStatusUpdate(async (status) => {
                 if (status.isLoaded && status.didJustFinish) {
+                    this.activeSounds.delete(sound);
                     await sound.unloadAsync();
                 }
             });
@@ -121,6 +135,24 @@ class TTSCacheService {
         } catch (error) {
             return false;
         }
+    }
+
+    async stopAll(): Promise<void> {
+        this.playGeneration += 1;
+        const sounds = [...this.activeSounds];
+        this.activeSounds.clear();
+        await Promise.all(
+            sounds.map(async (sound) => {
+                try {
+                    await sound.stopAsync();
+                } catch {
+                }
+                try {
+                    await sound.unloadAsync();
+                } catch {
+                }
+            })
+        );
     }
 
     clearExpiredCache(): void {

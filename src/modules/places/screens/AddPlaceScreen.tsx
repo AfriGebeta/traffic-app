@@ -15,11 +15,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { colors } from '../../../shared/theme/colors';
+import { useTheme } from '../../../shared/theme/ThemeContext';
 
 export default function AddPlaceScreen() {
     const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { colors: theme, isDark } = useTheme();
     const params = useLocalSearchParams();
     const placeType = params.type as PlaceType;
     const { selectedLocation, setSelectedLocation } = useLocation();
@@ -151,21 +153,21 @@ export default function AddPlaceScreen() {
     };
 
     return (
-        <View className="flex-1 bg-gray-50">
-            <View className="bg-white px-6 pt-16 pb-4 border-b border-gray-100">
+        <View className="flex-1" style={{ backgroundColor: theme.background }}>
+            <View className="px-6 pt-16 pb-4" style={{ backgroundColor: theme.background, borderBottomWidth: 1, borderBottomColor: theme.border }}>
                 <View className="flex-row items-center">
                     <TouchableOpacity
                         onPress={() => router.back()}
                         className="mr-4"
                         activeOpacity={0.7}
                     >
-                        <Ionicons name="arrow-back" size={24} color="#000000" />
+                        <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
                     </TouchableOpacity>
-                    <Text className="text-xl font-bold text-gray-900">{t('add-place-details')}</Text>
+                    <Text className="text-xl font-bold" style={{ color: theme.textPrimary }}>{t('add-place-details')}</Text>
                 </View>
             </View>
 
-            <View className="bg-white mx-6 mt-6 mb-4 rounded-2xl p-4 flex-row items-center border border-gray-100">
+            <View className="mx-6 mt-6 mb-4 rounded-2xl p-4 flex-row items-center" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
                 <View className="w-14 h-14 items-center justify-center mr-4">
                     {(() => {
                         const placeImageMap: Record<string, any> = {
@@ -195,10 +197,10 @@ export default function AddPlaceScreen() {
                     })()}
                 </View>
                 <View className="flex-1">
-                    <Text className="text-lg font-bold text-gray-900">
+                    <Text className="text-lg font-bold" style={{ color: theme.textPrimary }}>
                         {placeType ? t(getPlaceTranslationKey(placeType)) : placeInfo?.label}
                     </Text>
-                    <Text className="text-gray-500 text-sm">{t('fill-in-the-details')}</Text>
+                    <Text className="text-sm" style={{ color: theme.textSecondary }}>{t('fill-in-the-details')}</Text>
                 </View>
             </View>
 
@@ -206,14 +208,14 @@ export default function AddPlaceScreen() {
                 <View className="gap-5 pb-6">
 
                     <View>
-                        <Text className="text-sm font-semibold text-gray-700 mb-2">
-                            {t('place-name')} <Text className="text-orange-500">*</Text>
+                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
+                            {t('place-name')} <Text style={{ color: theme.primary }}>*</Text>
                         </Text>
                         <Input placeholder={t('place-name-placeholder')} value={name} onChangeText={setName} />
                     </View>
 
                     <View>
-                        <Text className="text-sm font-semibold text-gray-700 mb-2">{t('description')}</Text>
+                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('description')}</Text>
                         <Input
                             placeholder={t('add-details-about-place')}
                             value={description}
@@ -224,32 +226,35 @@ export default function AddPlaceScreen() {
                     </View>
 
                     <View>
-                        <Text className="text-sm font-semibold text-gray-700 mb-2">
-                            {t('location')} <Text className="text-orange-500">*</Text>
+                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
+                            {t('location')} <Text style={{ color: theme.primary }}>*</Text>
                         </Text>
                         {coordinates ? (
-                            <View className="bg-green-50 border border-green-200 rounded-xl p-4">
+                            <View className="rounded-xl p-4" style={{ backgroundColor: isDark ? theme.greenMuted : '#F0FDF4', borderWidth: 1, borderColor: theme.green }}>
                                 <View className="flex-row items-center justify-between">
                                     <View className="flex-1">
-                                        <Text className="text-gray-900 font-semibold">
+                                        <Text className="font-semibold" style={{ color: theme.textPrimary }}>
                                             {usingCurrentLocation ? t('current-location') : t('location-selected')}
                                         </Text>
-                                        <Text className="text-gray-500 text-sm">
+                                        <Text className="text-sm" style={{ color: theme.textSecondary }}>
                                             {coordinates.lat.toFixed(7)}, {coordinates.lng.toFixed(7)}
                                         </Text>
                                     </View>
                                     <TouchableOpacity onPress={() => { setCoordinates(null); setUsingCurrentLocation(false); }}>
-                                        <Ionicons name="close-circle" size={24} color="#EF4444" />
+                                        <Ionicons name="close-circle" size={24} color={theme.error} />
                                     </TouchableOpacity>
                                 </View>
                             </View>
                         ) : (
                             <View>
                                 <TouchableOpacity
-                                    className="bg-white border-2 border-gray-200 rounded-2xl p-4 flex-row items-center justify-between active:border-orange-200 mb-2"
+                                    className="rounded-2xl p-4 flex-row items-center justify-between mb-2"
                                     onPress={handlePickLocation}
                                     activeOpacity={0.7}
                                     style={{
+                                        backgroundColor: theme.surface,
+                                        borderWidth: 2,
+                                        borderColor: theme.border,
                                         shadowColor: '#000',
                                         shadowOffset: { width: 0, height: 1 },
                                         shadowOpacity: 0.05,
@@ -258,21 +263,21 @@ export default function AddPlaceScreen() {
                                     }}
                                 >
                                     <View className="flex-row items-center flex-1">
-                                        <View className="w-10 h-10 rounded-full items-center justify-center bg-gray-100">
-                                            <Ionicons name="map" size={20} color="#9CA3AF" />
+                                        <View className="w-10 h-10 rounded-full items-center justify-center" style={{ backgroundColor: isDark ? theme.background : '#F3F4F6' }}>
+                                            <Ionicons name="map" size={20} color={theme.textSecondary} />
                                         </View>
                                         <View className="ml-3 flex-1">
-                                            <Text className="text-sm font-medium text-gray-500">
+                                            <Text className="text-sm font-medium" style={{ color: theme.textSecondary }}>
                                                 {t('pick-location-on-map')}
                                             </Text>
                                         </View>
                                     </View>
-                                    <Ionicons name="chevron-forward" size={20} color="#D1D5DB" />
+                                    <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
                                 </TouchableOpacity>
                                 <View className="flex-row items-center justify-center my-2">
-                                    <View className="flex-1 h-px bg-gray-200" />
-                                    <Text className="text-gray-400 text-sm mx-3">{t('or')}</Text>
-                                    <View className="flex-1 h-px bg-gray-200" />
+                                    <View className="flex-1 h-px" style={{ backgroundColor: theme.border }} />
+                                    <Text className="text-sm mx-3" style={{ color: theme.textSecondary }}>{t('or')}</Text>
+                                    <View className="flex-1 h-px" style={{ backgroundColor: theme.border }} />
                                 </View>
                                 <TouchableOpacity
                                     className="py-3 rounded-xl flex-row items-center justify-center"
@@ -290,38 +295,40 @@ export default function AddPlaceScreen() {
 
                     {/* Photos */}
                     <View>
-                        <Text className="text-sm font-semibold text-gray-700 mb-2">{t('photos')}</Text>
+                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('photos')}</Text>
 
                         <View className="flex-row gap-3 mb-3">
                             <TouchableOpacity
-                                className="bg-white border-2 border-dashed border-gray-300 rounded-2xl w-28 h-28 items-center justify-center active:border-orange-300 active:bg-orange-50"
+                                className="rounded-2xl w-28 h-28 items-center justify-center"
+                                style={{ backgroundColor: theme.surface, borderWidth: 2, borderStyle: 'dashed', borderColor: theme.border }}
                                 onPress={takePhoto}
                                 disabled={uploading}
                                 activeOpacity={0.7}
                             >
-                                <View className="bg-gray-100 rounded-full p-3 mb-2">
-                                    <Ionicons name="camera" size={24} color="#6B7280" />
+                                <View className="rounded-full p-3 mb-2" style={{ backgroundColor: isDark ? theme.background : '#F3F4F6' }}>
+                                    <Ionicons name="camera" size={24} color={theme.textSecondary} />
                                 </View>
-                                <Text className="text-xs font-medium text-gray-600">{t('camera')}</Text>
+                                <Text className="text-xs font-medium" style={{ color: theme.textSecondary }}>{t('camera')}</Text>
                             </TouchableOpacity>
 
                             <TouchableOpacity
-                                className="bg-white border-2 border-dashed border-gray-300 rounded-2xl w-28 h-28 items-center justify-center active:border-orange-300 active:bg-orange-50"
+                                className="rounded-2xl w-28 h-28 items-center justify-center"
+                                style={{ backgroundColor: theme.surface, borderWidth: 2, borderStyle: 'dashed', borderColor: theme.border }}
                                 onPress={pickImage}
                                 disabled={uploading}
                                 activeOpacity={0.7}
                             >
-                                <View className="bg-gray-100 rounded-full p-3 mb-2">
-                                    <Ionicons name="images" size={24} color="#6B7280" />
+                                <View className="rounded-full p-3 mb-2" style={{ backgroundColor: isDark ? theme.background : '#F3F4F6' }}>
+                                    <Ionicons name="images" size={24} color={theme.textSecondary} />
                                 </View>
-                                <Text className="text-xs font-medium text-gray-600">{t('gallery')}</Text>
+                                <Text className="text-xs font-medium" style={{ color: theme.textSecondary }}>{t('gallery')}</Text>
                             </TouchableOpacity>
                         </View>
 
                         {uploading && (
-                            <View className="flex-row items-center mb-3 bg-blue-50 rounded-xl p-3">
-                                <ActivityIndicator size="small" color="#3B82F6" />
-                                <Text className="text-sm text-blue-700 ml-2 font-medium">{t('uploading')}</Text>
+                            <View className="flex-row items-center mb-3 rounded-xl p-3" style={{ backgroundColor: theme.blueMuted }}>
+                                <ActivityIndicator size="small" color={theme.blue} />
+                                <Text className="text-sm ml-2 font-medium" style={{ color: theme.blue }}>{t('uploading')}</Text>
                             </View>
                         )}
 
@@ -349,7 +356,7 @@ export default function AddPlaceScreen() {
                 </View>
             </ScrollView>
 
-            <View className="bg-white px-6 pt-4 border-t border-gray-100" style={{ paddingBottom: insets.bottom + 16 }}>
+            <View className="px-6 pt-4" style={{ paddingBottom: insets.bottom + 16, backgroundColor: theme.background, borderTopWidth: 1, borderTopColor: theme.border }}>
                 <Button
                     title={submitting ? t('submitting') : t('submit-contribution')}
                     onPress={handleSubmit}

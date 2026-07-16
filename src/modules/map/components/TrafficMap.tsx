@@ -1,5 +1,5 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { View, LogBox, BackHandler, StatusBar } from 'react-native';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
+import { View, Text, LogBox, BackHandler, StatusBar, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useFocusEffect, useRouter } from 'expo-router';
 import CustomGebetaMap from '../../../components/GebetaMap';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
@@ -48,12 +48,15 @@ interface TrafficMapProps {
     sharedLocation?: SharedLocation | null;
     taxiDestination?: { lat: number; lng: number; name: string };
     showTaxiMode?: boolean;
+    voiceDestination?: { lat: number; lng: number; name: string };
 }
 
-export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMode }: TrafficMapProps) {
+export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMode, voiceDestination }: TrafficMapProps) {
     const mapRef = useRef<GebetaMapRef>(null);
     const searchMarkerRef = useRef<any>(null);
     const processedSharedLocationRef = useRef<SharedLocation | null>(null);
+    const processedVoiceDestRef = useRef<string | null>(null);
+    const [voiceNavStarting, setVoiceNavStarting] = useState(false);
     const sharedFlyToTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const router = useRouter();
 
@@ -273,7 +276,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         handleStartNavigation(setUserLocation);
     };
 
-    const handleSelectPlace = (place: GeocodingPlace, autoNavigate: boolean = false, saveToRecents: boolean = false) => {
+    const handleSelectPlace = (place: GeocodingPlace, autoNavigate: boolean = false, saveToRecents: boolean = false, skipPreview: boolean = false) => {
         const queryForRecent = searchQuery.trim() || undefined;
 
         import('../../navigation/services/searchLog.service').then(({ searchLogService }) => {
@@ -323,9 +326,14 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
 
         if (autoNavigate) {
             setShowPlaceDetail(false);
-            setTimeout(() => {
-                handleNavigate(setUserLocation, place);
-            }, 300);
+            if (skipPreview) {
+                // destination passed explicitly — no need to wait for state commit
+                handleStartNavigation(setUserLocation, place);
+            } else {
+                setTimeout(() => {
+                    handleNavigate(setUserLocation, place);
+                }, 300);
+            }
         } else {
             setShowPlaceDetail(true);
             setShowRoutePreview(false);
@@ -371,7 +379,9 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         isProcessingVoice,
         navigationData: voiceNavigationData,
         options: voiceOptions,
+        currentOption: voiceCurrentOption,
         showOptions: showVoiceOptions,
+        disambiguationMessage: voiceDisambiguationMessage,
         showVoiceModal,
 
         transcription: voiceTranscription,
@@ -385,7 +395,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         mapRef,
         userLocation,
         language: 'amh',
-        onDestinationFound: handleSelectPlace,
+        onDestinationFound: (place) => handleSelectPlace(place, true, false, true),
     });
 
     const handleExploreCategory = async (categoryId: string) => {
@@ -614,6 +624,48 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
             }
         }
     }, [taxiDestination, userLocation]);
+
+    useEffect(() => {
+        if (!voiceDestination || !userLocation) return;
+
+        const key = `${voiceDestination.lat},${voiceDestination.lng}`;
+        if (processedVoiceDestRef.current === key) return;
+        processedVoiceDestRef.current = key;
+
+        const place: GeocodingPlace = {
+            id: `voice-dest-${voiceDestination.lat}-${voiceDestination.lng}`,
+            name: voiceDestination.name,
+            display_name: voiceDestination.name,
+            category: 'destination',
+            location: { lat: voiceDestination.lat, lng: voiceDestination.lng },
+            address: { city: '', country: '', country_code: '' },
+            latitude: voiceDestination.lat,
+            longitude: voiceDestination.lng,
+            type: 'destination',
+            City: '',
+            Country: '',
+        };
+
+        handleSelectPlace(place, true, false, true);
+    }, [voiceDestination, userLocation]);
+
+    useFocusEffect(
+        React.useCallback(() => {
+            if ((globalThis as any).__voiceRoutePrefetch) {
+                setVoiceNavStarting(true);
+            }
+        }, [])
+    );
+
+    useEffect(() => {
+        if (navigationMode) setVoiceNavStarting(false);
+    }, [navigationMode]);
+
+    useEffect(() => {
+        if (!voiceNavStarting) return;
+        const timer = setTimeout(() => setVoiceNavStarting(false), 15000);
+        return () => clearTimeout(timer);
+    }, [voiceNavStarting]);
 
     useEffect(() => {
         if (!taxiRouteData) {
@@ -851,6 +903,51 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         ? [sharedLocation.lng, sharedLocation.lat]
         : initialMapCenterRef.current ?? undefined;
 
+    const showAlternativeRoutes = !isNavigationMinimized && !taxiRouteData && !navigationMode && allRouteOptions.length > 1;
+
+    const routeTimeLabels = useMemo(() => {
+        if (!showAlternativeRoutes) return undefined;
+
+        const selected = allRouteOptions[selectedRouteIndex];
+        if (!selected) return undefined;
+
+        const formatMinutes = (seconds: number) => Math.max(1, Math.floor(seconds / 60));
+
+        const midpointOf = (coords: [number, number][]): [number, number] | null => {
+            if (!coords || coords.length === 0) return null;
+            return coords[Math.floor(coords.length / 2)];
+        };
+
+        const labels: Array<{ coordinate: [number, number]; label: string; isPrimary: boolean }> = [];
+
+        const selectedMidpoint = midpointOf(selected.coordinates);
+        if (selectedMidpoint) {
+            labels.push({
+                coordinate: selectedMidpoint,
+                label: `${formatMinutes(selected.duration)} min`,
+                isPrimary: true,
+            });
+        }
+
+        allRouteOptions.forEach((option, index) => {
+            if (index === selectedRouteIndex) return;
+
+            const midpoint = midpointOf(option.coordinates);
+            if (!midpoint) return;
+
+            const deltaSeconds = option.duration - selected.duration;
+            const deltaMinutes = Math.round(Math.abs(deltaSeconds) / 60);
+
+            const label = deltaMinutes === 0
+                ? 'Same time'
+                : `${deltaMinutes} min ${deltaSeconds > 0 ? 'slower' : 'faster'}`;
+
+            labels.push({ coordinate: midpoint, label, isPrimary: false });
+        });
+
+        return labels;
+    }, [showAlternativeRoutes, allRouteOptions, selectedRouteIndex]);
+
     return (
         <View className="flex-1">
             <StatusBar barStyle="dark-content" backgroundColor="#ffffff" translucent={false} />
@@ -874,6 +971,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                         ? alternativeRoutesGeoJSON
                         : undefined
                 }
+                routeTimeLabels={routeTimeLabels}
                 routeStyle={{
                     color: navigationMode ? '#3B82F6' : colors.primary.main,
                     width: 5,
@@ -1110,6 +1208,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     routeOptions={allRouteOptions.length > 1 ? allRouteOptions.map(r => ({ distance: r.distance, duration: r.duration })) : undefined}
                     selectedRouteIndex={selectedRouteIndex}
                     onSelectRoute={handleSelectRoute}
+                    isFetchingRoute={isNavigating}
                 />
             )}
 
@@ -1135,8 +1234,12 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 visible={showVoiceOptions}
                 options={voiceOptions}
                 transcription={voiceTranscription}
+                disambiguationMessage={voiceDisambiguationMessage}
+                isRecording={isRecording}
                 onSelectOption={handleOptionSelect}
                 onClose={clearVoiceNavigation}
+                onPressIn={handleVoiceStart}
+                onPressOut={handleVoiceStop}
             />
 
             <VoiceNavigationModal
@@ -1153,6 +1256,16 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 destinationName={selectedDestination?.name}
                 onClose={() => setShowArrivalModal(false)}
             />
+
+            {voiceNavStarting && (
+                <View
+                    className="absolute inset-0 items-center justify-center bg-white"
+                    style={{ zIndex: 9999, elevation: 20 }}
+                >
+                    <ActivityIndicator size="large" color={colors.primary.main} />
+                    <Text className="text-base text-gray-600 mt-4">{t('starting-navigation')}</Text>
+                </View>
+            )}
         </View>
     );
 }

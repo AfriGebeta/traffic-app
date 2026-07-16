@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import GebetaMap from '../../../components/GebetaMap';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 import { colors } from '../../../shared/theme/colors';
+import { useTheme } from '../../../shared/theme/ThemeContext';
 import { showToast } from '../../../shared/utils/toast';
 import { useMapTheme } from '../../map/context/MapThemeContext';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
@@ -25,6 +26,7 @@ export default function TaxiNavigationScreen() {
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
     const { currentTheme } = useMapTheme();
+    const { colors: theme, isDark } = useTheme();
     const { apiKey } = useRemoteConfig();
     const mapRef = useRef<GebetaMapRef>(null);
 
@@ -34,10 +36,10 @@ export default function TaxiNavigationScreen() {
 
     if (!routeData) {
         return (
-            <View className="flex-1 bg-gray-50 items-center justify-center">
-                <Text className="text-gray-600">Error loading route</Text>
+            <View className="flex-1 items-center justify-center" style={{ backgroundColor: theme.background }}>
+                <Text style={{ color: theme.textSecondary }}>Error loading route</Text>
                 <TouchableOpacity onPress={() => router.back()} className="mt-4">
-                    <Text className="text-orange-500">Go Back</Text>
+                    <Text style={{ color: theme.primary }}>Go Back</Text>
                 </TouchableOpacity>
             </View>
         );
@@ -57,7 +59,7 @@ export default function TaxiNavigationScreen() {
 
 
     const [navigationState, setNavigationState] = useState<{
-        userLocation: { lat: number; lng: number } | null;
+        userLocation: { lat: number; lng: number; accuracy?: number; speed?: number } | null;
         segmentedRoutes: Array<{
             geoJSON: any;
             isWalking: boolean;
@@ -71,7 +73,7 @@ export default function TaxiNavigationScreen() {
     const { userLocation: bgUserLocation, setUserLocation: setBgUserLocation, stopLocationTracking: stopBackgroundTracking } = useUserLocation();
 
     const updateNavigationState = useCallback((
-        location: { lat: number; lng: number },
+        location: { lat: number; lng: number; accuracy?: number; speed?: number },
         routes: Array<{
             geoJSON: any;
             isWalking: boolean;
@@ -84,7 +86,7 @@ export default function TaxiNavigationScreen() {
         });
     }, []);
 
-    const setUserLocation = useCallback((location: { lat: number; lng: number }) => {
+    const setUserLocation = useCallback((location: { lat: number; lng: number; accuracy?: number; speed?: number }) => {
         setNavigationState(prev => ({
             ...prev,
             userLocation: location
@@ -369,7 +371,7 @@ export default function TaxiNavigationScreen() {
     });
 
     return (
-        <View className="flex-1 bg-gray-50">
+        <View className="flex-1" style={{ backgroundColor: theme.background }}>
             <View className="flex-1">
                 <GebetaMap
                     ref={mapRef}
@@ -381,6 +383,7 @@ export default function TaxiNavigationScreen() {
                     onMapLoaded={() => setMapReady(true)}
                     isNavigating={isNavigating}
                     isTaxiNavigation={true}
+                    routeGeoJSON={routeGeoJSON}
                     currentTaxiSegmentIndex={currentSegmentIndex}
                     userLocation={userLocation}
                     userHeading={userHeading}
@@ -394,7 +397,7 @@ export default function TaxiNavigationScreen() {
                         className="absolute right-4 rounded-2xl px-4 py-2 shadow-lg flex-row items-center"
                         style={{
                             top: insets.top + 16,
-                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                            backgroundColor: isDark ? theme.surface : 'rgba(255, 255, 255, 0.95)',
                             shadowColor: '#000',
                             shadowOffset: { width: 0, height: 2 },
                             shadowOpacity: 0.1,
@@ -403,9 +406,9 @@ export default function TaxiNavigationScreen() {
                         }}
                     >
                         {isRecalculating && (
-                            <ActivityIndicator size="small" color="#F97316" style={{ marginRight: 8 }} />
+                            <ActivityIndicator size="small" color={colors.primary.main} style={{ marginRight: 8 }} />
                         )}
-                        <Text className="text-orange-600 font-semibold">
+                        <Text className="font-semibold" style={{ color: colors.primary.main }}>
                             {isRecalculating ? 'Recalculating...' : 'Off Route'}
                         </Text>
                     </View>
@@ -414,32 +417,26 @@ export default function TaxiNavigationScreen() {
                 <View className="absolute left-4 right-4" style={{ top: insets.top + 18 }}>
                     <View
                         style={{
-                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                            borderRadius: 20,
+                            backgroundColor: '#0F9D58',
+                            borderTopLeftRadius: 20,
+                            borderTopRightRadius: 20,
+                            borderBottomLeftRadius: 20,
+                            borderBottomRightRadius: 0,
                             padding: 20,
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.1,
-                            shadowRadius: 12,
-                            elevation: 5,
                         }}
                     >
-                        <View className="flex-row items-start justify-between mb-3">
-                            <View className="flex-1">
-                                <Text className="text-gray-900 text-3xl font-bold mb-1">
-                                    {currentInstruction || (isOnTaxi ? 'Stay on taxi' : 'Walk to station')}
-                                </Text>
-                                <Text className="text-gray-500 text-base">
-                                    for {formatDistance(remainingDistance)}
-                                </Text>
-                            </View>
-                        </View>
+                        <Text className="text-white text-3xl font-bold mb-1">
+                            {currentInstruction || (isOnTaxi ? 'Stay on taxi' : 'Walk to station')}
+                        </Text>
+                        <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 16 }}>
+                            for {formatDistance(remainingDistance)}
+                        </Text>
 
-                        <View className="flex-row items-center gap-3">
+                        <View className="flex-row items-center gap-3 mt-3">
                             <View className="flex-row items-center">
                                 <View
                                     className="w-6 h-6 rounded-full items-center justify-center"
-                                    style={{ backgroundColor: isOnTaxi ? colors.primary.main : '#3B82F6' }}
+                                    style={{ backgroundColor: 'rgba(255,255,255,0.25)' }}
                                 >
                                     <Ionicons
                                         name={isOnTaxi ? 'car' : 'walk'}
@@ -447,13 +444,13 @@ export default function TaxiNavigationScreen() {
                                         color="white"
                                     />
                                 </View>
-                                <Text className="text-gray-700 text-xs font-semibold ml-1.5">
+                                <Text className="text-xs font-semibold ml-1.5 text-white">
                                     {isOnTaxi ? 'On Taxi' : 'Walking'}
                                 </Text>
                             </View>
                             <View className="flex-row items-center">
-                                <Ionicons name="cash" size={14} color={colors.primary.main} />
-                                <Text className="font-bold ml-1 text-sm" style={{ color: colors.primary.main }}>
+                                <Ionicons name="cash" size={14} color="white" />
+                                <Text className="font-bold ml-1 text-sm text-white">
                                     {totalFare} {currency}
                                 </Text>
                             </View>
@@ -468,7 +465,7 @@ export default function TaxiNavigationScreen() {
                     <View
                         className="rounded-3xl p-4"
                         style={{
-                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                            backgroundColor: isDark ? theme.surface : 'rgba(255, 255, 255, 0.95)',
                             shadowColor: '#000',
                             shadowOffset: { width: 0, height: 2 },
                             shadowOpacity: 0.1,
@@ -479,13 +476,13 @@ export default function TaxiNavigationScreen() {
 
                         <View className="flex-row items-center justify-between mb-3">
                             <View className="flex-1">
-                                <Text className="text-gray-900 text-2xl font-bold">
+                                <Text className="text-2xl font-bold" style={{ color: theme.textPrimary }}>
                                     {formatTime(remainingTime)}
                                 </Text>
-                                <Text className="text-gray-500 text-xs mt-0.5">
+                                <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }}>
                                     ETA {new Date(Date.now() + remainingTime * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                                 </Text>
-                                <Text className="text-gray-900 text-sm font-semibold mt-1" numberOfLines={1}>
+                                <Text className="text-sm font-semibold mt-1" style={{ color: theme.textPrimary }} numberOfLines={1}>
                                     {endNode.name}
                                 </Text>
                             </View>

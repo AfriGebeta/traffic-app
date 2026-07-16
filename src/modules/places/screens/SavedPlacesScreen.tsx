@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../../shared/theme/colors';
+import { useTheme } from '../../../shared/theme/ThemeContext';
 import { placeService } from '../services/place.service';
 import type { SavedPlace, SavedPlaceType } from '../types/place.types';
 import { showToast } from '../../../shared/utils/toast';
@@ -15,6 +16,7 @@ export const SavedPlacesScreen = () => {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { t } = useTranslation();
+    const { colors: theme, isDark } = useTheme();
     const [savedPlaces, setSavedPlaces] = useState<SavedPlace[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<TabType>('ALL');
@@ -114,12 +116,12 @@ export const SavedPlacesScreen = () => {
 
     if (loading) {
         return (
-            <View className="flex-1 bg-white">
+            <View className="flex-1" style={{ backgroundColor: theme.background }}>
                 <View className="px-6 pt-12 pb-6 flex-row items-center">
                     <TouchableOpacity onPress={() => router.back()}>
-                        <Ionicons name="arrow-back" size={24} color="#1f2937" />
+                        <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
                     </TouchableOpacity>
-                    <Text className="text-2xl font-bold text-gray-900 ml-4">
+                    <Text className="text-2xl font-bold ml-4" style={{ color: theme.textPrimary }}>
                         {t('saved-places')}
                     </Text>
                 </View>
@@ -131,12 +133,12 @@ export const SavedPlacesScreen = () => {
     }
 
     return (
-        <View className="flex-1 bg-white">
+        <View className="flex-1" style={{ backgroundColor: theme.background }}>
             <View className="px-6 pt-12 pb-4 flex-row items-center">
                 <TouchableOpacity onPress={() => router.back()}>
-                    <Ionicons name="arrow-back" size={24} color="#1f2937" />
+                    <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
                 </TouchableOpacity>
-                <Text className="text-2xl font-bold text-gray-900 ml-4">
+                <Text className="text-2xl font-bold ml-4" style={{ color: theme.textPrimary }}>
                     {t('saved-places')}
                 </Text>
             </View>
@@ -160,35 +162,33 @@ export const SavedPlacesScreen = () => {
                                     activeOpacity={0.8}
                                 >
                                     <View
-                                        className={`px-4 py-2 flex-row items-center rounded-full ${isActive ? 'bg-orange-400' : 'bg-white/90'
-                                            }`}
+                                        className="px-4 py-2 flex-row items-center rounded-full"
                                         style={{
+                                            backgroundColor: isActive ? theme.primary : theme.surface,
                                             borderWidth: 0.5,
-                                            borderColor: isActive
-                                                ? 'rgba(249, 115, 22, 0.3)'
-                                                : 'rgba(156, 163, 175, 0.3)',
+                                            borderColor: isActive ? theme.primaryHover : theme.border,
                                             borderRadius: 9999,
                                         }}
                                     >
                                         <Ionicons
                                             name={tab.icon as any}
                                             size={16}
-                                            color={isActive ? '#fff' : '#6B7280'}
+                                            color={isActive ? '#fff' : theme.textSecondary}
                                         />
                                         <Text
-                                            className={`text-sm font-medium ml-1.5 ${isActive ? 'text-white' : 'text-gray-800'
-                                                }`}
+                                            className="text-sm font-medium ml-1.5"
+                                            style={{ color: isActive ? '#FFFFFF' : theme.textPrimary }}
                                         >
                                             {tab.label}
                                         </Text>
                                         {count > 0 && (
                                             <View
-                                                className={`ml-1.5 px-1.5 py-0.5 rounded-full min-w-[18px] items-center ${isActive ? 'bg-white/20' : 'bg-gray-200'
-                                                    }`}
+                                                className="ml-1.5 px-1.5 py-0.5 rounded-full min-w-[18px] items-center"
+                                                style={{ backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : (isDark ? theme.background : '#E5E7EB') }}
                                             >
                                                 <Text
-                                                    className={`text-xs font-bold ${isActive ? 'text-white' : 'text-gray-600'
-                                                        }`}
+                                                    className="text-xs font-bold"
+                                                    style={{ color: isActive ? '#FFFFFF' : theme.textSecondary }}
                                                 >
                                                     {count}
                                                 </Text>
@@ -210,10 +210,10 @@ export const SavedPlacesScreen = () => {
                     >
                         <Ionicons name="bookmark-outline" size={48} color={colors.primary.main} />
                     </View>
-                    <Text className="text-2xl font-bold text-gray-900 mb-3">
+                    <Text className="text-2xl font-bold mb-3" style={{ color: theme.textPrimary }}>
                         {t('no-saved-places')}
                     </Text>
-                    <Text className="text-gray-500 text-center text-base">
+                    <Text className="text-center text-base" style={{ color: theme.textSecondary }}>
                         {t('save-favorite-locations')}
                     </Text>
                 </View>
@@ -227,7 +227,8 @@ export const SavedPlacesScreen = () => {
                         <TouchableOpacity
                             key={place.id}
                             onPress={() => handleNavigateToPlace(place)}
-                            className="bg-gray-50 rounded-2xl p-4 mb-3 flex-row items-center"
+                            className="rounded-2xl p-4 mb-3 flex-row items-center"
+                            style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
                         >
                             <View
                                 className="w-12 h-12 rounded-full items-center justify-center mr-4"
@@ -241,20 +242,20 @@ export const SavedPlacesScreen = () => {
                             </View>
                             <View className="flex-1">
                                 <View className="flex-row items-center mb-1">
-                                    <Text className="text-base font-semibold text-gray-900 flex-1">
+                                    <Text className="text-base font-semibold flex-1" style={{ color: theme.textPrimary }}>
                                         {place.label}
                                     </Text>
                                     {place.isPrivate && (
                                         <View className="flex-row items-center ml-2">
-                                            <Ionicons name="lock-closed" size={14} color="#6B7280" />
-                                            <Text className="text-xs text-gray-500 ml-1">{t('private')}</Text>
+                                            <Ionicons name="lock-closed" size={14} color={theme.textSecondary} />
+                                            <Text className="text-xs ml-1" style={{ color: theme.textSecondary }}>{t('private')}</Text>
                                         </View>
                                     )}
                                 </View>
-                                <Text className="text-sm text-gray-500">
+                                <Text className="text-sm" style={{ color: theme.textSecondary }}>
                                     {place.type}
                                 </Text>
-                                <Text className="text-xs text-gray-400 mt-1">
+                                <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>
                                     {place.lat.toFixed(4)}, {place.lng.toFixed(4)}
                                 </Text>
                             </View>
@@ -262,7 +263,7 @@ export const SavedPlacesScreen = () => {
                                 onPress={() => handleDeletePlace(place.id, place.label)}
                                 className="p-2"
                             >
-                                <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                                <Ionicons name="trash-outline" size={20} color={theme.error} />
                             </TouchableOpacity>
                         </TouchableOpacity>
                     ))}

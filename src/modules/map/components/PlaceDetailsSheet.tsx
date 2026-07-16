@@ -5,6 +5,7 @@ import { BlurView } from 'expo-blur';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../../shared/theme/colors';
+import { useTheme } from '../../../shared/theme/ThemeContext';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 import { ShareLocationButton } from '../../../shared/components/ShareLocationButton';
 import { SavePlaceModal } from '../../places/components/SavePlaceModal';
@@ -25,6 +26,7 @@ export const PlaceDetailsSheet: React.FC<PlaceDetailsSheetProps> = ({
 }) => {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
+    const { colors: theme, isDark } = useTheme();
     const [showSaveModal, setShowSaveModal] = useState(false);
     const [savedPlace, setSavedPlace] = useState<SavedPlace | null>(null);
 
@@ -88,8 +90,8 @@ export const PlaceDetailsSheet: React.FC<PlaceDetailsSheetProps> = ({
                 onPress={onClose}
             >
                 <View className="rounded-t-3xl overflow-hidden">
-                    <BlurView intensity={100} tint="light" style={{ borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
-                        <View style={{ backgroundColor: 'rgba(255, 255, 255, 0.4)', borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
+                    <BlurView intensity={100} tint={isDark ? 'dark' : 'light'} style={{ borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
+                        <View style={{ backgroundColor: isDark ? 'rgba(30, 30, 30, 0.6)' : 'rgba(255, 255, 255, 0.4)', borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
                             <Pressable
                                 className="p-6"
                                 style={{
@@ -97,21 +99,21 @@ export const PlaceDetailsSheet: React.FC<PlaceDetailsSheetProps> = ({
                                 }}
                                 onPress={(e) => e.stopPropagation()}
                             >
-                                <View className="w-12 h-1 bg-gray-300 rounded-full self-center mb-4" />
+                                <View className="w-12 h-1 rounded-full self-center mb-4" style={{ backgroundColor: theme.border }} />
 
                                 <View className="flex-row items-start mb-4">
                                     <View className="flex-1">
-                                        <Text className="text-2xl font-bold text-gray-900 mb-1">
+                                        <Text className="text-2xl font-bold mb-1" style={{ color: theme.textPrimary }}>
                                             {place.name}
                                         </Text>
                                         {(place.City || place.Country) && (
-                                            <Text className="text-sm text-gray-600">
+                                            <Text className="text-sm" style={{ color: theme.textSecondary }}>
                                                 {[place.City, place.Country].filter(Boolean).join(', ')}
                                             </Text>
                                         )}
                                         <View className="flex-row items-center mt-2">
-                                            <Ionicons name="location" size={16} color="#6B7280" />
-                                            <Text className="text-sm text-gray-600 ml-1">
+                                            <Ionicons name="location" size={16} color={theme.textSecondary} />
+                                            <Text className="text-sm ml-1" style={{ color: theme.textSecondary }}>
                                                 {place.type}
                                             </Text>
                                         </View>
@@ -120,7 +122,7 @@ export const PlaceDetailsSheet: React.FC<PlaceDetailsSheetProps> = ({
                                         onPress={onClose}
                                         className="p-2"
                                     >
-                                        <Ionicons name="close" size={24} color="#6B7280" />
+                                        <Ionicons name="close" size={24} color={theme.textSecondary} />
                                     </TouchableOpacity>
                                 </View>
 
@@ -154,13 +156,13 @@ export const PlaceDetailsSheet: React.FC<PlaceDetailsSheetProps> = ({
                                     </View>
                                     <TouchableOpacity
                                         onPress={savedPlace ? handleUnsavePlace : () => setShowSaveModal(true)}
-                                        className="bg-gray-100 rounded-xl py-4 px-4 flex-row items-center justify-center"
-                                        style={{ minWidth: 60 }}
+                                        className="rounded-xl py-4 px-4 flex-row items-center justify-center"
+                                        style={{ minWidth: 60, backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : '#F3F4F6' }}
                                     >
                                         <Ionicons
                                             name={savedPlace ? "bookmark" : "bookmark-outline"}
                                             size={20}
-                                            color="#1F2937"
+                                            color={theme.textPrimary}
                                         />
                                     </TouchableOpacity>
                                 </View>

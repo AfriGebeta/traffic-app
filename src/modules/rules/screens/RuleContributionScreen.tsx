@@ -6,10 +6,12 @@ import { ruleService } from '../services/rule.service';
 import { TrafficRuleType } from '../types/rule.types';
 import { useTranslation } from 'react-i18next';
 import { RULE_TRANSLATION_MAP } from '../utils/ruleTranslations';
+import { useTheme } from '../../../shared/theme/ThemeContext';
 
 export default function RuleContributionScreen() {
     const router = useRouter();
     const { t } = useTranslation();
+    const { colors: theme, isDark } = useTheme();
     const [ruleTypes, setRuleTypes] = useState<TrafficRuleType[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -46,19 +48,19 @@ export default function RuleContributionScreen() {
 
     if (loading) {
         return (
-            <View className="flex-1 bg-gray-50 mt-8">
-                <View className="px-4 py-6 border-b border-gray-50">
+            <View className="flex-1 pt-8" style={{ backgroundColor: theme.background }}>
+                <View className="px-4 py-6" style={{ borderBottomWidth: 1, borderBottomColor: theme.background }}>
                     <View className="flex-row items-center mb-2">
                         <TouchableOpacity
                             onPress={() => router.back()}
                             className="mr-4"
                             activeOpacity={0.7}
                         >
-                            <Ionicons name="arrow-back" size={28} color="#FFA500" />
+                            <Ionicons name="arrow-back" size={28} color={theme.primary} />
                         </TouchableOpacity>
-                        <Text className="text-2xl font-bold text-gray-900">{t('report-traffic-rule')}</Text>
+                        <Text className="text-2xl font-bold" style={{ color: theme.textPrimary }}>{t('report-traffic-rule')}</Text>
                     </View>
-                    <Text className="text-gray-600 mt-2">{t('report-traffic-rule-violations')}</Text>
+                    <Text className="mt-2" style={{ color: theme.textSecondary }}>{t('report-traffic-rule-violations')}</Text>
                 </View>
 
                 <ScrollView className="flex-1 p-4" contentContainerStyle={{ paddingBottom: 100 }}>
@@ -66,14 +68,15 @@ export default function RuleContributionScreen() {
                         {[1, 2, 3, 4, 5, 6].map((index) => (
                             <View
                                 key={index}
-                                className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex-row items-center"
+                                className="rounded-2xl p-6 shadow-sm flex-row items-center"
+                                style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
                             >
-                                <View className="w-16 h-16 mr-4 bg-gray-200 rounded-xl animate-pulse" />
+                                <View className="w-16 h-16 mr-4 rounded-xl animate-pulse" style={{ backgroundColor: theme.border }} />
                                 <View className="flex-1 gap-2">
-                                    <View className="h-5 bg-gray-200 rounded w-3/4 animate-pulse" />
-                                    <View className="h-4 bg-gray-200 rounded w-full animate-pulse" />
+                                    <View className="h-5 rounded w-3/4 animate-pulse" style={{ backgroundColor: theme.border }} />
+                                    <View className="h-4 rounded w-full animate-pulse" style={{ backgroundColor: theme.border }} />
                                 </View>
-                                <View className="w-6 h-6 bg-gray-200 rounded animate-pulse" />
+                                <View className="w-6 h-6 rounded animate-pulse" style={{ backgroundColor: theme.border }} />
                             </View>
                         ))}
                     </View>
@@ -83,19 +86,19 @@ export default function RuleContributionScreen() {
     }
 
     return (
-        <View className="flex-1 bg-gray-50 mt-8">
-            <View className="px-4 py-6 border-b border-gray-50">
+        <View className="flex-1 pt-8" style={{ backgroundColor: theme.background }}>
+            <View className="px-4 py-6" style={{ borderBottomWidth: 1, borderBottomColor: theme.background }}>
                 <View className="flex-row items-center mb-2">
                     <TouchableOpacity
                         onPress={() => router.back()}
                         className="mr-4"
                         activeOpacity={0.7}
                     >
-                        <Ionicons name="arrow-back" size={28} color="#FFA500" />
+                        <Ionicons name="arrow-back" size={28} color={theme.primary} />
                     </TouchableOpacity>
-                    <Text className="text-2xl font-bold text-gray-900">{t('report-traffic-rule')}</Text>
+                    <Text className="text-2xl font-bold" style={{ color: theme.textPrimary }}>{t('report-traffic-rule')}</Text>
                 </View>
-                <Text className="text-gray-600 mt-2">{t('report-traffic-rule-violations')}</Text>
+                <Text className="mt-2" style={{ color: theme.textSecondary }}>{t('report-traffic-rule-violations')}</Text>
             </View>
 
             <ScrollView className="flex-1 p-4" contentContainerStyle={{ paddingBottom: 100 }}>
@@ -108,10 +111,14 @@ export default function RuleContributionScreen() {
                         return (
                             <TouchableOpacity
                                 key={ruleType.id}
-                                className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex-row items-center"
+                                className="rounded-2xl p-6 shadow-sm flex-row items-center"
+                                style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
                                 onPress={() => handleRuleTypeSelect(ruleType)}
                             >
-                                <View className="w-16 h-16 items-center justify-center mr-4 bg-gray-100 rounded-xl overflow-hidden">
+                                <View
+                                    className="w-16 h-16 items-center justify-center mr-4 rounded-xl overflow-hidden"
+                                    style={{ backgroundColor: isDark ? '#FFFFFF' : '#F3F4F6' }}
+                                >
                                     <Image
                                         source={{ uri: ruleType.img }}
                                         style={{ width: 48, height: 48 }}
@@ -119,14 +126,14 @@ export default function RuleContributionScreen() {
                                     />
                                 </View>
                                 <View className="flex-1">
-                                    <Text className="text-lg font-semibold text-gray-900">
+                                    <Text className="text-lg font-semibold" style={{ color: theme.textPrimary }}>
                                         {displayName}
                                     </Text>
-                                    <Text className="text-gray-500 text-sm mt-1" numberOfLines={2}>
+                                    <Text className="text-sm mt-1" style={{ color: theme.textSecondary }} numberOfLines={2}>
                                         {displayDescription}
                                     </Text>
                                 </View>
-                                <Ionicons name="chevron-forward" size={24} color="#9CA3AF" />
+                                <Ionicons name="chevron-forward" size={24} color={theme.textSecondary} />
                             </TouchableOpacity>
                         );
                     })}
