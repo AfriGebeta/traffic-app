@@ -4,6 +4,7 @@ import MapLibreGL from '@maplibre/maplibre-react-native';
 import { GebetaMapRef, GebetaMapProps } from '@gebeta/tiles-react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import { getAppConfig } from '../../shared/config/remoteConfigValues';
 import { showToast } from '../../shared/utils/toast';
 import { decodePolyline } from '../../shared/utils/polyline';
@@ -18,6 +19,26 @@ import {
     calculateDistance,
     calculateBearing,
 } from '../../modules/navigation/utils/navigationUtils';
+import AccidentLightIcon from '../../../assets/images/accident-light.svg';
+import AccidentDarkIcon from '../../../assets/images/accident-dark.svg';
+import BadWeatherLightIcon from '../../../assets/images/bad-weather-light.svg';
+import BadWeatherDarkIcon from '../../../assets/images/bad-weather-dark.svg';
+import BrokenRoadLightIcon from '../../../assets/images/broken-road-light.svg';
+import BrokenRoadDarkIcon from '../../../assets/images/broken-road-dark.svg';
+import ClosureLightIcon from '../../../assets/images/closure-light.svg';
+import ClosureDarkIcon from '../../../assets/images/closure-dark.svg';
+import CrashLightIcon from '../../../assets/images/crash-light.svg';
+import CrashDarkIcon from '../../../assets/images/crash-dark.svg';
+import GatedCommunityLightIcon from '../../../assets/images/gated-community-light.svg';
+import GatedCommunityDarkIcon from '../../../assets/images/gated-community-dark.svg';
+import HazardLightIcon from '../../../assets/images/hazard-light.svg';
+import HazardDarkIcon from '../../../assets/images/hazard-dark.svg';
+import OtherLightIcon from '../../../assets/images/other-light.svg';
+import OtherDarkIcon from '../../../assets/images/other-dark.svg';
+import RadarLightIcon from '../../../assets/images/radar-light.svg';
+import RadarDarkIcon from '../../../assets/images/radar-dark.svg';
+import TrafficJamLightIcon from '../../../assets/images/traffic-jam-light.svg';
+import TrafficJamDarkIcon from '../../../assets/images/traffic-jam-dark.svg';
 
 const MAPPIN_IMAGE = require('../../../assets/images/Mappin.png');
 const NAV_ARROWHEAD_IMAGE = require('../../../assets/images/nav-arrowhead.png');
@@ -37,17 +58,17 @@ const EXPLORE_IMAGES = {
     atm: require('../../../assets/images/atm.png'),
 };
 
-const INCIDENT_IMAGES = {
-    ROAD_CLOSURE: require('../../../assets/images/closure.png'),
-    ACCIDENT: require('../../../assets/images/accident.png'),
-    TRAFFIC_JAM: require('../../../assets/images/traffic-jam.png'),
-    BAD_WEATHER: require('../../../assets/images/bad-weather.png'),
-    HAZARD: require('../../../assets/images/hazard.png'),
-    CRASH: require('../../../assets/images/crash.png'),
-    GATED_COMMUNITY: require('../../../assets/images/gated-community.png'),
-    BROKEN_ROAD: require('../../../assets/images/broken-road.png'),
-    RADAR: require('../../../assets/images/radar.png'),
-    OTHER: require('../../../assets/images/other.png'),
+const INCIDENT_SVG_ICONS: Record<string, { light: React.FC<{ width?: number; height?: number }>; dark: React.FC<{ width?: number; height?: number }> }> = {
+    ROAD_CLOSURE: { light: ClosureLightIcon, dark: ClosureDarkIcon },
+    ACCIDENT: { light: AccidentLightIcon, dark: AccidentDarkIcon },
+    TRAFFIC_JAM: { light: TrafficJamLightIcon, dark: TrafficJamDarkIcon },
+    BAD_WEATHER: { light: BadWeatherLightIcon, dark: BadWeatherDarkIcon },
+    HAZARD: { light: HazardLightIcon, dark: HazardDarkIcon },
+    CRASH: { light: CrashLightIcon, dark: CrashDarkIcon },
+    GATED_COMMUNITY: { light: GatedCommunityLightIcon, dark: GatedCommunityDarkIcon },
+    BROKEN_ROAD: { light: BrokenRoadLightIcon, dark: BrokenRoadDarkIcon },
+    RADAR: { light: RadarLightIcon, dark: RadarDarkIcon },
+    OTHER: { light: OtherLightIcon, dark: OtherDarkIcon },
 };
 
 const MAP_TILE_LOADING_BACKGROUND = colors.gray[200];
@@ -768,6 +789,7 @@ AnimatedNavLayer.displayName = 'AnimatedNavLayer';
 
 const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
     ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, maneuvers, boundingBox, alternativeRoutesGeoJSON }, ref) => {
+        const { isDark } = useTheme();
         const [mapStyleState, setMapStyleState] = useState<Record<string, unknown> | null>(() =>
             mapStyleJson ? ensureStyleBackgroundLayer(mapStyleJson as Record<string, any>) : null
         );
@@ -1063,9 +1085,6 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         Image.prefetch(Image.resolveAssetSource(WAYPOINT_PIN_IMAGE).uri),
                         Image.prefetch(Image.resolveAssetSource(MINIBUS_SELECTED_IMAGE).uri),
                         ...Object.values(EXPLORE_IMAGES).map(img =>
-                            Image.prefetch(Image.resolveAssetSource(img).uri)
-                        ),
-                        ...Object.values(INCIDENT_IMAGES).map(img =>
                             Image.prefetch(Image.resolveAssetSource(img).uri)
                         ),
                     ]);
@@ -1857,7 +1876,8 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         )}
 
                         {incidents && imagesLoaded && incidents.map((incident) => {
-                            const imageSource = INCIDENT_IMAGES[incident.type.name as keyof typeof INCIDENT_IMAGES];
+                            const iconPair = INCIDENT_SVG_ICONS[incident.type.name as keyof typeof INCIDENT_SVG_ICONS];
+                            const IncidentSvgIcon = iconPair ? (isDark ? iconPair.dark : iconPair.light) : null;
 
                             return (
                                 <MapLibreGL.PointAnnotation
@@ -1869,22 +1889,15 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                     }}
                                 >
                                     <View style={{
-                                        width: 40,
-                                        height: 40,
+                                        width: 28,
+                                        height: 28,
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                     }}>
-                                        {imageSource ? (
-                                            <Image
-                                                source={imageSource}
-                                                style={{
-                                                    width: 36,
-                                                    height: 36,
-                                                }}
-                                                resizeMode="contain"
-                                            />
+                                        {IncidentSvgIcon ? (
+                                            <IncidentSvgIcon width={24} height={24} />
                                         ) : (
-                                            <Ionicons name="alert-circle" size={32} color="#F97316" />
+                                            <Ionicons name="alert-circle" size={22} color="#F97316" />
                                         )}
                                     </View>
                                 </MapLibreGL.PointAnnotation>
@@ -1899,8 +1912,8 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                     coordinate={[rule.lng, rule.lat]}
                                 >
                                     <View style={{
-                                        width: 40,
-                                        height: 40,
+                                        width: 28,
+                                        height: 28,
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                     }}>
@@ -1908,13 +1921,13 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                             <Image
                                                 source={{ uri: rule.type.img }}
                                                 style={{
-                                                    width: 36,
-                                                    height: 36,
+                                                    width: 24,
+                                                    height: 24,
                                                 }}
                                                 resizeMode="contain"
                                             />
                                         ) : (
-                                            <Ionicons name="warning" size={32} color="#EF4444" />
+                                            <Ionicons name="warning" size={22} color="#EF4444" />
                                         )}
                                     </View>
                                 </MapLibreGL.PointAnnotation>
