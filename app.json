@@ -106,7 +106,8 @@
         "react-native-audio-api",
         {
           "iosBackgroundMode": false,
-          "androidForegroundService": false
+          "androidForegroundService": false,
+          "androidPermissions": []
         }
       ]
     ],
