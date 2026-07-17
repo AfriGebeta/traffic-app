@@ -6,7 +6,7 @@ import { MapThemeProvider } from '../modules/map/context/MapThemeContext';
 import { UserLocationProvider } from '../modules/map/context/UserLocationContext';
 import { IncidentFiltersProvider } from '../modules/incidents/context/IncidentFiltersContext';
 import { LocationProvider } from '../shared/contexts/LocationContext';
-import { ThemeProvider } from '../shared/theme/ThemeContext';
+import { ThemeProvider, useTheme } from '../shared/theme/ThemeContext';
 import { useEffect, useRef } from 'react';
 import * as NavigationBar from 'expo-navigation-bar';
 import { AppState, AppStateStatus, Platform, PermissionsAndroid } from 'react-native';
@@ -28,21 +28,28 @@ applyGlobalFont();
 
 const BACKGROUND_IDLE_MS = 30 * 60 * 1000;
 
+function ThemedNavigationBar() {
+  const { colors, isDark } = useTheme();
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    try {
+      NavigationBar.setBackgroundColorAsync(colors.background);
+      NavigationBar.setButtonStyleAsync(isDark ? 'light' : 'dark');
+    } catch (error) {
+
+    }
+  }, [colors.background, isDark]);
+
+  return null;
+}
+
 function AppShell() {
   useTelegramDeepLink();
   const { updateRequired } = useRemoteConfig();
   const backgroundedAtRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (Platform.OS === 'android') {
-      try {
-        NavigationBar.setBackgroundColorAsync('#ffffff');
-        NavigationBar.setButtonStyleAsync('dark');
-      } catch (error) {
-
-      }
-    }
-
     telemetryApiService.trackAppLaunch();
 
     // cold start
@@ -83,6 +90,7 @@ function AppShell() {
       <GestureHandlerRootView style={{ flex: 1 }}>
         <MapThemeProvider>
         <ThemeProvider>
+          <ThemedNavigationBar />
           <UserLocationProvider>
             <LocationProvider>
               <IncidentFiltersProvider>
@@ -110,6 +118,7 @@ export default function RootLayout() {
     'PlusJakartaSans-SemiBold': require('../../assets/fonts/plus-jakarta-sans/PlusJakartaSans-SemiBold.ttf'),
     'PlusJakartaSans-Bold': require('../../assets/fonts/plus-jakarta-sans/PlusJakartaSans-Bold.ttf'),
     'PlusJakartaSans-ExtraBold': require('../../assets/fonts/plus-jakarta-sans/PlusJakartaSans-ExtraBold.ttf'),
+    'RammettoOne-Regular': require('../../assets/fonts/rammetto-one/RammettoOne-Regular.ttf'),
   });
 
   useEffect(() => {

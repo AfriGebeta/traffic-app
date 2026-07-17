@@ -6,21 +6,46 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUserRegistration } from '../../register/hooks/useUserRegistration';
 import { User } from '../../register/types/user.types';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
-import { LanguageSwitcher } from '../../../shared/components/LanguageSwitcher';
+import { changeLanguage } from '../../../shared/utils/localization/i18n';
 import { leaderboardService } from '../../leaderboard/services/leaderboard.service';
 import { colors } from '../../../shared/theme/colors';
+import { useTheme } from '../../../shared/theme/ThemeContext';
 import { IncidentFiltersModal } from '../../incidents/components/IncidentFiltersModal';
 import { useRulePreferences } from '../../rules/hooks/useRulePreferences';
 import { showToast } from '../../../shared/utils/toast';
 
+import PointsIcon from '../../../../assets/images/profile-points.svg';
+import ReportIcon from '../../../../assets/images/profile-report.svg';
+import RankIcon from '../../../../assets/images/profile-rank.svg';
+import LeaderboardIcon from '../../../../assets/images/profile-leaderboard.svg';
+import HomeIcon from '../../../../assets/images/profile-home.svg';
+import WorkIcon from '../../../../assets/images/profile-work.svg';
+import OthersIcon from '../../../../assets/images/profile-others.svg';
+import IncidentFiltersIcon from '../../../../assets/images/profile-incident-filters.svg';
+import RulesIcon from '../../../../assets/images/profile-rules.svg';
+import LogoutIcon from '../../../../assets/images/profile-logout.svg';
+
+const LANGUAGES = [
+    { code: 'en' as const, label: 'English', flag: '🇬🇧' },
+    { code: 'am' as const, label: 'አማርኛ', flag: '🇪🇹' },
+];
+
+const SAVED_PLACE_CARDS = [
+    { key: 'home', label: 'Home', Icon: HomeIcon, color: '#A855F7' },
+    { key: 'office', label: 'Office', Icon: WorkIcon, color: '#3B82F6' },
+    { key: 'custom', label: 'Custom', Icon: OthersIcon, color: '#A855F7' },
+];
+
 export const ProfileScreen = () => {
     const router = useRouter();
-    const { t } = useTranslation();
+    const { t, language } = useTranslation();
+    const { colors: theme } = useTheme();
     const { getStoredUser, clearAuth } = useUserRegistration();
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const insets = useSafeAreaInsets();
     const [showFiltersModal, setShowFiltersModal] = useState(false);
+    const [showLanguages, setShowLanguages] = useState(false);
 
     const [level, setLevel] = useState('');
     const [rank, setRank] = useState(0);
@@ -28,6 +53,8 @@ export const ProfileScreen = () => {
     const [points, setPoints] = useState(0);
 
     const { preferences: rulePreferences, toggleShowOnMap } = useRulePreferences();
+
+    const cardStyle = { borderWidth: 1, borderColor: theme.border, backgroundColor: theme.background };
 
     useEffect(() => {
         loadUser();
@@ -66,52 +93,39 @@ export const ProfileScreen = () => {
 
     if (loading) {
         return (
-            <View className="flex-1 bg-white">
-                <View className="px-6 pt-12 pb-4 flex-row items-center justify-between">
-                    <View className="w-6 h-6 bg-gray-200 rounded-full" />
-                    <View className="w-32 h-10 bg-gray-200 rounded-xl" />
-                </View>
-
-                <View className="px-6">
-                    <View className="items-center mb-8 mt-4">
-                        <View className="bg-gray-200 rounded-full w-20 h-20 mb-4" />
-                        <View className="w-32 h-7 bg-gray-200 rounded-lg mb-2" />
-                        <View className="w-40 h-5 bg-gray-200 rounded-lg" />
-                    </View>
-
-                    <View className="flex-row mb-6 gap-3">
-                        <View className="flex-1 bg-gray-50 rounded-2xl p-4">
-                            <View className="w-6 h-6 bg-gray-200 rounded-full mb-2" />
-                            <View className="w-16 h-8 bg-gray-200 rounded-lg mb-1" />
-                            <View className="w-12 h-3 bg-gray-200 rounded" />
-                        </View>
-                        <View className="flex-1 bg-gray-50 rounded-2xl p-4">
-                            <View className="w-6 h-6 bg-gray-200 rounded-full mb-2" />
-                            <View className="w-16 h-8 bg-gray-200 rounded-lg mb-1" />
-                            <View className="w-12 h-3 bg-gray-200 rounded" />
-                        </View>
-                        <View className="flex-1 bg-gray-50 rounded-2xl p-4">
-                            <View className="w-6 h-6 bg-gray-200 rounded-full mb-2" />
-                            <View className="w-16 h-8 bg-gray-200 rounded-lg mb-1" />
-                            <View className="w-12 h-3 bg-gray-200 rounded" />
-                        </View>
-                    </View>
-
-                    <View className="bg-gray-50 rounded-2xl p-5 mb-6">
+            <View className="flex-1" style={{ paddingTop: insets.top + 12, backgroundColor: theme.background }}>
+                <View className="px-5">
+                    <View className="flex-row items-center justify-between mb-6">
                         <View className="flex-row items-center">
-                            <View className="w-9 h-9 bg-gray-200 rounded-full mr-3" />
+                            <View className="w-12 h-12 rounded-full mr-3" style={{ backgroundColor: theme.surface }} />
                             <View>
-                                <View className="w-20 h-3 bg-gray-200 rounded mb-2" />
-                                <View className="w-32 h-5 bg-gray-200 rounded-lg" />
+                                <View className="w-16 h-3 rounded mb-2" style={{ backgroundColor: theme.surface }} />
+                                <View className="w-24 h-5 rounded-lg" style={{ backgroundColor: theme.surface }} />
                             </View>
                         </View>
+                        <View className="w-8 h-8 rounded-lg" style={{ backgroundColor: theme.surface }} />
                     </View>
 
-                    <View className="bg-gray-50 rounded-2xl p-5 mb-6">
-                        <View className="flex-row items-center">
-                            <View className="w-6 h-6 bg-gray-200 rounded-full mr-3" />
-                            <View className="w-24 h-5 bg-gray-200 rounded-lg" />
-                        </View>
+                    <View className="rounded-2xl p-4 mb-8" style={cardStyle}>
+                        <View className="w-24 h-3 rounded mb-3" style={{ backgroundColor: theme.surface }} />
+                        <View className="w-48 h-8 rounded-lg" style={{ backgroundColor: theme.surface }} />
+                    </View>
+
+                    <View className="w-28 h-5 rounded mb-3" style={{ backgroundColor: theme.surface }} />
+                    <View className="flex-row gap-3 mb-3">
+                        <View className="flex-1 h-14 rounded-xl" style={{ backgroundColor: theme.surface }} />
+                        <View className="flex-1 h-14 rounded-xl" style={{ backgroundColor: theme.surface }} />
+                    </View>
+                    <View className="flex-row gap-3 mb-8">
+                        <View className="flex-1 h-14 rounded-xl" style={{ backgroundColor: theme.surface }} />
+                        <View className="flex-1 h-14 rounded-xl" style={{ backgroundColor: theme.surface }} />
+                    </View>
+
+                    <View className="w-28 h-5 rounded mb-3" style={{ backgroundColor: theme.surface }} />
+                    <View className="flex-row gap-3">
+                        <View className="flex-1 h-24 rounded-2xl" style={{ backgroundColor: theme.surface }} />
+                        <View className="flex-1 h-24 rounded-2xl" style={{ backgroundColor: theme.surface }} />
+                        <View className="flex-1 h-24 rounded-2xl" style={{ backgroundColor: theme.surface }} />
                     </View>
                 </View>
             </View>
@@ -120,10 +134,10 @@ export const ProfileScreen = () => {
 
     if (!user) {
         return (
-            <View className="flex-1 bg-white">
+            <View className="flex-1" style={{ backgroundColor: theme.background }}>
                 <View className="px-6 pt-12 pb-6">
                     <TouchableOpacity onPress={() => router.back()} className="mb-6">
-                        <Ionicons name="arrow-back" size={24} color="#1f2937" />
+                        <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
                     </TouchableOpacity>
                 </View>
 
@@ -131,10 +145,10 @@ export const ProfileScreen = () => {
                     <View className="rounded-full w-24 h-24 items-center justify-center mb-6" style={{ backgroundColor: colors.primary.main }}>
                         <Ionicons name="person-outline" size={48} color="#fff" />
                     </View>
-                    <Text className="text-2xl font-bold text-gray-900 mb-3">
+                    <Text className="text-2xl font-bold mb-3" style={{ color: theme.textPrimary }}>
                         {t('please-register')}
                     </Text>
-                    <Text className="text-gray-500 text-center mb-8 text-base">
+                    <Text className="text-center mb-8 text-base" style={{ color: theme.textSecondary }}>
                         {t('register-to-access-profile')}
                     </Text>
                     <TouchableOpacity
@@ -150,230 +164,251 @@ export const ProfileScreen = () => {
     }
 
     return (
-        <View className="flex-1 bg-white">
-            <View className="px-6 pt-12 pb-4 flex-row items-center justify-between">
-                <TouchableOpacity onPress={() => router.back()}>
-                    <Ionicons name="arrow-back" size={24} color="#1f2937" />
-                </TouchableOpacity>
-                <LanguageSwitcher />
-            </View>
-
-            <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-                <View className="px-6">
-                    <View className="items-center mb-8 mt-4">
-                        {user.profileImage ? (
-                            <Image
-                                source={{ uri: user.profileImage }}
-                                style={{
-                                    width: 80,
-                                    height: 80,
-                                    borderRadius: 40,
-                                    marginBottom: 16,
-                                }}
-                            />
-                        ) : (
-                            <View
-                                className="rounded-full w-20 h-20 items-center justify-center mb-4"
-                                style={{ backgroundColor: colors.primary.main }}
-                            >
-                                <Text className="text-white text-3xl font-bold">
-                                    {getInitial(user.name)}
+        <View className="flex-1" style={{ backgroundColor: theme.background }}>
+            <ScrollView
+                className="flex-1"
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{
+                    paddingTop: insets.top + 12,
+                    paddingBottom: Math.max(insets.bottom, 16) + 16,
+                }}
+            >
+                <View className="px-5">
+                    {/* Header */}
+                    <View className="flex-row items-center justify-between mb-6">
+                        <View className="flex-row items-center flex-1 mr-3">
+                            {user.profileImage ? (
+                                <Image
+                                    source={{ uri: user.profileImage }}
+                                    style={{ width: 48, height: 48, borderRadius: 24, marginRight: 12 }}
+                                />
+                            ) : (
+                                <View
+                                    className="rounded-full items-center justify-center"
+                                    style={{ width: 48, height: 48, marginRight: 12, backgroundColor: colors.primary.main }}
+                                >
+                                    <Text className="text-white text-xl font-bold">
+                                        {getInitial(user.name)}
+                                    </Text>
+                                </View>
+                            )}
+                            <View className="flex-1">
+                                <Text className="text-xs mb-0.5" style={{ color: theme.textSecondary }}>
+                                    {t('welcome') || 'Welcome'}
+                                </Text>
+                                <Text className="font-bold text-base" style={{ color: theme.textPrimary }} numberOfLines={1}>
+                                    {user.name}
                                 </Text>
                             </View>
-                        )}
-                        <Text className="text-2xl font-bold text-gray-900 mb-1">
-                            {user.name}
-                        </Text>
-                        {user.phoneNumber && !user.phoneNumber.startsWith('telegram:') && (
-                            <Text className="text-gray-500">{user.phoneNumber}</Text>
-                        )}
-                        {user.phoneNumber && user.phoneNumber.startsWith('telegram:') && (
-                            <View className="flex-row items-center">
-                                <Ionicons name="paper-plane" size={14} color="#0088cc" style={{ marginRight: 4 }} />
-                                <Text className="text-gray-500">Telegram User</Text>
-                            </View>
-                        )}
-                    </View>
-                    <View className="flex-row mb-6 gap-3">
-                        <View className="flex-1 bg-gray-50 rounded-2xl p-4">
-                            <Image
-                                source={require('../../../../assets/images/star.png')}
-                                style={{ width: 24, height: 24 }}
-                                resizeMode="contain"
-                            />
-                            <Text className="text-2xl font-bold text-gray-900 mt-2">{points}</Text>
-                            <Text className="text-gray-500 text-xs">{t('your-points')}</Text>
                         </View>
-                        <View className="flex-1 bg-gray-50 rounded-2xl p-4">
-                            <Image
-                                source={require('../../../../assets/images/flag.png')}
-                                style={{ width: 24, height: 24 }}
-                                resizeMode="contain"
-                            />
-                            <Text className="text-2xl font-bold text-gray-900 mt-2">{reportsCount}</Text>
-                            <Text className="text-gray-500 text-xs">{t('reports')}</Text>
-                        </View>
-                        <View className="flex-1 bg-gray-50 rounded-2xl p-4">
-                            <Image
-                                source={require('../../../../assets/images/trophy.png')}
-                                style={{ width: 24, height: 24 }}
-                                resizeMode="contain"
-                            />
-                            <Text className="text-2xl font-bold text-gray-900 mt-2">#{rank}</Text>
-                            <Text className="text-gray-500 text-xs">{t('rank')}</Text>
-                        </View>
-                    </View>
-                    <View className="bg-orange-50 rounded-2xl p-5 mb-6 border border-orange-200">
-                        <View className="flex-row items-center">
-                            <Image
-                                source={require('../../../../assets/images/rank.png')}
-                                style={{ width: 32, height: 32, marginRight: 12 }}
-                                resizeMode="contain"
-                            />
-                            <View>
-                                <Text className="text-gray-500 text-xs">{t('current-level')}</Text>
-                                <Text className="text-gray-900 font-bold text-lg">{level}</Text>
-                            </View>
-                        </View>
+                        <TouchableOpacity onPress={handleLogout} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                            <LogoutIcon width={26} height={26} color={theme.textPrimary} />
+                        </TouchableOpacity>
                     </View>
 
-                    <TouchableOpacity
-                        className="bg-gray-50 rounded-2xl p-5 mb-6 flex-row items-center justify-between"
-                        onPress={() => router.push('/leaderboard')}
-                    >
-                        <View className="flex-row items-center flex-1 mr-2">
-                            <Image
-                                source={require('../../../../assets/images/leaderboard.png')}
-                                style={{ width: 24, height: 24 }}
-                                resizeMode="contain"
-                            />
-                            <Text
-                                className="text-gray-900 font-semibold ml-3"
-                                numberOfLines={2}
-                                style={{ flex: 1 }}
-                            >
-                                {t('leaderboard')}
+                    <View className="rounded-2xl px-4 py-4 mb-8" style={cardStyle}>
+                        <View className="flex-row items-center mb-2">
+                            <LeaderboardIcon width={16} height={16} color={theme.textSecondary} />
+                            <Text className="text-xs ml-1.5" style={{ color: theme.textSecondary }}>
+                                {t('current-level')}
                             </Text>
                         </View>
-                        <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
-                    </TouchableOpacity>
+                        <Text
+                            style={{ fontFamily: 'RammettoOne-Regular', fontSize: 26, lineHeight: 36, color: theme.textPrimary }}
+                            numberOfLines={1}
+                        >
+                            {(level || '—').toUpperCase()}
+                        </Text>
+                    </View>
 
-                    <TouchableOpacity
-                        className="bg-gray-50 rounded-2xl p-5 mb-6 flex-row items-center justify-between"
-                        onPress={() => router.push('/saved-places')}
-                    >
-                        <View className="flex-row items-center flex-1 mr-2">
-                            <Ionicons name="bookmark" size={24} color="#1f2937" />
-                            <View className="ml-3 flex-1">
-                                <Text className="text-gray-900 font-semibold" numberOfLines={1}>
-                                    {t('saved-places') || 'Saved Places'}
-                                </Text>
-                                <Text className="text-gray-500 text-xs mt-0.5" numberOfLines={1}>
-                                    {t('your-favorite-locations') || 'Your favorite locations'}
-                                </Text>
+                    <Text className="font-bold text-base mb-3" style={{ color: theme.textPrimary }}>
+                        {t('community') || 'Community'}
+                    </Text>
+                    <View className="mb-8">
+                        <View className="flex-row gap-3 mb-3">
+                            <View className="flex-1 rounded-xl px-4 py-4 flex-row items-center justify-between" style={cardStyle}>
+                                <View className="flex-row items-center">
+                                    <PointsIcon width={20} height={20} color={theme.textPrimary} />
+                                    <Text className="ml-2 text-sm" style={{ color: theme.textPrimary }}>
+                                        {t('your-points') || 'Points'}
+                                    </Text>
+                                </View>
+                                <Text className="font-bold text-sm" style={{ color: theme.textPrimary }}>{points}</Text>
+                            </View>
+                            <View className="flex-1 rounded-xl px-4 py-4 flex-row items-center justify-between" style={cardStyle}>
+                                <View className="flex-row items-center">
+                                    <ReportIcon width={20} height={20} color={theme.textPrimary} />
+                                    <Text className="ml-2 text-sm" style={{ color: theme.textPrimary }}>
+                                        {t('reports') || 'Reports'}
+                                    </Text>
+                                </View>
+                                <Text className="font-bold text-sm" style={{ color: theme.textPrimary }}>{reportsCount}</Text>
                             </View>
                         </View>
-                        <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
-                    </TouchableOpacity>
+                        <View className="flex-row gap-3">
+                            <View className="flex-1 rounded-xl px-4 py-4 flex-row items-center justify-between" style={cardStyle}>
+                                <View className="flex-row items-center">
+                                    <RankIcon width={20} height={20} color={theme.textPrimary} />
+                                    <Text className="ml-2 text-sm" style={{ color: theme.textPrimary }}>
+                                        {t('rank') || 'Rank'}
+                                    </Text>
+                                </View>
+                                <Text className="font-bold text-sm" style={{ color: theme.textPrimary }}>#{rank}</Text>
+                            </View>
+                            <TouchableOpacity
+                                className="flex-1 rounded-xl px-4 py-4 flex-row items-center justify-between"
+                                style={cardStyle}
+                                onPress={() => router.push('/leaderboard')}
+                            >
+                                <View className="flex-row items-center flex-1 mr-1">
+                                    <LeaderboardIcon width={20} height={20} color={theme.textPrimary} />
+                                    <Text className="ml-2 text-sm" style={{ color: theme.textPrimary }} numberOfLines={1}>
+                                        {t('leaderboard')}
+                                    </Text>
+                                </View>
+                                <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
 
-                    <TouchableOpacity
-                        className="bg-gray-50 rounded-2xl p-5 mb-6 flex-row items-center justify-between"
-                        onPress={() => setShowFiltersModal(true)}
+                    <View className="flex-row items-center justify-between mb-3">
+                        <Text className="font-bold text-base" style={{ color: theme.textPrimary }}>
+                            {t('saved-places') || 'Saved Places'}
+                        </Text>
+                        <TouchableOpacity
+                            className="rounded-lg px-3 py-1.5"
+                            style={{ backgroundColor: theme.blue }}
+                            onPress={() => router.push('/saved-places')}
+                        >
+                            <Text className="text-white text-xs font-semibold">
+                                {t('view-all') || 'View all'} ›
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        className="mb-8"
+                        contentContainerStyle={{ gap: 12 }}
                     >
-                        <View className="flex-row items-center flex-1 mr-2">
-                            <Ionicons name="filter" size={24} color="#1f2937" />
-                            <View className="ml-3 flex-1">
-                                <Text className="text-gray-900 font-semibold" numberOfLines={1}>
+                        {SAVED_PLACE_CARDS.map(({ key, label, Icon, color }) => (
+                            <TouchableOpacity
+                                key={key}
+                                className="rounded-2xl p-3"
+                                style={[cardStyle, { width: 108 }]}
+                                onPress={() => router.push('/saved-places')}
+                            >
+                                <View
+                                    className="rounded-full items-center justify-center mb-3"
+                                    style={{ width: 40, height: 40, backgroundColor: color }}
+                                >
+                                    <Icon width={20} height={20} color="#fff" />
+                                </View>
+                                <View className="flex-row items-end justify-between">
+                                    <Text className="font-semibold text-sm" style={{ color: theme.textPrimary }}>{label}</Text>
+                                    <Ionicons name="arrow-up" size={14} color={theme.textSecondary} style={{ transform: [{ rotate: '45deg' }] }} />
+                                </View>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+
+                    <Text className="font-bold text-base mb-3" style={{ color: theme.textPrimary }}>
+                        {t('personalisation') || 'Personalisation'}
+                    </Text>
+                    <View className="rounded-2xl mb-8" style={cardStyle}>
+                        <TouchableOpacity
+                            className="flex-row items-center justify-between px-4 py-4"
+                            onPress={() => setShowFiltersModal(true)}
+                        >
+                            <View className="flex-row items-center flex-1 mr-2">
+                                <IncidentFiltersIcon width={20} height={20} color={theme.textPrimary} />
+                                <Text className="ml-3 text-sm" style={{ color: theme.textPrimary }} numberOfLines={1}>
                                     {t('incident-filters') || 'Incident Filters'}
                                 </Text>
-                                <Text className="text-gray-500 text-xs mt-0.5" numberOfLines={1}>
-                                    {t('select-incidents-to-see') || 'Customize what you see'}
-                                </Text>
                             </View>
-                        </View>
-                        <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
-                    </TouchableOpacity>
+                            <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
+                        </TouchableOpacity>
 
-                    <TouchableOpacity
-                        className="bg-gray-50 rounded-2xl p-5 mb-6 flex-row items-center justify-between"
-                        onPress={async () => {
-                            try {
-                                const newValue = await toggleShowOnMap();
-                                showToast.success(
-                                    newValue
-                                        ? t('rules-shown-on-map')
-                                        : t('rules-hidden-on-map')
-                                );
-                            } catch (error) {
-                                showToast.error(t('error'), t('failed-to-update-settings'));
-                            }
-                        }}
-                    >
-                        <View className="flex-row items-center flex-1 mr-2">
-                            <Ionicons name="warning" size={24} color="#1f2937" />
-                            <View className="ml-3 flex-1">
-                                <Text className="text-gray-900 font-semibold" numberOfLines={1}>
+                        <View className="h-px mx-4" style={{ backgroundColor: theme.border }} />
+
+                        <TouchableOpacity
+                            className="flex-row items-center justify-between px-4 py-4"
+                            onPress={async () => {
+                                try {
+                                    const newValue = await toggleShowOnMap();
+                                    showToast.success(
+                                        newValue
+                                            ? t('rules-shown-on-map')
+                                            : t('rules-hidden-on-map')
+                                    );
+                                } catch (error) {
+                                    showToast.error(t('error'), t('failed-to-update-settings'));
+                                }
+                            }}
+                        >
+                            <View className="flex-row items-center flex-1 mr-2">
+                                <RulesIcon width={20} height={20} color={theme.textPrimary} />
+                                <Text className="ml-3 text-sm" style={{ color: theme.textPrimary }} numberOfLines={1}>
                                     {t('show-rules-on-map')}
                                 </Text>
-                                <Text className="text-gray-500 text-xs mt-0.5" numberOfLines={1}>
-                                    {t('display-traffic-rules-on-map')}
-                                </Text>
                             </View>
-                        </View>
-                        <View className={`w-12 h-7 rounded-full justify-center ${rulePreferences.showOnMap ? '' : 'bg-gray-300'}`}
-                            style={rulePreferences.showOnMap ? { backgroundColor: colors.primary.main } : undefined}>
-                            <View className={`w-5 h-5 rounded-full bg-white ${rulePreferences.showOnMap ? 'ml-6' : 'ml-1'}`} />
-                        </View>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        className="bg-white rounded-2xl p-3 mb-6 flex-row items-center justify-between border border-red-200"
-                        onPress={handleLogout}
-                    >
-                        <View className="flex-row items-center flex-1 mr-2">
-                            <Ionicons name="log-out-outline" size={24} color="#ef4444" />
-                            <Text
-                                className="text-red-600 font-semibold ml-3"
-                                numberOfLines={2}
-                                style={{ flex: 1 }}
+                            <View
+                                className="w-11 h-6 rounded-full justify-center"
+                                style={{ backgroundColor: rulePreferences.showOnMap ? '#F59E0B' : theme.border }}
                             >
-                                {t('logout')}
-                            </Text>
-                        </View>
-                    </TouchableOpacity>
+                                <View className={`w-5 h-5 rounded-full bg-white ${rulePreferences.showOnMap ? 'ml-5' : 'ml-0.5'}`} />
+                            </View>
+                        </TouchableOpacity>
 
-                    <View className="items-center mb-6">
+                        <View className="h-px mx-4" style={{ backgroundColor: theme.border }} />
+
+                        <TouchableOpacity
+                            className="flex-row items-center justify-between px-4 py-4"
+                            onPress={() => setShowLanguages(!showLanguages)}
+                        >
+                            <Text className="text-sm" style={{ color: theme.textPrimary }}>
+                                {t('language') || 'Language'}
+                            </Text>
+                            <Ionicons name={showLanguages ? 'chevron-down' : 'chevron-forward'} size={16} color={theme.textSecondary} />
+                        </TouchableOpacity>
+
+                        {showLanguages && LANGUAGES.map((lang) => (
+                            <TouchableOpacity
+                                key={lang.code}
+                                className="flex-row items-center px-4 py-3"
+                                style={{ backgroundColor: theme.surface }}
+                                onPress={async () => {
+                                    await changeLanguage(lang.code);
+                                    setShowLanguages(false);
+                                }}
+                            >
+                                <Text className="text-base mr-2">{lang.flag}</Text>
+                                <Text
+                                    className={`text-sm ${lang.code === language ? 'font-bold' : ''}`}
+                                    style={{ color: lang.code === language ? theme.textPrimary : theme.textSecondary }}
+                                >
+                                    {lang.label}
+                                </Text>
+                                {lang.code === language && (
+                                    <Ionicons name="checkmark" size={18} color={colors.primary.main} style={{ marginLeft: 'auto' }} />
+                                )}
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+
+                    <View className="items-center">
                         <View className="flex-row items-center">
                             <TouchableOpacity onPress={() => router.push('/privacy-policy')}>
-                                <Text className="text-xs text-gray-600">
-                                    Privacy Policy
-                                </Text>
+                                <Text className="text-xs" style={{ color: theme.textSecondary }}>Privacy Policy</Text>
                             </TouchableOpacity>
-                            <Text className="text-gray-400 text-xs mx-2">•</Text>
+                            <Text className="text-xs mx-2" style={{ color: theme.textSecondary }}>•</Text>
                             <TouchableOpacity onPress={() => router.push('/terms-conditions')}>
-                                <Text className="text-xs text-gray-600">
-                                    Terms & Conditions
-                                </Text>
+                                <Text className="text-xs" style={{ color: theme.textSecondary }}>Terms & Conditions</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
                 </View>
             </ScrollView>
-
-            <View
-                className="items-center border-t border-gray-100"
-                style={{ paddingTop: 24, paddingBottom: Math.max(insets.bottom + 8, 24) }}
-            >
-                <View className="flex-row items-center mb-1">
-                    <Image
-                        source={require('../../../../assets/images/favicon.png')}
-                        style={{ width: 18, height: 18 }}
-                        resizeMode="contain"
-                    />
-                    <Text className="text-gray-900 font-semibold ml-2">GebetaMaps</Text>
-                </View>
-                <Text className="text-gray-400 text-xs">{t('powered-by-community')}</Text>
-            </View>
 
             {/* Incident Filters Modal */}
             <IncidentFiltersModal
