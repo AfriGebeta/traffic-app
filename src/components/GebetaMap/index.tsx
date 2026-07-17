@@ -27,6 +27,7 @@ import BrokenRoadLightIcon from '../../../assets/images/broken-road-light.svg';
 import BrokenRoadDarkIcon from '../../../assets/images/broken-road-dark.svg';
 import ClosureLightIcon from '../../../assets/images/closure-light.svg';
 import ClosureDarkIcon from '../../../assets/images/closure-dark.svg';
+
 import CrashLightIcon from '../../../assets/images/crash-light.svg';
 import CrashDarkIcon from '../../../assets/images/crash-dark.svg';
 import GatedCommunityLightIcon from '../../../assets/images/gated-community-light.svg';
@@ -37,6 +38,7 @@ import OtherLightIcon from '../../../assets/images/other-light.svg';
 import OtherDarkIcon from '../../../assets/images/other-dark.svg';
 import RadarLightIcon from '../../../assets/images/radar-light.svg';
 import RadarDarkIcon from '../../../assets/images/radar-dark.svg';
+
 import TrafficJamLightIcon from '../../../assets/images/traffic-jam-light.svg';
 import TrafficJamDarkIcon from '../../../assets/images/traffic-jam-dark.svg';
 
@@ -71,9 +73,13 @@ const INCIDENT_SVG_ICONS: Record<string, { light: React.FC<{ width?: number; hei
     OTHER: { light: OtherLightIcon, dark: OtherDarkIcon },
 };
 
-const MAP_TILE_LOADING_BACKGROUND = colors.gray[200];
+const MAP_TILE_LOADING_BACKGROUND_LIGHT = colors.gray[200];
+const MAP_TILE_LOADING_BACKGROUND_DARK = colors.gray[800];
 
-const ensureStyleBackgroundLayer = (styleJson: Record<string, any>): Record<string, any> => {
+const getTileLoadingBackground = (isDark: boolean) =>
+    isDark ? MAP_TILE_LOADING_BACKGROUND_DARK : MAP_TILE_LOADING_BACKGROUND_LIGHT;
+
+const ensureStyleBackgroundLayer = (styleJson: Record<string, any>, isDark: boolean): Record<string, any> => {
     const layers = Array.isArray(styleJson.layers) ? [...styleJson.layers] : [];
     const hasBackground = layers.some((layer) => layer.type === 'background');
     if (hasBackground) {
@@ -85,7 +91,7 @@ const ensureStyleBackgroundLayer = (styleJson: Record<string, any>): Record<stri
             {
                 id: 'gebeta-map-background',
                 type: 'background',
-                paint: { 'background-color': MAP_TILE_LOADING_BACKGROUND },
+                paint: { 'background-color': getTileLoadingBackground(isDark) },
             },
             ...layers,
         ],
@@ -792,7 +798,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
     ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, maneuvers, boundingBox, alternativeRoutesGeoJSON, routeTimeLabels }, ref) => {
         const { isDark } = useTheme();
         const [mapStyleState, setMapStyleState] = useState<Record<string, unknown> | null>(() =>
-            mapStyleJson ? ensureStyleBackgroundLayer(mapStyleJson as Record<string, any>) : null
+            mapStyleJson ? ensureStyleBackgroundLayer(mapStyleJson as Record<string, any>, isDark) : null
         );
         const cameraRef = useRef<any>(null);
         const mapViewRef = useRef<any>(null);
@@ -1345,7 +1351,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
         useEffect(() => {
             if (mapStyleJson) {
-                setMapStyleState(ensureStyleBackgroundLayer(mapStyleJson as Record<string, any>));
+                setMapStyleState(ensureStyleBackgroundLayer(mapStyleJson as Record<string, any>, isDark));
                 return;
             }
 
@@ -1376,7 +1382,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         }
                     }
 
-                    setMapStyleState(ensureStyleBackgroundLayer(styleJson));
+                    setMapStyleState(ensureStyleBackgroundLayer(styleJson, isDark));
                 } catch (error) {
                     console.error("Error loading style JSON:", error);
                     Alert.alert("Map Style Load Error", String(error));
@@ -1384,7 +1390,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             }
 
             processStyle();
-        }, [apiKey, mapStyleUrl, mapStyleJson]);
+        }, [apiKey, mapStyleUrl, mapStyleJson, isDark]);
 
         useLayoutEffect(() => {
             if (!center || isNavigating || !mapStyleState || externalCameraControl) return;
@@ -1445,7 +1451,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
         if (!mapStyleState || !center) {
             return (
-                <View style={[styles.container, { backgroundColor: MAP_TILE_LOADING_BACKGROUND }]} />
+                <View style={[styles.container, { backgroundColor: getTileLoadingBackground(isDark) }]} />
             );
         }
 
@@ -1455,7 +1461,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         return (
             <View style={styles.container}>
                 <View
-                    style={styles.mapSurface}
+                    style={[styles.mapSurface, { backgroundColor: getTileLoadingBackground(isDark) }]}
                     onLayout={(e) => {
                         const h = e.nativeEvent.layout.height;
                         mapHeightRef.current = h;
@@ -2180,7 +2186,6 @@ const styles = StyleSheet.create({
     },
     mapSurface: {
         flex: 1,
-        backgroundColor: MAP_TILE_LOADING_BACKGROUND,
     },
     navPuckOverlay: {
         position: 'absolute',
