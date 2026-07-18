@@ -1,5 +1,5 @@
 import { apiService } from '../../../shared/services/api';
-import { Place, PlaceContributionRequest, SavedPlace, SavePlaceRequest, SavePlaceVoiceRequest } from '../types/place.types';
+import { Place, PlaceContributionRequest, SavedPlace, SavePlaceRequest, SavePlaceVoiceRequest, HomeAddressRequiredField, MissingAddressFieldsError } from '../types/place.types';
 import { ClaimBusinessRequest, ClaimBusinessResponse } from '../types/claim.types';
 
 export const placeService = {
@@ -72,6 +72,10 @@ export const placeService = {
         });
 
         if (response.error || !response.data) {
+            const errorData = response.errorData as { elaboration?: string; values?: string[] } | undefined;
+            if (errorData?.elaboration === 'Missing address fields' && Array.isArray(errorData.values) && errorData.values.length > 0) {
+                throw new MissingAddressFieldsError(errorData.values as HomeAddressRequiredField[]);
+            }
             throw new Error(response.error || 'Failed to save place');
         }
 

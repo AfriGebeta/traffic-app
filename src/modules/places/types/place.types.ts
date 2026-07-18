@@ -56,6 +56,10 @@ export interface SavePlaceRequest extends SavedPlaceAddress {
     label: string;
 }
 
+export const HOME_ADDRESS_REQUIRED_FIELDS = ['region', 'city', 'subCity', 'woreda', 'sefer'] as const;
+
+export type HomeAddressRequiredField = (typeof HOME_ADDRESS_REQUIRED_FIELDS)[number];
+
 export interface SavePlaceVoiceRequest {
     type: SavedPlaceType;
     label: string;
@@ -65,15 +69,15 @@ export interface SavePlaceVoiceRequest {
     audioUri: string;
 }
 
-export const HOME_ADDRESS_REQUIRED_FIELDS = ['region', 'city', 'subCity', 'woreda', 'sefer'] as const;
+export class MissingAddressFieldsError extends Error {
+    fields: HomeAddressRequiredField[];
 
-export type HomeAddressRequiredField = (typeof HOME_ADDRESS_REQUIRED_FIELDS)[number];
-
-export const getMissingAddressFields = (place: Partial<SavedPlaceAddress>): HomeAddressRequiredField[] =>
-    HOME_ADDRESS_REQUIRED_FIELDS.filter(field => {
-        const value = place[field];
-        return value === undefined || value === null || String(value).trim() === '';
-    });
+    constructor(fields: HomeAddressRequiredField[]) {
+        super('Missing address fields: ' + fields.join(', '));
+        this.name = 'MissingAddressFieldsError';
+        this.fields = fields;
+    }
+}
 
 export const PLACE_TYPES = [
     { id: 'gas_station', label: 'Gas Station', icon: 'water' as const, color: '#EF4444' },
