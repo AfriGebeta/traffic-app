@@ -45,7 +45,14 @@ This app is built intended for a community-driven traffic reporting app for Ethi
    ```
 
 
-4. Run on Android device:
+4. Add Google Services config
+
+   App uses `@react-native-firebase/app`, needs firebase config on both platforms. Get files from the [Firebase Console](https://console.firebase.google.com) (project settings > your app):
+
+   - **Android:** place `google-services.json` at `./android/app/google-services.json` (or set `GOOGLE_SERVICES_JSON` env var to a path pointing to it, see `app.config.js`).
+   - **iOS:** place `GoogleService-Info.plist` at project root, or set `ios.googleServicesFile` in `app.json` to its path.
+
+5. Run on Android device:
    ```bash
    npx expo run:android
    ```
