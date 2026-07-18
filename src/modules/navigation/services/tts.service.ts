@@ -4,15 +4,15 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL!;
 
 export interface TTSRequest {
     text: string;
-    language: string;
+    language?: string;
     speaker_name?: string;
 }
 
 export const ttsService = {
     async synthesizeSpeech(
         text: string,
-        language: string,
-        speaker_name: string = 'selam'
+        language?: string,
+        speaker_name?: string
     ): Promise<string | null> {
         try {
             console.log('TTS Request:', {
@@ -31,8 +31,8 @@ export const ttsService = {
                 },
                 body: JSON.stringify({
                     text,
-                    language,
-                    speaker_name,
+                    ...(language ? { language } : {}),
+                    ...(speaker_name ? { speaker_name } : {}),
                 }),
             });
 

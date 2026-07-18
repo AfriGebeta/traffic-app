@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import TelegramAuthService from '../../../shared/services/telegram-auth.service';
 import { telegramAuthLog } from '../../../shared/utils/telegram-auth-logger';
 import { showToast } from '../../../shared/utils/toast';
+import { getPostAuthRoute } from '../../places/utils/homeOnboarding';
 
 export function useTelegramLogin() {
     const router = useRouter();
@@ -23,7 +24,8 @@ export function useTelegramLogin() {
                 if (success) {
                     telegramAuthLog.info('finishLogin success, navigating to home');
                     showToast.success('Login successful');
-                    router.replace('/');
+                    const route = await getPostAuthRoute();
+                    router.replace(route as any);
                     return;
                 }
 

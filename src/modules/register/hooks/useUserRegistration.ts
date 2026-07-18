@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from 'react-i18next';
 import { userService } from '../services/user.service';
 import { AuthResponse, UserRegistrationRequest } from '../types/user.types';
+import { resetHomeOnboarding } from '../../places/utils/homeOnboarding';
 
 const USER_STORAGE_KEY = '@traffic_app_user';
 const TOKEN_STORAGE_KEY = '@traffic_app_token';
@@ -76,6 +77,7 @@ export const useUserRegistration = () => {
 
     const clearAuth = async (): Promise<void> => {
         await AsyncStorage.multiRemove([USER_STORAGE_KEY, TOKEN_STORAGE_KEY]);
+        await resetHomeOnboarding();
     };
 
     return {

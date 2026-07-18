@@ -37,6 +37,13 @@ export default function PlacesLayout() {
                     }}
                 />
                 <Stack.Screen
+                    name="add-home"
+                    options={{
+                        title: 'Add Home Address',
+                        headerShown: false,
+                    }}
+                />
+                <Stack.Screen
                     name="claim"
                     options={{
                         title: 'Claim Business',

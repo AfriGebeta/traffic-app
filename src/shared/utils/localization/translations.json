@@ -2047,7 +2047,7 @@
     {
         "key": "skip",
         "EN_US": "Skip",
-        "AM": "ዝለል"
+        "AM": "ይዝለሉ"
     },
     {
         "key": "finish",
@@ -2558,5 +2558,130 @@
         "key": "landmark",
         "EN_US": "Enter nearby landmark (optional)",
         "AM": "አቅራቢያ ያለ ምልክት ያስገቡ (አማራጭ)"
+    },
+    {
+        "key": "add-saved-place",
+        "EN_US": "Add a saved place",
+        "AM": "የሚኖሩበትን ቦታ ይመዝግቡ"
+    },
+    {
+        "key": "add-home-desc",
+        "EN_US": "Describe how to find this place the way you'd explain it to a delivery rider who's never been here. Mention your country, region, city, subcity, district/woreda, and area name (የሰፈር ስም).",
+        "AM": "ይህን ቦታ እዚህ መጥቶ ለማያውቅ የዲሊቨሪ ሰው እንደሚያስረዱት አድርገው ይግለጹ። አገርዎን፣ ክልልዎን፣ ከተማዎን፣ ክፍለ ከተማዎን፣ ወረዳዎን እና የሰፈር ስምዎን ይጥቀሱ።"
+    },
+    {
+        "key": "tap-to-speak",
+        "EN_US": "Tap to speak",
+        "AM": "ለመናገር ይንኩ"
+    },
+    {
+        "key": "tap-to-stop",
+        "EN_US": "Recording… tap to stop",
+        "AM": "በመቅዳት ላይ… ለማቆም ይንኩ"
+    },
+    {
+        "key": "type-it-instead",
+        "EN_US": "Type it instead",
+        "AM": "በጽሑፍ ያስገቡ"
+    },
+    {
+        "key": "region",
+        "EN_US": "Region",
+        "AM": "ክልል"
+    },
+    {
+        "key": "region-placeholder",
+        "EN_US": "e.g., Afar",
+        "AM": "ለምሳሌ፣ አፋር"
+    },
+    {
+        "key": "country",
+        "EN_US": "Country",
+        "AM": "ሀገር"
+    },
+    {
+        "key": "sefer",
+        "EN_US": "Area name (Sefer)",
+        "AM": "የሰፈር ስም"
+    },
+    {
+        "key": "sefer-placeholder",
+        "EN_US": "e.g., Summit",
+        "AM": "ለምሳሌ፣ ሰሚት"
+    },
+    {
+        "key": "house-number",
+        "EN_US": "House number",
+        "AM": "የቤት ቁጥር"
+    },
+    {
+        "key": "floor-number",
+        "EN_US": "Floor",
+        "AM": "ፎቅ"
+    },
+    {
+        "key": "building-total-floors",
+        "EN_US": "Total floors in building",
+        "AM": "የህንፃው ጠቅላላ ፎቆች"
+    },
+    {
+        "key": "home-address-saved",
+        "EN_US": "Home address saved",
+        "AM": "የቤት አድራሻ ተቀምጧል"
+    },
+    {
+        "key": "missing-address-title",
+        "EN_US": "A few details are missing",
+        "AM": "ጥቂት ዝርዝሮች ጎድለዋል"
+    },
+    {
+        "key": "missing-address-desc",
+        "EN_US": "Please answer the questions below to complete your home address.",
+        "AM": "የቤት አድራሻዎን ለማጠናቀቅ ከዚህ በታች ያሉትን ጥያቄዎች ይመልሱ።"
+    },
+    {
+        "key": "ask-region",
+        "EN_US": "What is your region?",
+        "AM": "ክልልዎ ምንድን ነው?"
+    },
+    {
+        "key": "ask-city",
+        "EN_US": "What is your city?",
+        "AM": "ከተማዎ ምንድን ነው?"
+    },
+    {
+        "key": "ask-subcity",
+        "EN_US": "What is your subcity?",
+        "AM": "ክፍለ ከተማዎ ምንድን ነው?"
+    },
+    {
+        "key": "ask-woreda",
+        "EN_US": "What is your woreda?",
+        "AM": "ወረዳዎ ስንት ነው?"
+    },
+    {
+        "key": "ask-sefer",
+        "EN_US": "What is your area (sefer) name?",
+        "AM": "የሰፈር ስም ምንድን ነው?"
+    },
+    {
+        "key": "skip-for-now",
+        "EN_US": "Skip",
+        "AM": "ይዝለሉ"
+    },
+    {
+        "key": "fill-required-fields",
+        "EN_US": "Please fill in all required fields",
+        "AM": "እባክዎ ሁሉንም አስፈላጊ መስኮች ይሙሉ"
+    },
+    {
+        "key": "detecting-location",
+        "EN_US": "Detecting location…",
+        "AM": "ቦታ በመፈለግ ላይ…"
+    },
+    {
+        "key": "country-placeholder",
+        "EN_US": "e.g., Ethiopia",
+        "AM": "ለምሳሌ፣ ኢትዮጵያ"
     }
 ]
