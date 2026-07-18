@@ -2683,5 +2683,10 @@
         "key": "country-placeholder",
         "EN_US": "e.g., Ethiopia",
         "AM": "ለምሳሌ፣ ኢትዮጵያ"
+    },
+    {
+        "key": "missing-address-record-again",
+        "EN_US": "We couldn't catch everything. Please tap and describe your address again, making sure to mention:",
+        "AM": "ሁሉንም መያዝ አልቻልንም። እባክዎ በድጋሚ ይንኩና አድራሻዎን ይግለጹ፣ የሚከተለውን መጥቀስዎን ያረጋግጡ፦"
     }
 ]

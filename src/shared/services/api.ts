@@ -7,9 +7,17 @@ const TOKEN_STORAGE_KEY = '@traffic_app_token';
 export interface ApiResponse<T> {
     data?: T;
     error?: string;
+    errorData?: unknown;
     message?: string;
     status?: number;
 }
+
+const toErrorMessage = (data: any, status: number): string => {
+    if (data?.message) return data.message;
+    if (typeof data?.error === 'string') return data.error;
+    if (data?.error?.elaboration) return data.error.elaboration;
+    return `Request failed with status ${status}`;
+};
 
 class ApiService {
     private baseUrl: string;
@@ -65,10 +73,11 @@ class ApiService {
             const data = await response.json();
 
             if (!response.ok) {
-                const errorMessage = data.message || data.error || `Request failed with status ${response.status}`;
+                const errorMessage = toErrorMessage(data, response.status);
                 console.error(`API ${options.method || 'GET'} ${endpoint} failed (${response.status}):`, JSON.stringify(data));
                 return {
                     error: errorMessage,
+                    errorData: data.error,
                     message: data.message,
                     status: response.status,
                 };
@@ -130,10 +139,11 @@ class ApiService {
             const data = await response.json();
 
             if (!response.ok) {
-                const errorMessage = data.message || data.error || `Request failed with status ${response.status}`;
+                const errorMessage = toErrorMessage(data, response.status);
                 console.error(`API POST(form) ${endpoint} failed (${response.status}):`, JSON.stringify(data));
                 return {
                     error: errorMessage,
+                    errorData: data.error,
                     message: data.message,
                     status: response.status,
                 };

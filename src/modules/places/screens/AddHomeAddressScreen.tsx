@@ -24,9 +24,9 @@ import { useVoiceRecording } from '../../navigation/hooks/useVoiceRecording';
 import { placeService } from '../services/place.service';
 import { markHomeOnboardingDone } from '../utils/homeOnboarding';
 import {
-    getMissingAddressFields,
+    HOME_ADDRESS_REQUIRED_FIELDS,
     HomeAddressRequiredField,
-    SavedPlaceAddress,
+    MissingAddressFieldsError,
 } from '../types/place.types';
 
 type Step = 'choice' | 'followup' | 'form';
@@ -116,28 +116,12 @@ function MicGlow({ active }: { active: boolean }) {
     );
 }
 
-const FIELD_QUESTION_KEYS: Record<HomeAddressRequiredField, string> = {
-    region: 'ask-region',
-    city: 'ask-city',
-    subCity: 'ask-subcity',
-    woreda: 'ask-woreda',
-    sefer: 'ask-sefer',
-};
-
 const FIELD_LABEL_KEYS: Record<HomeAddressRequiredField, string> = {
     region: 'region',
     city: 'city',
     subCity: 'subcity',
     woreda: 'woreda',
     sefer: 'sefer',
-};
-
-const FIELD_PLACEHOLDER_KEYS: Record<HomeAddressRequiredField, string> = {
-    region: 'region-placeholder',
-    city: 'city-placeholder',
-    subCity: 'subcity-placeholder',
-    woreda: 'woreda-placeholder',
-    sefer: 'sefer-placeholder',
 };
 
 export const AddHomeAddressScreen = () => {
@@ -151,8 +135,6 @@ export const AddHomeAddressScreen = () => {
     const [step, setStep] = useState<Step>('choice');
     const [saving, setSaving] = useState(false);
     const [missingFields, setMissingFields] = useState<HomeAddressRequiredField[]>([]);
-    const [parsedAddress, setParsedAddress] = useState<SavedPlaceAddress>({});
-    const [answers, setAnswers] = useState<Record<string, string>>({});
 
     const [label, setLabel] = useState('');
     const [country, setCountry] = useState('');
@@ -249,7 +231,7 @@ export const AddHomeAddressScreen = () => {
 
             setSaving(true);
             try {
-                const saved = await placeService.savePlaceWithAudio({
+                await placeService.savePlaceWithAudio({
                     type: 'HOME',
                     label: t('home'),
                     lat: getCoords()?.lat,
@@ -258,20 +240,17 @@ export const AddHomeAddressScreen = () => {
                     audioUri,
                 });
 
-                const missing = getMissingAddressFields(saved);
-                hlog('voice save response, missing fields:', missing);
-                if (missing.length === 0) {
-                    await finish();
-                    return;
-                }
-
-                setParsedAddress(saved);
-                setMissingFields(missing);
-                setAnswers({});
-                setStep('followup');
+                hlog('voice save succeeded');
+                await finish();
             } catch (error) {
-                hlog('voice save failed:', String(error));
-                showToast.error(t('error'), error instanceof Error ? error.message : t('failed-to-save-place'));
+                if (error instanceof MissingAddressFieldsError) {
+                    hlog('voice save missing fields:', error.fields);
+                    setMissingFields(error.fields);
+                    setStep('followup');
+                } else {
+                    hlog('voice save failed:', String(error));
+                    showToast.error(t('error'), error instanceof Error ? error.message : t('failed-to-save-place'));
+                }
             } finally {
                 setSaving(false);
             }
@@ -287,42 +266,6 @@ export const AddHomeAddressScreen = () => {
         hlog('switched to typed form');
         if (isRecording) cancelRecording();
         setStep('form');
-    };
-
-    const handleFollowupSubmit = async () => {
-        const unanswered = missingFields.filter(field => !answers[field]?.trim());
-        if (unanswered.length > 0) {
-            hlog('followup submit blocked, unanswered:', unanswered);
-            showToast.error(t('fill-required-fields'));
-            return;
-        }
-
-        hlog('followup submit, answers:', answers);
-        setSaving(true);
-        try {
-            await placeService.savePlace({
-                type: 'HOME',
-                label: t('home'),
-                lat: getCoords()?.lat,
-                lng: getCoords()?.lng,
-                isPrivate: true,
-                country: parsedAddress.country || 'Ethiopia',
-                region: answers.region?.trim() || parsedAddress.region,
-                city: answers.city?.trim() || parsedAddress.city,
-                subCity: answers.subCity?.trim() || parsedAddress.subCity,
-                woreda: answers.woreda?.trim() || parsedAddress.woreda,
-                sefer: answers.sefer?.trim() || parsedAddress.sefer,
-                houseNumber: parsedAddress.houseNumber,
-                floor: parsedAddress.floor,
-                buildingTotalFloor: parsedAddress.buildingTotalFloor,
-            });
-            await finish();
-        } catch (error) {
-            hlog('followup save failed:', String(error));
-            showToast.error(t('error'), error instanceof Error ? error.message : t('failed-to-save-place'));
-        } finally {
-            setSaving(false);
-        }
     };
 
     const handleFormSubmit = async () => {
@@ -389,6 +332,41 @@ export const AddHomeAddressScreen = () => {
         </View>
     );
 
+    const renderMicButton = () => (
+        <View className="flex-1 items-center justify-center">
+            <View style={{ width: MIC_SIZE, height: MIC_SIZE, alignItems: 'center', justifyContent: 'center' }}>
+                <MicGlow active={isRecording} />
+                <TouchableOpacity
+                    onPress={handleMicPress}
+                    activeOpacity={0.8}
+                    disabled={saving}
+                    className="items-center justify-center rounded-full"
+                    style={{
+                        width: MIC_SIZE,
+                        height: MIC_SIZE,
+                        backgroundColor: 'transparent',
+                        borderWidth: 1,
+                        borderColor: colors.primary.main,
+                        opacity: saving ? 0.6 : 1,
+                    }}
+                >
+                    {saving ? (
+                        <ActivityIndicator size="large" color={colors.primary.main} />
+                    ) : (
+                        <Ionicons
+                            name={isRecording ? 'stop' : 'mic-outline'}
+                            size={48}
+                            color={colors.primary.main}
+                        />
+                    )}
+                </TouchableOpacity>
+            </View>
+            <Text className="text-base mt-6" style={{ color: theme.textPrimary }}>
+                {isRecording ? t('tap-to-stop') : t('tap-to-speak')}
+            </Text>
+        </View>
+    );
+
     const renderChoice = () => (
         <View className="flex-1 px-6">
             <Text className="text-3xl font-bold mb-3" style={{ color: theme.textPrimary }}>
@@ -398,38 +376,7 @@ export const AddHomeAddressScreen = () => {
                 {t('add-home-desc')}
             </Text>
 
-            <View className="flex-1 items-center justify-center">
-                <View style={{ width: MIC_SIZE, height: MIC_SIZE, alignItems: 'center', justifyContent: 'center' }}>
-                    <MicGlow active={isRecording} />
-                    <TouchableOpacity
-                        onPress={handleMicPress}
-                        activeOpacity={0.8}
-                        disabled={saving}
-                        className="items-center justify-center rounded-full"
-                        style={{
-                            width: MIC_SIZE,
-                            height: MIC_SIZE,
-                            backgroundColor: 'transparent',
-                            borderWidth: 1,
-                            borderColor: colors.primary.main,
-                            opacity: saving ? 0.6 : 1,
-                        }}
-                    >
-                        {saving ? (
-                            <ActivityIndicator size="large" color={colors.primary.main} />
-                        ) : (
-                            <Ionicons
-                                name={isRecording ? 'stop' : 'mic-outline'}
-                                size={48}
-                                color={colors.primary.main}
-                            />
-                        )}
-                    </TouchableOpacity>
-                </View>
-                <Text className="text-base mt-6" style={{ color: theme.textPrimary }}>
-                    {isRecording ? t('tap-to-stop') : t('tap-to-speak')}
-                </Text>
-            </View>
+            {renderMicButton()}
 
             <TouchableOpacity
                 onPress={handleTypeInstead}
@@ -446,42 +393,61 @@ export const AddHomeAddressScreen = () => {
     );
 
     const renderFollowup = () => (
-        <ScrollView className="flex-1 px-6" keyboardShouldPersistTaps="handled">
+        <View className="flex-1 px-6">
             <Text className="text-2xl font-bold mb-3" style={{ color: theme.textPrimary }}>
                 {t('missing-address-title')}
             </Text>
-            <Text className="text-base mb-6" style={{ color: theme.textSecondary }}>
-                {t('missing-address-desc')}
+            <Text className="text-base leading-6 mb-4" style={{ color: theme.textSecondary }}>
+                {t('missing-address-record-again')}
             </Text>
 
-            {missingFields.map(field =>
-                <View key={field}>
-                    <Text className="text-base font-semibold mb-1" style={{ color: theme.textPrimary }}>
-                        {t(FIELD_QUESTION_KEYS[field])}
-                    </Text>
-                    {renderInput(
-                        t(FIELD_LABEL_KEYS[field]),
-                        answers[field] ?? '',
-                        text => setAnswers(prev => ({ ...prev, [field]: text })),
-                        t(FIELD_PLACEHOLDER_KEYS[field])
-                    )}
-                </View>
-            )}
+            <View className="flex-row flex-wrap" style={{ gap: 8 }}>
+                {HOME_ADDRESS_REQUIRED_FIELDS.map(field => {
+                    const isMissing = missingFields.includes(field);
+                    return (
+                        <View
+                            key={field}
+                            className="flex-row items-center px-3 py-1.5"
+                            style={{
+                                borderWidth: 1,
+                                borderRadius: 6,
+                                borderColor: isMissing ? theme.error : theme.border,
+                                backgroundColor: 'transparent',
+                            }}
+                        >
+                            <Ionicons
+                                name={isMissing ? 'alert-circle' : 'checkmark-circle'}
+                                size={16}
+                                color={isMissing ? theme.error : theme.textSecondary}
+                            />
+                            <Text
+                                className="text-sm ml-1.5"
+                                style={{
+                                    color: isMissing ? theme.error : theme.textSecondary,
+                                    fontWeight: isMissing ? '700' : '400',
+                                }}
+                            >
+                                {t(FIELD_LABEL_KEYS[field])}
+                            </Text>
+                        </View>
+                    );
+                })}
+            </View>
+
+            {renderMicButton()}
 
             <TouchableOpacity
-                onPress={handleFollowupSubmit}
+                onPress={handleTypeInstead}
                 disabled={saving}
                 activeOpacity={0.8}
-                className="rounded-xl py-4 items-center mt-2 mb-8"
-                style={{ backgroundColor: saving ? colors.primary.light : colors.primary.main }}
+                className="rounded-xl py-4 items-center"
+                style={{ borderWidth: 1, borderColor: theme.border }}
             >
-                {saving ? (
-                    <ActivityIndicator color="white" />
-                ) : (
-                    <Text className="text-white text-base font-semibold">{t('save')}</Text>
-                )}
+                <Text className="text-base font-semibold" style={{ color: theme.textPrimary }}>
+                    {t('type-it-instead')}
+                </Text>
             </TouchableOpacity>
-        </ScrollView>
+        </View>
     );
 
     const renderForm = () => (
