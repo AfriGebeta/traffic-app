@@ -103,6 +103,52 @@ class ApiService {
         });
     }
 
+    async postFormData<T>(endpoint: string, formData: FormData): Promise<ApiResponse<T>> {
+        try {
+            const url = `${this.baseUrl}${endpoint}`;
+
+            const authHeaders = await this.getAuthHeaders();
+            const appCheckToken = await getAppCheckToken();
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    ...authHeaders,
+                    ...(appCheckToken ? { 'X-Firebase-AppCheck': appCheckToken } : {}),
+                },
+                body: formData,
+            });
+
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                return {
+                    error: `Server returned non-JSON response (${response.status})`,
+                    status: response.status,
+                };
+            }
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                const errorMessage = data.message || data.error || `Request failed with status ${response.status}`;
+                console.error(`API POST(form) ${endpoint} failed (${response.status}):`, JSON.stringify(data));
+                return {
+                    error: errorMessage,
+                    message: data.message,
+                    status: response.status,
+                };
+            }
+
+            return {
+                data: data as T,
+            };
+        } catch (error) {
+            return {
+                error: error instanceof Error ? error.message : 'network error occurred',
+            };
+        }
+    }
+
     async put<T>(
         endpoint: string,
         body?: unknown,

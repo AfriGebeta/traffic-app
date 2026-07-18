@@ -1,5 +1,5 @@
 import { apiService } from '../../../shared/services/api';
-import { Place, PlaceContributionRequest, SavedPlace, SavePlaceRequest } from '../types/place.types';
+import { Place, PlaceContributionRequest, SavedPlace, SavePlaceRequest, SavePlaceVoiceRequest } from '../types/place.types';
 import { ClaimBusinessRequest, ClaimBusinessResponse } from '../types/claim.types';
 
 export const placeService = {
@@ -24,7 +24,52 @@ export const placeService = {
     },
 
     async savePlace(data: SavePlaceRequest): Promise<SavedPlace> {
+        // console.log('saved place api: json save start', JSON.stringify(data));
         const response = await apiService.post<SavedPlace>('/api/places/saved', data);
+        console.log('saved place api: json save done', {
+            status: response.status,
+            error: response.error,
+            id: response.data?.id,
+        });
+
+        if (response.error || !response.data) {
+            throw new Error(response.error || 'Failed to save place');
+        }
+
+        return response.data;
+    },
+
+    async savePlaceWithAudio(data: SavePlaceVoiceRequest): Promise<SavedPlace> {
+        console.log('home addr api: voice upload start', {
+            type: data.type,
+            label: data.label,
+            lat: data.lat,
+            lng: data.lng,
+            isPrivate: data.isPrivate,
+            audioUri: data.audioUri,
+        });
+
+        const formData = new FormData();
+        formData.append('type', data.type);
+        formData.append('label', data.label);
+        if (data.lat !== undefined) formData.append('lat', String(data.lat));
+        if (data.lng !== undefined) formData.append('lng', String(data.lng));
+        formData.append('isPrivate', String(data.isPrivate));
+
+        const extension = data.audioUri.split('.').pop()?.toLowerCase() || 'm4a';
+        formData.append('audio', {
+            uri: data.audioUri,
+            name: `recording.${extension}`,
+            type: extension === 'mp3' ? 'audio/mpeg' : 'audio/mp4',
+        } as any);
+
+        const startedAt = Date.now();
+        const response = await apiService.postFormData<SavedPlace>('/api/places/saved', formData);
+        console.log(`home addr api: voice upload done in ${Date.now() - startedAt}ms`, {
+            status: response.status,
+            error: response.error,
+            data: response.data ? JSON.stringify(response.data).slice(0, 500) : undefined,
+        });
 
         if (response.error || !response.data) {
             throw new Error(response.error || 'Failed to save place');

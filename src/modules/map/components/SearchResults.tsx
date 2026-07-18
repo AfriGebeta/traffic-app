@@ -15,6 +15,7 @@ const SAVED_PLACE_CONFIG: Record<SavedPlaceType, { icon: keyof typeof Ionicons.g
     HOME: { icon: 'home', label: 'Home' },
     WORK: { icon: 'briefcase', label: 'Work' },
     FAVORITE: { icon: 'heart', label: 'Favorite' },
+    CUSTOM: { icon: 'location', label: 'Custom' },
 };
 
 const CHIP_ORDER: SavedPlaceType[] = ['HOME', 'WORK', 'FAVORITE'];

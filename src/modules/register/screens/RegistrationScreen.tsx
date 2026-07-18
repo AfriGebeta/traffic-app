@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { colors } from '../../../shared/theme/colors';
 import { LanguageSwitcher } from '../../../shared/components/LanguageSwitcher';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getPostAuthRoute } from '../../places/utils/homeOnboarding';
 
 const GUEST_MODE_KEY = '@traffic_app_guest_mode';
 
@@ -54,8 +55,9 @@ export default function RegistrationScreen() {
 
             if (result) {
                 showToast.success(t('registration-successful') || 'Registration successful');
+                const route = await getPostAuthRoute();
                 setTimeout(() => {
-                    router.replace('/');
+                    router.replace(route as any);
                 }, 1000);
             }
         } catch (err) {

@@ -4,6 +4,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import TelegramAuthService from '../shared/services/telegram-auth.service';
 import { getTelegramAuthConfig } from '../shared/config/telegram-auth.config';
 import { showToast } from '../shared/utils/toast';
+import { getPostAuthRoute } from '../modules/places/utils/homeOnboarding';
 
 export default function TelegramAuth() {
     const router = useRouter();
@@ -25,7 +26,8 @@ export default function TelegramAuth() {
 
             if (success) {
                 showToast.success('Login successful');
-                router.replace('/');
+                const route = await getPostAuthRoute();
+                router.replace(route as any);
             } else {
                 showToast.error('Telegram authentication failed');
                 router.replace('/telegram-login');

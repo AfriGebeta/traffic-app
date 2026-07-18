@@ -22,9 +22,22 @@ export interface PlaceContributionRequest {
     images: string[];
 }
 
-export type SavedPlaceType = 'HOME' | 'WORK' | 'FAVORITE';
+export type SavedPlaceType = 'HOME' | 'WORK' | 'FAVORITE' | 'CUSTOM';
 
-export interface SavedPlace {
+export interface SavedPlaceAddress {
+    country?: string;
+    region?: string;
+    zone?: string;
+    city?: string;
+    subCity?: string;
+    woreda?: string;
+    sefer?: string;
+    houseNumber?: string;
+    floor?: number;
+    buildingTotalFloor?: number;
+}
+
+export interface SavedPlace extends SavedPlaceAddress {
     id: string;
     type: SavedPlaceType;
     lat: number;
@@ -35,13 +48,32 @@ export interface SavedPlace {
     updatedAt: string;
 }
 
-export interface SavePlaceRequest {
+export interface SavePlaceRequest extends SavedPlaceAddress {
     type: SavedPlaceType;
-    lat: number;
-    lng: number;
+    lat?: number;
+    lng?: number;
     isPrivate: boolean;
     label: string;
 }
+
+export interface SavePlaceVoiceRequest {
+    type: SavedPlaceType;
+    label: string;
+    lat?: number;
+    lng?: number;
+    isPrivate: boolean;
+    audioUri: string;
+}
+
+export const HOME_ADDRESS_REQUIRED_FIELDS = ['region', 'city', 'subCity', 'woreda', 'sefer'] as const;
+
+export type HomeAddressRequiredField = (typeof HOME_ADDRESS_REQUIRED_FIELDS)[number];
+
+export const getMissingAddressFields = (place: Partial<SavedPlaceAddress>): HomeAddressRequiredField[] =>
+    HOME_ADDRESS_REQUIRED_FIELDS.filter(field => {
+        const value = place[field];
+        return value === undefined || value === null || String(value).trim() === '';
+    });
 
 export const PLACE_TYPES = [
     { id: 'gas_station', label: 'Gas Station', icon: 'water' as const, color: '#EF4444' },
