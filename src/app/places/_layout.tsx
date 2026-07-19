@@ -44,6 +44,13 @@ export default function PlacesLayout() {
                     }}
                 />
                 <Stack.Screen
+                    name="save"
+                    options={{
+                        title: 'Save Place',
+                        headerShown: false,
+                    }}
+                />
+                <Stack.Screen
                     name="claim"
                     options={{
                         title: 'Claim Business',

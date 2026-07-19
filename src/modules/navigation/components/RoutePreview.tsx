@@ -3,14 +3,14 @@ import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Image } fr
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import type { GeocodingPlace, Maneuver } from '../types/navigation.types';
-import { SavePlaceModal } from '../../places/components/SavePlaceModal';
 import { placeService } from '../../places/services/place.service';
 import { showToast } from '../../../shared/utils/toast';
-import type { SavedPlaceType, SavedPlace } from '../../places/types/place.types';
+import type { SavedPlace } from '../../places/types/place.types';
 import { taxiService } from '../../taxi/services/taxi.service';
 import { navigationService } from '../services/navigation.service';
 import type { TaxiNavigationResponse } from '../../taxi/types/taxi.types';
@@ -96,7 +96,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors: theme, isDark } = useTheme();
-    const [showSaveModal, setShowSaveModal] = useState(false);
+    const router = useRouter();
     const [savedPlace, setSavedPlace] = useState<SavedPlace | null>(null);
 
     const [transportMode, setTransportMode] = useState<'driving' | 'taxi' | 'walking'>(initialMode);
@@ -117,6 +117,12 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
     useEffect(() => {
         checkIfSaved();
     }, [destination]);
+
+    useFocusEffect(
+        React.useCallback(() => {
+            checkIfSaved();
+        }, [destination])
+    );
 
     useEffect(() => {
         const checkMapPickerData = () => {
@@ -236,25 +242,6 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
         if (!destination) return;
         const saved = await placeService.isPlaceSaved(destination.latitude, destination.longitude);
         setSavedPlace(saved);
-    };
-
-    const handleSavePlace = async (type: SavedPlaceType, label: string, isPrivate: boolean) => {
-        if (!destination) return;
-
-        try {
-            const saved = await placeService.savePlace({
-                type,
-                lat: destination.latitude,
-                lng: destination.longitude,
-                label,
-                isPrivate,
-            });
-            setSavedPlace(saved);
-            showToast.success(t('place-saved-successfully'));
-        } catch (error) {
-            showToast.error(t('failed-to-save-place'));
-            console.error('Error saving place:', error);
-        }
     };
 
     const handleUnsavePlace = async () => {
@@ -688,7 +675,10 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                     {destination && (
                                         <>
                                             <TouchableOpacity
-                                                onPress={savedPlace ? handleUnsavePlace : () => setShowSaveModal(true)}
+                                                onPress={savedPlace ? handleUnsavePlace : () => router.push({
+                                                    pathname: '/places/save',
+                                                    params: { lat: destination.latitude, lng: destination.longitude, name: destination.name },
+                                                } as any)}
                                                 className="rounded-2xl px-3 py-4 -mr-3"
                                             >
                                                 <Ionicons
@@ -741,14 +731,6 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                     </View>
                     )}
 
-                    {destination && (
-                        <SavePlaceModal
-                            visible={showSaveModal}
-                            onClose={() => setShowSaveModal(false)}
-                            onSave={handleSavePlace}
-                            placeName={destination.name}
-                        />
-                    )}
                 </View>
             </BlurView>
         </View>
