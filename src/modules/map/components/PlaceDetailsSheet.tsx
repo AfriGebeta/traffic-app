@@ -4,14 +4,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 import { ShareLocationButton } from '../../../shared/components/ShareLocationButton';
-import { SavePlaceModal } from '../../places/components/SavePlaceModal';
 import { placeService } from '../../places/services/place.service';
 import { showToast } from '../../../shared/utils/toast';
-import type { SavedPlaceType, SavedPlace } from '../../places/types/place.types';
+import type { SavedPlace } from '../../places/types/place.types';
 
 interface PlaceDetailsSheetProps {
     place: GeocodingPlace | null;
@@ -27,12 +27,18 @@ export const PlaceDetailsSheet: React.FC<PlaceDetailsSheetProps> = ({
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors: theme, isDark } = useTheme();
-    const [showSaveModal, setShowSaveModal] = useState(false);
+    const router = useRouter();
     const [savedPlace, setSavedPlace] = useState<SavedPlace | null>(null);
 
     useEffect(() => {
         checkIfSaved();
     }, [place]);
+
+    useFocusEffect(
+        React.useCallback(() => {
+            checkIfSaved();
+        }, [place])
+    );
 
     const checkIfSaved = async () => {
         if (!place) return;
@@ -41,29 +47,6 @@ export const PlaceDetailsSheet: React.FC<PlaceDetailsSheetProps> = ({
     };
 
     if (!place) return null;
-
-    console.log('PlaceDetailsSheet - place data:', {
-        lat: place.latitude,
-        lng: place.longitude,
-        name: place.name,
-    });
-
-    const handleSavePlace = async (type: SavedPlaceType, label: string, isPrivate: boolean) => {
-        try {
-            const saved = await placeService.savePlace({
-                type,
-                lat: place.latitude,
-                lng: place.longitude,
-                label,
-                isPrivate,
-            });
-            setSavedPlace(saved);
-            showToast.success(t('place-saved-successfully'));
-        } catch (error) {
-            showToast.error(t('failed-to-save-place'));
-            console.error('Error saving place:', error);
-        }
-    };
 
     const handleUnsavePlace = async () => {
         if (!savedPlace) return;
@@ -155,7 +138,10 @@ export const PlaceDetailsSheet: React.FC<PlaceDetailsSheetProps> = ({
                                         />
                                     </View>
                                     <TouchableOpacity
-                                        onPress={savedPlace ? handleUnsavePlace : () => setShowSaveModal(true)}
+                                        onPress={savedPlace ? handleUnsavePlace : () => router.push({
+                                            pathname: '/places/save',
+                                            params: { lat: place.latitude, lng: place.longitude, name: place.name },
+                                        } as any)}
                                         className="rounded-xl py-4 px-4 flex-row items-center justify-center"
                                         style={{ minWidth: 60, backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : '#F3F4F6' }}
                                     >
@@ -171,13 +157,6 @@ export const PlaceDetailsSheet: React.FC<PlaceDetailsSheetProps> = ({
                     </BlurView>
                 </View>
             </Pressable>
-
-            <SavePlaceModal
-                visible={showSaveModal}
-                onClose={() => setShowSaveModal(false)}
-                onSave={handleSavePlace}
-                placeName={place.name}
-            />
         </Modal>
     );
 };

@@ -15,6 +15,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
+import { Audio } from 'expo-av';
 import { useLocation } from '../../../shared/contexts/LocationContext';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
@@ -201,6 +202,10 @@ export const AddHomeAddressScreen = () => {
         hlog('screen mounted');
         fetchLocation();
 
+        Audio.requestPermissionsAsync()
+            .then(({ status }) => hlog('mic permission requested at mount:', status))
+            .catch((error) => hlog('mic permission request failed:', String(error)));
+
         return () => {
             hlog('screen unmounted');
             cancelled = true;
@@ -221,45 +226,73 @@ export const AddHomeAddressScreen = () => {
         router.replace('/');
     };
 
-    const handleMicPress = async () => {
-        if (saving) return;
+    const stopAndSaveVoice = async () => {
+        const audioUri = await stopRecording();
+        hlog('recording stopped, uri:', audioUri);
+        if (!audioUri) return;
 
-        if (isRecording) {
-            const audioUri = await stopRecording();
-            hlog('recording stopped, uri:', audioUri);
-            if (!audioUri) return;
+        setSaving(true);
+        try {
+            await placeService.savePlaceWithAudio({
+                type: 'HOME',
+                label: t('home'),
+                lat: getCoords()?.lat,
+                lng: getCoords()?.lng,
+                isPrivate: true,
+                audioUri,
+            });
 
-            setSaving(true);
-            try {
-                await placeService.savePlaceWithAudio({
-                    type: 'HOME',
-                    label: t('home'),
-                    lat: getCoords()?.lat,
-                    lng: getCoords()?.lng,
-                    isPrivate: true,
-                    audioUri,
-                });
-
-                hlog('voice save succeeded');
-                await finish();
-            } catch (error) {
-                if (error instanceof MissingAddressFieldsError) {
-                    hlog('voice save missing fields:', error.fields);
-                    setMissingFields(error.fields);
-                    setStep('followup');
-                } else {
-                    hlog('voice save failed:', String(error));
-                    showToast.error(t('error'), error instanceof Error ? error.message : t('failed-to-save-place'));
-                }
-            } finally {
-                setSaving(false);
+            hlog('voice save succeeded');
+            await finish();
+        } catch (error) {
+            if (error instanceof MissingAddressFieldsError) {
+                hlog('voice save missing fields:', error.fields);
+                setMissingFields(error.fields);
+                setStep('followup');
+            } else {
+                hlog('voice save failed:', String(error));
+                showToast.error(t('error'), error instanceof Error ? error.message : t('failed-to-save-place'));
             }
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const PUSH_TO_TALK_THRESHOLD_MS = 350;
+    const pressStartRef = useRef<number | null>(null);
+    const startedThisPressRef = useRef(false);
+
+    const handleMicPressIn = async () => {
+        if (saving || isRecording) return;
+
+        pressStartRef.current = Date.now();
+        startedThisPressRef.current = true;
+        hlog('mic pressed in, starting recording (coords:', getCoords(), ')');
+        const started = await startRecording();
+        hlog('recording started:', started);
+        if (!started) startedThisPressRef.current = false;
+    };
+
+    const handleMicPressOut = async () => {
+        if (saving || !isRecording) return;
+
+        if (startedThisPressRef.current) {
+            const heldMs = pressStartRef.current ? Date.now() - pressStartRef.current : 0;
+            startedThisPressRef.current = false;
+            pressStartRef.current = null;
+
+            if (heldMs < PUSH_TO_TALK_THRESHOLD_MS) {
+                hlog(`quick tap (${heldMs}ms) — staying in toggle mode`);
+                return;
+            }
+
+            hlog(`held ${heldMs}ms — push-to-talk release, stopping`);
+            await stopAndSaveVoice();
             return;
         }
 
-        hlog('mic pressed, starting recording (coords:', getCoords(), ')');
-        const started = await startRecording();
-        hlog('recording started:', started);
+        hlog('second tap — stopping toggle-mode recording');
+        await stopAndSaveVoice();
     };
 
     const handleTypeInstead = () => {
@@ -337,7 +370,8 @@ export const AddHomeAddressScreen = () => {
             <View style={{ width: MIC_SIZE, height: MIC_SIZE, alignItems: 'center', justifyContent: 'center' }}>
                 <MicGlow active={isRecording} />
                 <TouchableOpacity
-                    onPress={handleMicPress}
+                    onPressIn={handleMicPressIn}
+                    onPressOut={handleMicPressOut}
                     activeOpacity={0.8}
                     disabled={saving}
                     className="items-center justify-center rounded-full"
@@ -362,7 +396,7 @@ export const AddHomeAddressScreen = () => {
                 </TouchableOpacity>
             </View>
             <Text className="text-base mt-6" style={{ color: theme.textPrimary }}>
-                {isRecording ? t('tap-to-stop') : t('tap-to-speak')}
+                {isRecording ? t('tap-to-stop') : t('tap-or-hold-to-speak')}
             </Text>
         </View>
     );

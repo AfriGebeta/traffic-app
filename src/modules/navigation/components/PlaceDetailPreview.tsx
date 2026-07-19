@@ -3,15 +3,14 @@ import { View, Text, TouchableOpacity, Share, ScrollView, Image, ImageSourceProp
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import type { GeocodingPlace } from '../types/navigation.types';
-import { SavePlaceModal } from '../../places/components/SavePlaceModal';
 import { placeService } from '../../places/services/place.service';
 import { showToast } from '../../../shared/utils/toast';
-import type { SavedPlaceType, SavedPlace } from '../../places/types/place.types';
+import type { SavedPlace } from '../../places/types/place.types';
 
 interface PlaceDetailPreviewProps {
     place: GeocodingPlace;
@@ -79,7 +78,6 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors: theme, isDark } = useTheme();
-    const [showSaveModal, setShowSaveModal] = useState(false);
     const [savedPlace, setSavedPlace] = useState<SavedPlace | null>(null);
     const router = useRouter();
 
@@ -87,25 +85,15 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
         checkIfSaved();
     }, [place]);
 
+    useFocusEffect(
+        React.useCallback(() => {
+            checkIfSaved();
+        }, [place])
+    );
+
     const checkIfSaved = async () => {
         const saved = await placeService.isPlaceSaved(place.latitude, place.longitude);
         setSavedPlace(saved);
-    };
-
-    const handleSavePlace = async (type: SavedPlaceType, label: string, isPrivate: boolean) => {
-        try {
-            const saved = await placeService.savePlace({
-                type,
-                lat: place.latitude,
-                lng: place.longitude,
-                label,
-                isPrivate,
-            });
-            setSavedPlace(saved);
-            showToast.success(t('place-saved-successfully'));
-        } catch (error) {
-            showToast.error(t('failed-to-save-place'));
-        }
     };
 
     const handleUnsavePlace = async () => {
@@ -294,7 +282,10 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
                         <ActionPill
                             icon={savedPlace ? 'bookmark' : 'bookmark-outline'}
                             label={t('save')}
-                            onPress={savedPlace ? handleUnsavePlace : () => setShowSaveModal(true)}
+                            onPress={savedPlace ? handleUnsavePlace : () => router.push({
+                                pathname: '/places/save',
+                                params: { lat: place.latitude, lng: place.longitude, name: place.name },
+                            } as any)}
                         />
                         {/* {isClaimableBusiness() && (
                             <ActionPill
@@ -309,13 +300,6 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
                             onPress={handleShare}
                         />
                     </ScrollView>
-
-                    <SavePlaceModal
-                        visible={showSaveModal}
-                        onClose={() => setShowSaveModal(false)}
-                        onSave={handleSavePlace}
-                        placeName={place.name}
-                    />
                 </View>
             </BlurView>
         </View>

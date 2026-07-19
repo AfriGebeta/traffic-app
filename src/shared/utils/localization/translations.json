@@ -2688,5 +2688,10 @@
         "key": "missing-address-record-again",
         "EN_US": "We couldn't catch everything. Please tap and describe your address again, making sure to mention:",
         "AM": "ሁሉንም መያዝ አልቻልንም። እባክዎ በድጋሚ ይንኩና አድራሻዎን ይግለጹ፣ የሚከተለውን መጥቀስዎን ያረጋግጡ፦"
+    },
+    {
+        "key": "tap-or-hold-to-speak",
+        "EN_US": "Tap to speak, or press and hold",
+        "AM": "ለመናገር ይንኩ ወይም ተጭነው ይያዙ"
     }
 ]
