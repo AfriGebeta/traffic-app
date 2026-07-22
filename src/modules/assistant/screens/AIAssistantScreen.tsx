@@ -80,39 +80,54 @@ function VoiceWaveform({ active }: { active: boolean }) {
 
 const MIC_SIZE = 72;
 
-function MicPulse({ active, level }: { active: boolean; level: number }) {
+function MicPulse({ active }: { active: boolean }) {
     const outerAnim = useRef(new Animated.Value(0)).current;
     const innerAnim = useRef(new Animated.Value(0)).current;
+    const loopsRef = useRef<Animated.CompositeAnimation[]>([]);
 
     useEffect(() => {
+        loopsRef.current.forEach((loop) => loop.stop());
+        loopsRef.current = [];
+
         if (!active) {
-            Animated.parallel([
-                Animated.timing(outerAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
-                Animated.timing(innerAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
-            ]).start();
+            outerAnim.setValue(0);
+            innerAnim.setValue(0);
             return;
         }
 
-        Animated.parallel([
-            Animated.timing(outerAnim, {
-                toValue: level,
-                duration: 100,
-                easing: Easing.out(Easing.ease),
-                useNativeDriver: true,
-            }),
-            Animated.timing(innerAnim, {
-                toValue: level,
-                duration: 100,
-                easing: Easing.out(Easing.ease),
-                useNativeDriver: true,
-            }),
-        ]).start();
-    }, [active, level]);
+        outerAnim.setValue(0);
+        innerAnim.setValue(0);
 
-    const outerScale = outerAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 2.1] });
-    const outerOpacity = outerAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.18] });
-    const innerScale = innerAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.55] });
-    const innerOpacity = innerAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.3] });
+        const pulse = (anim: Animated.Value, delay: number, duration: number) =>
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(anim, {
+                        toValue: 1,
+                        duration,
+                        delay,
+                        easing: Easing.out(Easing.ease),
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(anim, { toValue: 0, duration: 0, useNativeDriver: true }),
+                ])
+            );
+
+        const outerLoop = pulse(outerAnim, 0, 1100);
+        const innerLoop = pulse(innerAnim, 350, 1100);
+        loopsRef.current = [outerLoop, innerLoop];
+        outerLoop.start();
+        innerLoop.start();
+
+        return () => {
+            loopsRef.current.forEach((loop) => loop.stop());
+            loopsRef.current = [];
+        };
+    }, [active]);
+
+    const outerScale = outerAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 4.4] });
+    const outerOpacity = outerAnim.interpolate({ inputRange: [0, 0.15, 0.6, 1], outputRange: [0, 0.3, 0.12, 0] });
+    const innerScale = innerAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 3.5] });
+    const innerOpacity = innerAnim.interpolate({ inputRange: [0, 0.15, 0.6, 1], outputRange: [0, 0.35, 0.15, 0] });
 
     return (
         <View style={{ width: MIC_SIZE, height: MIC_SIZE, alignItems: 'center', justifyContent: 'center' }}>
@@ -144,6 +159,34 @@ function MicPulse({ active, level }: { active: boolean; level: number }) {
     );
 }
 
+const formatDuration = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+
+function RecordingTimer({ seconds }: { seconds: number }) {
+    const blink = useRef(new Animated.Value(1)).current;
+
+    useEffect(() => {
+        const loop = Animated.loop(
+            Animated.sequence([
+                Animated.timing(blink, { toValue: 0.2, duration: 600, useNativeDriver: true }),
+                Animated.timing(blink, { toValue: 1, duration: 600, useNativeDriver: true }),
+            ])
+        );
+        loop.start();
+        return () => loop.stop();
+    }, []);
+
+    return (
+        <View className="flex-row items-center">
+            <Animated.View
+                style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#EF4444', opacity: blink }}
+            />
+            <Text className="text-sm ml-2" style={{ color: colors.primary.main, fontFamily: 'PlusJakartaSans-Medium' }}>
+                {formatDuration(seconds)}
+            </Text>
+        </View>
+    );
+}
+
 export default function AIAssistantScreen() {
     const router = useRouter();
     const { t } = useTranslation();
@@ -152,6 +195,8 @@ export default function AIAssistantScreen() {
     const { colors: theme, isDark } = useTheme();
 
     const dummyMapRef = useRef<GebetaMapRef | null>(null);
+
+    const [recordSeconds, setRecordSeconds] = useState(0);
 
     useEffect(() => {
         Audio.requestPermissionsAsync().catch(() => {});
@@ -162,7 +207,9 @@ export default function AIAssistantScreen() {
         isProcessingVoice,
         transcription,
         assistantMessage,
-        meteringLevel,
+        isSpeaking,
+        canReplay,
+        replayResponse,
         options,
         showOptions,
         handleVoiceStart,
@@ -197,6 +244,16 @@ export default function AIAssistantScreen() {
             }, 0);
         },
     });
+
+    useEffect(() => {
+        if (!isRecording) {
+            setRecordSeconds(0);
+            return;
+        }
+        setRecordSeconds(0);
+        const interval = setInterval(() => setRecordSeconds((s) => s + 1), 1000);
+        return () => clearInterval(interval);
+    }, [isRecording]);
 
     const isIdle = !isRecording && !isProcessingVoice && !transcription && !assistantMessage && !showOptions;
     const isRecordingBlank = isRecording && !transcription && !assistantMessage && !showOptions;
@@ -254,6 +311,20 @@ export default function AIAssistantScreen() {
                         </View>
                     ) : null}
 
+                    {assistantMessage && canReplay && !isSpeaking ? (
+                        <TouchableOpacity
+                            onPress={replayResponse}
+                            className="self-start flex-row items-center mb-3 px-3 py-2 rounded-full"
+                            style={{ backgroundColor: theme.surface }}
+                            activeOpacity={0.7}
+                        >
+                            <Ionicons name="play" size={16} color={colors.primary.main} />
+                            <Text className="text-sm ml-1.5" style={{ color: colors.primary.main, fontFamily: 'PlusJakartaSans-Medium' }}>
+                                {t('play-again')}
+                            </Text>
+                        </TouchableOpacity>
+                    ) : null}
+
                     {showOptions
                         ? options.map((option) => (
                               <TouchableOpacity
@@ -294,7 +365,7 @@ export default function AIAssistantScreen() {
             <View className="items-center pb-6 pt-2">
                 <View style={{ width: MIC_SIZE, height: MIC_SIZE, alignItems: 'center', justifyContent: 'center' }}>
                     <View style={{ position: 'absolute' }}>
-                        <MicPulse active={isRecording} level={meteringLevel} />
+                        <MicPulse active={isRecording} />
                     </View>
                     <TouchableOpacity
                         onPressIn={handleVoiceStart}
@@ -314,15 +385,21 @@ export default function AIAssistantScreen() {
                         <Ionicons name={isRecording ? 'mic' : 'mic-outline'} size={30} color={isRecording ? 'white' : '#FFA500'} />
                     </TouchableOpacity>
                 </View>
-                <Text className="text-xs mt-3" style={{ color: theme.textSecondary, fontFamily: 'PlusJakartaSans-Regular' }}>
-                    {isProcessingVoice
-                        ? t('processing')
-                        : isRecording
-                          ? t('listening')
-                          : showOptions
-                            ? t('or-speak-your-answer')
-                            : t('push-to-talk')}
-                </Text>
+                <View className="mt-3 h-5 justify-center">
+                    {isRecording ? (
+                        <RecordingTimer seconds={recordSeconds} />
+                    ) : (
+                        <Text className="text-xs" style={{ color: theme.textSecondary, fontFamily: 'PlusJakartaSans-Regular' }}>
+                            {isProcessingVoice
+                                ? t('processing')
+                                : isRecording
+                                  ? t('listening')
+                                  : showOptions
+                                    ? t('or-speak-your-answer')
+                                    : t('push-to-talk')}
+                        </Text>
+                    )}
+                </View>
             </View>
         </View>
     );

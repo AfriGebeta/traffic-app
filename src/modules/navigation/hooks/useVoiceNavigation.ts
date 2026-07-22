@@ -3,6 +3,7 @@ import { File } from 'expo-file-system';
 import { useVoiceRecording } from './useVoiceRecording';
 import { VoiceNavSocket, type VoiceNavEvent } from '../services/voice-nav-socket.service';
 import { StreamingPcmPlayer } from '../utils/streamingPcmPlayer';
+import { navigationService } from '../services/navigation.service';
 import { showToast } from '../../../shared/utils/toast';
 import { generateSessionId } from '../../../shared/utils/session';
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
@@ -86,6 +87,8 @@ export const useVoiceNavigation = ({
     const [showVoiceModal, setShowVoiceModal] = useState(false);
     const [transcription, setTranscription] = useState<string>('');
     const [assistantMessage, setAssistantMessage] = useState<string>('');
+    const [isSpeaking, setIsSpeaking] = useState(false);
+    const [canReplay, setCanReplay] = useState(false);
 
     const socketRef = useRef<VoiceNavSocket | null>(null);
     const playerRef = useRef<StreamingPcmPlayer | null>(null);
@@ -145,6 +148,9 @@ export const useVoiceNavigation = ({
                 setIsProcessing(true);
                 setTranscription('');
                 setAssistantMessage('');
+                setCanReplay(false);
+                playerRef.current?.stopPlayback();
+                setIsSpeaking(false);
                 break;
 
             case 'transcribed':
@@ -246,6 +252,8 @@ export const useVoiceNavigation = ({
             case 'tts_start':
                 ttsStatsRef.current = { chunks: 0, bytes: 0, startedAt: Date.now() };
                 vlog(`tts_start ${sinceReq()} — message: "${data?.message ?? ''}"`);
+                setCanReplay(false);
+                setIsSpeaking(true);
                 playerRef.current?.start();
                 break;
 
@@ -253,10 +261,10 @@ export const useVoiceNavigation = ({
                 const s = ttsStatsRef.current;
                 const dur = s.startedAt ? Date.now() - s.startedAt : 0;
                 vlog(`tts_done — received ${s.chunks} chunk(s), ${s.bytes} bytes over ${dur}ms`);
-                if (s.chunks === 0) vlog('⚠️ tts_done with ZERO chunks — backend produced no audio');
-                // All chunks are *sent*, but most are still queued & playing —
-                // drain them instead of clearing, or the tail gets cut off.
+                if (s.chunks === 0) vlog('tts_done with ZERO chunks — backend produced no audio');
                 playerRef.current?.finish();
+                if (s.chunks > 0) setCanReplay(true);
+                else setIsSpeaking(false);
                 break;
             }
 
@@ -264,6 +272,8 @@ export const useVoiceNavigation = ({
                 const s = ttsStatsRef.current;
                 vlog(`tts_error after ${s.chunks} chunk(s):`, data?.message);
                 playerRef.current?.stop();
+                setIsSpeaking(false);
+                setCanReplay(false);
                 break;
             }
 
@@ -279,7 +289,7 @@ export const useVoiceNavigation = ({
                 break;
 
             default:
-                vlog('⚠️ unhandled event type:', type);
+                vlog('unhandled event type:', type);
                 break;
         }
     }, [finishProcessing, handleDestination, setIsProcessing]);
@@ -291,7 +301,7 @@ export const useVoiceNavigation = ({
             return;
         }
 
-        playerRef.current = new StreamingPcmPlayer();
+        playerRef.current = new StreamingPcmPlayer(() => setIsSpeaking(false));
         let disposed = false;
         let reconnectAttempt = 0;
 
@@ -329,7 +339,8 @@ export const useVoiceNavigation = ({
                 },
                 onClose: () => {
                     if (socketRef.current === socket) socketRef.current = null;
-                    playerRef.current?.stop();
+                    playerRef.current?.stopPlayback();
+                    setIsSpeaking(false);
                     scheduleReconnect();
                 },
                 onError: () => {
@@ -380,6 +391,9 @@ export const useVoiceNavigation = ({
             vlog('record start ignored (recording or processing already)');
             return;
         }
+
+        playerRef.current?.stopPlayback();
+        setIsSpeaking(false);
 
         recordingStartTime.current = Date.now();
         vlog('recording started');
@@ -433,25 +447,52 @@ export const useVoiceNavigation = ({
         setShowOptions(false);
         setTranscription('');
         setAssistantMessage('');
+        playerRef.current?.stopPlayback();
+        setIsSpeaking(false);
+        setCanReplay(false);
     }, []);
 
-    const handleOptionSelect = useCallback((optionId: number) => {
-        const socket = socketRef.current;
-        if (!socket?.isOpen) {
-            vlog('cannot select option — socket not open');
-            showToast.error('Connection lost', 'Please try again');
-            return;
-        }
+    const replayResponse = useCallback(() => {
+        if (!playerRef.current?.canReplay) return;
+        vlog('replay response');
+        setIsSpeaking(true);
+        playerRef.current.replay();
+    }, []);
+
+    const handleOptionSelect = useCallback(async (optionId: number) => {
         const selected = options.find((opt) => opt.id === optionId);
-        reqStartRef.current = Date.now();
-        vlog(`aud: select_option #${optionId} "${selected?.name ?? ''}" → ${streamUrlRef.current}`);
+        if (!selected) return;
+
+        playerRef.current?.stopPlayback();
+        setIsSpeaking(false);
         setShowOptions(false);
         setIsProcessing(true);
-        socket.sendJson('select_option', {
-            optionId,
-            ...(selected?.name ? { name: selected.name } : {}),
-        });
-    }, [options, setIsProcessing]);
+
+        const query = selected.name.split('|')[0].trim() || selected.name;
+        vlog(`option tap #${optionId} "${query}" → geocoding`);
+
+        const failed = (msg: string) => {
+            vlog(`option geocode: ${msg}`);
+            showToast.error('Something went wrong', 'Could not locate this place');
+            setIsProcessing(false);
+            setShowOptions(true);
+        };
+
+        try {
+            const results = await navigationService.geocodePlace(query);
+            const place = results.find(
+                (p) => Number.isFinite(p.latitude) && Number.isFinite(p.longitude),
+            );
+            if (!place) {
+                failed('no result with valid coordinates');
+                return;
+            }
+            vlog(`option geocoded → "${place.name}" ${place.latitude},${place.longitude}`);
+            handleDestination(place);
+        } catch (err) {
+            failed(`error ${String(err)}`);
+        }
+    }, [options, setIsProcessing, handleDestination]);
 
     return {
         isRecording,
@@ -465,12 +506,15 @@ export const useVoiceNavigation = ({
         transcription,
         assistantMessage,
         meteringLevel,
+        isSpeaking,
+        canReplay,
         handleVoicePress,
         handleVoiceStart,
         handleVoiceStop,
         handleCloseVoiceModal,
         handleOptionSelect,
         clearVoiceNavigation,
+        replayResponse,
         cancelRecording,
     };
 };

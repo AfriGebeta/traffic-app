@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../../shared/theme/colors';
@@ -24,6 +24,31 @@ export const SavedPlacesScreen = () => {
     useEffect(() => {
         loadSavedPlaces();
     }, []);
+
+    useFocusEffect(
+        React.useCallback(() => {
+            loadSavedPlaces();
+
+            const data = (globalThis as any).__mapPickerData;
+            if (data && data.mode === 'save-place' && data.timestamp && Date.now() - data.timestamp < 5000) {
+                const place = data.place;
+                const lat = place?.location?.lat ?? place?.latitude;
+                const lng = place?.location?.lng ?? place?.longitude;
+                delete (globalThis as any).__mapPickerData;
+
+                if (lat != null && lng != null) {
+                    router.push({
+                        pathname: '/places/save',
+                        params: { lat, lng, name: place?.name || '' },
+                    });
+                }
+            }
+        }, [])
+    );
+
+    const handleAddPlace = () => {
+        router.push({ pathname: '/places/map-picker', params: { mode: 'save-place' } });
+    };
 
     const loadSavedPlaces = async () => {
         try {
@@ -138,7 +163,7 @@ export const SavedPlacesScreen = () => {
                 <TouchableOpacity onPress={() => router.back()}>
                     <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
                 </TouchableOpacity>
-                <Text className="text-2xl font-bold ml-4" style={{ color: theme.textPrimary }}>
+                <Text className="text-2xl font-bold ml-4 flex-1" style={{ color: theme.textPrimary }}>
                     {t('saved-places')}
                 </Text>
             </View>
@@ -269,6 +294,24 @@ export const SavedPlacesScreen = () => {
                     ))}
                 </ScrollView>
             )}
+
+            <TouchableOpacity
+                onPress={handleAddPlace}
+                activeOpacity={0.8}
+                className="absolute w-14 h-14 rounded-full items-center justify-center"
+                style={{
+                    right: 24,
+                    bottom: insets.bottom + 24,
+                    backgroundColor: colors.primary.main,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 4,
+                    elevation: 5,
+                }}
+            >
+                <Ionicons name="add" size={28} color="#fff" />
+            </TouchableOpacity>
         </View>
     );
 };
