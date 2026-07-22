@@ -112,7 +112,11 @@ class ApiService {
         });
     }
 
-    async postFormData<T>(endpoint: string, formData: FormData): Promise<ApiResponse<T>> {
+    private async requestFormData<T>(
+        method: 'POST' | 'PATCH',
+        endpoint: string,
+        formData: FormData
+    ): Promise<ApiResponse<T>> {
         try {
             const url = `${this.baseUrl}${endpoint}`;
 
@@ -120,7 +124,7 @@ class ApiService {
             const appCheckToken = await getAppCheckToken();
 
             const response = await fetch(url, {
-                method: 'POST',
+                method,
                 headers: {
                     ...authHeaders,
                     ...(appCheckToken ? { 'X-Firebase-AppCheck': appCheckToken } : {}),
@@ -140,7 +144,7 @@ class ApiService {
 
             if (!response.ok) {
                 const errorMessage = toErrorMessage(data, response.status);
-                console.error(`API POST(form) ${endpoint} failed (${response.status}):`, JSON.stringify(data));
+                console.error(`API ${method}(form) ${endpoint} failed (${response.status}):`, JSON.stringify(data));
                 return {
                     error: errorMessage,
                     errorData: data.error,
@@ -157,6 +161,26 @@ class ApiService {
                 error: error instanceof Error ? error.message : 'network error occurred',
             };
         }
+    }
+
+    async postFormData<T>(endpoint: string, formData: FormData): Promise<ApiResponse<T>> {
+        return this.requestFormData<T>('POST', endpoint, formData);
+    }
+
+    async patchFormData<T>(endpoint: string, formData: FormData): Promise<ApiResponse<T>> {
+        return this.requestFormData<T>('PATCH', endpoint, formData);
+    }
+
+    async patch<T>(
+        endpoint: string,
+        body?: unknown,
+        headers?: HeadersInit
+    ): Promise<ApiResponse<T>> {
+        return this.request<T>(endpoint, {
+            method: 'PATCH',
+            body: body ? JSON.stringify(body) : undefined,
+            headers,
+        });
     }
 
     async put<T>(
