@@ -159,6 +159,34 @@ function MicPulse({ active }: { active: boolean }) {
     );
 }
 
+const formatDuration = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+
+function RecordingTimer({ seconds }: { seconds: number }) {
+    const blink = useRef(new Animated.Value(1)).current;
+
+    useEffect(() => {
+        const loop = Animated.loop(
+            Animated.sequence([
+                Animated.timing(blink, { toValue: 0.2, duration: 600, useNativeDriver: true }),
+                Animated.timing(blink, { toValue: 1, duration: 600, useNativeDriver: true }),
+            ])
+        );
+        loop.start();
+        return () => loop.stop();
+    }, []);
+
+    return (
+        <View className="flex-row items-center">
+            <Animated.View
+                style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#EF4444', opacity: blink }}
+            />
+            <Text className="text-sm ml-2" style={{ color: colors.primary.main, fontFamily: 'PlusJakartaSans-Medium' }}>
+                {formatDuration(seconds)}
+            </Text>
+        </View>
+    );
+}
+
 export default function AIAssistantScreen() {
     const router = useRouter();
     const { t } = useTranslation();
@@ -167,6 +195,8 @@ export default function AIAssistantScreen() {
     const { colors: theme, isDark } = useTheme();
 
     const dummyMapRef = useRef<GebetaMapRef | null>(null);
+
+    const [recordSeconds, setRecordSeconds] = useState(0);
 
     useEffect(() => {
         Audio.requestPermissionsAsync().catch(() => {});
@@ -214,6 +244,16 @@ export default function AIAssistantScreen() {
             }, 0);
         },
     });
+
+    useEffect(() => {
+        if (!isRecording) {
+            setRecordSeconds(0);
+            return;
+        }
+        setRecordSeconds(0);
+        const interval = setInterval(() => setRecordSeconds((s) => s + 1), 1000);
+        return () => clearInterval(interval);
+    }, [isRecording]);
 
     const isIdle = !isRecording && !isProcessingVoice && !transcription && !assistantMessage && !showOptions;
     const isRecordingBlank = isRecording && !transcription && !assistantMessage && !showOptions;
@@ -345,15 +385,21 @@ export default function AIAssistantScreen() {
                         <Ionicons name={isRecording ? 'mic' : 'mic-outline'} size={30} color={isRecording ? 'white' : '#FFA500'} />
                     </TouchableOpacity>
                 </View>
-                <Text className="text-xs mt-3" style={{ color: theme.textSecondary, fontFamily: 'PlusJakartaSans-Regular' }}>
-                    {isProcessingVoice
-                        ? t('processing')
-                        : isRecording
-                          ? t('listening')
-                          : showOptions
-                            ? t('or-speak-your-answer')
-                            : t('push-to-talk')}
-                </Text>
+                <View className="mt-3 h-5 justify-center">
+                    {isRecording ? (
+                        <RecordingTimer seconds={recordSeconds} />
+                    ) : (
+                        <Text className="text-xs" style={{ color: theme.textSecondary, fontFamily: 'PlusJakartaSans-Regular' }}>
+                            {isProcessingVoice
+                                ? t('processing')
+                                : isRecording
+                                  ? t('listening')
+                                  : showOptions
+                                    ? t('or-speak-your-answer')
+                                    : t('push-to-talk')}
+                        </Text>
+                    )}
+                </View>
             </View>
         </View>
     );

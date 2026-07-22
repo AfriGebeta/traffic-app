@@ -20,6 +20,11 @@
         "AM": "ሰላም, "
     },
     {
+        "key": "view-all",
+        "EN_US":"View All",
+        "Am": "ሁሉንም ይመልከቱ"
+    },
+    {
         "key": "ai-greeting-highlight1",
         "EN_US": "Where",
         "AM": "ዛሬ "
