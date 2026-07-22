@@ -1020,6 +1020,16 @@
         "AM": "መድረሻዎ ላይ ደርሰዋል!"
     },
     {
+        "key": "almost-there",
+        "EN_US": "Almost There",
+        "AM": "ለመድረስ ተቃርበዋል"
+    },
+    {
+        "key": "approaching-destination",
+        "EN_US": "You're approaching your destination",
+        "AM": "ወደ መድረሻዎ እየተቃረቡ ነው"
+    },
+    {
         "key": "done",
         "EN_US": "Done",
         "AM": "ተጠናቋል"
