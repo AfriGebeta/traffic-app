@@ -181,6 +181,52 @@ export const exploreService = {
         return null;
     },
 
+    async requestAddress(
+        lat: number,
+        lng: number,
+        lang: 'AM' | 'EN' = 'EN'
+    ): Promise<{ city: string; district: string; country: string } | null> {
+        try {
+            const appCheckToken = await getAppCheckToken();
+            const response = await fetch(
+                `${API_URL}/api/navigation/request-address?lat=${lat}&lng=${lng}`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(appCheckToken ? { 'X-Firebase-AppCheck': appCheckToken } : {}),
+                    },
+                }
+            );
+
+            if (!response.ok) {
+                return null;
+            }
+
+            const data = await response.json();
+            const name = data?.response?.data?.name;
+            if (!name) return null;
+
+            const pick = (field: any): string =>
+                field?.[lang] || field?.EN || field?.AM || '';
+
+            const city =
+                pick(name.municipality) ||
+                pick(name.county) ||
+                pick(name.province) ||
+                '';
+            const district = pick(name.district) || pick(name.borough) || '';
+            const country = pick(name.country) || '';
+
+            if (!city && !district) return null;
+
+            return { city, district, country };
+        } catch (error) {
+            console.log('requestAddress error:', error);
+            return null;
+        }
+    },
+
     getCategoryType(categoryId: string): string | undefined {
         return CATEGORY_TYPE_MAP[categoryId];
     },

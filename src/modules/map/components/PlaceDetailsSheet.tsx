@@ -97,7 +97,7 @@ export const PlaceDetailsSheet: React.FC<PlaceDetailsSheetProps> = ({
                                         <View className="flex-row items-center mt-2">
                                             <Ionicons name="location" size={16} color={theme.textSecondary} />
                                             <Text className="text-sm ml-1" style={{ color: theme.textSecondary }}>
-                                                {place.type}
+                                                {place.type === 'coordinates' ? place.display_name : place.type}
                                             </Text>
                                         </View>
                                     </View>

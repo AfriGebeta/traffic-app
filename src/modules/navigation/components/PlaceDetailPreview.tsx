@@ -144,7 +144,10 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
     };
 
     const locationLine = [place.City, place.Country].filter(Boolean).join(', ');
-    const categoryLabel = place.type || t('location');
+    const categoryLabel =
+        place.type === 'coordinates'
+            ? `${place.latitude.toFixed(5)}, ${place.longitude.toFixed(5)}`
+            : place.type || t('location');
 
     const getPlaceImage = () => {
         const placeType = (place.type || place.category || '').toLowerCase();
