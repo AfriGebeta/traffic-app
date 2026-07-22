@@ -1475,6 +1475,11 @@
         "AM": "ማቆሚያ"
     },
     {
+        "key": "play-again",
+        "EN_US": "Play again",
+        "AM": "እንደገና ያጫውቱ"
+    },
+    {
         "key": "route-name",
         "EN_US": "Route Name",
         "AM": "የመስመር ስም"

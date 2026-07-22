@@ -163,6 +163,9 @@ export default function AIAssistantScreen() {
         transcription,
         assistantMessage,
         meteringLevel,
+        isSpeaking,
+        canReplay,
+        replayResponse,
         options,
         showOptions,
         handleVoiceStart,
@@ -252,6 +255,20 @@ export default function AIAssistantScreen() {
                         <View className="self-start max-w-[90%] mb-3 px-4 py-3 rounded-2xl rounded-tl-sm" style={{ backgroundColor: theme.surface }}>
                             <Text className="text-base leading-6" style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Regular' }}>{assistantMessage}</Text>
                         </View>
+                    ) : null}
+
+                    {assistantMessage && canReplay && !isSpeaking ? (
+                        <TouchableOpacity
+                            onPress={replayResponse}
+                            className="self-start flex-row items-center mb-3 px-3 py-2 rounded-full"
+                            style={{ backgroundColor: theme.surface }}
+                            activeOpacity={0.7}
+                        >
+                            <Ionicons name="play" size={16} color={colors.primary.main} />
+                            <Text className="text-sm ml-1.5" style={{ color: colors.primary.main, fontFamily: 'PlusJakartaSans-Medium' }}>
+                                {t('play-again')}
+                            </Text>
+                        </TouchableOpacity>
                     ) : null}
 
                     {showOptions
