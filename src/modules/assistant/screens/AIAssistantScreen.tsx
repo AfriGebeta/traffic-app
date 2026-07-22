@@ -80,39 +80,54 @@ function VoiceWaveform({ active }: { active: boolean }) {
 
 const MIC_SIZE = 72;
 
-function MicPulse({ active, level }: { active: boolean; level: number }) {
+function MicPulse({ active }: { active: boolean }) {
     const outerAnim = useRef(new Animated.Value(0)).current;
     const innerAnim = useRef(new Animated.Value(0)).current;
+    const loopsRef = useRef<Animated.CompositeAnimation[]>([]);
 
     useEffect(() => {
+        loopsRef.current.forEach((loop) => loop.stop());
+        loopsRef.current = [];
+
         if (!active) {
-            Animated.parallel([
-                Animated.timing(outerAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
-                Animated.timing(innerAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
-            ]).start();
+            outerAnim.setValue(0);
+            innerAnim.setValue(0);
             return;
         }
 
-        Animated.parallel([
-            Animated.timing(outerAnim, {
-                toValue: level,
-                duration: 100,
-                easing: Easing.out(Easing.ease),
-                useNativeDriver: true,
-            }),
-            Animated.timing(innerAnim, {
-                toValue: level,
-                duration: 100,
-                easing: Easing.out(Easing.ease),
-                useNativeDriver: true,
-            }),
-        ]).start();
-    }, [active, level]);
+        outerAnim.setValue(0);
+        innerAnim.setValue(0);
 
-    const outerScale = outerAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 2.1] });
-    const outerOpacity = outerAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.18] });
-    const innerScale = innerAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.55] });
-    const innerOpacity = innerAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.3] });
+        const pulse = (anim: Animated.Value, delay: number, duration: number) =>
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(anim, {
+                        toValue: 1,
+                        duration,
+                        delay,
+                        easing: Easing.out(Easing.ease),
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(anim, { toValue: 0, duration: 0, useNativeDriver: true }),
+                ])
+            );
+
+        const outerLoop = pulse(outerAnim, 0, 1100);
+        const innerLoop = pulse(innerAnim, 350, 1100);
+        loopsRef.current = [outerLoop, innerLoop];
+        outerLoop.start();
+        innerLoop.start();
+
+        return () => {
+            loopsRef.current.forEach((loop) => loop.stop());
+            loopsRef.current = [];
+        };
+    }, [active]);
+
+    const outerScale = outerAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 4.4] });
+    const outerOpacity = outerAnim.interpolate({ inputRange: [0, 0.15, 0.6, 1], outputRange: [0, 0.3, 0.12, 0] });
+    const innerScale = innerAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 3.5] });
+    const innerOpacity = innerAnim.interpolate({ inputRange: [0, 0.15, 0.6, 1], outputRange: [0, 0.35, 0.15, 0] });
 
     return (
         <View style={{ width: MIC_SIZE, height: MIC_SIZE, alignItems: 'center', justifyContent: 'center' }}>
@@ -162,7 +177,6 @@ export default function AIAssistantScreen() {
         isProcessingVoice,
         transcription,
         assistantMessage,
-        meteringLevel,
         isSpeaking,
         canReplay,
         replayResponse,
@@ -311,7 +325,7 @@ export default function AIAssistantScreen() {
             <View className="items-center pb-6 pt-2">
                 <View style={{ width: MIC_SIZE, height: MIC_SIZE, alignItems: 'center', justifyContent: 'center' }}>
                     <View style={{ position: 'absolute' }}>
-                        <MicPulse active={isRecording} level={meteringLevel} />
+                        <MicPulse active={isRecording} />
                     </View>
                     <TouchableOpacity
                         onPressIn={handleVoiceStart}
