@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import i18n from '../../../shared/utils/localization/i18n';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 import { exploreService } from '../services/exploreService';
 
@@ -79,18 +80,24 @@ export const useMapClick = ({
                 console.log('rev geocoding error:', error);
             }
 
+            const coordsLabel = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+
+            const lang = i18n.language === 'am' ? 'AM' : 'EN';
+            const address = await exploreService.requestAddress(lat, lng, lang);
+
             const clickedPlace: GeocodingPlace = {
                 id: '',
-                name: `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
-                display_name: `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+                name: address?.district || address?.city || coordsLabel,
+                display_name: coordsLabel,
                 category: '',
                 location: { lat, lng },
-                address: { country: '', country_code: '' },
+                address: { city: address?.city || '', country: address?.country || '', country_code: '' },
                 latitude: lat,
                 longitude: lng,
                 type: 'coordinates',
-                Country: '',
-                City: '',
+                Country: address?.country || '',
+                City: address?.city || '',
+                District: address?.district || '',
             };
 
             setClickedLocation({ lat, lng });

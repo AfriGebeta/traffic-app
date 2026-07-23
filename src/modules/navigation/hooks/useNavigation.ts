@@ -43,6 +43,7 @@ export const useNavigation = (
     const [routeGeoJSON, setRouteGeoJSON] = useState<any>(null);
     const [fullRouteCoordinates, setFullRouteCoordinates] = useState<[number, number][]>([]);
     const [showArrivalModal, setShowArrivalModal] = useState(false);
+    const [arrivalStage, setArrivalStage] = useState<'approaching' | 'arrived'>('approaching');
     const [currentCosting, setCurrentCosting] = useState<'auto' | 'pedestrian'>('auto');
     const [routeOrigin, setRouteOrigin] = useState<GeocodingPlace | null>(null);
     const [routeManeuversList, setRouteManeuversList] = useState<Maneuver[]>([]);
@@ -130,11 +131,14 @@ export const useNavigation = (
         setRemainingTime,
         updateInstructionBasedOnPosition,
         onSimulationComplete: () => {
-            if (stopNavigationRef.current) {
-                stopNavigationRef.current();
-            }
+            setArrivalStage('arrived');
+            setShowArrivalModal(true);
+            stopNavigationRef.current?.();
         },
-        onArrival: () => setShowArrivalModal(true),
+        onArrival: () => {
+            setArrivalStage('approaching');
+            setShowArrivalModal(true);
+        },
         totalRouteDistance: totalRouteDistance.current,
         totalRouteDuration: totalRouteDuration.current,
     });
@@ -163,10 +167,13 @@ export const useNavigation = (
         routeManeuversRef: routeManeuvers,
         currentManeuverIndexRef: currentManeuverIndex,
         onArrival: () => {
+            setArrivalStage('approaching');
             setShowArrivalModal(true);
-            if (stopNavigationRef.current) {
-                stopNavigationRef.current();
-            }
+        },
+        onDestinationReached: () => {
+            setArrivalStage('arrived');
+            setShowArrivalModal(true);
+            stopNavigationRef.current?.();
         },
     });
 
@@ -199,7 +206,10 @@ export const useNavigation = (
                 stopNavigationRef.current();
             }
         },
-        onArrival: () => setShowArrivalModal(true),
+        onArrival: () => {
+            setArrivalStage('approaching');
+            setShowArrivalModal(true);
+        },
         startSimulation,
         resetClosestIndex,
         setUserLocation,
@@ -656,6 +666,7 @@ export const useNavigation = (
                     );
                 },
                 onNavigationComplete: () => {
+                    setArrivalStage('arrived');
                     setShowArrivalModal(true);
                     handleStopNavigation();
                 },
@@ -844,6 +855,7 @@ export const useNavigation = (
 
         showArrivalModal,
         setShowArrivalModal,
+        arrivalStage,
         currentCosting,
         setCurrentCosting,
 

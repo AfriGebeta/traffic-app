@@ -2,7 +2,7 @@ import { Modal, View, Text, Linking, Pressable } from 'react-native';
 import { colors } from '../shared/theme/colors';
 
 const PLAY_STORE_URL =
-  'https://play.google.com/store/apps/details?id=co.gebeta.apps.android.maps';  //safe
+  'https://play.google.com/store/apps/details?id=co.gebeta.apps.android.map';  //safe
 
 export function ForceUpdateModal({ visible }: { visible: boolean }) {
   return (

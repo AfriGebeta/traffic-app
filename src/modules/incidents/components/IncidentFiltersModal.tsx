@@ -7,6 +7,7 @@ import { useIncidentFiltersContext } from '../context/IncidentFiltersContext';
 import { INCIDENT_TYPES } from '../types/incident.types';
 import { getIncidentTranslationKey } from '../utils/incidentTranslations';
 import { colors } from '../../../shared/theme/colors';
+import { useTheme } from '../../../shared/theme/ThemeContext';
 
 interface IncidentFiltersModalProps {
     visible: boolean;
@@ -17,6 +18,7 @@ export const IncidentFiltersModal = ({ visible, onClose }: IncidentFiltersModalP
     const { t } = useTranslation();
     const { toggleType, isTypeEnabled, loading: filtersLoading } = useIncidentFiltersContext();
     const insets = useSafeAreaInsets();
+    const { colors: theme, isDark } = useTheme();
 
     return (
         <Modal
@@ -26,21 +28,21 @@ export const IncidentFiltersModal = ({ visible, onClose }: IncidentFiltersModalP
             onRequestClose={onClose}
         >
             <View className="flex-1 bg-black/50 justify-end">
-                <View className="bg-white rounded-t-3xl" style={{ maxHeight: '80%' }}>
-                    <View className="flex-row items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
+                <View className="rounded-t-3xl" style={{ maxHeight: '80%', backgroundColor: theme.background }}>
+                    <View className="flex-row items-center justify-between px-6 pt-6 pb-4" style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}>
                         <View className="flex-row items-center">
-                            <Ionicons name="filter" size={24} color="#1f2937" />
-                            <Text className="text-xl font-bold text-gray-900 ml-3">
+                            <Ionicons name="filter" size={24} color={theme.textPrimary} />
+                            <Text className="text-xl font-bold ml-3" style={{ color: theme.textPrimary }}>
                                 {t('incident-filters') || 'Incident Filters'}
                             </Text>
                         </View>
                         <TouchableOpacity onPress={onClose} className="p-2">
-                            <Ionicons name="close" size={24} color="#6b7280" />
+                            <Ionicons name="close" size={24} color={theme.textSecondary} />
                         </TouchableOpacity>
                     </View>
 
                     <View className="px-6 pt-4 pb-2">
-                        <Text className="text-gray-600 text-sm">
+                        <Text className="text-sm" style={{ color: theme.textSecondary }}>
                             {t('select-incidents-to-see') || 'Select which incident types you want to see on the map'}
                         </Text>
                     </View>
@@ -57,10 +59,11 @@ export const IncidentFiltersModal = ({ visible, onClose }: IncidentFiltersModalP
                                     <TouchableOpacity
                                         key={type.name}
                                         onPress={() => toggleType(type.name)}
-                                        className="px-4 py-3 flex-row items-center bg-white"
+                                        className="px-4 py-3 flex-row items-center"
                                         style={{
+                                            backgroundColor: theme.surface,
                                             borderWidth: 2,
-                                            borderColor: enabled ? colors.primary.main : '#e5e7eb',
+                                            borderColor: enabled ? colors.primary.main : theme.border,
                                             borderRadius: 999,
                                             width: '48%',
                                         }}
@@ -69,13 +72,13 @@ export const IncidentFiltersModal = ({ visible, onClose }: IncidentFiltersModalP
                                         <Ionicons
                                             name={enabled ? 'checkmark-circle' : 'ellipse-outline'}
                                             size={18}
-                                            color={enabled ? colors.primary.main : '#9ca3af'}
+                                            color={enabled ? colors.primary.main : theme.textSecondary}
                                         />
                                         <View style={{ flex: 1, paddingLeft: 8 }}>
                                             <Text
                                                 className="text-sm font-semibold"
                                                 style={{
-                                                    color: enabled ? colors.primary.main : '#6b7280',
+                                                    color: enabled ? colors.primary.main : theme.textSecondary,
                                                 }}
                                                 numberOfLines={2}
                                                 ellipsizeMode="tail"
@@ -90,8 +93,8 @@ export const IncidentFiltersModal = ({ visible, onClose }: IncidentFiltersModalP
                     </ScrollView>
 
                     <View
-                        className="px-6 border-t border-gray-100"
-                        style={{ paddingTop: 16, paddingBottom: Math.max(insets.bottom + 16, 47) }}
+                        className="px-6"
+                        style={{ paddingTop: 16, paddingBottom: Math.max(insets.bottom + 16, 47), borderTopWidth: 1, borderTopColor: theme.border }}
                     >
                         <TouchableOpacity
                             onPress={onClose}
