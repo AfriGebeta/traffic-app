@@ -16,6 +16,7 @@ export interface GeocodingPlace {
     longitude: number;
     Country: string;
     City: string;
+    District?: string;
     type: string;
     image?: string;
 }

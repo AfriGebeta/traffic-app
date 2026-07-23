@@ -45,10 +45,11 @@ interface UseLocationTrackingProps {
         }>
     ) => void;
     onArrival?: () => void;
-    // onArrival?: () => void;
+    onDestinationReached?: () => void;
 }
 
 const ARRIVAL_DISTANCE_METERS = 80;
+const TRUE_ARRIVAL_DISTANCE_METERS = 12;
 
 export const useLocationTracking = ({
     routeCoordinates,
@@ -76,7 +77,7 @@ export const useLocationTracking = ({
     setSegmentedRoutes,
     updateNavigationState,
     onArrival,
-    // onArrival,
+    onDestinationReached,
 }: UseLocationTrackingProps) => {
     const locationSubscription = useRef<Location.LocationSubscription | null>(null);
     const lastClosestIndex = useRef<number>(0);
@@ -91,7 +92,7 @@ export const useLocationTracking = ({
     const locationCallbackRef = useRef<((location: Location.LocationObject) => void) | null>(null);
     const lastRenderedMarkerRef = useRef<{ lat: number; lng: number } | null>(null);
     const hasArrivedRef = useRef<boolean>(false);
-    // const hasArrivedRef = useRef<boolean>(false);
+    const hasReachedRef = useRef<boolean>(false);
 
     const stopLocationTracking = useCallback(() => {
         if (locationSubscription.current) {
@@ -106,7 +107,7 @@ export const useLocationTracking = ({
         currentGPSIntervalRef.current = getAppConfig().navGpsIntervalMs;
         locationCallbackRef.current = null;
         hasArrivedRef.current = false;
-        hasArrivedRef.current = false;
+        hasReachedRef.current = false;
     }, []);
 
     const startLocationTracking = useCallback(async () => {
@@ -123,7 +124,7 @@ export const useLocationTracking = ({
 
             hasArrivedRef.current = false;
 
-            hasArrivedRef.current = false;
+            hasReachedRef.current = false;
 
             locationCallbackRef.current = (location: Location.LocationObject) => {
                 const { latitude, longitude, heading, speed } = location.coords;
@@ -415,6 +416,7 @@ export const useLocationTracking = ({
                         const estimatedTime = totalDistance / averageSpeedMps;
                         setRemainingTime(estimatedTime);
 
+                        // ~80m out: show the arrival modal, but keep navigating.
                         if (
                             !hasArrivedRef.current &&
                             !isOffRouteRef.current &&
@@ -425,10 +427,21 @@ export const useLocationTracking = ({
                             hasArrivedRef.current = true;
                             onArrival();
                         }
-                    } else if (!hasArrivedRef.current && onArrival) {
-                        // Snapped past the last route coordinate — end of route reached.
+
+                        if (
+                            !hasReachedRef.current &&
+                            !isOffRouteRef.current &&
+                            totalDistance <= TRUE_ARRIVAL_DISTANCE_METERS &&
+                            onDestinationReached
+                        ) {
+                            hasReachedRef.current = true;
+                            onDestinationReached();
+                        }
+                    } else if (!hasReachedRef.current && onDestinationReached) {
                         hasArrivedRef.current = true;
-                        onArrival();
+                        hasReachedRef.current = true;
+                        onArrival?.();
+                        onDestinationReached();
                     }
                 } else {
                     if (setUserLocation) {
@@ -490,7 +503,7 @@ export const useLocationTracking = ({
         setSegmentedRoutes,
         updateNavigationState,
         onArrival,
-        onArrival,
+        onDestinationReached,
     ]);
 
     return {

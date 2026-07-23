@@ -138,6 +138,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         routeCoordinates,
         showArrivalModal,
         setShowArrivalModal,
+        arrivalStage,
 
         routeGeoJSON,
         routeOrigin,
@@ -1255,6 +1256,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
 
             <ArrivalModal
                 visible={showArrivalModal}
+                stage={arrivalStage}
                 destinationName={selectedDestination?.name}
                 onClose={() => setShowArrivalModal(false)}
             />
