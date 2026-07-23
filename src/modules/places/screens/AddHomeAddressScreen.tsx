@@ -27,6 +27,7 @@ import { markHomeOnboardingDone } from '../utils/homeOnboarding';
 import {
     HOME_ADDRESS_REQUIRED_FIELDS,
     HomeAddressRequiredField,
+    SavedPlaceAddress,
 } from '../types/place.types';
 
 type Step = 'choice' | 'followup' | 'form';
@@ -136,6 +137,7 @@ export const AddHomeAddressScreen = () => {
     const [saving, setSaving] = useState(false);
     const [missingFields, setMissingFields] = useState<HomeAddressRequiredField[]>([]);
     const [savedPlaceId, setSavedPlaceId] = useState<string | null>(null);
+    const [capturedAddress, setCapturedAddress] = useState<SavedPlaceAddress>({});
 
     const [label, setLabel] = useState('');
     const [country, setCountry] = useState('');
@@ -251,6 +253,7 @@ export const AddHomeAddressScreen = () => {
             }
 
             setSavedPlaceId(saved.id);
+            setCapturedAddress(saved);
             setMissingFields(missing);
             setStep('followup');
         } catch (error) {
@@ -446,6 +449,7 @@ export const AddHomeAddressScreen = () => {
             <View className="flex-row flex-wrap" style={{ gap: 8 }}>
                 {HOME_ADDRESS_REQUIRED_FIELDS.map(field => {
                     const isMissing = missingFields.includes(field);
+                    const capturedValue = capturedAddress[field];
                     return (
                         <View
                             key={field}
@@ -453,7 +457,7 @@ export const AddHomeAddressScreen = () => {
                             style={{
                                 borderWidth: 1,
                                 borderRadius: 6,
-                                borderColor: isMissing ? theme.error : theme.border,
+                                borderColor: isMissing ? theme.error : theme.textSecondary,
                                 backgroundColor: 'transparent',
                             }}
                         >
@@ -470,6 +474,7 @@ export const AddHomeAddressScreen = () => {
                                 }}
                             >
                                 {t(FIELD_LABEL_KEYS[field])}
+                                {!isMissing && capturedValue ? `: ${capturedValue}` : ''}
                             </Text>
                         </View>
                     );
