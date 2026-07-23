@@ -1,5 +1,5 @@
 import { apiService } from '../../../shared/services/api';
-import { Place, PlaceContributionRequest, SavedPlace, SavePlaceRequest, SavePlaceVoiceRequest, HomeAddressRequiredField, MissingAddressFieldsError } from '../types/place.types';
+import { Place, PlaceContributionRequest, SavedPlace, SavePlaceRequest, SavePlaceVoiceRequest, SavePlaceAudioResponse } from '../types/place.types';
 import { ClaimBusinessRequest, ClaimBusinessResponse } from '../types/claim.types';
 
 export const placeService = {
@@ -39,7 +39,22 @@ export const placeService = {
         return response.data;
     },
 
-    async savePlaceWithAudio(data: SavePlaceVoiceRequest): Promise<SavedPlace> {
+    async updateSavedPlace(placeId: string, data: Partial<SavePlaceRequest>): Promise<SavedPlace> {
+        const response = await apiService.patch<SavedPlace>(`/api/places/saved/${placeId}`, data);
+        console.log('saved place api: json update done', {
+            status: response.status,
+            error: response.error,
+            id: response.data?.id,
+        });
+
+        if (response.error || !response.data) {
+            throw new Error(response.error || 'Failed to update place');
+        }
+
+        return response.data;
+    },
+
+    async savePlaceWithAudio(data: SavePlaceVoiceRequest): Promise<SavePlaceAudioResponse> {
         console.log('home addr api: voice upload start', {
             type: data.type,
             label: data.label,
@@ -64,7 +79,7 @@ export const placeService = {
         } as any);
 
         const startedAt = Date.now();
-        const response = await apiService.postFormData<SavedPlace>('/api/places/saved', formData);
+        const response = await apiService.postFormData<SavePlaceAudioResponse>('/api/places/saved', formData);
         console.log(`home addr api: voice upload done in ${Date.now() - startedAt}ms`, {
             status: response.status,
             error: response.error,
@@ -72,11 +87,33 @@ export const placeService = {
         });
 
         if (response.error || !response.data) {
-            const errorData = response.errorData as { elaboration?: string; values?: string[] } | undefined;
-            if (errorData?.elaboration === 'Missing address fields' && Array.isArray(errorData.values) && errorData.values.length > 0) {
-                throw new MissingAddressFieldsError(errorData.values as HomeAddressRequiredField[]);
-            }
             throw new Error(response.error || 'Failed to save place');
+        }
+
+        return response.data;
+    },
+
+    async updateSavedPlaceWithAudio(placeId: string, audioUri: string): Promise<SavePlaceAudioResponse> {
+        console.log('home addr api: voice patch start', { placeId, audioUri });
+
+        const formData = new FormData();
+        const extension = audioUri.split('.').pop()?.toLowerCase() || 'm4a';
+        formData.append('audio', {
+            uri: audioUri,
+            name: `recording.${extension}`,
+            type: extension === 'mp3' ? 'audio/mpeg' : 'audio/mp4',
+        } as any);
+
+        const startedAt = Date.now();
+        const response = await apiService.patchFormData<SavePlaceAudioResponse>(`/api/places/saved/${placeId}`, formData);
+        console.log(`home addr api: voice patch done in ${Date.now() - startedAt}ms`, {
+            status: response.status,
+            error: response.error,
+            data: response.data ? JSON.stringify(response.data).slice(0, 500) : undefined,
+        });
+
+        if (response.error || !response.data) {
+            throw new Error(response.error || 'Failed to update place');
         }
 
         return response.data;

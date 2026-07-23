@@ -69,14 +69,9 @@ export interface SavePlaceVoiceRequest {
     audioUri: string;
 }
 
-export class MissingAddressFieldsError extends Error {
-    fields: HomeAddressRequiredField[];
-
-    constructor(fields: HomeAddressRequiredField[]) {
-        super('Missing address fields: ' + fields.join(', '));
-        this.name = 'MissingAddressFieldsError';
-        this.fields = fields;
-    }
+export interface SavePlaceAudioResponse {
+    data: SavedPlace;
+    missingFields: HomeAddressRequiredField[];
 }
 
 export const PLACE_TYPES = [

@@ -27,7 +27,7 @@ import { markHomeOnboardingDone } from '../utils/homeOnboarding';
 import {
     HOME_ADDRESS_REQUIRED_FIELDS,
     HomeAddressRequiredField,
-    MissingAddressFieldsError,
+    SavedPlaceAddress,
 } from '../types/place.types';
 
 type Step = 'choice' | 'followup' | 'form';
@@ -136,6 +136,8 @@ export const AddHomeAddressScreen = () => {
     const [step, setStep] = useState<Step>('choice');
     const [saving, setSaving] = useState(false);
     const [missingFields, setMissingFields] = useState<HomeAddressRequiredField[]>([]);
+    const [savedPlaceId, setSavedPlaceId] = useState<string | null>(null);
+    const [capturedAddress, setCapturedAddress] = useState<SavedPlaceAddress>({});
 
     const [label, setLabel] = useState('');
     const [country, setCountry] = useState('');
@@ -233,26 +235,30 @@ export const AddHomeAddressScreen = () => {
 
         setSaving(true);
         try {
-            await placeService.savePlaceWithAudio({
-                type: 'HOME',
-                label: t('home'),
-                lat: getCoords()?.lat,
-                lng: getCoords()?.lng,
-                isPrivate: true,
-                audioUri,
-            });
+            const { data: saved, missingFields: missing } = savedPlaceId
+                ? await placeService.updateSavedPlaceWithAudio(savedPlaceId, audioUri)
+                : await placeService.savePlaceWithAudio({
+                    type: 'HOME',
+                    label: t('home'),
+                    lat: getCoords()?.lat,
+                    lng: getCoords()?.lng,
+                    isPrivate: true,
+                    audioUri,
+                });
 
-            hlog('voice save succeeded');
-            await finish();
-        } catch (error) {
-            if (error instanceof MissingAddressFieldsError) {
-                hlog('voice save missing fields:', error.fields);
-                setMissingFields(error.fields);
-                setStep('followup');
-            } else {
-                hlog('voice save failed:', String(error));
-                showToast.error(t('error'), error instanceof Error ? error.message : t('failed-to-save-place'));
+            hlog('voice save response, missing fields:', missing);
+            if (missing.length === 0) {
+                await finish();
+                return;
             }
+
+            setSavedPlaceId(saved.id);
+            setCapturedAddress(saved);
+            setMissingFields(missing);
+            setStep('followup');
+        } catch (error) {
+            hlog('voice save failed:', String(error));
+            showToast.error(t('error'), error instanceof Error ? error.message : t('failed-to-save-place'));
         } finally {
             setSaving(false);
         }
@@ -311,8 +317,8 @@ export const AddHomeAddressScreen = () => {
         hlog(`form submit (coords source: ${coordsSource}, coords:`, getCoords(), ')');
         setSaving(true);
         try {
-            await placeService.savePlace({
-                type: 'HOME',
+            const payload = {
+                type: 'HOME' as const,
                 label: label.trim() || t('home'),
                 lat: getCoords()?.lat,
                 lng: getCoords()?.lng,
@@ -326,7 +332,12 @@ export const AddHomeAddressScreen = () => {
                 houseNumber: houseNumber.trim() || undefined,
                 floor: floor.trim() ? parseInt(floor, 10) : undefined,
                 buildingTotalFloor: buildingTotalFloor.trim() ? parseInt(buildingTotalFloor, 10) : undefined,
-            });
+            };
+            if (savedPlaceId) {
+                await placeService.updateSavedPlace(savedPlaceId, payload);
+            } else {
+                await placeService.savePlace(payload);
+            }
             await finish();
         } catch (error) {
             hlog('form save failed:', String(error));
@@ -438,6 +449,7 @@ export const AddHomeAddressScreen = () => {
             <View className="flex-row flex-wrap" style={{ gap: 8 }}>
                 {HOME_ADDRESS_REQUIRED_FIELDS.map(field => {
                     const isMissing = missingFields.includes(field);
+                    const capturedValue = capturedAddress[field];
                     return (
                         <View
                             key={field}
@@ -445,7 +457,7 @@ export const AddHomeAddressScreen = () => {
                             style={{
                                 borderWidth: 1,
                                 borderRadius: 6,
-                                borderColor: isMissing ? theme.error : theme.border,
+                                borderColor: isMissing ? theme.error : theme.textSecondary,
                                 backgroundColor: 'transparent',
                             }}
                         >
@@ -462,6 +474,7 @@ export const AddHomeAddressScreen = () => {
                                 }}
                             >
                                 {t(FIELD_LABEL_KEYS[field])}
+                                {!isMissing && capturedValue ? `: ${capturedValue}` : ''}
                             </Text>
                         </View>
                     );
