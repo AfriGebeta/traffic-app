@@ -1,44 +1,52 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import PlaceLightIcon from '../../../../assets/images/contribute-place-light.svg';
+import PlaceDarkIcon from '../../../../assets/images/contribute-place-dark.svg';
+import NeighborhoodLightIcon from '../../../../assets/images/contribute-neighborhood-light.svg';
+import NeighborhoodDarkIcon from '../../../../assets/images/contribute-neighborhood-dark.svg';
+import TrafficLightIcon from '../../../../assets/images/contribute-traffic-light.svg';
+import TrafficDarkIcon from '../../../../assets/images/contribute-traffic-dark.svg';
+import TaxiLightIcon from '../../../../assets/images/contribute-taxi-light.svg';
+import TaxiDarkIcon from '../../../../assets/images/contribute-taxi-dark.svg';
 
 export default function ContributionScreen() {
     const router = useRouter();
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
-    const { colors: theme } = useTheme();
+    const { colors: theme, isDark } = useTheme();
 
     const contributionOptions = [
         {
             id: 'places',
             titleKey: 'contribute-place',
             descriptionKey: 'contribute-place-description',
-            image: require('../../../../assets/images/places.png'),
+            Icon: isDark ? PlaceDarkIcon : PlaceLightIcon,
             route: '/places/contribute',
         },
         {
             id: 'neighborhoods',
             titleKey: 'contribute-neighborhood',
             descriptionKey: 'contribute-neighborhood-description',
-            image: require('../../../../assets/images/neighborhood.png'),
+            Icon: isDark ? NeighborhoodDarkIcon : NeighborhoodLightIcon,
             route: '/neighborhoods/contribute',
         },
         {
             id: 'rules',
             titleKey: 'report-traffic-rule',
             descriptionKey: 'report-traffic-rule-description',
-            image: require('../../../../assets/images/rules.png'),
+            Icon: isDark ? TrafficDarkIcon : TrafficLightIcon,
             route: '/rules/contribute',
         },
         {
             id: 'taxi',
             titleKey: 'contribute-taxi-info',
             descriptionKey: 'contribute-taxi-info-description',
-            image: require('../../../../assets/images/taxi-station-place.png'),
+            Icon: isDark ? TaxiDarkIcon : TaxiLightIcon,
             route: '/taxi/build-route',
         },
     ];
@@ -70,12 +78,8 @@ export default function ContributionScreen() {
                             activeOpacity={0.7}
                         >
                             <View className="flex-row items-center">
-                                <View className="w-16 h-16 items-center justify-center mr-4">
-                                    <Image
-                                        source={option.image}
-                                        style={{ width: 64, height: 64 }}
-                                        resizeMode="contain"
-                                    />
+                                <View className="w-12 h-12 items-center justify-center mr-4">
+                                    <option.Icon width={40} height={40} />
                                 </View>
                                 <View className="flex-1">
                                     <Text className="text-xl font-semibold mb-1" style={{ color: theme.textPrimary }}>
