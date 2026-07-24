@@ -17,6 +17,29 @@ import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 
+import GasStationLight from '../../../../assets/images/contribute-place-gas-station-light.svg';
+import GasStationDark from '../../../../assets/images/contribute-place-gas-station-dark.svg';
+import TaxiLight from '../../../../assets/images/contribute-place-taxi-light.svg';
+import TaxiDark from '../../../../assets/images/contribute-place-taxi-dark.svg';
+import RestaurantLight from '../../../../assets/images/contribute-place-restaurant-light.svg';
+import RestaurantDark from '../../../../assets/images/contribute-place-restaurant-dark.svg';
+import ParkingLight from '../../../../assets/images/contribute-place-parking-light.svg';
+import ParkingDark from '../../../../assets/images/contribute-place-parking-dark.svg';
+import HospitalLight from '../../../../assets/images/contribute-place-hospital-light.svg';
+import HospitalDark from '../../../../assets/images/contribute-place-hospital-dark.svg';
+import BuildingLight from '../../../../assets/images/contribute-place-building-light.svg';
+import BuildingDark from '../../../../assets/images/contribute-place-building-dark.svg';
+import CompanyLight from '../../../../assets/images/contribute-place-company-light.svg';
+import CompanyDark from '../../../../assets/images/contribute-place-company-dark.svg';
+import GovernmentLight from '../../../../assets/images/contribute-place-government-light.svg';
+import GovernmentDark from '../../../../assets/images/contribute-place-government-dark.svg';
+import MallLight from '../../../../assets/images/contribute-place-mall-light.svg';
+import MallDark from '../../../../assets/images/contribute-place-mall-dark.svg';
+import ShopLight from '../../../../assets/images/contribute-place-shop-light.svg';
+import ShopDark from '../../../../assets/images/contribute-place-shop-dark.svg';
+import MoreLight from '../../../../assets/images/contribute-place-more-light.svg';
+import MoreDark from '../../../../assets/images/contribute-place-more-dark.svg';
+
 export default function AddPlaceScreen() {
     const { t } = useTranslation();
     const router = useRouter();
@@ -168,32 +191,25 @@ export default function AddPlaceScreen() {
             </View>
 
             <View className="mx-6 mt-6 mb-4 rounded-2xl p-4 flex-row items-center" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
-                <View className="w-14 h-14 items-center justify-center mr-4">
+                <View className="w-12 h-12 items-center justify-center mr-4">
                     {(() => {
-                        const placeImageMap: Record<string, any> = {
-                            'gas_station': require('../../../../assets/images/gas-station-place.png'),
-                            'taxi_station': require('../../../../assets/images/taxi-station-place.png'),
-                            'repair_shop': require('../../../../assets/images/repair-shop-place.png'),
-                            'restaurant': require('../../../../assets/images/restaurant-place.png'),
-                            'parking': require('../../../../assets/images/parking-place.png'),
-                            'hospital': require('../../../../assets/images/hospital-place.png'),
-                            'building': require('../../../../assets/images/building.png'),
-                            'company': require('../../../../assets/images/company.png'),
-                            'government': require('../../../../assets/images/government.png'),
-                            'mall': require('../../../../assets/images/mall.png'),
-                            'shop': require('../../../../assets/images/shop.png'),
-                            'other': require('../../../../assets/images/other-place.png'),
+                        const placeIconMap: Record<string, React.FC<{ width?: number; height?: number }>> = {
+                            'gas_station': isDark ? GasStationDark : GasStationLight,
+                            'taxi_station': isDark ? TaxiDark : TaxiLight,
+                            'restaurant': isDark ? RestaurantDark : RestaurantLight,
+                            'parking': isDark ? ParkingDark : ParkingLight,
+                            'hospital': isDark ? HospitalDark : HospitalLight,
+                            'building': isDark ? BuildingDark : BuildingLight,
+                            'company': isDark ? CompanyDark : CompanyLight,
+                            'government': isDark ? GovernmentDark : GovernmentLight,
+                            'mall': isDark ? MallDark : MallLight,
+                            'shop': isDark ? ShopDark : ShopLight,
+                            'other': isDark ? MoreDark : MoreLight,
                         };
 
-                        const imageSource = placeImageMap[placeType];
+                        const Icon = placeIconMap[placeType] ?? (isDark ? MoreDark : MoreLight);
 
-                        return (
-                            <Image
-                                source={imageSource}
-                                style={{ width: 48, height: 48 }}
-                                resizeMode="contain"
-                            />
-                        );
+                        return <Icon width={40} height={40} />;
                     })()}
                 </View>
                 <View className="flex-1">
@@ -293,7 +309,6 @@ export default function AddPlaceScreen() {
                         )}
                     </View>
 
-                    {/* Photos */}
                     <View>
                         <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('photos')}</Text>
 
