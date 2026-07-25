@@ -14,7 +14,7 @@ export interface ManeuverDisplay {
     label: string;
 }
 
-/** Valhalla/OSRM-style maneuver types */
+// valhalla style maneuver types
 const MANEUVER_TYPE = {
     NONE: 0,
     START: 1,
@@ -51,7 +51,6 @@ export function buildPreviewSteps(legs: Leg[]): PreviewStep[] {
             let startIdx = Math.max(0, Math.min(maneuver.begin_shape_index ?? 0, legCoords.length - 1));
             let endIdx = Math.max(startIdx, Math.min(maneuver.end_shape_index ?? startIdx, legCoords.length - 1));
 
-            // Point maneuvers (turns) often share the same shape index — pad for map framing
             if (endIdx - startIdx < 2) {
                 const mid = startIdx;
                 startIdx = Math.max(0, mid - 4);

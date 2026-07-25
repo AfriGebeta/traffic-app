@@ -344,6 +344,7 @@ const navCameraPaddingTop = (mapHeight: number) => {
 
 const NAV_HEADING_TAU = 0.10;
 const NAV_V_SMOOTH = 0.35;
+const NAV_STOP_SPEED = 0.7;
 const NAV_CORR_TAU = 0.6;
 const NAV_FREE_TAU = 0.072;
 const NAV_DT_CLAMP_S = 0.1;   
@@ -532,8 +533,14 @@ const AnimatedNavLayer = memo(({
             if (measured < 0) measured = 0;
             if (measured > 60) measured = 60;
             const sample = userLocation.speed != null && userLocation.speed >= 0 ? userLocation.speed : measured;
-            vRef.current = vRef.current * (1 - NAV_V_SMOOTH) + sample * NAV_V_SMOOTH;
-            if (vRef.current < 0.4) vRef.current = 0;
+            if (sample <= NAV_STOP_SPEED) {
+                vRef.current = 0;                      
+            } else if (sample < vRef.current) {
+                vRef.current = sample;                
+            } else {
+                vRef.current = vRef.current * (1 - NAV_V_SMOOTH) + sample * NAV_V_SMOOTH;
+                if (vRef.current < 0.4) vRef.current = 0;
+            }
             lastFixRef.current = { s: routeS, t: now };
             lastOnRouteSRef.current = routeS;
         }
