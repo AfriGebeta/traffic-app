@@ -2,6 +2,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { placeService } from '../services/place.service';
 
 const HOME_ONBOARDING_KEY = '@traffic_app_home_onboarding_done';
+const HOME_LAST_PROMPTED_KEY = '@traffic_app_home_last_prompted';
+
+const COLD_START_PROMPT_INTERVAL_MS = 2 * 24 * 60 * 60 * 1000; // 2 days
 
 export const HOME_ADDRESS_ROUTE = '/places/add-home';
 
@@ -14,7 +17,7 @@ export async function markHomeOnboardingDone(): Promise<void> {
 
 export async function resetHomeOnboarding(): Promise<void> {
     hlog('resetting onboarding flag (logout)');
-    await AsyncStorage.removeItem(HOME_ONBOARDING_KEY);
+    await AsyncStorage.multiRemove([HOME_ONBOARDING_KEY, HOME_LAST_PROMPTED_KEY]);
 }
 
 export async function getPostAuthRoute(): Promise<string> {
@@ -38,5 +41,34 @@ export async function getPostAuthRoute(): Promise<string> {
     } catch (error) {
         hlog('post-auth check failed, defaulting to add-home:', String(error));
         return HOME_ADDRESS_ROUTE;
+    }
+}
+
+export async function getColdStartHomePromptRoute(): Promise<string | null> {
+    try {
+        const done = await AsyncStorage.getItem(HOME_ONBOARDING_KEY);
+        if (done) {
+            return null;
+        }
+
+        const lastPrompted = await AsyncStorage.getItem(HOME_LAST_PROMPTED_KEY);
+        if (lastPrompted && Date.now() - Number(lastPrompted) < COLD_START_PROMPT_INTERVAL_MS) {
+            hlog('cold-start check: prompted recently, skipping');
+            return null;
+        }
+
+        const savedPlaces = await placeService.getSavedPlaces();
+        if (savedPlaces.some(place => place.type === 'HOME')) {
+            hlog('cold-start check: HOME already saved');
+            await markHomeOnboardingDone();
+            return null;
+        }
+
+        hlog('cold-start check: due for a re-prompt, no HOME saved');
+        await AsyncStorage.setItem(HOME_LAST_PROMPTED_KEY, String(Date.now()));
+        return HOME_ADDRESS_ROUTE;
+    } catch (error) {
+        hlog('cold-start check failed, skipping this launch:', String(error));
+        return null;
     }
 }
