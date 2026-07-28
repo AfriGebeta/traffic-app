@@ -8,6 +8,12 @@ import { resetHomeOnboarding } from '../../places/utils/homeOnboarding';
 const USER_STORAGE_KEY = '@traffic_app_user';
 const TOKEN_STORAGE_KEY = '@traffic_app_token';
 
+const sanitizeName = (name?: string | null): string =>
+    (name || '').replace(/\s+undefined$/i, '').trim();
+
+const sanitizeUser = <T extends { name?: string } | null>(user: T): T =>
+    user ? { ...user, name: sanitizeName(user.name) } : user;
+
 export const useUserRegistration = () => {
     const { t } = useTranslation();
     const [loading, setLoading] = useState(false);
@@ -61,10 +67,35 @@ export const useUserRegistration = () => {
     const getStoredUser = async () => {
         try {
             const stored = await AsyncStorage.getItem(USER_STORAGE_KEY);
-            return stored ? JSON.parse(stored) : null;
+            return stored ? sanitizeUser(JSON.parse(stored)) : null;
         } catch {
             return null;
         }
+    };
+
+    const updateStoredUser = async (updates: Partial<AuthResponse['user']>) => {
+        const stored = await AsyncStorage.getItem(USER_STORAGE_KEY);
+        const current = stored ? JSON.parse(stored) : {};
+        const merged = sanitizeUser({ ...current, ...updates });
+        await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(merged));
+        return merged;
+    };
+
+    const refreshStoredUser = async () => {
+        const response = await userService.getProfile();
+        const serverUser = response.data;
+
+        if (!serverUser?.id) {
+            return getStoredUser();
+        }
+
+        const { password, ...updates } = serverUser;
+
+        if (!updates.profileImage) {
+            delete updates.profileImage;
+        }
+
+        return updateStoredUser(updates);
     };
 
     const getStoredToken = async (): Promise<string | null> => {
@@ -83,6 +114,8 @@ export const useUserRegistration = () => {
     return {
         register,
         getStoredUser,
+        updateStoredUser,
+        refreshStoredUser,
         getStoredToken,
         clearAuth,
         loading,

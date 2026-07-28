@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { useResolvedImageUri } from '../../../shared/hooks/useResolvedImageUri';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 
 interface PlaceCardProps {
@@ -12,6 +13,7 @@ interface PlaceCardProps {
 export const PlaceCard: React.FC<PlaceCardProps> = ({ place, onPress }) => {
     const { colors: theme, isDark } = useTheme();
     const imagePlaceholder = isDark ? theme.border : '#E5E7EB';
+    const imageUri = useResolvedImageUri(place.image);
 
     return (
         <TouchableOpacity
@@ -19,9 +21,9 @@ export const PlaceCard: React.FC<PlaceCardProps> = ({ place, onPress }) => {
             className="rounded-xl mr-3 w-52 overflow-hidden"
             style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
         >
-            {place.image ? (
+            {imageUri ? (
                 <Image
-                    source={{ uri: place.image }}
+                    source={{ uri: imageUri }}
                     className="w-full h-24"
                     style={{ backgroundColor: imagePlaceholder }}
                     resizeMode="cover"

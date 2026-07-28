@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { useUserRegistration } from '../../register/hooks/useUserRegistration';
+import { useResolvedImageUri } from '../../../shared/hooks/useResolvedImageUri';
 
 interface SearchBarProps {
     value: string;
@@ -28,14 +29,17 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 }) => {
     const { colors: theme } = useTheme();
     const { getStoredUser } = useUserRegistration();
-    const [profileImage, setProfileImage] = useState<string | null>(null);
+    const [storedImage, setStoredImage] = useState<string | null>(null);
+    const [localImage, setLocalImage] = useState<string | null>(null);
+    const profileImage = useResolvedImageUri(storedImage) ?? localImage;
 
     useFocusEffect(
         useCallback(() => {
             getStoredUser().then((user) => {
-                setProfileImage(user?.profileImage ?? null);
+                setStoredImage(user?.profileImage ?? null);
+                setLocalImage(user?.profileImageLocal ?? null);
             });
-        }, [getStoredUser])
+        }, [])
     );
 
     return (

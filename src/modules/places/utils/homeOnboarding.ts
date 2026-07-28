@@ -20,6 +20,10 @@ export async function resetHomeOnboarding(): Promise<void> {
     await AsyncStorage.multiRemove([HOME_ONBOARDING_KEY, HOME_LAST_PROMPTED_KEY]);
 }
 
+async function markHomePrompted(): Promise<void> {
+    await AsyncStorage.setItem(HOME_LAST_PROMPTED_KEY, String(Date.now()));
+}
+
 export async function getPostAuthRoute(): Promise<string> {
     try {
         const done = await AsyncStorage.getItem(HOME_ONBOARDING_KEY);
@@ -37,9 +41,11 @@ export async function getPostAuthRoute(): Promise<string> {
         }
 
         hlog('post-auth route: add-home (no HOME saved)');
+        await markHomePrompted();
         return HOME_ADDRESS_ROUTE;
     } catch (error) {
         hlog('post-auth check failed, defaulting to add-home:', String(error));
+        await markHomePrompted();
         return HOME_ADDRESS_ROUTE;
     }
 }
@@ -65,7 +71,7 @@ export async function getColdStartHomePromptRoute(): Promise<string | null> {
         }
 
         hlog('cold-start check: due for a re-prompt, no HOME saved');
-        await AsyncStorage.setItem(HOME_LAST_PROMPTED_KEY, String(Date.now()));
+        await markHomePrompted();
         return HOME_ADDRESS_ROUTE;
     } catch (error) {
         hlog('cold-start check failed, skipping this launch:', String(error));
