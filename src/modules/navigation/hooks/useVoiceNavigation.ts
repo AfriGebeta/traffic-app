@@ -394,6 +394,7 @@ export const useVoiceNavigation = ({
 
         playerRef.current?.stopPlayback();
         setIsSpeaking(false);
+        socketRef.current?.sendJson('stop_tts');
 
         recordingStartTime.current = Date.now();
         vlog('recording started');
@@ -424,7 +425,7 @@ export const useVoiceNavigation = ({
         try {
             setIsProcessing(true);
             const bytes = await new File(audioUri).bytes();
-            reqStartRef.current = Date.now(); 
+            reqStartRef.current = Date.now();
             vlog(`aud: post audio ${bytes.length} bytes → ${streamUrlRef.current} (socket open: ${socket.isOpen})`);
             socket.sendAudio(bytes, 'audio/mp4');
         } catch (error) {
@@ -457,6 +458,14 @@ export const useVoiceNavigation = ({
         vlog('replay response');
         setIsSpeaking(true);
         playerRef.current.replay();
+    }, []);
+
+    const stopSpeaking = useCallback(() => {
+        vlog('stop speaking → stop_tts');
+        playerRef.current?.stopPlayback();
+        setIsSpeaking(false);
+        socketRef.current?.sendJson('stop_tts');
+        setCanReplay(playerRef.current?.canReplay ?? false);
     }, []);
 
     const handleOptionSelect = useCallback(async (optionId: number) => {
@@ -515,6 +524,7 @@ export const useVoiceNavigation = ({
         handleOptionSelect,
         clearVoiceNavigation,
         replayResponse,
+        stopSpeaking,
         cancelRecording,
     };
 };

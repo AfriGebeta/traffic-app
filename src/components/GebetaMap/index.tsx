@@ -277,9 +277,10 @@ const AnimatedSegmentedRoutes = memo(({
             {animatedSegments.map((route) => {
                 if (route.geoJSON.geometry.coordinates.length === 0) return null;
 
+                const lineWidth = route.isWalking ? 10 : 16;
                 const lineStyle: any = {
                     lineColor: route.isWalking ? '#EF4444' : '#3B82F6',
-                    lineWidth: route.isWalking ? 5 : 7,
+                    lineWidth,
                     lineOpacity: currentTaxiSegmentIndex === route.segmentIndex ? 1 : 0.7,
                     lineCap: 'round',
                     lineJoin: 'round',
@@ -294,6 +295,18 @@ const AnimatedSegmentedRoutes = memo(({
                         id={`segment-${route.segmentIndex}-source`}
                         shape={route.geoJSON}
                     >
+                        {!route.isWalking && (
+                            <MapLibreGL.LineLayer
+                                id={`segment-${route.segmentIndex}-casing-layer`}
+                                style={{
+                                    lineColor: '#1e3a8a',
+                                    lineWidth: lineWidth + 4,
+                                    lineOpacity: 0.5,
+                                    lineCap: 'round',
+                                    lineJoin: 'round',
+                                }}
+                            />
+                        )}
                         <MapLibreGL.LineLayer
                             id={`segment-${route.segmentIndex}-layer`}
                             style={lineStyle}
