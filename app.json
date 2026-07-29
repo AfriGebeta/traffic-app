@@ -67,6 +67,48 @@
             "BROWSABLE",
             "DEFAULT"
           ]
+        },
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "geo"
+            },
+            {
+              "scheme": "google.navigation"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        },
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "https",
+              "host": "maps.google.com"
+            },
+            {
+              "scheme": "https",
+              "host": "www.google.com",
+              "pathPrefix": "/maps"
+            },
+            {
+              "scheme": "https",
+              "host": "maps.app.goo.gl"
+            },
+            {
+              "scheme": "https",
+              "host": "goo.gl",
+              "pathPrefix": "/maps"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },

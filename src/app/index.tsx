@@ -5,7 +5,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { TrafficMap } from '../modules/map';
 import { useUserRegistration } from '../modules/register/hooks/useUserRegistration';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { parseLocationUrl, type SharedLocation } from '../shared/utils/deepLinking';
+import { resolveLocationUrl, type SharedLocation } from '../shared/utils/deepLinking';
 import { useTheme } from '../shared/theme/ThemeContext';
 import { getColdStartHomePromptRoute } from '../modules/places/utils/homeOnboarding';
 
@@ -45,18 +45,27 @@ export default function Index() {
   }, []);
 
   useEffect(() => {
-    const applyUrl = (url: string | null) => {
+    let cancelled = false;
+
+    const applyUrl = async (url: string | null) => {
       if (!url) return;
-      const location = parseLocationUrl(url);
-      if (location) {
+      const location = await resolveLocationUrl(url);
+      if (location && !cancelled) {
         setSharedLocation({ ...location });
       }
     };
 
-    const subscription = Linking.addEventListener('url', ({ url }) => applyUrl(url));
-    Linking.getInitialURL().then(applyUrl);
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      void applyUrl(url);
+    });
+    Linking.getInitialURL().then((url) => {
+      void applyUrl(url);
+    });
 
-    return () => subscription.remove();
+    return () => {
+      cancelled = true;
+      subscription.remove();
+    };
   }, []);
 
   useEffect(() => {
