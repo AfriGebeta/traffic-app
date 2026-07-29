@@ -36,11 +36,13 @@ import { useExplore } from '../hooks/useExplore';
 import { useMapClick } from '../hooks/useMapClick';
 import { showToast } from '../../../shared/utils/toast';
 import { useTranslation } from 'react-i18next';
+import i18n from '../../../shared/utils/localization/i18n';
 
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 import { useRulePreferences } from '../../rules/hooks/useRulePreferences';
 import type { SharedLocation } from '../../../shared/utils/deepLinking';
 import { decodePolyline } from '../../../shared/utils/polyline';
+import { exploreService } from '../services/exploreService';
 import type { TaxiNavigationResponse } from '../../taxi/types/taxi.types';
 import { setNavigationPreviewData } from '../../navigation/services/navigationPreviewCache';
 import { buildPreviewSteps } from '../../navigation/utils/navigationPreviewUtils';
@@ -303,7 +305,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
             [place.longitude, place.latitude],
             '',
             [40, 40],
-            () => {},
+            () => { },
             10,
             undefined
         );
@@ -358,7 +360,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
             [place.longitude, place.latitude],
             '',
             [40, 40],
-            () => {},
+            () => { },
             10,
             undefined
         );
@@ -542,10 +544,14 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
             }
             processedSharedLocationRef.current = sharedLocation;
 
+            const fallbackName =
+                sharedLocation.name ||
+                `${sharedLocation.lat.toFixed(5)}, ${sharedLocation.lng.toFixed(5)}`;
+
             const place: GeocodingPlace = {
                 id: `shared-${sharedLocation.lat}-${sharedLocation.lng}`,
-                name: sharedLocation.name || 'Shared Location',
-                display_name: sharedLocation.name || 'Shared Location',
+                name: fallbackName,
+                display_name: fallbackName,
                 category: sharedLocation.type || 'location',
                 location: {
                     lat: sharedLocation.lat,
@@ -566,6 +572,50 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
 
             handleSelectSharedPlace(place);
             setShowPlaceDetail(true);
+
+            if (!sharedLocation.name) {
+                const target = sharedLocation;
+                const isStale = () => processedSharedLocationRef.current !== target;
+
+                (async () => {
+                    try {
+                        const resolved = await Promise.race([
+                            exploreService.reverseGeocode(target.lat, target.lng),
+                            new Promise<null>((resolve) => setTimeout(() => resolve(null), 800)),
+                        ]);
+
+                        if (resolved?.name) {
+                            if (isStale()) return;
+                            handleSelectSharedPlace({
+                                ...resolved,
+                                id: place.id,
+                            });
+                            return;
+                        }
+                    } catch (error) {
+                        console.log('shared location reverse geocode failed:', error);
+                    }
+
+                    const lang = i18n.language === 'am' ? 'AM' : 'EN';
+                    const address = await exploreService.requestAddress(target.lat, target.lng, lang);
+                    if (!address || isStale()) return;
+                    if (!address.district && !address.city) return;
+
+                    handleSelectSharedPlace({
+                        ...place,
+                        name: address.district || address.city,
+                        address: {
+                            city: address.city || '',
+                            country: address.country || '',
+                            country_code: '',
+                        },
+                        type: 'coordinates',
+                        City: address.city || '',
+                        Country: address.country || '',
+                        District: address.district || '',
+                    });
+                })();
+            }
 
             if (sharedFlyToTimer.current) {
                 clearTimeout(sharedFlyToTimer.current);

@@ -22,6 +22,7 @@ import BuildingLight from '../../../../assets/images/contribute-place-building-l
 import BuildingDark from '../../../../assets/images/contribute-place-building-dark.svg';
 import CompanyLight from '../../../../assets/images/contribute-place-company-light.svg';
 import CompanyDark from '../../../../assets/images/contribute-place-company-dark.svg';
+
 import GovernmentLight from '../../../../assets/images/contribute-place-government-light.svg';
 import GovernmentDark from '../../../../assets/images/contribute-place-government-dark.svg';
 import MallLight from '../../../../assets/images/contribute-place-mall-light.svg';

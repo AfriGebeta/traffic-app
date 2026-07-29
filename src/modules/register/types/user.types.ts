@@ -4,8 +4,11 @@ export interface User {
     name: string;
     username?: string;
     profileImage?: string | null;
+    profileImageLocal?: string | null;
     password?: string;
     points: number;
+    role?: string;
+    isBanned?: boolean;
     createdAt: string;
     updatedAt: string;
 }
@@ -19,6 +22,11 @@ export interface UserRegistrationRequest {
     phoneNumber: string;
     password: string;
     name: string;
+}
+
+export interface UpdateProfileRequest {
+    name?: string;
+    profileImage?: string | null;
 }
 
 export interface UserLoginRequest {

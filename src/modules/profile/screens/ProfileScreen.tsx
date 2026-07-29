@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUserRegistration } from '../../register/hooks/useUserRegistration';
@@ -13,6 +13,7 @@ import { useTheme } from '../../../shared/theme/ThemeContext';
 import { IncidentFiltersModal } from '../../incidents/components/IncidentFiltersModal';
 import { useRulePreferences } from '../../rules/hooks/useRulePreferences';
 import { showToast } from '../../../shared/utils/toast';
+import { useResolvedImageUri } from '../../../shared/hooks/useResolvedImageUri';
 
 import PointsIcon from '../../../../assets/images/profile-points.svg';
 import ReportIcon from '../../../../assets/images/profile-report.svg';
@@ -40,12 +41,13 @@ export const ProfileScreen = () => {
     const router = useRouter();
     const { t, language } = useTranslation();
     const { colors: theme } = useTheme();
-    const { getStoredUser, clearAuth } = useUserRegistration();
+    const { getStoredUser, refreshStoredUser, clearAuth } = useUserRegistration();
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const insets = useSafeAreaInsets();
     const [showFiltersModal, setShowFiltersModal] = useState(false);
     const [showLanguages, setShowLanguages] = useState(false);
+    const [remoteAvatarFailed, setRemoteAvatarFailed] = useState(false);
 
     const [level, setLevel] = useState('');
     const [rank, setRank] = useState(0);
@@ -56,21 +58,29 @@ export const ProfileScreen = () => {
 
     const cardStyle = { borderWidth: 1, borderColor: theme.border, backgroundColor: theme.background };
 
-    useEffect(() => {
-        loadUser();
-    }, []);
+    useFocusEffect(
+        React.useCallback(() => {
+            loadUser();
+        }, [])
+    );
 
     const loadUser = async () => {
         const storedUser = await getStoredUser();
 
-        if (storedUser && storedUser.name) {
-            storedUser.name = storedUser.name.replace(/\s+undefined$/i, '').trim();
+        setUser(storedUser);
+        setRemoteAvatarFailed(false);
+        setLoading(false);
+
+        const freshUser = await refreshStoredUser().catch(() => storedUser);
+
+        if (freshUser) {
+            setUser(freshUser);
         }
 
-        setUser(storedUser);
+        const userId = freshUser?.id ?? storedUser?.id;
 
-        if (storedUser) {
-            const stats = await leaderboardService.getUserStats(storedUser.id);
+        if (userId) {
+            const stats = await leaderboardService.getUserStats(userId);
             if (stats) {
                 setLevel(stats.level);
                 setRank(stats.rank);
@@ -78,8 +88,6 @@ export const ProfileScreen = () => {
                 setPoints(stats.points);
             }
         }
-
-        setLoading(false);
     };
 
     const handleLogout = async () => {
@@ -90,6 +98,11 @@ export const ProfileScreen = () => {
     const getInitial = (name: string): string => {
         return name.charAt(0).toUpperCase();
     };
+
+    const resolvedAvatar = useResolvedImageUri(user?.profileImage);
+    const displayImage = (remoteAvatarFailed ? null : resolvedAvatar)
+        ?? user?.profileImageLocal
+        ?? null;
 
     if (loading) {
         return (
@@ -177,21 +190,43 @@ export const ProfileScreen = () => {
                     {/* Header */}
                     <View className="flex-row items-center justify-between mb-6">
                         <View className="flex-row items-center flex-1 mr-3">
-                            {user.profileImage ? (
-                                <Image
-                                    source={{ uri: user.profileImage }}
-                                    style={{ width: 48, height: 48, borderRadius: 24, marginRight: 12 }}
-                                />
-                            ) : (
+                            <TouchableOpacity
+                                onPress={() => router.push('/edit-profile')}
+                                activeOpacity={0.8}
+                                style={{ marginRight: 12 }}
+                            >
+                                {displayImage ? (
+                                    <Image
+                                        source={{ uri: displayImage }}
+                                        style={{ width: 48, height: 48, borderRadius: 24 }}
+                                        onError={() => setRemoteAvatarFailed(true)}
+                                    />
+                                ) : (
+                                    <View
+                                        className="rounded-full items-center justify-center"
+                                        style={{ width: 48, height: 48, backgroundColor: colors.primary.main }}
+                                    >
+                                        <Text className="text-white text-xl font-bold">
+                                            {getInitial(user.name)}
+                                        </Text>
+                                    </View>
+                                )}
                                 <View
-                                    className="rounded-full items-center justify-center"
-                                    style={{ width: 48, height: 48, marginRight: 12, backgroundColor: colors.primary.main }}
+                                    className="absolute items-center justify-center"
+                                    style={{
+                                        right: -2,
+                                        bottom: -2,
+                                        width: 20,
+                                        height: 20,
+                                        borderRadius: 10,
+                                        backgroundColor: colors.primary.main,
+                                        borderWidth: 2,
+                                        borderColor: theme.background,
+                                    }}
                                 >
-                                    <Text className="text-white text-xl font-bold">
-                                        {getInitial(user.name)}
-                                    </Text>
+                                    <Ionicons name="pencil" size={9} color="#fff" />
                                 </View>
-                            )}
+                            </TouchableOpacity>
                             <View className="flex-1">
                                 <Text className="text-xs mb-0.5" style={{ color: theme.textSecondary }}>
                                     {t('welcome') || 'Welcome'}

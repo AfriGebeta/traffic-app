@@ -27,8 +27,7 @@ interface IncidentAlertProps {
 
 const ICON_SIZE = 52;
 const LABEL_HEIGHT = 40;
-// How long the name label stays fully revealed before collapsing back to the icon.
-const REVEAL_HOLD_MS = 2500;
+const REVEAL_HOLD_MS = 2500; 
 
 export const IncidentAlert: React.FC<IncidentAlertProps> = ({
     incidentId,
@@ -103,7 +102,6 @@ export const IncidentAlert: React.FC<IncidentAlertProps> = ({
                 </View>
             </Animated.View>
 
-            {/* Persistent circular icon badge (stays at the right edge) */}
             <TouchableOpacity
                 activeOpacity={0.7}
                 onPress={runReveal}
@@ -127,7 +125,6 @@ export const IncidentAlert: React.FC<IncidentAlertProps> = ({
                 <Ionicons name={iconName} size={26} color="#fff" />
             </TouchableOpacity>
 
-            {/* Hidden measurer: reports the label's natural width for the reveal animation */}
             <View
                 pointerEvents="none"
                 style={{ position: 'absolute', opacity: 0, right: 0 }}

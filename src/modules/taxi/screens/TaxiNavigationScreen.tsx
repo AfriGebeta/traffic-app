@@ -20,6 +20,8 @@ import { ArrivalModal } from '../../navigation/components/ArrivalModal';
 import { decodePolyline } from '../../../shared/utils/polyline';
 import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
 
+const NAV_GREEN = '#0F9D58';
+
 export default function TaxiNavigationScreen() {
     useKeepAwake();
     const router = useRouter();
@@ -56,6 +58,7 @@ export default function TaxiNavigationScreen() {
     const [remainingTime, setRemainingTime] = useState(0);
     const [isOffRoute, setIsOffRoute] = useState(false);
     const [isRecalculating, setIsRecalculating] = useState(false);
+    const [hasUserZoomedOut, setHasUserZoomedOut] = useState(false);
 
 
     const [navigationState, setNavigationState] = useState<{
@@ -347,6 +350,13 @@ export default function TaxiNavigationScreen() {
         router.back();
     };
 
+    const handleRecenter = () => {
+        if (!mapRef.current) return;
+
+        (mapRef.current as any).recenterNavigation?.();
+        setHasUserZoomedOut(false);
+    };
+
     const formatDistance = (meters: number): string => {
         if (meters < 1000) {
             return `${Math.round(meters)} m`;
@@ -390,6 +400,7 @@ export default function TaxiNavigationScreen() {
                     showUserLocationMarker={true}
                     segmentedRoutes={segmentedRoutes}
                     taxiStations={taxiStations.length > 0 ? taxiStations : undefined}
+                    onUserInteraction={() => setHasUserZoomedOut(true)}
                 />
 
                 {(isOffRoute || isRecalculating) && (
@@ -462,6 +473,34 @@ export default function TaxiNavigationScreen() {
                     className="absolute left-4 right-4"
                     style={{ bottom: insets.bottom + 24 }}
                 >
+                    {hasUserZoomedOut && (
+                        <View className="items-center mb-3">
+                            <TouchableOpacity
+                                activeOpacity={0.85}
+                                onPress={handleRecenter}
+                                className="flex-row items-center rounded-full"
+                                style={{
+                                    backgroundColor: theme.surface,
+                                    paddingVertical: 12,
+                                    paddingHorizontal: 22,
+                                    shadowColor: '#000',
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowOpacity: 0.18,
+                                    shadowRadius: 6,
+                                    elevation: 5,
+                                }}
+                            >
+                                <Ionicons name="navigate" size={20} color={NAV_GREEN} />
+                                <Text
+                                    className="font-semibold ml-2"
+                                    style={{ color: theme.textPrimary, fontSize: 16 }}
+                                >
+                                    Re-center
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
                     <View
                         className="rounded-3xl p-4"
                         style={{
@@ -488,13 +527,20 @@ export default function TaxiNavigationScreen() {
                             </View>
 
                             <TouchableOpacity
-                                className="rounded-xl px-6 py-3"
-                                style={{ backgroundColor: colors.primary.main }}
                                 onPress={handleStopNavigation}
+                                style={{
+                                    width: 48,
+                                    height: 48,
+                                    borderRadius: 24,
+                                    backgroundColor: theme.surface,
+                                    borderWidth: 2,
+                                    borderColor: NAV_GREEN,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    marginLeft: 12,
+                                }}
                             >
-                                <Text className="text-white text-sm font-bold">
-                                    Exit
-                                </Text>
+                                <Ionicons name="close" size={24} color={NAV_GREEN} />
                             </TouchableOpacity>
                         </View>
 

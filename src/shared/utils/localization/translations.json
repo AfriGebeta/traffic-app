@@ -21,7 +21,7 @@
     },
     {
         "key": "view-all",
-        "EN_US":"View All",
+        "EN_US": "View All",
         "Am": "ሁሉንም ይመልከቱ"
     },
     {
@@ -493,6 +493,51 @@
         "key": "enter-your-name",
         "EN_US": "Enter your name",
         "AM": "ስምዎን ያስገቡ"
+    },
+    {
+        "key": "edit-profile",
+        "EN_US": "Edit Profile",
+        "AM": "መገለጫ ያስተካክሉ"
+    },
+    {
+        "key": "profile-updated",
+        "EN_US": "Profile updated",
+        "AM": "መገለጫዎ ተስተካክሏል"
+    },
+    {
+        "key": "failed-to-update-profile",
+        "EN_US": "Failed to update profile",
+        "AM": "መገለጫዎን ማስተካከል አልተቻለም"
+    },
+    {
+        "key": "take-photo",
+        "EN_US": "Camera",
+        "AM": "ካሜራ"
+    },
+    {
+        "key": "upload-failed",
+        "EN_US": "Upload failed",
+        "AM": "ማስገባት አልተሳካም"
+    },
+    {
+        "key": "could-not-upload-image",
+        "EN_US": "Could not upload image",
+        "AM": "ምስሉን ማስገባት አልተቻለም"
+    },
+    {
+        "key": "permission-denied",
+        "EN_US": "Permission denied",
+        "AM": "ፍቃድ አልተሰጠም"
+    },
+    {
+        "key": "gallery-permission-required",
+        "EN_US": "Gallery permission required",
+        "AM": "የፎቶ ፍቃድ ያስፈልጋል"
+    },
+    {
+        "key": "camera-permission-required",
+        "EN_US": "Camera permission required",
+        "AM": "የካሜራ ፍቃድ ያስፈልጋል"
     },
     {
         "key": "register",
@@ -2713,5 +2758,20 @@
         "key": "tap-or-hold-to-speak",
         "EN_US": "Tap to speak, or press and hold",
         "AM": "ለመናገር ይንኩ ወይም ተጭነው ይያዙ"
+    },
+    {
+        "key": "remove",
+        "EN_US": "Remove",
+        "AM": "አስወግድ"
+    },
+    {
+        "key": "remove-photo",
+        "EN_US": "Remove photo",
+        "AM": "ፎቶ አስወግድ"
+    },
+    {
+        "key": "remove-photo-confirm",
+        "EN_US": "Remove your profile picture?",
+        "AM": "የመገለጫ ፎቶዎን ማስወገድ ይፈልጋሉ?"
     }
 ]
