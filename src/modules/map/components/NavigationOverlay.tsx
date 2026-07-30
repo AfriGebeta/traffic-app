@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import NavigationDirectionBackground from '../../../../assets/images/navigation-direction-background.svg';
+import { maneuverIcon } from '../../navigation/utils/instructionEngine';
 
 const NAV_GREEN = '#1E5438';
 
@@ -32,6 +33,7 @@ interface NavigationOverlayProps {
     showRecenterButton?: boolean;
     onRecenter?: () => void;
     currentInstruction?: string;
+    maneuverType?: number;
 }
 
 const getDirectionIcon = (instruction?: string): keyof typeof Ionicons.glyphMap => {
@@ -71,12 +73,15 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
     showRecenterButton,
     onRecenter,
     currentInstruction,
+    maneuverType,
 }) => {
     useKeepAwake();
     const insets = useSafeAreaInsets();
     const { t } = useTranslation();
     const { colors: theme, isDark } = useTheme();
-    const directionIcon = getDirectionIcon(currentInstruction);
+    const directionIcon = (maneuverType !== undefined
+        ? maneuverIcon(maneuverType)
+        : getDirectionIcon(currentInstruction)) as keyof typeof Ionicons.glyphMap;
     const [showReportHint, setShowReportHint] = useState(true);
 
     const getETA = () => {

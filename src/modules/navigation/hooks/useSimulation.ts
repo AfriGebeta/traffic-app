@@ -12,7 +12,7 @@ interface UseSimulationProps {
     setRouteGeoJSON: (geoJSON: any) => void;
     setRemainingDistance: (distance: number) => void;
     setRemainingTime: (time: number) => void;
-    updateInstructionBasedOnPosition: (lat: number, lng: number) => void;
+    updateInstructionBasedOnPosition?: (lat: number, lng: number) => void;
     onSimulationComplete?: () => void;
     onArrival?: () => void;
     totalRouteDistance: number; //in meters
@@ -125,7 +125,7 @@ export const useSimulation = ({
                 setCurrentHeading(bearing);
             }
 
-            updateInstructionBasedOnPosition(inaccurateLat, inaccurateLng);
+            updateInstructionBasedOnPosition?.(inaccurateLat, inaccurateLng);
 
             let displayLat = lat;
             let displayLng = lng;

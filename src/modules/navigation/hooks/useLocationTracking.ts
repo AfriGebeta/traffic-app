@@ -17,7 +17,7 @@ interface UseLocationTrackingProps {
     setRemainingTime: (time: number) => void;
     setIsOffRoute: (value: boolean) => void;
     setIsRecalculating: (value: boolean) => void;
-    updateInstructionBasedOnPosition: (lat: number, lng: number) => void;
+    updateInstructionBasedOnPosition?: (lat: number, lng: number) => void;
     recalculateRoute: (fromLocation?: { lat: number; lng: number }) => Promise<void>;
     rerouteTimeout: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
     totalRouteDistance: number;
@@ -449,7 +449,7 @@ export const useLocationTracking = ({
                     }
                 }
 
-                updateInstructionBasedOnPosition(displayLat, displayLng);
+                updateInstructionBasedOnPosition?.(displayLat, displayLng);
             };
 
             const restartAtInterval = async (newInterval: number) => {

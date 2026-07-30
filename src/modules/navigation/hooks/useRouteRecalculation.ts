@@ -1,6 +1,6 @@
 import { useRef, useCallback } from 'react';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
-import type { GeocodingPlace } from '../types/navigation.types';
+import type { GeocodingPlace, Leg, Maneuver } from '../types/navigation.types';
 import { showToast } from '../../../shared/utils/toast';
 import { navigationService } from '../services/navigation.service';
 import { decodePolyline } from '../../../shared/utils/polyline';
@@ -11,7 +11,7 @@ interface UseRouteRecalculationProps {
     userLocation: { lat: number; lng: number } | null;
     currentDestination: React.MutableRefObject<GeocodingPlace | null>;
     currentCostingRef: React.MutableRefObject<'auto' | 'pedestrian'>;
-    
+
     waypointsRef: React.MutableRefObject<GeocodingPlace[]>;
     routeCoordinates: React.MutableRefObject<[number, number][]>;
     routeManeuvers: React.MutableRefObject<any[]>;
@@ -30,7 +30,8 @@ interface UseRouteRecalculationProps {
     isNavigatingRef: React.MutableRefObject<boolean>;
     setRemainingDistance: (distance: number) => void;
     setRemainingTime: (time: number) => void;
-    setCurrentInstruction: (instruction: string) => void;
+    setRouteLegs?: (legs: Leg[]) => void;
+    setRouteManeuversList?: (maneuvers: Maneuver[]) => void;
     handleStopNavigation: () => void;
     onArrival?: () => void;
     startSimulation: () => void;
@@ -62,7 +63,8 @@ export const useRouteRecalculation = ({
     setRemainingDistance,
     setRemainingTime,
 
-    setCurrentInstruction,
+    setRouteLegs,
+    setRouteManeuversList,
     handleStopNavigation,
     onArrival,
     startSimulation,
@@ -117,30 +119,33 @@ export const useRouteRecalculation = ({
                     return;
                 }
 
-                const leg = navigationData.data.trip.legs[0];
-                const decodedCoordinates = decodePolyline(leg.shape, 6);
+                const legs = navigationData.data.trip.legs;
+                const leg = legs[0];
 
-                routeManeuvers.current = leg.maneuvers;
-
-                if (leg.maneuvers.length > 0) {
-                    const firstManeuver = leg.maneuvers[0];
-                    if (firstManeuver.type === 2 && leg.maneuvers.length > 1) {
-                        currentManeuverIndexRef.current = 1;
-                        setCurrentInstruction(leg.maneuvers[1].instruction || 'Continue ahead');
-                    } else {
-                        currentManeuverIndexRef.current = 0;
-                        setCurrentInstruction(firstManeuver.instruction || 'Continue ahead');
-                    }
-                } else {
-                    currentManeuverIndexRef.current = 0;
-                    setCurrentInstruction('Continue ahead');
+                const decodedCoordinates: [number, number][] = [];
+                for (const legPart of legs) {
+                    if (!legPart?.shape) continue;
+                    const decoded = decodePolyline(legPart.shape, 6);
+                    const last = decodedCoordinates[decodedCoordinates.length - 1];
+                    const first = decoded[0];
+                    const startAt = last && first && last[0] === first[0] && last[1] === first[1] ? 1 : 0;
+                    decodedCoordinates.push(...decoded.slice(startAt));
                 }
 
+                const allManeuvers = legs.flatMap((legPart) => legPart?.maneuvers ?? []);
+                routeManeuvers.current = allManeuvers;
+                setRouteLegs?.(legs);
+                setRouteManeuversList?.(allManeuvers);
+
+                currentManeuverIndexRef.current =
+                    allManeuvers[0]?.type === 2 && allManeuvers.length > 1 ? 1 : 0;
+
+                const summary = navigationData.data.trip.summary ?? leg.summary;
                 const newRoute = {
                     coordinates: decodedCoordinates.map(coord => [coord[1], coord[0]]) as [number, number][],
-                    distance: leg.summary.length * 1000,
-                    duration: leg.summary.time,
-                    instructions: leg.maneuvers.map((maneuver: any) => ({
+                    distance: summary.length * 1000,
+                    duration: summary.time,
+                    instructions: allManeuvers.map((maneuver: any) => ({
                         type: 'turn' as const,
                         distance: maneuver.length * 1000,
                         text: maneuver.instruction,
@@ -212,11 +217,10 @@ export const useRouteRecalculation = ({
             isNavigatingRef,
             setRemainingDistance,
             setRemainingTime,
-            setCurrentInstruction,
             handleStopNavigation,
             startSimulation,
             mapRef,
-            
+
             resetClosestIndex,
             setUserLocation,
         ]
