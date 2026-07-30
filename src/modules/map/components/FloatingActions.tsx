@@ -9,9 +9,9 @@ import DarkTaxiIcon from '../../../../assets/images/dark-taxi.svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 
-const BASE_GAP = 112;
-const ROUTE_PREVIEW_GAP = 292;
-const PLACE_DETAIL_GAP = 297;
+export const BASE_GAP = 112;
+export const ROUTE_PREVIEW_GAP = 292;
+export const PLACE_DETAIL_GAP = 297;
 
 interface FloatingActionsProps {
     onLocationPress?: () => void;
