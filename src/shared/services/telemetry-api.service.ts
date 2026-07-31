@@ -1,7 +1,7 @@
-import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import telemetryService, { TelemetryData } from './telemetry.service';
 import { getAppCheckToken } from '../utils/appCheck';
+import { CLIENT_HEADERS } from '../utils/clientHeaders';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 const TELEMETRY_SENT_KEY = '@telemetry_already_sent';
@@ -56,12 +56,19 @@ class TelemetryApiService {
       };
 
       const appCheckToken = await getAppCheckToken();
-      await axios.post(`${API_BASE_URL}/api/users/telemetry`, payload, {
+      const response = await fetch(`${API_BASE_URL}/api/users/telemetry`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...CLIENT_HEADERS,
           ...(appCheckToken ? { 'X-Firebase-AppCheck': appCheckToken } : {}),
         },
+        body: JSON.stringify(payload),
       });
+
+      if (!response.ok) {
+        throw new Error(`telemetry request failed with status ${response.status}`);
+      }
 
       console.log(`telemetry sent: ${eventName}`);
 

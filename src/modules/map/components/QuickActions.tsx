@@ -1,24 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../shared/theme/ThemeContext';
-
-interface Category {
-    id: string;
-    nameKey: string;
-    icon: keyof typeof Ionicons.glyphMap;
-}
-
-const categories: Category[] = [
-    { id: 'restaurants', nameKey: 'restaurants', icon: 'restaurant' },
-    { id: 'gas', nameKey: 'gas-station', icon: 'water' },
-    { id: 'parking', nameKey: 'parking', icon: 'car' },
-    { id: 'hospital', nameKey: 'hospital', icon: 'medical' },
-    { id: 'repair', nameKey: 'repair-shop', icon: 'construct' },
-    { id: 'bank', nameKey: 'bank', icon: 'business' },
-    { id: 'atm', nameKey: 'atm', icon: 'cash' },
-];
+import { usePlaceCategories } from '../hooks/usePlaceCategories';
 
 interface QuickActionsProps {
     onSelectCategory?: (categoryId: string) => void;
@@ -31,9 +15,12 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
     isLoading = false,
     selectedCategory: externalSelectedCategory
 }) => {
-    const { t } = useTranslation();
+    const { i18n } = useTranslation();
     const { colors: theme } = useTheme();
+    const { categories } = usePlaceCategories();
     const [internalSelectedCategory, setInternalSelectedCategory] = useState<string | null>(null);
+
+    const lang = i18n.language === 'am' ? 'am' : 'en';
 
     const selectedCategory = externalSelectedCategory !== undefined
         ? externalSelectedCategory
@@ -56,21 +43,21 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
             >
                 {categories.map((category, index) => (
                     <View
-                        key={category.id}
+                        key={category.slug}
                         className={index === categories.length - 1 ? "" : "mr-2"}
                     >
                         <TouchableOpacity
-                            onPress={() => handleSelect(category.id)}
+                            onPress={() => handleSelect(category.slug)}
                             activeOpacity={0.8}
                         >
                             <View
                                 className="px-4 py-2 flex-row items-center rounded-full"
                                 style={{
-                                    backgroundColor: selectedCategory === category.id
+                                    backgroundColor: selectedCategory === category.slug
                                         ? theme.primary
                                         : theme.surface,
                                     borderWidth: 0.5,
-                                    borderColor: selectedCategory === category.id
+                                    borderColor: selectedCategory === category.slug
                                         ? theme.primaryHover
                                         : theme.border,
                                     borderRadius: 9999,
@@ -79,12 +66,12 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
                                 <Text
                                     className="text-sm font-medium"
                                     style={{
-                                        color: selectedCategory === category.id
+                                        color: selectedCategory === category.slug
                                             ? '#FFFFFF'
                                             : theme.textPrimary,
                                     }}
                                 >
-                                    {t(category.nameKey)}
+                                    {category.label[lang]}
                                 </Text>
                             </View>
                         </TouchableOpacity>

@@ -50,11 +50,17 @@ const WAYPOINT_PIN_IMAGE = require('../../../assets/images/location-pin-2.png');
 const MINIBUS_SELECTED_IMAGE = require('../../../assets/images/minibus-selected.png');
 const TAXI_MARKER_IMAGE = require('../../../assets/images/taxi-marker.png');
 
-const EXPLORE_IMAGES = {
+const EXPLORE_FALLBACK_IMAGE = require('../../../assets/images/other.png');
+
+const EXPLORE_IMAGES: Record<string, any> = {
+    restaurant: require('../../../assets/images/restaurant.png'),
     restaurants: require('../../../assets/images/restaurant.png'),
+    hotel: require('../../../assets/images/hotel.png'),
+    'gas-station': require('../../../assets/images/gas-station.png'),
     gas: require('../../../assets/images/gas-station.png'),
     parking: require('../../../assets/images/parking.png'),
     hospital: require('../../../assets/images/hospital.png'),
+    'repair-shop': require('../../../assets/images/repair-shop.png'),
     repair: require('../../../assets/images/repair-shop.png'),
     bank: require('../../../assets/images/bank.png'),
     atm: require('../../../assets/images/atm.png'),
@@ -341,10 +347,10 @@ const NAV_LINE_LAG_COMP_S = 0.15;
 const NAV_TAXI_RENDER_MS = NAV_LINE_MS;
 const NAV_CAMERA_MS = 0;
 
-const NAV_ARROW_SHOW_M = 300;  
-const NAV_ARROW_PASS_M = 0;    
-const NAV_ARROW_BACK_M = 22;   
-const NAV_ARROW_FWD_M = 15;     
+const NAV_ARROW_SHOW_M = 300;
+const NAV_ARROW_PASS_M = 0;
+const NAV_ARROW_BACK_M = 22;
+const NAV_ARROW_FWD_M = 15;
 
 const NAV_ARROW_TURN_TYPES = new Set([9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 20, 21, 26, 27]);
 const NAV_PUCK_SCREEN_FRACTION = 0.68;
@@ -360,17 +366,17 @@ const NAV_V_SMOOTH = 0.35;
 const NAV_STOP_SPEED = 0.7;
 const NAV_CORR_TAU = 0.6;
 const NAV_FREE_TAU = 0.072;
-const NAV_DT_CLAMP_S = 0.1;   
-const NAV_HEADING_LOOKAHEAD = 25;  
-                             
-const NAV_SNAP_BACK_TOLERANCE_M = 2; 
+const NAV_DT_CLAMP_S = 0.1;
+const NAV_HEADING_LOOKAHEAD = 25;
+
+const NAV_SNAP_BACK_TOLERANCE_M = 2;
 const NAV_UNSNAP_M = 14;
 const NAV_RESNAP_M = 12;
 
-const NAV_UNSNAP_ACC_FACTOR = 1.5; 
+const NAV_UNSNAP_ACC_FACTOR = 1.5;
 const NAV_UNSNAP_DEBOUNCE_MS = 3000;
-const NAV_UNSNAP_HEADING_ANGLE = 70;  
-const NAV_UNSNAP_HEADING_MIN_DIST = 8;  
+const NAV_UNSNAP_HEADING_ANGLE = 70;
+const NAV_UNSNAP_HEADING_MIN_DIST = 8;
 const NAV_UNSNAP_HEADING_MIN_MOVE = 8;
 
 const angleDiff = (a: number, b: number) => {
@@ -432,11 +438,11 @@ const AnimatedNavLayer = memo(({
     const headingRef = useRef(0);
 
     const freeRoamRef = useRef(false);
-    const freeTargetRef = useRef({ lat: 0, lng: 0 });  
-    const freeCurRef = useRef({ lat: 0, lng: 0 }); 
+    const freeTargetRef = useRef({ lat: 0, lng: 0 });
+    const freeCurRef = useRef({ lat: 0, lng: 0 });
     const lastOnRouteSRef = useRef(0);
-    const unsnapStartRef = useRef<number | null>(null);  
-    const prevRawRef = useRef<{ lat: number; lng: number } | null>(null); 
+    const unsnapStartRef = useRef<number | null>(null);
+    const prevRawRef = useRef<{ lat: number; lng: number } | null>(null);
     const taxiCurRef = useRef({ lat: 0, lng: 0 });
     const taxiToRef = useRef({ lat: 0, lng: 0 });
 
@@ -547,9 +553,9 @@ const AnimatedNavLayer = memo(({
             if (measured > 60) measured = 60;
             const sample = userLocation.speed != null && userLocation.speed >= 0 ? userLocation.speed : measured;
             if (sample <= NAV_STOP_SPEED) {
-                vRef.current = 0;                      
+                vRef.current = 0;
             } else if (sample < vRef.current) {
-                vRef.current = sample;                
+                vRef.current = sample;
             } else {
                 vRef.current = vRef.current * (1 - NAV_V_SMOOTH) + sample * NAV_V_SMOOTH;
                 if (vRef.current < 0.4) vRef.current = 0;
@@ -1346,7 +1352,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             isDrawingFence: () => false,
             addPath: () => { },
             clearPaths: () => { },
-            
+
             addClusteredMarker: () => { },
             clearClusteredMarkers: () => { },
             updateClustering: () => { },
@@ -2121,7 +2127,8 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         )}
 
                         {explorePlaces && imagesLoaded && explorePlaces.map((place, index) => {
-                            const imageSource = EXPLORE_IMAGES[exploreCategory as keyof typeof EXPLORE_IMAGES];
+                            const imageSource =
+                                (exploreCategory && EXPLORE_IMAGES[exploreCategory]) || EXPLORE_FALLBACK_IMAGE;
 
                             return (
                                 <MapLibreGL.PointAnnotation
@@ -2136,18 +2143,15 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                     }}>
-                                        {imageSource ? (
-                                            <Image
-                                                source={imageSource}
-                                                style={{
-                                                    width: 36,
-                                                    height: 36,
-                                                }}
-                                                resizeMode="contain"
-                                            />
-                                        ) : (
-                                            <Ionicons name="location" size={28} color={colors.primary.main} />
-                                        )}
+                                        <Image
+                                            source={imageSource}
+                                            style={{
+                                                width: 36,
+                                                height: 36,
+                                            }}
+                                            resizeMode="contain"
+                                        />
+
                                     </View>
                                 </MapLibreGL.PointAnnotation>
                             );

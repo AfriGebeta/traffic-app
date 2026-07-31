@@ -1,5 +1,4 @@
 import { decodePolyline } from '../../../shared/utils/polyline';
-import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 
 export type TaxiSegmentInput = {
     polyline: string;
@@ -312,71 +311,3 @@ export const findCorners = (
     return corners;
 };
 
-/**
- * @param currentLat - current lat
- * @param currentLng - current lon
- * @param routeManeuvers - array of route maneuvers
- * @param currentManeuverIndex - current maneu idex
- * @param routeCoordinates - array of route coordinates
- * @returns obj with updated instruction and maneuver index
- */
-
-export const updateInstructionBasedOnPosition = (
-    currentLat: number,
-    currentLng: number,
-    routeManeuvers: any[],
-    currentManeuverIndex: number,
-    routeCoordinates: [number, number][],
-    currentSpeedKmh: number = 0
-): { instruction: string; newManeuverIndex: number } => {
-    if (routeManeuvers.length === 0) {
-        return { instruction: 'Continue ahead', newManeuverIndex: currentManeuverIndex };
-    }
-
-    let closestManeuverIndex = currentManeuverIndex;
-    let minDistance = Infinity;
-
-    for (let i = currentManeuverIndex; i < routeManeuvers.length; i++) {
-        const maneuver = routeManeuvers[i];
-        if (maneuver.begin_shape_index !== undefined && routeCoordinates[maneuver.begin_shape_index]) {
-            const [maneuverLng, maneuverLat] = routeCoordinates[maneuver.begin_shape_index];
-            const distance = calculateDistance(currentLat, currentLng, maneuverLat, maneuverLng);
-
-            if (distance < minDistance) {
-                minDistance = distance;
-                closestManeuverIndex = i;
-            }
-        }
-    }
-
-    const nextManeuver = routeManeuvers[closestManeuverIndex];
-
-    const cfg = getAppConfig();
-
-    if (minDistance < cfg.advanceThresholdM && closestManeuverIndex < routeManeuvers.length - 1) {
-        const newManeuverIndex = closestManeuverIndex + 1;
-        const newManeuver = routeManeuvers[newManeuverIndex];
-        return {
-            instruction: newManeuver.instruction || 'Continue ahead',
-            newManeuverIndex,
-        };
-    }
-
-    const speedMps = Math.max(currentSpeedKmh, 0) / 3.6;
-    const preTransitionDistance = Math.min(
-        Math.max(speedMps * cfg.preTransitionLeadTimeSec, cfg.preTransitionMinDistanceM),
-        cfg.preTransitionMaxDistanceM
-    );
-
-    if (minDistance < preTransitionDistance) {
-        return {
-            instruction: nextManeuver.verbal_pre_transition_instruction || nextManeuver.instruction || 'Continue ahead',
-            newManeuverIndex: currentManeuverIndex,
-        };
-    } else {
-        return {
-            instruction: 'Continue ahead',
-            newManeuverIndex: currentManeuverIndex,
-        };
-    }
-};

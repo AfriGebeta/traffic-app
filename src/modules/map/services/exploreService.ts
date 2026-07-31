@@ -3,14 +3,16 @@ import { getAppCheckToken } from '../../../shared/utils/appCheck';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
-const CATEGORY_TYPE_MAP: Record<string, string> = {
+const CATEGORY_TYPE_OVERRIDES: Record<string, string> = {
     restaurants: 'restaurant',
     gas: 'gas station',
-    parking: 'parking',
-    hospital: 'hospital',
     repair: 'car repair',
-    bank: 'bank',
-    atm: 'atm',
+    'repair-shop': 'car repair',
+};
+
+const resolveCategoryType = (categoryId: string): string | undefined => {
+    if (!categoryId) return undefined;
+    return CATEGORY_TYPE_OVERRIDES[categoryId] ?? categoryId.replace(/-/g, ' ');
 };
 
 interface ExploreParams {
@@ -26,7 +28,7 @@ export const exploreService = {
         userLocation: { lat: number; lng: number },
         size: number = 5
     ): Promise<GeocodingPlace[]> {
-        const type = CATEGORY_TYPE_MAP[categoryId];
+        const type = resolveCategoryType(categoryId);
         if (!type) {
             throw new Error('Invalid category');
         }
@@ -57,8 +59,8 @@ export const exploreService = {
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error(`[Map Explore] HTTP error ${response.status}:`, errorText);
-            throw new Error(`HTTP error! status: ${response.status}`);
+            console.error(`map explore- http error ${response.status}:`, errorText);
+            throw new Error(`http error: status: ${response.status}`);
         }
 
         const data = await response.json();
@@ -228,6 +230,6 @@ export const exploreService = {
     },
 
     getCategoryType(categoryId: string): string | undefined {
-        return CATEGORY_TYPE_MAP[categoryId];
+        return resolveCategoryType(categoryId);
     },
 };

@@ -7,7 +7,7 @@ import { SearchBar } from './SearchBar';
 import { QuickActions } from './QuickActions';
 import { SearchResults } from './SearchResults';
 import { DestinationCard } from './DestinationCard';
-import { FloatingActions } from './FloatingActions';
+import { FloatingActions, BASE_GAP, ROUTE_PREVIEW_GAP, PLACE_DETAIL_GAP } from './FloatingActions';
 import { BottomNavigation } from './BottomNavigation';
 import { MapThemeSelector } from './MapThemeSelector';
 import { RoutePointsBar } from '../../navigation/components/RoutePointsBar';
@@ -123,6 +123,8 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [showThemeSelector, setShowThemeSelector] = useState(false);
+
+    const actionsGap = showRoutePreview ? ROUTE_PREVIEW_GAP : showPlaceDetail ? PLACE_DETAIL_GAP : BASE_GAP;
 
     const handleProfilePress = () => {
         router.push('/profile');
@@ -244,6 +246,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
             <MapThemeSelector
                 visible={showThemeSelector}
                 onClose={() => setShowThemeSelector(false)}
+                bottomOffset={insets.bottom + actionsGap}
             />
         </>
     );

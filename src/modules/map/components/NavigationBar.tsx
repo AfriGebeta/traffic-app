@@ -6,6 +6,7 @@ import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
+import { maneuverIcon } from '../../navigation/utils/instructionEngine';
 
 interface NavigationBarProps {
     destination: GeocodingPlace;
@@ -18,6 +19,9 @@ interface NavigationBarProps {
     remainingDistance?: number;
     remainingTime?: number;
     hasIncidentAlert?: boolean;
+    maneuverType?: number;
+    maneuverDistance?: number;
+    nextManeuverType?: number;
 }
 
 const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
@@ -65,6 +69,9 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
     remainingDistance,
     remainingTime,
     hasIncidentAlert = false,
+    maneuverType,
+    maneuverDistance,
+    nextManeuverType,
 }) => {
     const [distance, setDistance] = useState<number>(0);
     const insets = useSafeAreaInsets();
@@ -93,9 +100,13 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
         return `${hours}h ${remainingMinutes}m`;
     };
 
-    const directionIcon = getDirectionIcon(currentInstruction);
+    const directionIcon = (maneuverType !== undefined
+        ? maneuverIcon(maneuverType)
+        : getDirectionIcon(currentInstruction)) as keyof typeof Ionicons.glyphMap;
 
-    const nextDirectionIcon = getDirectionIcon(nextInstruction);
+    const nextDirectionIcon = (nextManeuverType !== undefined
+        ? maneuverIcon(nextManeuverType)
+        : getDirectionIcon(nextInstruction)) as keyof typeof Ionicons.glyphMap;
 
     return (
         <View className="absolute left-4 right-4" style={{ top: insets.top + (hasIncidentAlert ? 112 : 18) }}>
@@ -105,7 +116,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                     borderTopLeftRadius: 20,
                     borderTopRightRadius: 20,
                     borderBottomLeftRadius: 20,
-                    borderBottomRightRadius: 0,
+                    borderBottomRightRadius: 20,
                     padding: 20,
                 }}
             >
@@ -113,7 +124,9 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                     {currentInstruction || 'Go straight ahead'}
                 </Text>
                 <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 16 }}>
-                    for {remainingDistance !== undefined ? formatDistance(remainingDistance) : formatDistance(distance * 1000)}
+                    for {formatDistance(
+                        maneuverDistance ?? remainingDistance ?? distance * 1000
+                    )}
                 </Text>
             </View>
 

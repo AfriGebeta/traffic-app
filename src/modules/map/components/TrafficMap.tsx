@@ -132,6 +132,11 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         setSimulateMovement,
         currentInstruction,
         nextInstruction,
+
+        maneuverType,
+        maneuverDistance,
+        nextManeuverType,
+
         remainingDistance,
         remainingTime,
         totalRouteDistance,
@@ -1088,6 +1093,9 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                         userLocation={userLocation}
                         currentInstruction={currentInstruction}
                         nextInstruction={nextInstruction}
+                        maneuverType={maneuverType}
+                        maneuverDistance={maneuverDistance}
+                        nextManeuverType={nextManeuverType}
                         remainingDistance={remainingDistance}
                         remainingTime={remainingTime}
                     />
@@ -1107,6 +1115,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                         currentSpeed={currentSpeed}
                         activeRule={activeRuleAlert}
                         currentInstruction={currentInstruction}
+                        maneuverType={maneuverType}
                     />
                 </>
             )}

@@ -9,11 +9,12 @@ import { decodePolyline } from '../../../shared/utils/polyline';
 import { useSimulation } from './useSimulation';
 import { useLocationTracking } from './useLocationTracking';
 import { useRouteRecalculation } from './useRouteRecalculation';
-import { useVoiceInstructions } from './useVoiceInstructions';
+import { useInstructionEngine } from './useInstructionEngine';
+import { ManeuverType } from '../utils/instructionEngine';
 import { startNavService, stopNavService, updateNavNotification } from '../services/nav-foreground-service';
 import { addNavExitListener } from '../../../../modules/nav-notification';
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
-import { calculateBearing, calculateDistance, updateInstructionBasedOnPosition as updateInstruction } from '../utils/navigationUtils';
+import { calculateBearing, calculateDistance } from '../utils/navigationUtils';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 
 export const useNavigation = (
@@ -32,8 +33,6 @@ export const useNavigation = (
     const [currentHeading, setCurrentHeading] = useState(0);
     const [simulateMovement, setSimulateMovement] = useState(false);
 
-    const [currentInstruction, setCurrentInstruction] = useState<string>('');
-    const [nextInstruction, setNextInstruction] = useState<string>('');
     const [remainingDistance, setRemainingDistance] = useState<number>(0);
     const [remainingTime, setRemainingTime] = useState<number>(0);
 
@@ -92,32 +91,15 @@ export const useNavigation = (
     }, []);
 
 
-    useVoiceInstructions({
-        currentInstruction,
-        isNavigating: navigationMode,
-        enabled: true,
+    const instructionEngine = useInstructionEngine({
+        legs: routeLegs,
+        userLocation,
+        speedKmh: currentSpeed,
+        isNavigating: navigationMode && !isRecalculating,
+        voiceEnabled: true,
     });
 
-    const updateInstructionBasedOnPosition = (currentLat: number, currentLng: number) => {
-        const result = updateInstruction(
-            currentLat,
-            currentLng,
-            routeManeuvers.current,
-            currentManeuverIndex.current,
-            routeCoordinates.current,
-            currentSpeedRef.current
-        );
-        setCurrentInstruction(result.instruction);
-        currentManeuverIndex.current = result.newManeuverIndex;
-
-        const nextIndex = result.newManeuverIndex + 1;
-        if (nextIndex < routeManeuvers.current.length) {
-            const nextManeuver = routeManeuvers.current[nextIndex];
-            setNextInstruction(nextManeuver.instruction || '');
-        } else {
-            setNextInstruction('');
-        }
-    };
+    const engineState = instructionEngine.state;
 
     //simulation hook
     const { startSimulation, stopSimulation, simulateOffRoute: simulateOffRouteInternal } = useSimulation({
@@ -129,7 +111,6 @@ export const useNavigation = (
         setRouteGeoJSON,
         setRemainingDistance,
         setRemainingTime,
-        updateInstructionBasedOnPosition,
         onSimulationComplete: () => {
             setArrivalStage('arrived');
             setShowArrivalModal(true);
@@ -159,7 +140,6 @@ export const useNavigation = (
         setIsOffRoute,
         setIsRecalculating,
         setCurrentSpeed,
-        updateInstructionBasedOnPosition,
         recalculateRoute: (fromLocation?: { lat: number; lng: number }) => recalculateRoute(fromLocation),
         rerouteTimeout,
         totalRouteDistance: totalRouteDistance.current,
@@ -200,7 +180,8 @@ export const useNavigation = (
 
         setRemainingDistance,
         setRemainingTime,
-        setCurrentInstruction,
+        setRouteLegs,
+        setRouteManeuversList,
         handleStopNavigation: () => {
             if (stopNavigationRef.current) {
                 stopNavigationRef.current();
@@ -410,17 +391,6 @@ export const useNavigation = (
             setRouteManeuversList(allManeuvers);
             setRouteLegs(legs);
 
-            //pre fetch audio
-            const instructionTexts = allManeuvers
-                .map((m: any) => m.instruction)
-                .filter((text: string) => text && text.trim().length > 0);
-
-            if (instructionTexts.length > 0) {
-                console.log('prefetching audio for', instructionTexts.length, 'instructions');
-                voiceNavigationService.prefetchRouteInstructions(instructionTexts).catch(err => {
-
-                });
-            }
 
             routeCoordinates.current = allCoordinates;
             setFullRouteCoordinates(allCoordinates);
@@ -455,7 +425,7 @@ export const useNavigation = (
                 const latDiff = bounds.maxLat - bounds.minLat;
                 const lngDiff = bounds.maxLng - bounds.minLng;
 
-                const adjustedLatDiff = latDiff * 1.8; 
+                const adjustedLatDiff = latDiff * 1.8;
                 const maxDiff = Math.max(adjustedLatDiff, lngDiff);
 
                 let zoom = 13;
@@ -575,17 +545,6 @@ export const useNavigation = (
                 }
             }
 
-            const instructionTexts = allManeuvers
-                .map((m: any) => m.instruction)
-                .filter((text: string) => text && text.trim().length > 0);
-
-            if (instructionTexts.length > 0) {
-                console.log('prefetching audio for', instructionTexts.length, 'instructions');
-                voiceNavigationService.prefetchRouteInstructions(instructionTexts).catch(err => {
-
-                });
-            }
-
             const route = {
                 coordinates: allCoordinates,
                 distance: totalDistance,
@@ -630,12 +589,6 @@ export const useNavigation = (
                     setRemainingDistance(state.distanceRemaining);
                     setRemainingTime(state.durationRemaining);
 
-                    if (state.nextInstruction) {
-                        const instructionText = state.nextInstruction.instruction || state.nextInstruction.text || '';
-                        setCurrentInstruction(instructionText);
-                    } else {
-                        setCurrentInstruction('Continue ahead');
-                    }
                 },
                 onOffRoute: (distanceFromRoute: number) => {
                     setIsOffRoute(true);
@@ -681,37 +634,12 @@ export const useNavigation = (
                 stopBackgroundTracking();
             }
 
-            if (routeManeuvers.current.length > 0) {
-                const firstManeuver = routeManeuvers.current[0];
-                if (firstManeuver.type === 2 && routeManeuvers.current.length > 1) {
-                    setCurrentInstruction(routeManeuvers.current[1].instruction);
-                    currentManeuverIndex.current = 1;
-                } else {
-                    setCurrentInstruction(firstManeuver.instruction);
-                }
-            }
-            const navController = (mapRef.current as any).getNavigationController?.();
-            if (navController) {
-                navController.on('stepchange', (data: any) => {
-                    if (data.step) {
-                        const instructionText = data.step.instruction || data.step.text || 'Continue ahead';
-                        setCurrentInstruction(instructionText);
-                    }
-                });
-
-                navController.on('progress', (data: any) => {
-                    if (data.currentStep) {
-                        const instructionText = data.currentStep.instruction || data.currentStep.text || 'Continue ahead';
-                        setCurrentInstruction(instructionText);
-                    }
-                });
-            }
             if (simulateMovement) {
                 startSimulation();
                 showToast.info('Navigation Started', 'GPS simulation is running for testing');
             } else {
                 startLocationTracking();
-                void startNavService(currentInstruction || 'Navigating…');
+                void startNavService(engineState?.primaryText || 'Navigating…');
             }
 
         } catch (error: any) {
@@ -754,7 +682,6 @@ export const useNavigation = (
         setSelectedRouteIndex(0);
         setAlternativeRoutesGeoJSON([]);
         previewRouteCacheRef.current.clear();
-        setCurrentInstruction('');
         setRemainingDistance(0);
         setRemainingTime(0);
         setIsOffRoute(false);
@@ -790,7 +717,6 @@ export const useNavigation = (
         setAlternativeRoutesGeoJSON([]);
         previewRouteCacheRef.current.clear();
 
-        setCurrentInstruction('');
         setRemainingDistance(0);
         setRemainingTime(0);
         setShowRoutePreview(false);
@@ -826,9 +752,9 @@ export const useNavigation = (
             : `${Math.round(remainingDistance / 10) * 10} m`;
         const minutes = Math.max(1, Math.round(remainingTime / 60));
         const summary = `${distanceText} · ${minutes} min`;
-        const body = currentInstruction ? `${currentInstruction} · ${summary}` : summary;
+        const body = engineState?.primaryText ? `${engineState.primaryText} · ${summary}` : summary;
         void updateNavNotification(body);
-    }, [navigationMode, currentInstruction, remainingDistance, remainingTime]);
+    }, [navigationMode, engineState?.primaryText, remainingDistance, remainingTime]);
 
     return {
         selectedDestination,
@@ -844,10 +770,15 @@ export const useNavigation = (
         simulateMovement,
         setSimulateMovement,
 
-        currentInstruction,
-        nextInstruction,
-        remainingDistance,
-        remainingTime,
+        currentInstruction: isRecalculating
+            ? 'Recalculating route…'
+            : engineState?.primaryText || '',
+        nextInstruction: isRecalculating ? '' : engineState?.thenText || '',
+        maneuverType: isRecalculating ? ManeuverType.Continue : engineState?.primaryManeuverType,
+        nextManeuverType: isRecalculating ? undefined : engineState?.thenStep?.type,
+        maneuverDistance: !isRecalculating && engineState ? engineState.distanceToManeuver : undefined,
+        remainingDistance: engineState ? engineState.distanceRemaining : remainingDistance,
+        remainingTime: engineState ? engineState.timeRemaining : remainingTime,
         totalRouteDistance: totalRouteDistance.current,
         currentSpeed,
         isOffRoute,
