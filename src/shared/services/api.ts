@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAppCheckToken } from '../utils/appCheck';
+import { CLIENT_HEADERS } from '../utils/clientHeaders';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL!;
 const TOKEN_STORAGE_KEY = '@traffic_app_token';
@@ -54,6 +55,7 @@ class ApiService {
                 ...options,
                 headers: {
                     'Content-Type': 'application/json',
+                    ...CLIENT_HEADERS,
                     ...authHeaders,
                     ...(appCheckToken ? { 'X-Firebase-AppCheck': appCheckToken } : {}),
                     ...options.headers,
@@ -126,6 +128,7 @@ class ApiService {
             const response = await fetch(url, {
                 method,
                 headers: {
+                    ...CLIENT_HEADERS,
                     ...authHeaders,
                     ...(appCheckToken ? { 'X-Firebase-AppCheck': appCheckToken } : {}),
                 },

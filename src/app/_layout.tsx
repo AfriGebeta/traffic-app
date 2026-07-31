@@ -21,10 +21,12 @@ import { locationPermissionSettled } from '../shared/utils/permissionSequence';
 import './globals.css';
 import '../shared/utils/localization/i18n';
 import { applyGlobalFont } from '../shared/utils/globalFont';
+import { installClientHeaders } from '../shared/utils/clientHeaders';
 
 import '../modules/navigation/services/nav-foreground-service';
 
 applyGlobalFont();
+installClientHeaders();
 
 const BACKGROUND_IDLE_MS = 30 * 60 * 1000;
 
