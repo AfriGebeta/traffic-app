@@ -73,8 +73,7 @@ export default function TelegramLoginChoiceScreen() {
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        className="rounded-xl py-4 items-center border-2 mt-4"
-                        style={{ borderColor: colors.primary.main }}
+                        className="rounded-xl py-4 items-center mt-4"
                         onPress={handleNoTelegram}
                         activeOpacity={0.8}
                         disabled={isLoading || !!completionUrl || showAuthWebView}

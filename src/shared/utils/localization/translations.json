@@ -615,6 +615,11 @@
         "AM": "ያሉበት ደረጃ"
     },
     {
+        "key": "no-contributions-yet",
+        "EN_US": "No contributions yet",
+        "AM": "እስካሁን አስተዋፅኦ አላደረጉም"
+    },
+    {
         "key": "language",
         "EN_US": "Language",
         "AM": "ቋንቋ"
@@ -673,6 +678,11 @@
         "key": "explore",
         "EN_US": "Explore",
         "AM": "ቦታዎች ያስሱ"
+    },
+    {
+        "key": "gebeta-maps",
+        "EN_US": "Gebeta Maps",
+        "AM": "ገበታ ማፕስ"
     },
     {
         "key": "help-other-drivers-by-reporting-incidents",
@@ -2773,5 +2783,25 @@
         "key": "remove-photo-confirm",
         "EN_US": "Remove your profile picture?",
         "AM": "የመገለጫ ፎቶዎን ማስወገድ ይፈልጋሉ?"
+    },
+    {
+        "key": "discard-changes",
+        "EN_US": "Discard changes?",
+        "AM": "ለውጦችን መተው ይፈልጋሉ?"
+    },
+    {
+        "key": "discard-changes-confirm",
+        "EN_US": "Your changes have not been saved.",
+        "AM": "ለውጦችዎ አልተቀመጡም።"
+    },
+    {
+        "key": "discard",
+        "EN_US": "Discard",
+        "AM": "ተወው"
+    },
+    {
+        "key": "keep-editing",
+        "EN_US": "Keep editing",
+        "AM": "መስተካከሉን ቀጥል"
     }
 ]

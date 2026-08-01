@@ -13,7 +13,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "co.gebeta.apps.android.map",
+      "bundleIdentifier": "co.gebeta.apps.ios.map",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }

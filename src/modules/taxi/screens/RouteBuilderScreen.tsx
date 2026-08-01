@@ -335,7 +335,7 @@ export default function RouteBuilderScreen() {
                         className="mr-4"
                         activeOpacity={0.7}
                     >
-                        <Ionicons name="arrow-back" size={28} color={colors.primary.main} />
+                        <Ionicons name="arrow-back" size={28} color={theme.textPrimary} />
                     </TouchableOpacity>
                     <Text className="text-2xl font-bold" style={{ color: theme.textPrimary }}>{t('build-route')}</Text>
                 </View>

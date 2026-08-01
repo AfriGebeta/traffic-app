@@ -13,6 +13,7 @@ import DarkDangerTriangleIcon from '../../../../assets/images/dark-report.svg';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
+import { useMapTheme } from '../context/MapThemeContext';
 
 type TabId = 'explore' | 'contribute' | 'ai' | 'saved' | 'report';
 
@@ -43,10 +44,13 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
 }) => {
     const { t } = useTranslation();
     const { colors: theme, isDark } = useTheme();
+    const { currentTheme } = useMapTheme();
+    const isLightTile = currentTheme.id === 'standard';
     const [activeTab, setActiveTab] = useState<TabId | null>(null);
     const insets = useSafeAreaInsets();
     const [fontsLoaded] = useFonts({
         'PlusJakartaSans-Light': require('../../../../assets/fonts/plus-jakarta-sans/PlusJakartaSans-Light.ttf'),
+        'PlusJakartaSans-Bold': require('../../../../assets/fonts/plus-jakarta-sans/PlusJakartaSans-Bold.ttf'),
     });
 
     const handleTabPress = (tabId: TabId) => {
@@ -63,6 +67,24 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
             className="absolute left-4 right-4"
             style={{ bottom: insets.bottom + 2 }}
         >
+            <Text
+                className="mb-2 ml-1"
+                style={[
+                    {
+                        fontSize: 16,
+                        fontWeight: fontsLoaded ? 'normal' : '900',
+                        color: isLightTile ? '#555555' : '#ffffff',
+                        letterSpacing: 0.2,
+                        textShadowColor: isLightTile ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.9)',
+                        textShadowOffset: { width: 0, height: 1 },
+                        textShadowRadius: 3,
+                    },
+                    fontsLoaded ? { fontFamily: 'PlusJakartaSans-Bold' } : undefined,
+                ]}
+            >
+                {t('gebeta-maps')}
+            </Text>
+
             <View
                 className="rounded-full p-1"
                 style={{

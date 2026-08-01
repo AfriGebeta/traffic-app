@@ -54,7 +54,7 @@ export default function PlaceContributionScreen() {
                         className="mr-4"
                         activeOpacity={0.7}
                     >
-                        <Ionicons name="arrow-back" size={28} color={theme.primary} />
+                        <Ionicons name="arrow-back" size={28} color={theme.textPrimary} />
                     </TouchableOpacity>
                     <Text className="text-2xl font-bold" style={{ color: theme.textPrimary }}>{t('contribute-a-place')}</Text>
                 </View>
