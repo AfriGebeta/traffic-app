@@ -29,7 +29,7 @@ export function ShareLocationButton({
             });
 
             if (result.action === Share.sharedAction) {
-                showToast.success('Shared', 'Location shared successfully');
+                showToast('Shared: Location shared successfully');
             }
         } catch (error) {
             console.error('Share error:', error);
@@ -37,9 +37,9 @@ export function ShareLocationButton({
             try {
                 const shareUrl = generateLocationUrl(location);
                 Clipboard.setString(shareUrl);
-                showToast.success('Copied', 'Link copied to clipboard');
+                showToast('Copied: Link copied to clipboard');
             } catch (clipboardError) {
-                showToast.error('Error', 'Could not share location');
+                showToast('Error: Could not share location');
             }
         }
     };

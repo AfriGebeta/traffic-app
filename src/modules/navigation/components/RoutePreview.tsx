@@ -250,9 +250,9 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
         try {
             await placeService.deleteSavedPlace(savedPlace.id);
             setSavedPlace(null);
-            showToast.success(t('place-removed'));
+            showToast(t('place-removed'));
         } catch (error) {
-            showToast.error(t('failed-to-remove-place'));
+            showToast(t('failed-to-remove-place'));
             console.error('Error removing place:', error);
         }
     };
@@ -266,7 +266,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
             if (taxiRoute && onStartTaxiNavigation) {
                 onStartTaxiNavigation(taxiRoute);
             } else {
-                showToast.error('Error', 'No taxi route available');
+                showToast('No taxi route available');
             }
         } else {
             onStartNavigation();

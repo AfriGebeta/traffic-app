@@ -237,7 +237,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                     } else if (tabId === 'ai') {
                         router.push('/ai-assistant');
                     } else {
-                        showToast.info(t('coming-soon'), tabId);
+                        showToast(`${t('coming-soon')}: ${tabId}`);
                     }
                 }}
                 onAddPress={onAddPlacePress}

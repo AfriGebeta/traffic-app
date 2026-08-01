@@ -219,7 +219,7 @@ export const AddHomeAddressScreen = () => {
     const finish = async () => {
         hlog('flow complete, navigating home');
         await markHomeOnboardingDone();
-        showToast.success(t('home-address-saved'));
+        showToast(t('home-address-saved'));
         router.replace('/');
     };
 
@@ -258,7 +258,7 @@ export const AddHomeAddressScreen = () => {
             setStep('followup');
         } catch (error) {
             hlog('voice save failed:', String(error));
-            showToast.error(t('error'), error instanceof Error ? error.message : t('failed-to-save-place'));
+            showToast(error instanceof Error ? error.message : t('failed-to-save-place'));
         } finally {
             setSaving(false);
         }
@@ -310,7 +310,7 @@ export const AddHomeAddressScreen = () => {
     const handleFormSubmit = async () => {
         if (!region.trim() || !city.trim() || !subCity.trim() || !woreda.trim() || !sefer.trim()) {
             hlog('form submit blocked, required field empty');
-            showToast.error(t('fill-required-fields'));
+            showToast(t('fill-required-fields'));
             return;
         }
 
@@ -341,7 +341,7 @@ export const AddHomeAddressScreen = () => {
             await finish();
         } catch (error) {
             hlog('form save failed:', String(error));
-            showToast.error(t('error'), error instanceof Error ? error.message : t('failed-to-save-place'));
+            showToast(error instanceof Error ? error.message : t('failed-to-save-place'));
         } finally {
             setSaving(false);
         }

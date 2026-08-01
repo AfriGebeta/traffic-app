@@ -44,7 +44,7 @@ export default function AddRuleReportScreen() {
 
     const handleUseCurrentLocation = () => {
         if (!userLocation) {
-            showToast.error(t('location-unavailable'), t('please-wait-for-location'));
+            showToast(`${t('location-unavailable')}: ${t('please-wait-for-location')}`);
             return;
         }
 
@@ -54,12 +54,12 @@ export default function AddRuleReportScreen() {
 
     const handleSubmit = async () => {
         if (!punishment.trim()) {
-            showToast.error(t('punishment-required'), t('enter-punishment-details'));
+            showToast(`${t('punishment-required')}: ${t('enter-punishment-details')}`);
             return;
         }
 
         if (!coordinates) {
-            showToast.error(t('location-required'), t('pick-location'));
+            showToast(`${t('location-required')}: ${t('pick-location')}`);
             return;
         }
 
@@ -73,13 +73,13 @@ export default function AddRuleReportScreen() {
             });
 
             dashboardEventsService.contribute();
-            showToast.success(t('success'), t('traffic-rule-report-submitted'));
+            showToast(t('traffic-rule-report-submitted'));
             router.back();
             router.back();
         } catch (error) {
             console.error('Submit error:', error);
             const errorMessage = error instanceof Error ? error.message : 'Could not submit report';
-            showToast.error(t('error'), errorMessage);
+            showToast(errorMessage);
         } finally {
             setSubmitting(false);
         }

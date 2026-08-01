@@ -14,7 +14,7 @@ export const useVoiceRecording = () => {
         try {
             const { status } = await Audio.requestPermissionsAsync();
             if (status !== 'granted') {
-                showToast.error('Permission Denied', 'Microphone permission is required');
+                showToast('Permission Denied: Microphone permission is required');
                 return false;
             }
             await Audio.setAudioModeAsync({
@@ -69,7 +69,7 @@ export const useVoiceRecording = () => {
             return true;
         } catch (error) {
             console.error('Failed to start recording:', error);
-            showToast.error('Recording Error', 'Could not start recording');
+            showToast('Recording Error: Could not start recording');
             return false;
         }
     };
@@ -87,7 +87,7 @@ export const useVoiceRecording = () => {
             const durationMillis = status.durationMillis || 0;
 
             if (durationMillis < 500) {
-                showToast.error('Recording Too Short', 'Please speak for at least 1 second');
+                showToast('Recording Too Short: Please speak for at least 1 second');
                 await recordingRef.current.stopAndUnloadAsync();
                 await Audio.setAudioModeAsync({
                     allowsRecordingIOS: false,
@@ -107,7 +107,7 @@ export const useVoiceRecording = () => {
             return uri;
         } catch (error) {
             console.error('Failed to stop recording:', error);
-            showToast.error('Recording Error', 'Could not stop recording');
+            showToast('Recording Error: Could not stop recording');
             return null;
         }
     };

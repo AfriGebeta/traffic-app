@@ -78,7 +78,7 @@ export const EditProfileScreen = () => {
             setUploadedImage(objectName);
             setRemoved(false);
         } catch (error) {
-            showToast.error(t('upload-failed') || 'Upload failed', t('could-not-upload-image') || 'Could not upload image');
+            showToast(`${t('upload-failed') || 'Upload failed'}: ${t('could-not-upload-image') || 'Could not upload image'}`);
         } finally {
             setUploading(false);
         }
@@ -88,7 +88,7 @@ export const EditProfileScreen = () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
         if (status !== 'granted') {
-            showToast.error(t('permission-denied') || 'Permission denied', t('gallery-permission-required') || 'Gallery permission required');
+            showToast(`${t('permission-denied') || 'Permission denied'}: ${t('gallery-permission-required') || 'Gallery permission required'}`);
             return;
         }
 
@@ -108,7 +108,7 @@ export const EditProfileScreen = () => {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
 
         if (status !== 'granted') {
-            showToast.error(t('permission-denied') || 'Permission denied', t('camera-permission-required') || 'Camera permission required');
+            showToast(`${t('permission-denied') || 'Permission denied'}: ${t('camera-permission-required') || 'Camera permission required'}`);
             return;
         }
 
@@ -149,7 +149,7 @@ export const EditProfileScreen = () => {
         const trimmedName = name.trim();
 
         if (!trimmedName) {
-            showToast.error(t('error'), t('name-required') || 'Name is required');
+            showToast(t('name-required') || 'Name is required');
             return;
         }
 
@@ -175,7 +175,7 @@ export const EditProfileScreen = () => {
             const response = await userService.updateProfile(user.id, payload);
 
             if (response.error || !response.data) {
-                showToast.error(t('error'), response.error || t('failed-to-update-profile') || 'Failed to update profile');
+                showToast(response.error || t('failed-to-update-profile') || 'Failed to update profile');
                 return;
             }
 
@@ -191,10 +191,10 @@ export const EditProfileScreen = () => {
             });
 
             allowNextLeaveRef.current = true;
-            showToast.success(t('success'), t('profile-updated') || 'Profile updated');
+            showToast(t('profile-updated') || 'Profile updated');
             router.back();
         } catch (error) {
-            showToast.error(t('error'), t('failed-to-update-profile') || 'Failed to update profile');
+            showToast(t('failed-to-update-profile') || 'Failed to update profile');
         } finally {
             setSaving(false);
         }

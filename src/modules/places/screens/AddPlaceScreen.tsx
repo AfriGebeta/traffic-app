@@ -74,7 +74,7 @@ export default function AddPlaceScreen() {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
         if (status !== 'granted') {
-            showToast.error('Permission denied', 'Camera roll permission required');
+            showToast('Camera roll permission required');
             return;
         }
 
@@ -94,7 +94,7 @@ export default function AddPlaceScreen() {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
 
         if (status !== 'granted') {
-            showToast.error('Permission denied', 'Camera permission required');
+            showToast('Camera permission required');
             return;
         }
 
@@ -114,9 +114,9 @@ export default function AddPlaceScreen() {
                 uris.map(async (uri) => ({ localUri: uri, objectName: await uploadToMinio(uri, 'places') }))
             );
             setImages((prev) => [...prev, ...uploaded]);
-            showToast.success('Image uploaded', 'Photo added successfully');
+            showToast('Photo added successfully');
         } catch (error) {
-            showToast.error('Upload failed', 'Could not upload image');
+            showToast('Could not upload image');
         } finally {
             setUploading(false);
         }
@@ -132,7 +132,7 @@ export default function AddPlaceScreen() {
 
     const handleUseCurrentLocation = () => {
         if (!userLocation) {
-            showToast.error(t('location-unavailable'), t('please-wait-for-location'));
+            showToast(t('please-wait-for-location'));
             return;
         }
 
@@ -142,12 +142,10 @@ export default function AddPlaceScreen() {
 
     const handleSubmit = async () => {
         if (!name.trim()) {
-            showToast.error('Name required', 'Please enter a place name');
             return;
         }
 
         if (!coordinates) {
-            showToast.error('Location required', 'Please pick a location on the map');
             return;
         }
 
@@ -163,13 +161,10 @@ export default function AddPlaceScreen() {
             });
 
             dashboardEventsService.contribute();
-            showToast.success('Success!', 'Place contribution submitted');
             router.back();
             router.back();
         } catch (error) {
             console.error('Submit error:', error);
-            const errorMessage = error instanceof Error ? error.message : 'Could not submit contribution';
-            showToast.error('Failed', errorMessage);
         } finally {
             setSubmitting(false);
         }

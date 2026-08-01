@@ -85,7 +85,7 @@ export const useSearch = () => {
                 setSearchResults(results);
             }
         } catch {
-            showToast.error('Search failed', 'Could not find location');
+            showToast('Search failed: Could not find location');
         } finally {
             setIsSearching(false);
         }

@@ -335,7 +335,7 @@ export const useSimulation = ({
 
     const simulateOffRoute = useCallback((setUserLocation: (location: { lat: number; lng: number }) => void, navigationMode: boolean, simulateMovement: boolean, recalculateRoute: (fromLocation?: { lat: number; lng: number }) => Promise<void>, setIsOffRoute: (value: boolean) => void, rerouteTimeout: React.MutableRefObject<ReturnType<typeof setTimeout> | null>) => {
         if (!navigationMode || routeCoordinates.current.length === 0) {
-            showToast.error('Error', 'Start navigation first');
+            showToast('Error: Start navigation first');
             return;
         }
 
@@ -372,9 +372,8 @@ export const useSimulation = ({
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         const distance = R * c;
 
-        showToast.info(
-            'Testing Off-Route',
-            `Moved ${distance.toFixed(0)}m away. ${wasSimulating ? 'Simulation paused.' : ''} Watch for detection!`
+        showToast(
+            `Testing Off-Route: Moved ${distance.toFixed(0)}m away. ${wasSimulating ? 'Simulation paused.' : ''} Watch for detection!`
         );
 
         //update map position
@@ -384,7 +383,7 @@ export const useSimulation = ({
             //manually trigger off-route detection
             setTimeout(() => {
                 setIsOffRoute(true);
-                showToast.info('Off Route', `You are ${distance.toFixed(0)}m off the planned route`);
+                showToast(`Off Route: You are ${distance.toFixed(0)}m off the planned route`);
 
                 //start reroute countdown
                 if (rerouteTimeout.current) {

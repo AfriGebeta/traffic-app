@@ -1970,7 +1970,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                     id={`incident-${incident.id}`}
                                     coordinate={[incident.lng, incident.lat]}
                                     onSelected={() => {
-                                        showToast.info('Incident', incident.type.label || incident.type.name);
+                                        showToast(`Incident: ${incident.type.label || incident.type.name}`);
                                     }}
                                 >
                                     <View style={{

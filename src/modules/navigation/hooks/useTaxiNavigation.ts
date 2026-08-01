@@ -80,13 +80,13 @@ export const useTaxiNavigation = ({
             const message = `Board taxi at ${segment.fromNode?.name} to ${segment.toNode?.name}`;
             setCurrentInstruction(message);
             voiceNavigationService.speakInstruction(message);
-            showToast.info('Board Taxi', message);
+            showToast(`Board Taxi: ${message}`);
         } else if (segment.mode === 'pedestrian' || segment.type === 'walk') {
             const destination = segment.toNode?.name || 'destination';
             const message = `Walk to ${destination}`;
             setCurrentInstruction(message);
             voiceNavigationService.speakInstruction(message);
-            showToast.info('Walking', message);
+            showToast(`Walking: ${message}`);
         }
     };
 

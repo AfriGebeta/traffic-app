@@ -116,7 +116,7 @@ export const useVoiceNavigation = ({
     const handleDestination = useCallback((dest: any) => {
         const place = toGeocodingPlace(dest);
         if (!place) {
-            showToast.error('Invalid location', 'Could not get coordinates for this place');
+            showToast('Invalid location: Could not get coordinates for this place');
             return;
         }
         setOptions([]);
@@ -244,7 +244,7 @@ export const useVoiceNavigation = ({
 
             case 'error':
                 vlog('ERROR event:', data?.message, data?.detail ?? '');
-                showToast.error('Something went wrong', data?.message ?? 'Please try again');
+                showToast(`Something went wrong: ${data?.message ?? 'Please try again'}`);
                 finishProcessing();
                 break;
 
@@ -401,7 +401,7 @@ export const useVoiceNavigation = ({
         const started = await startRecording();
         if (!started) {
             vlog('recording failed to start');
-            showToast.error('Recording Error', 'Failed to start recording');
+            showToast('Recording Error: Failed to start recording');
             recordingStartTime.current = null;
         }
     }, [isRecording, isProcessing, startRecording]);
@@ -418,7 +418,7 @@ export const useVoiceNavigation = ({
         const socket = socketRef.current;
         if (!socket?.isOpen) {
             vlog('cannot send — socket not open');
-            showToast.error('Connection lost', 'reconnecting');
+            showToast('Connection lost: reconnecting');
             return;
         }
 
@@ -430,7 +430,7 @@ export const useVoiceNavigation = ({
             socket.sendAudio(bytes, 'audio/mp4');
         } catch (error) {
             vlog('failed to read/send audio:', String(error));
-            showToast.error('Something went wrong', 'Please try again');
+            showToast('Something went wrong: Please try again');
             setIsProcessing(false);
         }
     }, [isRecording, stopRecording, setIsProcessing]);
@@ -482,7 +482,7 @@ export const useVoiceNavigation = ({
 
         const failed = (msg: string) => {
             vlog(`option geocode: ${msg}`);
-            showToast.error('Something went wrong', 'Could not locate this place');
+            showToast('Something went wrong: Could not locate this place');
             setIsProcessing(false);
             setShowOptions(true);
         };

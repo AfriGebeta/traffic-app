@@ -258,13 +258,13 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
 
     const handleOpenRoutePreview = () => {
         if (!selectedDestination || !routeGeoJSON || routeLegs.length === 0) {
-            showToast.error(t('route-unavailable'));
+            showToast(t('route-unavailable'));
             return;
         }
 
         const previewSteps = buildPreviewSteps(routeLegs);
         if (previewSteps.length === 0) {
-            showToast.error(t('route-unavailable'));
+            showToast(t('route-unavailable'));
             return;
         }
 
@@ -416,7 +416,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         }
 
         if (!userLocation) {
-            showToast.error(t('location-unavailable'), t('please-wait-for-location'));
+            showToast(`${t('location-unavailable')}: ${t('please-wait-for-location')}`);
             return;
         }
 
@@ -461,7 +461,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 });
             }
         } catch (error) {
-            showToast.error(t('search-failed'), t('please-try-again'));
             setSelectedExploreCategory(null);
         }
     };
@@ -510,12 +509,10 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
 
     const handleLocationPress = () => {
         if (!userLocation) {
-            showToast.error('Location not available', 'Please wait for location to load');
             return;
         }
 
         if (!mapRef.current) {
-            showToast.error('Map not ready', 'Please try again');
             return;
         }
 

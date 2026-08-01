@@ -82,10 +82,10 @@ export const SavePlaceScreen = () => {
                     }
                     : {}),
             });
-            showToast.success(t('place-saved-successfully'));
+            showToast(t('place-saved-successfully'));
             router.back();
         } catch (error) {
-            showToast.error(t('error'), error instanceof Error ? error.message : t('failed-to-save-place'));
+            showToast(error instanceof Error ? error.message : t('failed-to-save-place'));
         } finally {
             setSaving(false);
         }

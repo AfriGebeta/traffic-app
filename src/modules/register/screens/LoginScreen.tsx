@@ -20,12 +20,12 @@ export default function LoginScreen() {
 
     const handleLogin = async () => {
         if (!phoneNumber.trim()) {
-            showToast.error(t('phone-number-required') || 'Phone number is required');
+            showToast(t('phone-number-required') || 'Phone number is required');
             return;
         }
 
         if (!password.trim()) {
-            showToast.error(t('password-required') || 'Password is required');
+            showToast(t('password-required') || 'Password is required');
             return;
         }
 
@@ -33,17 +33,17 @@ export default function LoginScreen() {
         const result = await login({ phoneNumber: fullPhoneNumber, password: password.trim() });
 
         if (result) {
-            showToast.success(t('login-successful') || 'Login successful');
+            showToast(t('login-successful') || 'Login successful');
             const route = await getPostAuthRoute();
             setTimeout(() => {
                 router.replace(route as any);
             }, 1000);
         } else if (error) {
-            showToast.error(error);
+            showToast(error);
 
             if (error.toLowerCase().includes('not found') || error.toLowerCase().includes('register first')) {
                 setTimeout(() => {
-                    showToast.info(t('redirecting-to-registration') || 'Redirecting to registration...');
+                    showToast(t('redirecting-to-registration') || 'Redirecting to registration...');
                     setTimeout(() => navigateToRegister(), 1500);
                 }, 2000);
             }
@@ -52,7 +52,7 @@ export default function LoginScreen() {
 
     const handleGuestMode = async () => {
         await AsyncStorage.setItem(GUEST_MODE_KEY, 'true');
-        showToast.success(t('entering-guest-mode') || 'Entering as guest');
+        showToast(t('entering-guest-mode') || 'Entering as guest');
         router.replace('/');
     };
 

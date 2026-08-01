@@ -26,7 +26,7 @@ export default function ShareScreen() {
             const location = parseLocationUrl(mockUrl);
 
             if (!location) {
-                showToast.error('Invalid Link', 'Could not parse location from the shared link');
+                showToast('Invalid Link: Could not parse location from the shared link');
                 router.replace('/');
                 return;
             }
@@ -43,13 +43,12 @@ export default function ShareScreen() {
                 },
             });
 
-            showToast.success(
-                'Location Shared',
-                location.name ? `Opening ${location.name}` : 'Opening shared location'
+            showToast(
+                location.name ? `Location Shared: Opening ${location.name}` : 'Location Shared: Opening shared location'
             );
         } catch (error) {
             console.error('Deep link error:', error);
-            showToast.error('Error', 'Could not open shared location');
+            showToast('Error: Could not open shared location');
             router.replace('/');
         } finally {
             setIsProcessing(false);

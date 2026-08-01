@@ -87,13 +87,13 @@ export const useTaxiSimulation = ({
         simTickStartRef.current = 0;
 
         currentRouteIndex.current = 0;
-        showToast.info('Simulation Started', 'GPS simulation is running for testing');
+        showToast('GPS simulation is running for testing');
 
         simulationInterval.current = setInterval(() => {
             if (currentRouteIndex.current >= routeCoordinates.current.length) {
                 stopSimulation();
                 onArrival?.();
-                showToast.success('Arrived', 'Simulation completed');
+                showToast('Simulation completed');
                 return;
             }
 
@@ -323,7 +323,7 @@ export const useTaxiSimulation = ({
 
     const simulateOffRoute = useCallback(() => {
         if (!simulationInterval.current || routeCoordinates.current.length === 0) {
-            showToast.error('Error', 'Start simulation first');
+            showToast('Start simulation first');
             return;
         }
 
@@ -348,10 +348,7 @@ export const useTaxiSimulation = ({
             setUserLocation({ lat: offsetLat, lng: offsetLng });
         }
 
-        showToast.info(
-            'Testing Off-Route',
-            'Moved ~50m away. Simulation paused. Watch for detection!'
-        );
+        showToast('Moved ~50m away. Simulation paused. Watch for detection!');
     }, [setUserLocation, routeCoordinates]);
 
     return {

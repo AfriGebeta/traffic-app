@@ -79,7 +79,7 @@ export default function IncidentReportScreen() {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
         if (status !== 'granted') {
-            showToast.error(t('permission-denied'), t('camera-roll-permission-required'));
+            showToast(`${t('permission-denied')}: ${t('camera-roll-permission-required')}`);
             return;
         }
 
@@ -99,7 +99,7 @@ export default function IncidentReportScreen() {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
 
         if (status !== 'granted') {
-            showToast.error(t('permission-denied'), t('camera-permission-required'));
+            showToast(`${t('permission-denied')}: ${t('camera-permission-required')}`);
             return;
         }
 
@@ -119,9 +119,9 @@ export default function IncidentReportScreen() {
                 uris.map(async (uri) => ({ localUri: uri, objectName: await uploadToMinio(uri, 'incidents') }))
             );
             setImages((prev) => [...prev, ...uploaded]);
-            showToast.success(t('image-uploaded'), t('photo-added-successfully'));
+            showToast(`${t('image-uploaded')}: ${t('photo-added-successfully')}`);
         } catch (error) {
-            showToast.error(t('upload-failed'), t('could-not-upload-image'));
+            showToast(`${t('upload-failed')}: ${t('could-not-upload-image')}`);
         } finally {
             setUploading(false);
         }
@@ -133,7 +133,7 @@ export default function IncidentReportScreen() {
 
     const handleSubmit = async () => {
         if (!location) {
-            showToast.error('Location not available');
+            showToast('Location not available');
             return;
         }
 
@@ -148,12 +148,12 @@ export default function IncidentReportScreen() {
         if (incident) {
             console.log('Incident created:', incident);
             dashboardEventsService.contribute();
-            showToast.success(t('incident-reported-successfully'));
+            showToast(t('incident-reported-successfully'));
             setTimeout(() => {
                 router.back();
             }, 500);
         } else if (error) {
-            showToast.error(error);
+            showToast(error);
         }
     };
 
