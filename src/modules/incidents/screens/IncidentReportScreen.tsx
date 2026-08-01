@@ -3,6 +3,26 @@ import { View, Text, TextInput, ScrollView, TouchableOpacity, Image, ActivityInd
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import AccidentLightIcon from '../../../../assets/images/accident-light.svg';
+import AccidentDarkIcon from '../../../../assets/images/accident-dark.svg';
+import BadWeatherLightIcon from '../../../../assets/images/bad-weather-light.svg';
+import BadWeatherDarkIcon from '../../../../assets/images/bad-weather-dark.svg';
+import BrokenRoadLightIcon from '../../../../assets/images/broken-road-light.svg';
+import BrokenRoadDarkIcon from '../../../../assets/images/broken-road-dark.svg';
+import ClosureLightIcon from '../../../../assets/images/closure-light.svg';
+import ClosureDarkIcon from '../../../../assets/images/closure-dark.svg';
+import CrashLightIcon from '../../../../assets/images/crash-light.svg';
+import CrashDarkIcon from '../../../../assets/images/crash-dark.svg';
+import GatedCommunityLightIcon from '../../../../assets/images/gated-community-light.svg';
+import GatedCommunityDarkIcon from '../../../../assets/images/gated-community-dark.svg';
+import HazardLightIcon from '../../../../assets/images/hazard-light.svg';
+import HazardDarkIcon from '../../../../assets/images/hazard-dark.svg';
+import OtherLightIcon from '../../../../assets/images/other-light.svg';
+import OtherDarkIcon from '../../../../assets/images/other-dark.svg';
+import RadarLightIcon from '../../../../assets/images/radar-light.svg';
+import RadarDarkIcon from '../../../../assets/images/radar-dark.svg';
+import TrafficJamLightIcon from '../../../../assets/images/traffic-jam-light.svg';
+import TrafficJamDarkIcon from '../../../../assets/images/traffic-jam-dark.svg';
 import { Button } from '../../../shared/components';
 import { useIncidentReport } from '../hooks/useIncidentReport';
 import { colors } from '../../../shared/theme/colors';
@@ -12,6 +32,21 @@ import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { getIncidentTranslationKey } from '../utils/incidentTranslations';
 import { uploadToMinio } from '../../../shared/utils/minio';
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
+
+type IncidentIcon = React.FC<{ width?: number; height?: number }>;
+
+const INCIDENT_ICON_MAP: Record<string, { light: IncidentIcon; dark: IncidentIcon }> = {
+    'ROAD_CLOSURE': { light: ClosureLightIcon, dark: ClosureDarkIcon },
+    'ACCIDENT': { light: AccidentLightIcon, dark: AccidentDarkIcon },
+    'TRAFFIC_JAM': { light: TrafficJamLightIcon, dark: TrafficJamDarkIcon },
+    'BAD_WEATHER': { light: BadWeatherLightIcon, dark: BadWeatherDarkIcon },
+    'HAZARD': { light: HazardLightIcon, dark: HazardDarkIcon },
+    'CRASH': { light: CrashLightIcon, dark: CrashDarkIcon },
+    'GATED_COMMUNITY': { light: GatedCommunityLightIcon, dark: GatedCommunityDarkIcon },
+    'BROKEN_ROAD': { light: BrokenRoadLightIcon, dark: BrokenRoadDarkIcon },
+    'RADAR': { light: RadarLightIcon, dark: RadarDarkIcon },
+    'OTHER': { light: OtherLightIcon, dark: OtherDarkIcon },
+};
 
 export default function IncidentReportScreen() {
     const { t } = useTranslation();
@@ -124,15 +159,20 @@ export default function IncidentReportScreen() {
 
     const iconName = incidentTypeName ? (incidentTypeName.toLowerCase().replace('_', '-')) : 'other';
     const color = colors.primary.main;
+    const iconPair = INCIDENT_ICON_MAP[incidentTypeName];
+    const IncidentSvgIcon = iconPair ? (isDark ? iconPair.dark : iconPair.light) : null;
 
     return (
         <ScrollView className="flex-1" style={{ backgroundColor: theme.background }}>
             <View className="px-6 pt-12 pb-6">
                 <View
-                    className="w-16 h-16 rounded-full items-center justify-center mb-4"
-                    style={{ backgroundColor: color + '20' }}
+                    className="w-16 h-16 items-center justify-center mb-4"
                 >
-                    <Ionicons name="warning" size={32} color={color} />
+                    {IncidentSvgIcon ? (
+                        <IncidentSvgIcon width={48} height={48} />
+                    ) : (
+                        <Ionicons name="warning" size={32} color={color} />
+                    )}
                 </View>
 
                 <Text className="text-3xl font-bold mb-2" style={{ color: theme.textPrimary }}>
