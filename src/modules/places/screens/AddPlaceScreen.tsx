@@ -80,13 +80,13 @@ export default function AddPlaceScreen() {
 
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: 'images',
-            allowsEditing: true,
-            aspect: [4, 3],
+            allowsMultipleSelection: true,
+            selectionLimit: 0,
             quality: 0.8,
         });
 
-        if (!result.canceled && result.assets[0]) {
-            await uploadImage(result.assets[0].uri);
+        if (!result.canceled && result.assets.length > 0) {
+            await uploadImages(result.assets.map((a) => a.uri));
         }
     };
 
@@ -99,21 +99,21 @@ export default function AddPlaceScreen() {
         }
 
         const result = await ImagePicker.launchCameraAsync({
-            allowsEditing: true,
-            aspect: [4, 3],
             quality: 0.8,
         });
 
         if (!result.canceled && result.assets[0]) {
-            await uploadImage(result.assets[0].uri);
+            await uploadImages([result.assets[0].uri]);
         }
     };
 
-    const uploadImage = async (uri: string) => {
+    const uploadImages = async (uris: string[]) => {
         setUploading(true);
         try {
-            const objectName = await uploadToMinio(uri, 'places');
-            setImages((prev) => [...prev, { localUri: uri, objectName }]);
+            const uploaded = await Promise.all(
+                uris.map(async (uri) => ({ localUri: uri, objectName: await uploadToMinio(uri, 'places') }))
+            );
+            setImages((prev) => [...prev, ...uploaded]);
             showToast.success('Image uploaded', 'Photo added successfully');
         } catch (error) {
             showToast.error('Upload failed', 'Could not upload image');

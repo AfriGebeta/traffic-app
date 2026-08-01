@@ -25,7 +25,7 @@ export default function IncidentReportScreen() {
 
     const [description, setDescription] = useState('');
     const [direction, setDirection] = useState('');
-    const [images, setImages] = useState<string[]>([]);
+    const [images, setImages] = useState<{ localUri: string; objectName: string }[]>([]);
     const [uploading, setUploading] = useState(false);
     const { reportIncident, loading, error } = useIncidentReport();
 
@@ -50,13 +50,13 @@ export default function IncidentReportScreen() {
 
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: 'images',
-            allowsEditing: true,
-            aspect: [4, 3],
+            allowsMultipleSelection: true,
+            selectionLimit: 0,
             quality: 0.8,
         });
 
-        if (!result.canceled && result.assets[0]) {
-            await uploadImage(result.assets[0].uri);
+        if (!result.canceled && result.assets.length > 0) {
+            await uploadImages(result.assets.map((a) => a.uri));
         }
     };
 
@@ -69,21 +69,21 @@ export default function IncidentReportScreen() {
         }
 
         const result = await ImagePicker.launchCameraAsync({
-            allowsEditing: true,
-            aspect: [4, 3],
             quality: 0.8,
         });
 
         if (!result.canceled && result.assets[0]) {
-            await uploadImage(result.assets[0].uri);
+            await uploadImages([result.assets[0].uri]);
         }
     };
 
-    const uploadImage = async (uri: string) => {
+    const uploadImages = async (uris: string[]) => {
         setUploading(true);
         try {
-            const url = await uploadToMinio(uri, 'incidents');
-            setImages((prev) => [...prev, url]);
+            const uploaded = await Promise.all(
+                uris.map(async (uri) => ({ localUri: uri, objectName: await uploadToMinio(uri, 'incidents') }))
+            );
+            setImages((prev) => [...prev, ...uploaded]);
             showToast.success(t('image-uploaded'), t('photo-added-successfully'));
         } catch (error) {
             showToast.error(t('upload-failed'), t('could-not-upload-image'));
@@ -107,7 +107,7 @@ export default function IncidentReportScreen() {
             description.trim() || 'No description provided',
             location,
             direction.trim() || undefined,
-            images
+            images.map((img) => img.objectName)
         );
 
         if (incident) {
@@ -222,9 +222,9 @@ export default function IncidentReportScreen() {
 
                 {images.length > 0 && (
                     <View className="flex-row flex-wrap gap-3 mb-6">
-                        {images.map((uri, index) => (
+                        {images.map(({ localUri }, index) => (
                             <View key={index} className="relative">
-                                <Image source={{ uri }} className="w-28 h-28 rounded-2xl" />
+                                <Image source={{ uri: localUri }} className="w-28 h-28 rounded-2xl" />
                                 <TouchableOpacity
                                     className="absolute -top-2 -right-2 bg-red-500 rounded-full w-7 h-7 items-center justify-center shadow-lg"
                                     onPress={() => removeImage(index)}
