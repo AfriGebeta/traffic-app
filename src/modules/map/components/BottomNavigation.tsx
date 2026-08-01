@@ -73,7 +73,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
                     {
                         fontSize: 16,
                         fontWeight: fontsLoaded ? 'normal' : '900',
-                        color: isLightTile ? '#000000' : '#ffffff',
+                        color: isLightTile ? '#555555' : '#ffffff',
                         letterSpacing: 0.2,
                         textShadowColor: isLightTile ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.9)',
                         textShadowOffset: { width: 0, height: 1 },
