@@ -99,10 +99,10 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
                 className="rounded-3xl shadow-lg overflow-hidden"
                 style={{ backgroundColor: theme.surface }}
             >
-                <View className="flex-row items-center px-4 py-3">
+                <View className="flex-row items-start px-4 py-3">
                     <TouchableOpacity
                         onPress={onClose}
-                        className="mr-3"
+                        className="mr-3 mt-0"
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     >
                         <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
