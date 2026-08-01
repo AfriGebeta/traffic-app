@@ -615,6 +615,11 @@
         "AM": "ያሉበት ደረጃ"
     },
     {
+        "key": "no-contributions-yet",
+        "EN_US": "No contributions yet",
+        "AM": "እስካሁን አስተዋፅኦ አላደረጉም"
+    },
+    {
         "key": "language",
         "EN_US": "Language",
         "AM": "ቋንቋ"

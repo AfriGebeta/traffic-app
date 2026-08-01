@@ -53,6 +53,7 @@ export const ProfileScreen = () => {
     const [rank, setRank] = useState(0);
     const [reportsCount, setReportsCount] = useState(0);
     const [points, setPoints] = useState(0);
+    const [statsLoading, setStatsLoading] = useState(true);
 
     const { preferences: rulePreferences, toggleShowOnMap } = useRulePreferences();
 
@@ -106,13 +107,16 @@ export const ProfileScreen = () => {
         const userId = freshUser?.id ?? storedUser?.id;
 
         if (userId) {
-            const stats = await leaderboardService.getUserStats(userId);
+            const stats = await leaderboardService.getUserStats(userId).catch(() => null);
             if (stats) {
                 setLevel(stats.level);
                 setRank(stats.rank);
                 setReportsCount(stats.reportsCount);
                 setPoints(stats.points);
             }
+            setStatsLoading(false);
+        } else {
+            setStatsLoading(false);
         }
     };
 
@@ -293,12 +297,30 @@ export const ProfileScreen = () => {
                                 {t('current-level')}
                             </Text>
                         </View>
-                        <Text
-                            style={{ fontFamily: 'RammettoOne-Regular', fontSize: 26, lineHeight: 36, color: theme.textPrimary }}
-                            numberOfLines={1}
-                        >
-                            {(level || '—').toUpperCase()}
-                        </Text>
+                        {statsLoading ? (
+                            <View
+                                style={{
+                                    width: 140,
+                                    height: 26,
+                                    borderRadius: 6,
+                                    backgroundColor: isDark ? theme.border : '#E5E7EB',
+                                }}
+                            />
+                        ) : level ? (
+                            <Text
+                                style={{ fontFamily: 'RammettoOne-Regular', fontSize: 26, lineHeight: 36, color: theme.textPrimary }}
+                                numberOfLines={1}
+                            >
+                                {level.toUpperCase()}
+                            </Text>
+                        ) : (
+                            <Text
+                                style={{ fontFamily: 'RammettoOne-Regular', fontSize: 15, lineHeight: 20, color: theme.textPrimary }}
+                                numberOfLines={1}
+                            >
+                                {(t('no-contributions-yet') || 'No contributions yet').toUpperCase()}
+                            </Text>
+                        )}
                     </View>
 
                     <Text className="font-bold text-base mb-3" style={{ color: theme.textPrimary }}>
