@@ -2773,5 +2773,25 @@
         "key": "remove-photo-confirm",
         "EN_US": "Remove your profile picture?",
         "AM": "የመገለጫ ፎቶዎን ማስወገድ ይፈልጋሉ?"
+    },
+    {
+        "key": "discard-changes",
+        "EN_US": "Discard changes?",
+        "AM": "ለውጦችን መተው ይፈልጋሉ?"
+    },
+    {
+        "key": "discard-changes-confirm",
+        "EN_US": "Your changes have not been saved.",
+        "AM": "ለውጦችዎ አልተቀመጡም።"
+    },
+    {
+        "key": "discard",
+        "EN_US": "Discard",
+        "AM": "ተወው"
+    },
+    {
+        "key": "keep-editing",
+        "EN_US": "Keep editing",
+        "AM": "መስተካከሉን ቀጥል"
     }
 ]

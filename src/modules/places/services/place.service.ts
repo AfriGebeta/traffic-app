@@ -174,7 +174,7 @@ export const placeService = {
     },
 
     async uploadClaimDocument(
-        fileUri: string, 
+        fileUri: string,
         filename: string,
         onProgress?: (progress: number) => void
     ): Promise<string> {
@@ -186,9 +186,9 @@ export const placeService = {
 
         try {
             onProgress?.(10);
-            
+
             const presignedData = await this.getPresignedUrl('claims', filename);
-            
+
             onProgress?.(30);
 
             const fileResponse = await fetch(fileUri);

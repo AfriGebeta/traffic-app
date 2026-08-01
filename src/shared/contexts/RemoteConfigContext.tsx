@@ -62,7 +62,7 @@ export function RemoteConfigProvider({ children }: { children: ReactNode }) {
         .map((k) => `${RC_KEYS[k]}=${appConfig[k]}`);
       console.log(
         `remoteconfig: tier2 ${fromRemote.length}/${Object.keys(RC_KEYS).length} keys from remote` +
-          (fromRemote.length ? ` → ${fromRemote.join(', ')}` : ' (all baked-in defaults)')
+        (fromRemote.length ? ` → ${fromRemote.join(', ')}` : ' (all baked-in defaults)')
       );
       console.log('remoteconfig: tier2 resolved values:', JSON.stringify(appConfig));
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     View,
     Text,
@@ -11,6 +11,7 @@ import {
     ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -27,6 +28,7 @@ import { User, UpdateProfileRequest } from '../../register/types/user.types';
 
 export const EditProfileScreen = () => {
     const router = useRouter();
+    const navigation = useNavigation();
     const insets = useSafeAreaInsets();
     const { t } = useTranslation();
     const { colors: theme } = useTheme();
@@ -41,6 +43,16 @@ export const EditProfileScreen = () => {
     const [uploading, setUploading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+    const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+    const [pendingLeaveAction, setPendingLeaveAction] = useState<any>(null);
+    // bypasses the dirty check for the one navigation the save flow triggers itself
+    const allowNextLeaveRef = useRef(false);
+
+    const isDirty = Boolean(user) && (
+        name.trim() !== (user?.name || '') ||
+        removed ||
+        Boolean(uploadedImage)
+    );
 
     const storedAvatar = useResolvedImageUri(user?.profileImage);
     const previewUri = removed
@@ -111,6 +123,19 @@ export const EditProfileScreen = () => {
         }
     };
 
+    // intercepts every way off the screen: header back, hardware back, swipe gesture
+    useEffect(() => {
+        const unsubscribe = navigation.addListener('beforeRemove', (e: any) => {
+            if (allowNextLeaveRef.current || !isDirty) return;
+
+            e.preventDefault();
+            setPendingLeaveAction(e.data.action);
+            setShowDiscardConfirm(true);
+        });
+
+        return unsubscribe;
+    }, [navigation, isDirty]);
+
     const confirmRemovePhoto = () => {
         setRemoved(true);
         setPickedUri(null);
@@ -140,6 +165,7 @@ export const EditProfileScreen = () => {
         }
 
         if (payload.name === undefined && payload.profileImage === undefined) {
+            allowNextLeaveRef.current = true;
             router.back();
             return;
         }
@@ -164,6 +190,7 @@ export const EditProfileScreen = () => {
                     }),
             });
 
+            allowNextLeaveRef.current = true;
             showToast.success(t('success'), t('profile-updated') || 'Profile updated');
             router.back();
         } catch (error) {
@@ -331,6 +358,29 @@ export const EditProfileScreen = () => {
                 cancelLabel={t('cancel') || 'Cancel'}
                 onConfirm={confirmRemovePhoto}
                 onCancel={() => setShowRemoveConfirm(false)}
+            />
+
+            <ConfirmDialog
+                visible={showDiscardConfirm}
+                destructive
+                title={t('discard-changes') || 'Discard changes?'}
+                message={t('discard-changes-confirm') || 'Your changes have not been saved.'}
+                confirmLabel={t('discard') || 'Discard'}
+                cancelLabel={t('keep-editing') || 'Keep editing'}
+                onConfirm={() => {
+                    setShowDiscardConfirm(false);
+                    if (pendingLeaveAction) {
+                        navigation.dispatch(pendingLeaveAction);
+                        setPendingLeaveAction(null);
+                    } else {
+                        allowNextLeaveRef.current = true;
+                        router.back();
+                    }
+                }}
+                onCancel={() => {
+                    setShowDiscardConfirm(false);
+                    setPendingLeaveAction(null);
+                }}
             />
         </View>
     );
