@@ -84,7 +84,7 @@ export const APP_CONFIG_DEFAULTS: AppConfigValues = {
   defaultMapCenterLng: 38.7463,
   defaultMapCenterLat: 9.0223,
   userLocationZoom: 15,
-  navZoom: 19,
+  navZoom: 17,
   maxRecentSearches: 5,
 };
 

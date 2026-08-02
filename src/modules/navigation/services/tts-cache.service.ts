@@ -1,10 +1,8 @@
 import { Audio } from 'expo-av';
-import { getAppCheckToken } from '../../../shared/utils/appCheck';
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL!;
+import { fetchTtsAudioUri } from './tts-fetch';
 
 interface CachedAudio {
-    base64Uri: string;
+    playbackUri: string;
     timestamp: number;
 }
 
@@ -36,35 +34,13 @@ class TTSCacheService {
 
         const promise = (async (): Promise<boolean> => {
             try {
-                const appCheckToken = await getAppCheckToken();
-                const response = await fetch(`${API_URL}/api/asr/tts/synthesize`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...(appCheckToken ? { 'X-Firebase-AppCheck': appCheckToken } : {}),
-                    },
-                    body: JSON.stringify({ text }),
-                });
-
-                if (!response.ok) {
+                const playbackUri = await fetchTtsAudioUri(text);
+                if (!playbackUri) {
                     return false;
                 }
-
-                const audioBlob = await response.blob();
-
-                if (audioBlob.size === 0) {
-                    return false;
-                }
-
-                const base64Uri = await new Promise<string>((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result as string);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(audioBlob);
-                });
 
                 this.cache.set(text, {
-                    base64Uri,
+                    playbackUri,
                     timestamp: Date.now(),
                 });
 
@@ -114,7 +90,7 @@ class TTSCacheService {
             });
 
             const { sound } = await Audio.Sound.createAsync(
-                { uri: cached.base64Uri },
+                { uri: cached.playbackUri },
                 { shouldPlay: true, volume: 1.0 }
             );
 
