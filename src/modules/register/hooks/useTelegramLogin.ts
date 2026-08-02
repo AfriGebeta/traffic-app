@@ -23,17 +23,17 @@ export function useTelegramLogin() {
 
                 if (success) {
                     telegramAuthLog.info('finishLogin success, navigating to home');
-                    showToast.success('Login successful');
+                    showToast('Login successful');
                     const route = await getPostAuthRoute();
                     router.replace(route as any);
                     return;
                 }
 
                 telegramAuthLog.warn('finishLogin failed at backend login step');
-                showToast.error('Telegram authentication failed');
+                showToast('Telegram authentication failed');
             } catch (error) {
                 telegramAuthLog.error('finishLogin threw', error);
-                showToast.error('An error occurred during authentication');
+                showToast('An error occurred during authentication');
             } finally {
                 setIsLoading(false);
             }
@@ -55,7 +55,7 @@ export function useTelegramLogin() {
     const handleAuthWebViewError = useCallback((message: string) => {
         telegramAuthLog.warn('auth webview error', { message });
         setShowAuthWebView(false);
-        showToast.error(message);
+        showToast(message);
     }, []);
 
     const handleAuthWebViewOnboard = useCallback((url: string) => {
@@ -69,7 +69,7 @@ export function useTelegramLogin() {
     const handleCompletionError = useCallback((message: string) => {
         telegramAuthLog.warn('completion webview error', { message });
         setCompletionUrl(null);
-        showToast.error(message);
+        showToast(message);
     }, []);
 
     return {

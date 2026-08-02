@@ -256,8 +256,8 @@ export const OFF_ROUTE_THRESHOLD_M = 45;
 
 export const BANNER_TIMING = {
     leadSeconds: 10,
-    minM: 70,
-    maxM: 200,
+    minM: 80,
+    maxM: 80,
     thenVisibleFromM: 100,
     thenGapM: 150,
 } as const;
@@ -395,7 +395,7 @@ export const ARRIVAL_CUE_TEXT = 'You have arrived at your destination.';
 export const VOICE_TIMING = {
     finalSeconds: 8,
     finalMinM: 25,
-    finalMaxM: 40,
+    finalMaxM: 60,
     approachSeconds: 60,
     approachMinM: 400,
     approachMaxM: 2000,

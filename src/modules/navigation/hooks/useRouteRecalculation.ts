@@ -111,9 +111,8 @@ export const useRouteRecalculation = ({
                 });
 
                 if (!navigationData?.data?.trip?.legs?.[0]) {
-                    showToast.error(
-                        t('reroute-failed') || 'Reroute Failed',
-                        t('could-not-calculate-new-route') || 'Could not calculate new route'
+                    showToast(
+                        `${t('reroute-failed') || 'Reroute Failed'}: ${t('could-not-calculate-new-route') || 'Could not calculate new route'}`
                     );
                     setIsRecalculating(false);
                     return;
@@ -181,19 +180,16 @@ export const useRouteRecalculation = ({
                 setIsRecalculating(false);
                 setIsOffRoute(false);
 
-
-                showToast.success(
-                    t('route-recalculated') || 'Route Recalculated',
-                    t('following-new-route') || 'Following new route'
+                showToast(
+                    `${t('route-recalculated') || 'Route Recalculated'}: ${t('following-new-route') || 'Following new route'}`
                 );
 
                 if (simulateMovement) {
                     startSimulation();
                 }
             } catch (error: any) {
-                showToast.error(
-                    t('reroute-failed') || 'Reroute Failed',
-                    error.message || t('could-not-calculate-new-route') || 'Could not calculate new route'
+                showToast(
+                    `${t('reroute-failed') || 'Reroute Failed'}: ${error.message || t('could-not-calculate-new-route') || 'Could not calculate new route'}`
                 );
                 setIsRecalculating(false);
             }

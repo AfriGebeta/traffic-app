@@ -83,12 +83,12 @@ export default function NeighborhoodBoundingBoxScreen() {
 
     const handleSave = () => {
         if (boundingBox.north <= boundingBox.south) {
-            showToast.error(t('invalid-bounds'), t('north-must-be-greater-than-south'));
+            showToast(`${t('invalid-bounds')}: ${t('north-must-be-greater-than-south')}`);
             return;
         }
 
         if (boundingBox.east <= boundingBox.west) {
-            showToast.error(t('invalid-bounds'), t('east-must-be-greater-than-west'));
+            showToast(`${t('invalid-bounds')}: ${t('east-must-be-greater-than-west')}`);
             return;
         }
 
@@ -96,7 +96,7 @@ export default function NeighborhoodBoundingBoxScreen() {
         setTimeout(() => {
             router.setParams({ savedBoundingBox: JSON.stringify(boundingBox) });
         }, 100);
-        showToast.success(t('success'), t('bounding-box-saved'));
+        showToast(t('bounding-box-saved'));
     };
 
     const handleReset = () => {
@@ -109,17 +109,17 @@ export default function NeighborhoodBoundingBoxScreen() {
             west: centerLng - offset,
         };
         setBoundingBox(resetBox);
-        showToast.info(t('reset'), t('bounding-box-reset'));
+        showToast(t('bounding-box-reset'));
     };
 
     const handleLocationPress = () => {
         if (!userLocation) {
-            showToast.error(t('location-unavailable'), t('please-wait-for-location'));
+            showToast(`${t('location-unavailable')}: ${t('please-wait-for-location')}`);
             return;
         }
 
         if (!mapRef.current) {
-            showToast.error(t('map-not-ready'), t('please-try-again'));
+            showToast(`${t('map-not-ready')}: ${t('please-try-again')}`);
             return;
         }
 

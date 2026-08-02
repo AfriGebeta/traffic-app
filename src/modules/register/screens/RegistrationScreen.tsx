@@ -25,22 +25,22 @@ export default function RegistrationScreen() {
 
     const handleRegister = async () => {
         if (!phoneNumber.trim()) {
-            showToast.error(t('phone-number-required') || 'Phone number is required');
+            showToast(t('phone-number-required') || 'Phone number is required');
             return;
         }
 
         if (!name.trim()) {
-            showToast.error(t('name-required') || 'Name is required');
+            showToast(t('name-required') || 'Name is required');
             return;
         }
 
         if (!password.trim()) {
-            showToast.error(t('password-required') || 'Password is required');
+            showToast(t('password-required') || 'Password is required');
             return;
         }
 
         if (password.length < 6) {
-            showToast.error(t('password-too-short') || 'Password must be at least 6 characters');
+            showToast(t('password-too-short') || 'Password must be at least 6 characters');
             return;
         }
 
@@ -54,7 +54,7 @@ export default function RegistrationScreen() {
             });
 
             if (result) {
-                showToast.success(t('registration-successful') || 'Registration successful');
+                showToast(t('registration-successful') || 'Registration successful');
                 const route = await getPostAuthRoute();
                 setTimeout(() => {
                     router.replace(route as any);
@@ -62,12 +62,12 @@ export default function RegistrationScreen() {
             }
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Registration failed';
-            showToast.error(errorMessage);
+            showToast(errorMessage);
 
             if (errorMessage.toLowerCase().includes('already registered') ||
                 errorMessage.toLowerCase().includes('already exist')) {
                 setTimeout(() => {
-                    showToast.info(t('redirecting-to-login') || 'Redirecting to login...');
+                    showToast(t('redirecting-to-login') || 'Redirecting to login...');
                     setTimeout(() => navigateToLogin(), 1500);
                 }, 2000);
             }
@@ -76,7 +76,7 @@ export default function RegistrationScreen() {
 
     const handleGuestMode = async () => {
         await AsyncStorage.setItem(GUEST_MODE_KEY, 'true');
-        showToast.success(t('entering-guest-mode') || 'Entering as guest');
+        showToast(t('entering-guest-mode') || 'Entering as guest');
         router.replace('/');
     };
 

@@ -114,7 +114,7 @@ export const useLocationTracking = ({
         try {
             const { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') {
-                showToast.error('Location permission is required for navigation', 'Permission Denied');
+                showToast('Permission Denied: Location permission is required for navigation');
                 return;
             }
 
@@ -281,7 +281,7 @@ export const useLocationTracking = ({
                             isOffRouteRef.current = true;
                             offRouteStartTime.current = Date.now();
                             setIsOffRoute(true);
-                            showToast.info('Off Route', `You are ${distanceFromRoute.toFixed(0)}m off the planned route`);
+                            showToast(`Off Route: You are ${distanceFromRoute.toFixed(0)}m off the planned route`);
 
 
                             if (rerouteTimeout.current) {
@@ -318,7 +318,7 @@ export const useLocationTracking = ({
                                 rerouteTimeout.current = null;
                             }
 
-                            showToast.success('back on Route', 'you are back on the planned route');
+                            showToast('back on Route: you are back on the planned route');
                         }
                     }
 
@@ -483,7 +483,7 @@ export const useLocationTracking = ({
             );
         } catch (error) {
             console.error('Error starting location tracking:', error);
-            showToast.error('Could not start location tracking', 'Location Error');
+            showToast('Location Error: Could not start location tracking');
         }
     }, [
         isOffRoute,

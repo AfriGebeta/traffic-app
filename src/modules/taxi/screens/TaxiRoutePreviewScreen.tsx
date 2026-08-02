@@ -94,7 +94,7 @@ export default function TaxiRoutePreviewScreen() {
                 [startNode.lng, startNode.lat],
                 '',
                 [40, 40],
-                () => showToast.info(startNode.name, 'Boarding Point'),
+                () => showToast(`${startNode.name}: Boarding Point`),
                 10
             );
 
@@ -102,7 +102,7 @@ export default function TaxiRoutePreviewScreen() {
                 [endNode.lng, endNode.lat],
                 '',
                 [40, 40],
-                () => showToast.info(endNode.name, 'Drop-off Point'),
+                () => showToast(`${endNode.name}: Drop-off Point`),
                 10
             );
 

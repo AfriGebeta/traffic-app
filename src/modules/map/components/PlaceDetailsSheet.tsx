@@ -54,9 +54,9 @@ export const PlaceDetailsSheet: React.FC<PlaceDetailsSheetProps> = ({
         try {
             await placeService.deleteSavedPlace(savedPlace.id);
             setSavedPlace(null);
-            showToast.success(t('place-removed'));
+            showToast(t('place-removed'));
         } catch (error) {
-            showToast.error(t('failed-to-remove-place'));
+            showToast(t('failed-to-remove-place'));
             console.error('Error removing place:', error);
         }
     };

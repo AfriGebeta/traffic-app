@@ -23,20 +23,20 @@ export function useTelegramDeepLink() {
                 telegramAuthLog.info('deep link auth result', result);
 
                 if (result.success) {
-                    showToast.success('Login successful');
+                    showToast('Login successful');
                     router.replace('/');
                     return;
                 }
 
                 if (result.error) {
-                    showToast.error(result.error);
+                    showToast(result.error);
                     return;
                 }
 
-                showToast.error('Telegram login completed but no id_token was returned');
+                showToast('Telegram login completed but no id_token was returned');
             } catch (error) {
                 telegramAuthLog.error('deep link handler failed', error);
-                showToast.error('An error occurred during authentication');
+                showToast('An error occurred during authentication');
             }
         };
 

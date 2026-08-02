@@ -454,13 +454,13 @@ export const ProfileScreen = () => {
                             onPress={async () => {
                                 try {
                                     const newValue = await toggleShowOnMap();
-                                    showToast.success(
+                                    showToast(
                                         newValue
                                             ? t('rules-shown-on-map')
                                             : t('rules-hidden-on-map')
                                     );
                                 } catch (error) {
-                                    showToast.error(t('error'), t('failed-to-update-settings'));
+                                    showToast(t('failed-to-update-settings'));
                                 }
                             }}
                         >

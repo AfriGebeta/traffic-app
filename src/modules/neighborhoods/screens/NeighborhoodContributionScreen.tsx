@@ -59,7 +59,7 @@ export default function NeighborhoodContributionScreen() {
 
     const handleUseCurrentLocation = () => {
         if (!userLocation) {
-            showToast.error(t('location-unavailable'), t('please-wait-for-location'));
+            showToast(`${t('location-unavailable')}: ${t('please-wait-for-location')}`);
             return;
         }
 
@@ -69,17 +69,17 @@ export default function NeighborhoodContributionScreen() {
 
     const handleSubmit = async () => {
         if (!name.trim()) {
-            showToast.error(t('name-required'), t('please-enter-neighborhood-name'));
+            showToast(`${t('name-required')}: ${t('please-enter-neighborhood-name')}`);
             return;
         }
 
         if (!slug.trim()) {
-            showToast.error(t('slug-required'), t('please-enter-slug'));
+            showToast(`${t('slug-required')}: ${t('please-enter-slug')}`);
             return;
         }
 
         if (!coordinates) {
-            showToast.error(t('location-required'), t('please-pick-location'));
+            showToast(`${t('location-required')}: ${t('please-pick-location')}`);
             return;
         }
 
@@ -100,12 +100,12 @@ export default function NeighborhoodContributionScreen() {
             await contributeNeighborhood(contributionData);
 
             dashboardEventsService.contribute();
-            showToast.success(t('success'), t('neighborhood-contribution-submitted'));
+            showToast(t('neighborhood-contribution-submitted'));
             router.back();
         } catch (error) {
             console.error('Submit error:', error);
             const errorMessage = error instanceof Error ? error.message : t('could-not-submit-contribution');
-            showToast.error(t('failed'), errorMessage);
+            showToast(errorMessage);
         }
     };
 

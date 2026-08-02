@@ -34,7 +34,7 @@ export default function ClaimBusinessScreen() {
                 setSelectedDocument(result.assets[0]);
             }
         } catch (error) {
-            showToast.error(t('failed-to-pick-document'));
+            showToast(t('failed-to-pick-document'));
         }
     };
 
@@ -65,10 +65,10 @@ export default function ClaimBusinessScreen() {
                 tinNumber: verificationMethod === 'TIN_CERTIFICATE' ? tinNumber : undefined,
             });
 
-            showToast.success(t('claim-submitted-successfully'));
+            showToast(t('claim-submitted-successfully'));
             router.back();
         } catch (error: any) {
-            showToast.error(error.message || t('failed-to-submit-claim'));
+            showToast(error.message || t('failed-to-submit-claim'));
         } finally {
             setUploading(false);
             setUploadProgress(0);

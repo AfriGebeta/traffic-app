@@ -161,12 +161,12 @@ export default function MapPickerScreen() {
 
     const handleLocationPress = () => {
         if (!userLocation) {
-            showToast.error(t('location-unavailable'), t('please-wait-for-location'));
+            showToast(`${t('location-unavailable')}: ${t('please-wait-for-location')}`);
             return;
         }
 
         if (!mapRef.current) {
-            showToast.error(t('map-not-ready'), t('please-try-again'));
+            showToast(`${t('map-not-ready')}: ${t('please-try-again')}`);
             return;
         }
 

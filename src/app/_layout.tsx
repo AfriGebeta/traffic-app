@@ -1,5 +1,4 @@
 import { Stack } from "expo-router";
-import Toast from 'react-native-toast-message';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { MapThemeProvider } from '../modules/map/context/MapThemeContext';
@@ -15,6 +14,7 @@ import { useTelegramDeepLink } from '../shared/hooks/useTelegramDeepLink';
 import { useRemoteConfig, RemoteConfigProvider } from '../shared/contexts/RemoteConfigContext';
 import { initializeAppCheckSingleton } from '../shared/utils/appCheck';
 import { ForceUpdateModal } from '../components/ForceUpdateModal';
+import { ToastHost } from '../shared/components/ToastHost';
 import telemetryApiService from '../shared/services/telemetry-api.service';
 import { dashboardEventsService } from '../shared/services/dashboard-events.service';
 import { locationPermissionSettled } from '../shared/utils/permissionSequence';
@@ -101,7 +101,7 @@ function AppShell() {
                     headerShown: false,
                   }}
                 />
-                <Toast />
+                <ToastHost />
                 <ForceUpdateModal visible={updateRequired} />
               </IncidentFiltersProvider>
             </LocationProvider>

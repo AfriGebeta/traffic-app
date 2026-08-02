@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 import { Audio } from 'expo-av';
 
 import type { Leg } from '../types/navigation.types';
@@ -18,6 +19,9 @@ interface QueuedCue {
     text: string;
     queuedAt: number;
 }
+
+const CUE_MAX_AGE_MS = 10000;
+const FINAL_CUE_MAX_AGE_MS = 20000;
 
 interface Params {
     legs?: Leg[] | null;
@@ -65,6 +69,7 @@ export const useInstructionEngine = ({
     const stopPlaybackRef = useRef<() => void>(() => { });
     const audioRef = useRef<Map<string, string>>(new Map());
     const generationRef = useRef(0);
+    const appActiveRef = useRef(AppState.currentState === 'active');
 
     const plan = useMemo(() => buildInstructionPlan(legs), [legs]);
     useEffect(() => {
@@ -145,9 +150,11 @@ export const useInstructionEngine = ({
 
     const drain = useCallback(() => {
         if (speakingRef.current) return;
+        if (!appActiveRef.current) return;
         while (queueRef.current.length > 0) {
             const cue = queueRef.current.shift()!;
-            if (cue.tier !== 'final' && Date.now() - cue.queuedAt > 10000) continue;
+            const maxAge = cue.tier === 'final' ? FINAL_CUE_MAX_AGE_MS : CUE_MAX_AGE_MS;
+            if (Date.now() - cue.queuedAt > maxAge) continue;
             void playCue(cue);
             return;
         }
@@ -196,6 +203,13 @@ export const useInstructionEngine = ({
     useEffect(() => {
         if (!isNavigating) stopVoice();
     }, [isNavigating, stopVoice]);
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', (nextState) => {
+            appActiveRef.current = nextState === 'active';
+            stopVoice();
+        });
+        return () => subscription.remove();
+    }, [stopVoice]);
 
     useEffect(() => () => {
         soundRef.current?.unloadAsync().catch(() => { });

@@ -86,7 +86,7 @@ export default function SetPricingScreen() {
                     setRouteName(cached.routeName);
                     setStops([cached.startStation!, ...cached.intermediateStops, cached.endStation!].filter(Boolean));
                     setEdgePrices(cached.edgePrices);
-                    showToast.success(t('restored'), t('pricing-progress-restored'));
+                    showToast(t('pricing-progress-restored'));
                 }
             }
         };
@@ -203,7 +203,7 @@ export default function SetPricingScreen() {
             }
 
             console.log('Route creation complete!');
-            showToast.success(t('success'), t('route-created-successfully'));
+            showToast(t('route-created-successfully'));
 
             const segments = [];
             for (let i = 0; i < stops.length - 1; i++) {

@@ -3,8 +3,8 @@ import { View, ActivityIndicator, Text } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import TelegramAuthService from '../shared/services/telegram-auth.service';
 import { getTelegramAuthConfig } from '../shared/config/telegram-auth.config';
-import { showToast } from '../shared/utils/toast';
 import { getPostAuthRoute } from '../modules/places/utils/homeOnboarding';
+import { showToast } from '../shared/utils/toast';
 
 export default function TelegramAuth() {
     const router = useRouter();
@@ -25,16 +25,16 @@ export default function TelegramAuth() {
             const success = await TelegramAuthService.handleCallback(url);
 
             if (success) {
-                showToast.success('Login successful');
+                showToast('Login successful');
                 const route = await getPostAuthRoute();
                 router.replace(route as any);
             } else {
-                showToast.error('Telegram authentication failed');
+                showToast('Telegram authentication failed');
                 router.replace('/telegram-login');
             }
         } catch (error) {
             console.error('Telegram authentication error:', error);
-            showToast.error('An error occurred during authentication');
+            showToast('An error occurred during authentication');
             router.replace('/telegram-login');
         }
     };

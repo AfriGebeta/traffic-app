@@ -56,7 +56,7 @@ export const SavedPlacesScreen = () => {
             setSavedPlaces(places);
         } catch (error) {
             console.error('Error loading saved places:', error);
-            showToast.error(t('error'), t('failed-to-load-saved-places'));
+            showToast(t('failed-to-load-saved-places'));
         } finally {
             setLoading(false);
         }
@@ -75,10 +75,10 @@ export const SavedPlacesScreen = () => {
                         try {
                             await placeService.deleteSavedPlace(placeId);
                             setSavedPlaces(savedPlaces.filter(p => p.id !== placeId));
-                            showToast.success(t('place-deleted'));
+                            showToast(t('place-deleted'));
                         } catch (error) {
                             console.error('Error deleting place:', error);
-                            showToast.error(t('failed-to-delete-place'));
+                            showToast(t('failed-to-delete-place'));
                         }
                     },
                 },

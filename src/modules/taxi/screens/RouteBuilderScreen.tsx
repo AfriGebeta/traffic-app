@@ -102,7 +102,7 @@ export default function RouteBuilderScreen() {
             setEndStation(cachedRoute.endStation);
             setIntermediateStops(cachedRoute.intermediateStops);
             setShowRestorePrompt(false);
-            showToast.success(t('restored'), t('route-progress-restored'));
+            showToast(`${t('restored')}: ${t('route-progress-restored')}`);
         }
     };
 
@@ -201,7 +201,7 @@ export default function RouteBuilderScreen() {
 
     const handleUseCurrentLocation = (type: 'start' | 'end' | 'intermediate') => {
         if (!userLocation) {
-            showToast.error(t('location-unavailable'), t('please-wait-for-location'));
+            showToast(`${t('location-unavailable')}: ${t('please-wait-for-location')}`);
             return;
         }
 
@@ -232,7 +232,7 @@ export default function RouteBuilderScreen() {
 
     const confirmCurrentLocation = (type: 'start' | 'end' | 'intermediate') => {
         if (!userLocation) {
-            showToast.error(t('location-unavailable'), t('please-wait-for-location'));
+            showToast(`${t('location-unavailable')}: ${t('please-wait-for-location')}`);
             return;
         }
 

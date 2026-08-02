@@ -2,8 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import * as Location from 'expo-location';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 import type { GeocodingPlace, Leg, Maneuver } from '../types/navigation.types';
-import { showToast } from '../../../shared/utils/toast';
 import { navigationService } from '../services/navigation.service';
+import { showToast } from '../../../shared/utils/toast';
 import { voiceNavigationService } from '../services/voice-navigation.service';
 import { decodePolyline } from '../../../shared/utils/polyline';
 import { useSimulation } from './useSimulation';
@@ -335,12 +335,12 @@ export const useNavigation = (
                 : null;
 
         if (!originCoords || !targetDestination) {
-            showToast.error('Navigation Error', 'Origin or destination not available');
+            showToast('Navigation Error: Origin or destination not available');
             return;
         }
 
         if (!mapRef.current) {
-            showToast.error('Map Error', 'Map reference is not available');
+            showToast('Map Error: Map reference is not available');
             return;
         }
 
@@ -373,7 +373,7 @@ export const useNavigation = (
 
             const legs = navigationData?.data?.trip?.legs;
             if (!legs || legs.length === 0) {
-                showToast.error('Navigation Error', 'Could not calculate route');
+                showToast('Navigation Error: Could not calculate route');
                 setIsNavigating(false);
                 return;
             }
@@ -455,7 +455,7 @@ export const useNavigation = (
             }
         } catch (error) {
             console.error('Navigation error:', error);
-            showToast.error('Navigation Error', 'Could not calculate route');
+            showToast('Navigation Error: Could not calculate route');
             setIsNavigating(false);
         }
     };
@@ -467,24 +467,24 @@ export const useNavigation = (
         const targetDestination = destinationOverride || selectedDestination;
 
         if (!mapRef.current) {
-            showToast.error('Error', 'Map reference is not available');
+            showToast('Error: Map reference is not available');
             return;
         }
 
         if (!userLocation) {
-            showToast.error('Error', 'Current location not available');
+            showToast('Error: Current location not available');
             return;
         }
 
         if (!targetDestination) {
-            showToast.error('Error', 'Please select a destination first');
+            showToast('Error: Please select a destination first');
             return;
         }
 
         try {
             const { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') {
-                showToast.error('Permission Required', 'Location permission is required for navigation');
+                showToast('Permission Required: Location permission is required for navigation');
                 return;
             }
 
@@ -521,7 +521,7 @@ export const useNavigation = (
 
                 const legs = navigationData?.data?.trip?.legs;
                 if (!legs || legs.length === 0) {
-                    showToast.error('Error', 'Could not calculate route');
+                    showToast('Error: Could not calculate route');
                     return;
                 }
 
@@ -592,9 +592,8 @@ export const useNavigation = (
                 },
                 onOffRoute: (distanceFromRoute: number) => {
                     setIsOffRoute(true);
-                    showToast.info(
-                        t('off-route') || 'Off Route',
-                        `${t('you-are') || 'You are'} ${distanceFromRoute.toFixed(0)}m ${t('off-the-planned-route') || 'off the planned route'}`
+                    showToast(
+                        `${t('off-route') || 'Off Route'}: ${t('you-are') || 'You are'} ${distanceFromRoute.toFixed(0)}m ${t('off-the-planned-route') || 'off the planned route'}`
                     );
 
                     if (rerouteTimeout.current) {
@@ -613,9 +612,8 @@ export const useNavigation = (
                         rerouteTimeout.current = null;
                     }
 
-                    showToast.success(
-                        t('back-on-route') || 'Back on Route',
-                        t('back-on-planned-route') || 'You are back on the planned route'
+                    showToast(
+                        `${t('back-on-route') || 'Back on Route'}: ${t('back-on-planned-route') || 'You are back on the planned route'}`
                     );
                 },
                 onNavigationComplete: () => {
@@ -636,7 +634,7 @@ export const useNavigation = (
 
             if (simulateMovement) {
                 startSimulation();
-                showToast.info('Navigation Started', 'GPS simulation is running for testing');
+                showToast('Navigation Started: GPS simulation is running for testing');
             } else {
                 startLocationTracking();
                 void startNavService(engineState?.primaryText || 'Navigating…');
@@ -644,7 +642,7 @@ export const useNavigation = (
 
         } catch (error: any) {
             console.error('Navigation start error:', error);
-            showToast.error('Navigation Failed', error.message || 'Could not start navigation');
+            showToast(`Navigation Failed: ${error.message || 'Could not start navigation'}`);
             setIsNavigating(false);
             isNavigatingRef.current = false;
             setNavigationMode(false);

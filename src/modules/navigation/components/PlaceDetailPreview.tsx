@@ -101,9 +101,9 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
         try {
             await placeService.deleteSavedPlace(savedPlace.id);
             setSavedPlace(null);
-            showToast.success(t('place-removed'));
+            showToast(t('place-removed'));
         } catch (error) {
-            showToast.error(t('failed-to-remove-place'));
+            showToast(t('failed-to-remove-place'));
         }
     };
 

@@ -240,7 +240,7 @@ export default function TaxiNavigationScreen() {
             if (!fromLocation) return;
 
             setIsRecalculating(true);
-            showToast.info('Recalculating', 'Finding new route...');
+            showToast('Recalculating: Finding new route...');
 
             try {
                 const { taxiService } = await import('../../taxi/services/taxi.service');
@@ -276,13 +276,13 @@ export default function TaxiNavigationScreen() {
                     totalDistance.current = distance;
                     totalDuration.current = duration;
 
-                    showToast.success('Route Updated', 'New route calculated');
+                    showToast('Route Updated: New route calculated');
                 } else {
-                    showToast.error('Recalculation Failed', 'Could not find alternative route');
+                    showToast('Recalculation Failed: Could not find alternative route');
                 }
             } catch (error) {
                 console.error('Recalculation error:', error);
-                showToast.error('Error', 'Failed to recalculate route');
+                showToast('Failed to recalculate route');
             } finally {
                 setIsRecalculating(false);
             }
