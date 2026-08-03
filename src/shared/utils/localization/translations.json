@@ -2803,5 +2803,10 @@
         "key": "keep-editing",
         "EN_US": "Keep editing",
         "AM": "መስተካከሉን ቀጥል"
+    },
+    {
+        "key": "resend-recording",
+        "EN_US": "Resend",
+        "AM": "እንደገና ላክ"
     }
 ]
