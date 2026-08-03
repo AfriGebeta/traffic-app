@@ -37,6 +37,9 @@ const SAVED_PLACE_CARDS = [
     { key: 'custom', label: 'Custom', Icon: OthersIcon, color: '#A855F7' },
 ];
 
+const CARD_RADIUS = 12;
+const INNER_RADIUS = 8;
+
 export const ProfileScreen = () => {
     const router = useRouter();
     const { t, language } = useTranslation();
@@ -59,7 +62,7 @@ export const ProfileScreen = () => {
 
     const elevatedCardStyle = {
         backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-        borderRadius: 16,
+        borderRadius: CARD_RADIUS,
         borderWidth: 1,
         borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
         shadowColor: '#000000',
@@ -71,7 +74,7 @@ export const ProfileScreen = () => {
 
     const heroCardStyle = {
         backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-        borderRadius: 20,
+        borderRadius: CARD_RADIUS,
         borderWidth: 1,
         borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 165, 0, 0.2)',
         shadowColor: isDark ? '#000000' : '#FFA500',
@@ -302,7 +305,7 @@ export const ProfileScreen = () => {
                                 style={{
                                     width: 140,
                                     height: 26,
-                                    borderRadius: 6,
+                                    borderRadius: INNER_RADIUS,
                                     backgroundColor: isDark ? theme.border : '#E5E7EB',
                                 }}
                             />
@@ -410,8 +413,8 @@ export const ProfileScreen = () => {
                                 onPress={() => router.push('/saved-places')}
                             >
                                 <View
-                                    className="rounded-xl items-center justify-center mb-2.5"
-                                    style={{ width: 36, height: 36, backgroundColor: color }}
+                                    className="items-center justify-center mb-2.5"
+                                    style={{ width: 36, height: 36, borderRadius: INNER_RADIUS, backgroundColor: color }}
                                 >
                                     <Icon width={18} height={18} color="#fff" />
                                 </View>
