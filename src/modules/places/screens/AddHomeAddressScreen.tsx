@@ -138,6 +138,8 @@ export const AddHomeAddressScreen = () => {
     const [missingFields, setMissingFields] = useState<HomeAddressRequiredField[]>([]);
     const [savedPlaceId, setSavedPlaceId] = useState<string | null>(null);
     const [capturedAddress, setCapturedAddress] = useState<SavedPlaceAddress>({});
+    const [lastAudioUri, setLastAudioUri] = useState<string | null>(null);
+    const [uploadFailed, setUploadFailed] = useState(false);
 
     const [label, setLabel] = useState('');
     const [country, setCountry] = useState('');
@@ -228,11 +230,7 @@ export const AddHomeAddressScreen = () => {
         router.replace('/');
     };
 
-    const stopAndSaveVoice = async () => {
-        const audioUri = await stopRecording();
-        hlog('recording stopped, uri:', audioUri);
-        if (!audioUri) return;
-
+    const uploadVoice = async (audioUri: string) => {
         setSaving(true);
         try {
             const { data: saved, missingFields: missing } = savedPlaceId
@@ -247,6 +245,8 @@ export const AddHomeAddressScreen = () => {
                 });
 
             hlog('voice save response, missing fields:', missing);
+            setUploadFailed(false);
+
             if (missing.length === 0) {
                 await finish();
                 return;
@@ -258,10 +258,26 @@ export const AddHomeAddressScreen = () => {
             setStep('followup');
         } catch (error) {
             hlog('voice save failed:', String(error));
+            setUploadFailed(true);
             showToast(error instanceof Error ? error.message : t('failed-to-save-place'));
         } finally {
             setSaving(false);
         }
+    };
+
+    const stopAndSaveVoice = async () => {
+        const audioUri = await stopRecording();
+        hlog('recording stopped, uri:', audioUri);
+        if (!audioUri) return;
+
+        setLastAudioUri(audioUri);
+        await uploadVoice(audioUri);
+    };
+
+    const handleResend = async () => {
+        if (!lastAudioUri || saving) return;
+        hlog('resending last recording:', lastAudioUri);
+        await uploadVoice(lastAudioUri);
     };
 
     const PUSH_TO_TALK_THRESHOLD_MS = 350;
@@ -271,6 +287,7 @@ export const AddHomeAddressScreen = () => {
     const handleMicPressIn = async () => {
         if (saving || isRecording) return;
 
+        setUploadFailed(false);
         pressStartRef.current = Date.now();
         startedThisPressRef.current = true;
         hlog('mic pressed in, starting recording (coords:', getCoords(), ')');
@@ -409,6 +426,20 @@ export const AddHomeAddressScreen = () => {
             <Text className="text-base mt-6" style={{ color: theme.textPrimary }}>
                 {isRecording ? t('tap-to-stop') : t('tap-or-hold-to-speak')}
             </Text>
+            {uploadFailed && lastAudioUri && !isRecording && (
+                <TouchableOpacity
+                    onPress={handleResend}
+                    disabled={saving}
+                    activeOpacity={0.8}
+                    className="flex-row items-center mt-4 px-4 py-2 rounded-full"
+                    style={{ borderWidth: 1, borderColor: colors.primary.main, opacity: saving ? 0.6 : 1 }}
+                >
+                    <Ionicons name="refresh" size={16} color={colors.primary.main} />
+                    <Text className="text-sm font-semibold ml-1.5" style={{ color: colors.primary.main }}>
+                        {t('resend-recording')}
+                    </Text>
+                </TouchableOpacity>
+            )}
         </View>
     );
 
