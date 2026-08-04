@@ -8,7 +8,7 @@ import { showToast } from '../../../shared/utils/toast';
 import { generateSessionId } from '../../../shared/utils/session';
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
-import type { VoiceNavigationData, NavigationOption } from '../types/voice-navigation.types';
+import type { VoiceNavigationData, NavigationOption, ConversationMessage } from '../types/voice-navigation.types';
 import type { GeocodingPlace } from '../types/navigation.types';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
@@ -89,6 +89,27 @@ export const useVoiceNavigation = ({
     const [assistantMessage, setAssistantMessage] = useState<string>('');
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [canReplay, setCanReplay] = useState(false);
+    const [messages, setMessages] = useState<ConversationMessage[]>([]);
+
+    const messageSeqRef = useRef(0);
+    const appendMessage = useCallback((role: ConversationMessage['role'], text: string) => {
+        const trimmed = text.trim();
+        if (!trimmed) return;
+        setMessages((prev) => {
+            const last = prev[prev.length - 1];
+            if (last && last.role === role && last.text === trimmed) return prev;
+            messageSeqRef.current += 1;
+            return [...prev, { id: `${role}-${messageSeqRef.current}`, role, text: trimmed }];
+        });
+    }, []);
+
+    const appendOptions = useCallback((opts: NavigationOption[]) => {
+        if (opts.length === 0) return;
+        setMessages((prev) => {
+            messageSeqRef.current += 1;
+            return [...prev, { id: `options-${messageSeqRef.current}`, role: 'options', text: '', options: opts }];
+        });
+    }, []);
 
     const socketRef = useRef<VoiceNavSocket | null>(null);
     const playerRef = useRef<StreamingPcmPlayer | null>(null);
@@ -157,6 +178,7 @@ export const useVoiceNavigation = ({
                 vlog(`transcription: "${data?.text ?? ''}"`);
                 if (data?.text) {
                     setTranscription(data.text);
+                    appendMessage('user', data.text);
                 }
                 break;
 
@@ -178,7 +200,10 @@ export const useVoiceNavigation = ({
 
             case 'speak':
                 vlog(`speak (about to stream): "${data?.message ?? ''}"`);
-                if (data?.message) setAssistantMessage(data.message);
+                if (data?.message) {
+                    setAssistantMessage(data.message);
+                    appendMessage('assistant', data.message);
+                }
                 break;
 
             case 'disambiguate': {
@@ -199,6 +224,7 @@ export const useVoiceNavigation = ({
                 setOptions(opts);
                 setCurrentOption(current);
                 if (data?.message) setDisambiguationMessage(data.message);
+                appendOptions(opts);
                 setShowOptions(true);
                 setShowVoiceModal(false);
                 finishProcessing();
@@ -292,7 +318,7 @@ export const useVoiceNavigation = ({
                 vlog('unhandled event type:', type);
                 break;
         }
-    }, [finishProcessing, handleDestination, setIsProcessing]);
+    }, [finishProcessing, handleDestination, setIsProcessing, appendMessage, appendOptions]);
 
 
     useEffect(() => {
@@ -448,6 +474,7 @@ export const useVoiceNavigation = ({
         setShowOptions(false);
         setTranscription('');
         setAssistantMessage('');
+        setMessages([]);
         playerRef.current?.stopPlayback();
         setIsSpeaking(false);
         setCanReplay(false);
@@ -514,6 +541,7 @@ export const useVoiceNavigation = ({
         showVoiceModal,
         transcription,
         assistantMessage,
+        messages,
         meteringLevel,
         isSpeaking,
         canReplay,

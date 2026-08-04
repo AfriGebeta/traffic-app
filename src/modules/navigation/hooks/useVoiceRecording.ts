@@ -1,8 +1,24 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Audio } from 'expo-av';
 import { showToast } from '../../../shared/utils/toast';
 
 const METERING_FLOOR_DB = -60;
+
+let activeRecording: Audio.Recording | null = null;
+
+const releaseActiveRecording = async () => {
+    const recording = activeRecording;
+    activeRecording = null;
+    if (!recording) return;
+    try {
+        await recording.stopAndUnloadAsync();
+    } catch {
+    }
+    try {
+        await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+    } catch {
+    }
+};
 
 export const useVoiceRecording = () => {
     const [isRecording, setIsRecording] = useState(false);
@@ -10,8 +26,16 @@ export const useVoiceRecording = () => {
     const [meteringLevel, setMeteringLevel] = useState(0);
     const recordingRef = useRef<Audio.Recording | null>(null);
 
+    useEffect(() => {
+        return () => {
+            recordingRef.current = null;
+            releaseActiveRecording();
+        };
+    }, []);
+
     const startRecording = async (): Promise<boolean> => {
         try {
+            await releaseActiveRecording();
             const { status } = await Audio.requestPermissionsAsync();
             if (status !== 'granted') {
                 showToast('Permission Denied: Microphone permission is required');
@@ -52,6 +76,7 @@ export const useVoiceRecording = () => {
             const { recording } = await Audio.Recording.createAsync(recordingOptions);
 
             recordingRef.current = recording;
+            activeRecording = recording;
             setIsRecording(true);
             setMeteringLevel(0);
 
@@ -88,26 +113,23 @@ export const useVoiceRecording = () => {
 
             if (durationMillis < 500) {
                 showToast('Recording Too Short: Please speak for at least 1 second');
-                await recordingRef.current.stopAndUnloadAsync();
-                await Audio.setAudioModeAsync({
-                    allowsRecordingIOS: false,
-                });
+                await releaseActiveRecording();
                 recordingRef.current = null;
                 return null;
             }
 
-            await recordingRef.current.stopAndUnloadAsync();
-            await Audio.setAudioModeAsync({
-                allowsRecordingIOS: false,
-            });
+            const recording = recordingRef.current;
+            await releaseActiveRecording();
 
-            const uri = recordingRef.current.getURI();
+            const uri = recording.getURI();
             recordingRef.current = null;
 
             return uri;
         } catch (error) {
             console.error('Failed to stop recording:', error);
             showToast('Recording Error: Could not stop recording');
+            recordingRef.current = null;
+            activeRecording = null;
             return null;
         }
     };
@@ -117,11 +139,8 @@ export const useVoiceRecording = () => {
             if (recordingRef.current) {
                 setIsRecording(false);
                 setMeteringLevel(0);
-                await recordingRef.current.stopAndUnloadAsync();
-                await Audio.setAudioModeAsync({
-                    allowsRecordingIOS: false,
-                });
                 recordingRef.current = null;
+                await releaseActiveRecording();
             }
         } catch (error) {
             console.error('Failed to cancel recording:', error);
