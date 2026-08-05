@@ -2808,5 +2808,140 @@
         "key": "resend-recording",
         "EN_US": "Resend",
         "AM": "እንደገና ላክ"
+    },
+    {
+        "key": "complete-your-profile",
+        "EN_US": "Complete your profile",
+        "AM": "መገለጫዎን ያሟሉ"
+    },
+    {
+        "key": "complete-profile-phone-and-gender",
+        "EN_US": "Just your phone number and gender, then you're all set.",
+        "AM": "ስልክ ቁጥርዎና ጾታዎ ብቻ ነው የቀረው።"
+    },
+    {
+        "key": "complete-profile-gender-only",
+        "EN_US": "One quick question before you continue.",
+        "AM": "ከመቀጠልዎ በፊት አንድ አጭር ጥያቄ።"
+    },
+    {
+        "key": "gender",
+        "EN_US": "Gender",
+        "AM": "ጾታ"
+    },
+    {
+        "key": "male",
+        "EN_US": "Male",
+        "AM": "ወንድ"
+    },
+    {
+        "key": "female",
+        "EN_US": "Female",
+        "AM": "ሴት"
+    },
+    {
+        "key": "error-select-gender",
+        "EN_US": "Please select your gender",
+        "AM": "እባክዎ ጾታዎን ይምረጡ"
+    },
+    {
+        "key": "invalid-phone-number",
+        "EN_US": "Enter a valid phone number",
+        "AM": "ትክክለኛ ስልክ ቁጥር ያስገቡ"
+    },
+    {
+        "key": "continue",
+        "EN_US": "Continue",
+        "AM": "ቀጥል"
+    },
+    {
+        "key": "phone-number-saved",
+        "EN_US": "Phone number saved",
+        "AM": "ስልክ ቁጥር ተቀምጧል"
+    },
+    {
+        "key": "error-enter-phone-number",
+        "EN_US": "Please enter your phone number",
+        "AM": "እባክዎ ስልክ ቁጥርዎን ያስገቡ"
+    },
+    {
+        "key": "error-phone-format",
+        "EN_US": "That number looks incomplete. Enter 9 digits, like 912345678",
+        "AM": "ቁጥሩ የተሟላ አይመስልም። እንደ 912345678 ያሉ 9 አሃዞች ያስገቡ"
+    },
+    {
+        "key": "error-enter-name",
+        "EN_US": "Please enter your name",
+        "AM": "እባክዎ ስምዎን ያስገቡ"
+    },
+    {
+        "key": "error-name-too-short",
+        "EN_US": "Your name is a bit short. Use at least 2 characters",
+        "AM": "ስምዎ በጣም አጭር ነው። ቢያንስ 2 ፊደላት ይጠቀሙ"
+    },
+    {
+        "key": "error-enter-password",
+        "EN_US": "Please enter your password",
+        "AM": "እባክዎ የይለፍ ቃልዎን ያስገቡ"
+    },
+    {
+        "key": "error-password-too-short",
+        "EN_US": "Password must be at least 8 characters",
+        "AM": "የይለፍ ቃል ቢያንስ 8 ፊደላት መሆን አለበት"
+    },
+    {
+        "key": "password-hint",
+        "EN_US": "At least 8 characters",
+        "AM": "ቢያንስ 8 ፊደላት"
+    },
+    {
+        "key": "error-wrong-phone-or-password",
+        "EN_US": "That phone number and password don't match. Please try again",
+        "AM": "ስልክ ቁጥሩና የይለፍ ቃሉ አልተገናኙም:: እባክዎ እንደገና ይሞክሩ"
+    },
+    {
+        "key": "error-no-account-for-number",
+        "EN_US": "No account uses this number yet. Let's get you registered",
+        "AM": "በዚህ ቁጥር የተመዘገበ መለያ የለም። እንመዝግብዎ"
+    },
+    {
+        "key": "error-number-already-registered",
+        "EN_US": "This number is already registered. Try logging in instead",
+        "AM": "ይህ ቁጥር አስቀድሞ ተመዝግቧል። ይግቡ"
+    },
+    {
+        "key": "error-number-in-use",
+        "EN_US": "This number is already used by another account",
+        "AM": "ይህ ቁጥር በሌላ መለያ ተይዟል"
+    },
+    {
+        "key": "error-check-your-details",
+        "EN_US": "Please check your details and try again",
+        "AM": "እባክዎ መረጃዎን አረጋግጠው እንደገና ይሞክሩ"
+    },
+    {
+        "key": "error-too-many-attempts",
+        "EN_US": "Too many attempts. Please wait a moment and try again",
+        "AM": "ብዙ ሙከራዎች። እባክዎ ትንሽ ቆይተው ይሞክሩ"
+    },
+    {
+        "key": "error-account-suspended",
+        "EN_US": "This account is suspended. Please contact support",
+        "AM": "ይህ መለያ ታግዷል። እባክዎ ድጋፍን ያግኙ"
+    },
+    {
+        "key": "error-no-connection",
+        "EN_US": "No internet connection. Check your network and try again",
+        "AM": "ኢንተርኔት የለም። ቆይተው ይሞክሩ"
+    },
+    {
+        "key": "error-server-busy",
+        "EN_US": "We're having trouble right now. Please try again shortly",
+        "AM": "አሁን ችግር አጋጥሞናል። እባክዎ ትንሽ ቆይተው ይሞክሩ"
+    },
+    {
+        "key": "error-something-went-wrong",
+        "EN_US": "Something went wrong. Please try again",
+        "AM": "የሆነ ችግር ተፈጥሯል። እባክዎ እንደገና ይሞክሩ"
     }
 ]

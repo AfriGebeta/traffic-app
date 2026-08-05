@@ -8,6 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { resolveLocationUrl, type SharedLocation } from '../shared/utils/deepLinking';
 import { useTheme } from '../shared/theme/ThemeContext';
 import { getColdStartHomePromptRoute } from '../modules/places/utils/homeOnboarding';
+import { resolveProfileGateRoute } from '../modules/register/utils/profileGate';
 
 const GUEST_MODE_KEY = '@traffic_app_guest_mode';
 
@@ -92,6 +93,12 @@ export default function Index() {
     }
 
     if (user) {
+      const gateRoute = await resolveProfileGateRoute();
+      if (gateRoute) {
+        router.replace(gateRoute as any);
+        return;
+      }
+
       const homePromptRoute = await getColdStartHomePromptRoute();
       if (homePromptRoute) {
         router.replace(homePromptRoute as any);

@@ -3,7 +3,7 @@ import { View, ActivityIndicator, Text } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import TelegramAuthService from '../shared/services/telegram-auth.service';
 import { getTelegramAuthConfig } from '../shared/config/telegram-auth.config';
-import { getPostAuthRoute } from '../modules/places/utils/homeOnboarding';
+import { resolveAfterAuthRoute } from '../modules/register/utils/profileGate';
 import { showToast } from '../shared/utils/toast';
 
 export default function TelegramAuth() {
@@ -26,7 +26,8 @@ export default function TelegramAuth() {
 
             if (success) {
                 showToast('Login successful');
-                const route = await getPostAuthRoute();
+
+                const route = await resolveAfterAuthRoute();
                 router.replace(route as any);
             } else {
                 showToast('Telegram authentication failed');

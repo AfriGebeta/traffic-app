@@ -25,6 +25,10 @@ import { ConfirmDialog } from '../../../components/ConfirmDialog';
 import { userService } from '../../register/services/user.service';
 import { useUserRegistration } from '../../register/hooks/useUserRegistration';
 import { User, UpdateProfileRequest } from '../../register/types/user.types';
+import { GenderSelect } from '../../register/components/GenderSelect';
+import { FieldError } from '../../register/components/FormError';
+import { toFullPhone, toLocalPhone, validateLocalPhone } from '../../register/utils/authValidation';
+import { toFriendlyAuthError } from '../../register/utils/authErrors';
 
 export const EditProfileScreen = () => {
     const router = useRouter();
@@ -37,6 +41,9 @@ export const EditProfileScreen = () => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [name, setName] = useState('');
+    const [phoneNumber, setPhoneNumber] = useState('');
+    const [sex, setSex] = useState<number | null>(null);
+    const [phoneError, setPhoneError] = useState<string | null>(null);
     const [pickedUri, setPickedUri] = useState<string | null>(null);
     const [uploadedImage, setUploadedImage] = useState<string | null>(null);
     const [removed, setRemoved] = useState(false);
@@ -48,8 +55,13 @@ export const EditProfileScreen = () => {
     // bypasses the dirty check for the one navigation the save flow triggers itself
     const allowNextLeaveRef = useRef(false);
 
+    const storedLocalPhone = toLocalPhone(user?.phoneNumber);
+    const storedSex = user?.sex === 0 || user?.sex === 1 ? user.sex : null;
+
     const isDirty = Boolean(user) && (
         name.trim() !== (user?.name || '') ||
+        phoneNumber.trim() !== storedLocalPhone ||
+        sex !== storedSex ||
         removed ||
         Boolean(uploadedImage)
     );
@@ -64,6 +76,8 @@ export const EditProfileScreen = () => {
         getStoredUser().then((storedUser) => {
             setUser(storedUser);
             setName(storedUser?.name || '');
+            setPhoneNumber(toLocalPhone(storedUser?.phoneNumber));
+            setSex(storedUser?.sex === 0 || storedUser?.sex === 1 ? storedUser.sex : null);
             setLoading(false);
         });
     }, []);
@@ -147,16 +161,27 @@ export const EditProfileScreen = () => {
         if (!user) return;
 
         const trimmedName = name.trim();
+        const trimmedPhone = phoneNumber.trim();
 
         if (!trimmedName) {
             showToast(t('name-required') || 'Name is required');
             return;
         }
 
+        const phoneIssue = validateLocalPhone(t, trimmedPhone);
+        setPhoneError(phoneIssue);
+        if (phoneIssue) return;
+
         const payload: UpdateProfileRequest = {};
 
         if (trimmedName !== user.name) {
             payload.name = trimmedName;
+        }
+        if (trimmedPhone !== storedLocalPhone) {
+            payload.phoneNumber = toFullPhone(trimmedPhone);
+        }
+        if (sex !== null && sex !== storedSex) {
+            payload.sex = Number(sex);
         }
         if (removed) {
             payload.profileImage = null;
@@ -164,7 +189,7 @@ export const EditProfileScreen = () => {
             payload.profileImage = uploadedImage;
         }
 
-        if (payload.name === undefined && payload.profileImage === undefined) {
+        if (Object.keys(payload).length === 0) {
             allowNextLeaveRef.current = true;
             router.back();
             return;
@@ -175,13 +200,21 @@ export const EditProfileScreen = () => {
             const response = await userService.updateProfile(user.id, payload);
 
             if (response.error || !response.data) {
-                showToast(response.error || t('failed-to-update-profile') || 'Failed to update profile');
+                const { code, message } = toFriendlyAuthError(t, 'profile', response.error, response.status);
+
+                if (code === 'ALREADY_REGISTERED' && payload.phoneNumber) {
+                    setPhoneError(message);
+                } else {
+                    showToast(message);
+                }
                 return;
             }
 
             const updatedUser = 'user' in response.data ? response.data.user : response.data;
             await updateStoredUser({
                 name: updatedUser?.name ?? trimmedName,
+                ...(payload.phoneNumber ? { phoneNumber: updatedUser?.phoneNumber ?? payload.phoneNumber } : {}),
+                ...(payload.sex !== undefined ? { sex: updatedUser?.sex ?? payload.sex } : {}),
                 ...(removed
                     ? { profileImage: null, profileImageLocal: null }
                     : {
@@ -328,6 +361,56 @@ export const EditProfileScreen = () => {
                                     borderColor: theme.border,
                                     color: theme.textPrimary,
                                     backgroundColor: theme.surface,
+                                }}
+                            />
+
+                            <Text className="text-xs mt-5 mb-2" style={{ color: theme.textSecondary }}>
+                                {t('phone-number') || 'Phone Number'}
+                            </Text>
+                            <View
+                                className="flex-row items-center rounded-xl"
+                                style={{
+                                    borderWidth: 1,
+                                    borderColor: phoneError ? colors.error.main : theme.border,
+                                    backgroundColor: theme.surface,
+                                }}
+                            >
+                                <Text className="text-base pl-4" style={{ color: theme.textPrimary }}>
+                                    +251
+                                </Text>
+                                <TextInput
+                                    value={phoneNumber}
+                                    onChangeText={(text) => {
+                                        setPhoneNumber(text.replace(/\D/g, ''));
+                                        setPhoneError(null);
+                                    }}
+                                    placeholder="912345678"
+                                    placeholderTextColor={theme.textSecondary}
+                                    keyboardType="phone-pad"
+                                    maxLength={9}
+                                    editable={!saving}
+                                    className="flex-1 px-2 py-3 text-base"
+                                    style={{ color: theme.textPrimary }}
+                                />
+                            </View>
+                            <FieldError message={phoneError} />
+
+                            <Text className="text-xs mt-5 mb-2" style={{ color: theme.textSecondary }}>
+                                {t('gender') || 'Gender'}
+                            </Text>
+                            <GenderSelect
+                                value={sex}
+                                onChange={setSex}
+                                maleLabel={t('male') || 'Male'}
+                                femaleLabel={t('female') || 'Female'}
+                                disabled={saving}
+                                palette={{
+                                    surface: theme.surface,
+                                    border: theme.border,
+                                    text: theme.textPrimary,
+                                    selectedSurface: theme.primaryMuted,
+                                    selectedBorder: theme.primary,
+                                    selectedText: theme.textPrimary,
                                 }}
                             />
 

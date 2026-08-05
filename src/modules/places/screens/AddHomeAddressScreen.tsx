@@ -477,7 +477,7 @@ export const AddHomeAddressScreen = () => {
                 {t('missing-address-record-again')}
             </Text>
 
-            <View className="flex-row flex-wrap" style={{ gap: 8 }}>
+            <View className="flex-row flex-wrap" style={{ gap: 8, alignItems: 'flex-start' }}>
                 {HOME_ADDRESS_REQUIRED_FIELDS.map(field => {
                     const isMissing = missingFields.includes(field);
                     const capturedValue = capturedAddress[field];
@@ -486,6 +486,7 @@ export const AddHomeAddressScreen = () => {
                             key={field}
                             className="flex-row items-center px-3 py-1.5"
                             style={{
+                                maxWidth: '100%',
                                 borderWidth: 1,
                                 borderRadius: 6,
                                 borderColor: isMissing ? theme.error : theme.textSecondary,
@@ -498,8 +499,11 @@ export const AddHomeAddressScreen = () => {
                                 color={isMissing ? theme.error : theme.textSecondary}
                             />
                             <Text
+                                numberOfLines={1}
+                                ellipsizeMode="tail"
                                 className="text-sm ml-1.5"
                                 style={{
+                                    flexShrink: 1,
                                     color: isMissing ? theme.error : theme.textSecondary,
                                     fontWeight: isMissing ? '700' : '400',
                                 }}

@@ -4,9 +4,16 @@ import { useTranslation } from 'react-i18next';
 import { userService } from '../services/user.service';
 import { AuthResponse, UserRegistrationRequest } from '../types/user.types';
 import { resetHomeOnboarding } from '../../places/utils/homeOnboarding';
+import { AuthErrorCode, toFriendlyAuthError } from '../utils/authErrors';
 
 const USER_STORAGE_KEY = '@traffic_app_user';
 const TOKEN_STORAGE_KEY = '@traffic_app_token';
+
+export interface RegisterResult {
+    data: AuthResponse | null;
+    error: string | null;
+    code: AuthErrorCode | null;
+}
 
 const sanitizeName = (name?: string | null): string =>
     (name || '').replace(/\s+undefined$/i, '').trim();
@@ -19,7 +26,13 @@ export const useUserRegistration = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const register = async (data: UserRegistrationRequest): Promise<AuthResponse | null> => {
+    const fail = (raw?: string, status?: number): RegisterResult => {
+        const { code, message } = toFriendlyAuthError(t, 'register', raw, status);
+        setError(message);
+        return { data: null, error: message, code };
+    };
+
+    const register = async (data: UserRegistrationRequest): Promise<RegisterResult> => {
         setLoading(true);
         setError(null);
 
@@ -27,40 +40,22 @@ export const useUserRegistration = () => {
             const response = await userService.register(data);
 
             if (response.error) {
-                let errorMessage = response.error;
-
-                if (errorMessage.toLowerCase().includes('already') ||
-                    errorMessage.toLowerCase().includes('exist') ||
-                    errorMessage.toLowerCase().includes('duplicate') ||
-                    errorMessage.toLowerCase().includes('registered')) {
-                    errorMessage = t('user-already-registered') || 'This phone number is already registered. Please login instead.';
-                } else if (errorMessage.toLowerCase().includes('invalid')) {
-                    errorMessage = t('invalid-phone-or-name') || 'Invalid phone number or name. Please check your details.';
-                } else if (errorMessage.toLowerCase().includes('network')) {
-                    errorMessage = t('network-error') || 'Network error. Please check your connection.';
-                }
-
-                setError(errorMessage);
-                setLoading(false);
-                throw new Error(errorMessage);
+                return fail(response.error, response.status);
             }
 
-            if (response.data) {
-
-                const { password, ...userWithoutPassword } = response.data.user;
-                await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userWithoutPassword));
-                await AsyncStorage.setItem(TOKEN_STORAGE_KEY, response.data.token);
-                setLoading(false);
-                return response.data;
+            if (!response.data?.token) {
+                return fail(response.message, response.status);
             }
 
-            setLoading(false);
-            return null;
+            const { password, ...userWithoutPassword } = response.data.user;
+            await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userWithoutPassword));
+            await AsyncStorage.setItem(TOKEN_STORAGE_KEY, response.data.token);
+
+            return { data: response.data, error: null, code: null };
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : (t('registration-failed') || 'Registration failed');
-            setError(errorMessage);
+            return fail(err instanceof Error ? err.message : undefined);
+        } finally {
             setLoading(false);
-            throw err;
         }
     };
 

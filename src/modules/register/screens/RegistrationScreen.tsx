@@ -7,7 +7,9 @@ import { useTranslation } from 'react-i18next';
 import { colors } from '../../../shared/theme/colors';
 import { LanguageSwitcher } from '../../../shared/components/LanguageSwitcher';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getPostAuthRoute } from '../../places/utils/homeOnboarding';
+import { resolveAfterAuthRoute } from '../utils/profileGate';
+import { FieldError, FormError } from '../components/FormError';
+import { validateLocalPhone, validateName, validatePassword } from '../utils/authValidation';
 
 const GUEST_MODE_KEY = '@traffic_app_guest_mode';
 
@@ -17,61 +19,57 @@ export default function RegistrationScreen() {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [name, setName] = useState('');
     const [password, setPassword] = useState('');
-    const { register, loading, error } = useUserRegistration();
+    const [formError, setFormError] = useState<string | null>(null);
+    const [nameError, setNameError] = useState<string | null>(null);
+    const [phoneError, setPhoneError] = useState<string | null>(null);
+    const [passwordError, setPasswordError] = useState<string | null>(null);
+    const { register, loading } = useUserRegistration();
 
     const navigateToLogin = () => {
         router.replace('/login' as any);
     };
 
     const handleRegister = async () => {
-        if (!phoneNumber.trim()) {
-            showToast(t('phone-number-required') || 'Phone number is required');
-            return;
-        }
+        setFormError(null);
 
-        if (!name.trim()) {
-            showToast(t('name-required') || 'Name is required');
-            return;
-        }
+        const nameIssue = validateName(t, name);
+        const phoneIssue = validateLocalPhone(t, phoneNumber);
+        const passwordIssue = validatePassword(t, password);
 
-        if (!password.trim()) {
-            showToast(t('password-required') || 'Password is required');
-            return;
-        }
+        setNameError(nameIssue);
+        setPhoneError(phoneIssue);
+        setPasswordError(passwordIssue);
 
-        if (password.length < 6) {
-            showToast(t('password-too-short') || 'Password must be at least 6 characters');
+        if (nameIssue || phoneIssue || passwordIssue) {
             return;
         }
 
         const fullPhoneNumber = `+251${phoneNumber.trim()}`;
+        const { data, error, code } = await register({
+            phoneNumber: fullPhoneNumber,
+            name: name.trim(),
+            password: password.trim(),
+        });
 
-        try {
-            const result = await register({
-                phoneNumber: fullPhoneNumber,
-                name: name.trim(),
-                password: password.trim()
-            });
-
-            if (result) {
-                showToast(t('registration-successful') || 'Registration successful');
-                const route = await getPostAuthRoute();
-                setTimeout(() => {
-                    router.replace(route as any);
-                }, 1000);
-            }
-        } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Registration failed';
-            showToast(errorMessage);
-
-            if (errorMessage.toLowerCase().includes('already registered') ||
-                errorMessage.toLowerCase().includes('already exist')) {
-                setTimeout(() => {
-                    showToast(t('redirecting-to-login') || 'Redirecting to login...');
-                    setTimeout(() => navigateToLogin(), 1500);
-                }, 2000);
-            }
+        if (data) {
+            showToast(t('registration-successful') || 'Registration successful');
+            const route = await resolveAfterAuthRoute();
+            setTimeout(() => {
+                router.replace(route as any);
+            }, 1000);
+            return;
         }
+
+        if (code === 'ALREADY_REGISTERED') {
+            setPhoneError(error);
+            setTimeout(() => {
+                showToast(t('redirecting-to-login') || 'Redirecting to login...');
+                setTimeout(() => navigateToLogin(), 1500);
+            }, 2000);
+            return;
+        }
+
+        setFormError(error);
     };
 
     const handleGuestMode = async () => {
@@ -115,39 +113,55 @@ export default function RegistrationScreen() {
                     </View>
 
                     <View className="mb-6">
+                        <FormError message={formError} />
+
                         <View className="mb-4">
                             <Text className="text-sm font-bold text-gray-900 mb-2">
                                 {t('name')}
                             </Text>
                             <TextInput
-                                className="bg-gray-50 border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900 font-semibold"
+                                className="bg-gray-50 border rounded-xl px-4 py-3.5 text-base text-gray-900 font-semibold"
+                                style={{ borderColor: nameError ? colors.error.main : '#D1D5DB' }}
                                 placeholder={t('enter-your-name') || 'Enter your name'}
                                 placeholderTextColor="#9CA3AF"
                                 value={name}
-                                onChangeText={setName}
+                                onChangeText={(text) => {
+                                    setName(text);
+                                    setNameError(null);
+                                    setFormError(null);
+                                }}
                                 autoCapitalize="words"
                                 editable={!loading}
                             />
+                            <FieldError message={nameError} />
                         </View>
 
                         <View className="mb-5">
                             <Text className="text-sm font-bold text-gray-900 mb-2">
                                 {t('phone-number')}
                             </Text>
-                            <View className="flex-row items-center bg-gray-50 border border-gray-300 rounded-xl">
+                            <View
+                                className="flex-row items-center bg-gray-50 border rounded-xl"
+                                style={{ borderColor: phoneError ? colors.error.main : '#D1D5DB' }}
+                            >
                                 <Text className="text-base font-semibold text-gray-900 pl-4">+251</Text>
                                 <TextInput
                                     className="flex-1 px-2 py-3.5 text-base text-gray-900 font-semibold"
                                     placeholder="912345678"
                                     placeholderTextColor="#9CA3AF"
                                     value={phoneNumber}
-                                    onChangeText={setPhoneNumber}
+                                    onChangeText={(text) => {
+                                        setPhoneNumber(text.replace(/\D/g, ''));
+                                        setPhoneError(null);
+                                        setFormError(null);
+                                    }}
                                     keyboardType="phone-pad"
                                     autoCapitalize="none"
                                     editable={!loading}
                                     maxLength={9}
                                 />
                             </View>
+                            <FieldError message={phoneError} />
                         </View>
 
                         <View className="mb-6">
@@ -155,15 +169,26 @@ export default function RegistrationScreen() {
                                 {t('password')}
                             </Text>
                             <TextInput
-                                className="bg-gray-50 border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900 font-semibold"
+                                className="bg-gray-50 border rounded-xl px-4 py-3.5 text-base text-gray-900 font-semibold"
+                                style={{ borderColor: passwordError ? colors.error.main : '#D1D5DB' }}
                                 placeholder={t('enter-your-password') || 'Enter your password'}
                                 placeholderTextColor="#9CA3AF"
                                 value={password}
-                                onChangeText={setPassword}
+                                onChangeText={(text) => {
+                                    setPassword(text);
+                                    setPasswordError(null);
+                                    setFormError(null);
+                                }}
                                 secureTextEntry
                                 autoCapitalize="none"
                                 editable={!loading}
                             />
+                            <FieldError message={passwordError} />
+                            {!passwordError && (
+                                <Text className="text-xs text-gray-500 mt-1.5 ml-1">
+                                    {t('password-hint')}
+                                </Text>
+                            )}
                         </View>
 
                         <TouchableOpacity

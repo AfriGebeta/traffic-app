@@ -7,7 +7,9 @@ import { useTranslation } from 'react-i18next';
 import { colors } from '../../../shared/theme/colors';
 import { LanguageSwitcher } from '../../../shared/components/LanguageSwitcher';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getPostAuthRoute } from '../../places/utils/homeOnboarding';
+import { resolveAfterAuthRoute } from '../utils/profileGate';
+import { FieldError, FormError } from '../components/FormError';
+import { validateLocalPhone } from '../utils/authValidation';
 
 const GUEST_MODE_KEY = '@traffic_app_guest_mode';
 
@@ -16,37 +18,53 @@ export default function LoginScreen() {
     const router = useRouter();
     const [phoneNumber, setPhoneNumber] = useState('');
     const [password, setPassword] = useState('');
-    const { login, loading, error } = useUserLogin();
+    const [formError, setFormError] = useState<string | null>(null);
+    const [phoneError, setPhoneError] = useState<string | null>(null);
+    const [passwordError, setPasswordError] = useState<string | null>(null);
+    const { login, loading } = useUserLogin();
+
+    const clearErrors = () => {
+        setFormError(null);
+        setPhoneError(null);
+        setPasswordError(null);
+    };
 
     const handleLogin = async () => {
-        if (!phoneNumber.trim()) {
-            showToast(t('phone-number-required') || 'Phone number is required');
-            return;
-        }
+        clearErrors();
 
-        if (!password.trim()) {
-            showToast(t('password-required') || 'Password is required');
+        const phoneIssue = validateLocalPhone(t, phoneNumber);
+        const passwordIssue = !password ? t('error-enter-password') : null;
+
+        if (phoneIssue || passwordIssue) {
+            setPhoneError(phoneIssue);
+            setPasswordError(passwordIssue);
             return;
         }
 
         const fullPhoneNumber = `+251${phoneNumber.trim()}`;
-        const result = await login({ phoneNumber: fullPhoneNumber, password: password.trim() });
+        const { data, error, code } = await login({ phoneNumber: fullPhoneNumber, password: password.trim() });
 
-        if (result) {
+        if (data) {
             showToast(t('login-successful') || 'Login successful');
-            const route = await getPostAuthRoute();
+            const route = await resolveAfterAuthRoute();
             setTimeout(() => {
                 router.replace(route as any);
             }, 1000);
-        } else if (error) {
-            showToast(error);
+            return;
+        }
 
-            if (error.toLowerCase().includes('not found') || error.toLowerCase().includes('register first')) {
-                setTimeout(() => {
-                    showToast(t('redirecting-to-registration') || 'Redirecting to registration...');
-                    setTimeout(() => navigateToRegister(), 1500);
-                }, 2000);
-            }
+        if (code === 'INVALID_CREDENTIALS') {
+            setPasswordError(error);
+            return;
+        }
+
+        setFormError(error);
+
+        if (code === 'USER_NOT_FOUND') {
+            setTimeout(() => {
+                showToast(t('redirecting-to-registration') || 'Redirecting to registration...');
+                setTimeout(() => navigateToRegister(), 1500);
+            }, 2000);
         }
     };
 
@@ -95,24 +113,34 @@ export default function LoginScreen() {
                     </View>
 
                     <View className="mb-6">
+                        <FormError message={formError} />
+
                         <View className="mb-4">
                             <Text className="text-sm font-bold text-gray-900 mb-2">
                                 {t('phone-number') }
                             </Text>
-                            <View className="flex-row items-center bg-gray-50 border border-gray-300 rounded-xl">
+                            <View
+                                className="flex-row items-center bg-gray-50 border rounded-xl"
+                                style={{ borderColor: phoneError ? colors.error.main : '#D1D5DB' }}
+                            >
                                 <Text className="text-base font-semibold text-gray-900 pl-4">+251</Text>
                                 <TextInput
                                     className="flex-1 px-2 py-3.5 text-base text-gray-900 font-semibold"
                                     placeholder="912345678"
                                     placeholderTextColor="#9CA3AF"
                                     value={phoneNumber}
-                                    onChangeText={setPhoneNumber}
+                                    onChangeText={(text) => {
+                                        setPhoneNumber(text.replace(/\D/g, ''));
+                                        setPhoneError(null);
+                                        setFormError(null);
+                                    }}
                                     keyboardType="phone-pad"
                                     autoCapitalize="none"
                                     editable={!loading}
                                     maxLength={9}
                                 />
                             </View>
+                            <FieldError message={phoneError} />
                         </View>
 
                         <View className="mb-6">
@@ -120,15 +148,21 @@ export default function LoginScreen() {
                                 {t('password') }
                             </Text>
                             <TextInput
-                                className="bg-gray-50 border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900 font-semibold"
+                                className="bg-gray-50 border rounded-xl px-4 py-3.5 text-base text-gray-900 font-semibold"
+                                style={{ borderColor: passwordError ? colors.error.main : '#D1D5DB' }}
                                 placeholder={t('enter-your-password') }
                                 placeholderTextColor="#9CA3AF"
                                 value={password}
-                                onChangeText={setPassword}
+                                onChangeText={(text) => {
+                                    setPassword(text);
+                                    setPasswordError(null);
+                                    setFormError(null);
+                                }}
                                 secureTextEntry
                                 autoCapitalize="none"
                                 editable={!loading}
                             />
+                            <FieldError message={passwordError} />
                         </View>
 
                         <TouchableOpacity
