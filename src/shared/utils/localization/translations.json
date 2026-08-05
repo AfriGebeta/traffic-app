@@ -925,6 +925,16 @@
         "AM": "በአቅራቢያ ያስሱ"
     },
     {
+        "key": "explore-coming-soon",
+        "EN_US": "Coming Soon",
+        "AM": "በቅርቡ ይመጣል"
+    },
+    {
+        "key": "explore-coming-soon-subtitle",
+        "EN_US": "We're putting the finishing touches on Explore. Check back soon.",
+        "AM": "ኤክስፕሎርን በማጠናቀቅ ላይ ነን። በቅርቡ ይመለሱ።"
+    },
+    {
         "key": "museum-nearby",
         "EN_US": "Museums Nearby",
         "AM": "በአቅራቢያ ያሉ ሙዚየሞች"

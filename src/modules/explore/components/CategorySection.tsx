@@ -7,6 +7,7 @@ import { useTheme } from '../../../shared/theme/ThemeContext';
 import { PlaceCard } from './PlaceCard';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 import type { ExploreCategoryId } from '../types/explore.types';
+import type { PlaceholderPlace } from '../data/placeholderPlaces';
 
 interface CategorySectionProps {
     categoryId: ExploreCategoryId;
@@ -15,6 +16,7 @@ interface CategorySectionProps {
     onSeeMore: (categoryId: ExploreCategoryId) => void;
     onSeeLess: (categoryId: ExploreCategoryId) => void;
     isExpanded?: boolean;
+    imageBlurRadius?: number;
 }
 
 const CATEGORY_ICONS: Record<ExploreCategoryId, keyof typeof Ionicons.glyphMap> = {
@@ -32,6 +34,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
     onSeeMore,
     onSeeLess,
     isExpanded = false,
+    imageBlurRadius,
 }) => {
     const { t } = useTranslation();
     const { colors: theme } = useTheme();
@@ -45,7 +48,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
         <View className="mb-6">
             <View className="flex-row items-center justify-between mb-3">
                 <View className="flex-row items-center flex-1">
-                    <Text className="text-lg font-bold" style={{ color: theme.textPrimary }}>
+                    <Text className="text-lg" style={{ fontFamily: 'PlusJakartaSans-Bold', color: theme.textPrimary }}>
                         {t(`${categoryId}-nearby`)}
                     </Text>
                 </View>
@@ -68,7 +71,13 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {displayPlaces.map((place, index) => (
-                    <PlaceCard key={`${place.name}-${index}`} place={place} onPress={onPlacePress} />
+                    <PlaceCard
+                        key={`${place.name}-${index}`}
+                        place={place}
+                        onPress={onPlacePress}
+                        imageSource={(place as PlaceholderPlace).imageSource}
+                        imageBlurRadius={imageBlurRadius}
+                    />
                 ))}
             </ScrollView>
         </View>
