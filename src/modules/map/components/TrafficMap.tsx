@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useMemo } from 'react';
+import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react';
 import { View, Text, LogBox, BackHandler, StatusBar, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useFocusEffect, useRouter } from 'expo-router';
 import CustomGebetaMap from '../../../components/GebetaMap';
@@ -215,6 +215,22 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         setSelectedDestination(null);
         clearSearchMarker();
     };
+
+    const handleCancelRoutePreview = useCallback(() => {
+        setShowRoutePreview(false);
+        setShowPlaceDetail(false);
+        handleClearRoute();
+        setClickedLocation(null);
+        setTaxiRouteData(null);
+        setIsFromTaxiSearch(false);
+
+        router.setParams({
+            taxiDestLat: undefined,
+            taxiDestLng: undefined,
+            taxiDestName: undefined,
+            showTaxiMode: undefined,
+        });
+    }, [handleClearRoute, setShowRoutePreview]);
 
     const handleContributeFromPlaceDetail = (location: { lat: number; lng: number }) => {
         setShowPlaceDetail(false);
@@ -935,6 +951,25 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     }, [taxiRouteData, isMapLoaded]);
 
     useEffect(() => {
+        if (navigationMode) return;
+        if (!showRoutePreview && !showPlaceDetail) return;
+
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+            if (showReportOptions || isOnIncidentReportScreen) {
+                return false;
+            }
+            if (showRoutePreview) {
+                handleCancelRoutePreview();
+            } else {
+                handleClosePlaceDetail();
+            }
+            return true;
+        });
+
+        return () => backHandler.remove();
+    }, [navigationMode, showRoutePreview, showPlaceDetail, showReportOptions, isOnIncidentReportScreen, handleCancelRoutePreview]);
+
+    useEffect(() => {
         if (!navigationMode) return;
 
         const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -1221,21 +1256,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                             },
                         });
                     }}
-                    onCancel={() => {
-                        setShowRoutePreview(false);
-                        setShowPlaceDetail(false);
-                        handleClearRoute();
-                        setClickedLocation(null);
-                        setTaxiRouteData(null);
-                        setIsFromTaxiSearch(false);
-
-                        router.setParams({
-                            taxiDestLat: undefined,
-                            taxiDestLng: undefined,
-                            taxiDestName: undefined,
-                            showTaxiMode: undefined,
-                        });
-                    }}
+                    onCancel={handleCancelRoutePreview}
                     destination={selectedDestination}
                     userLocation={userLocation}
                     onTaxiRouteChange={(taxiRoute) => setTaxiRouteData(taxiRoute)}
