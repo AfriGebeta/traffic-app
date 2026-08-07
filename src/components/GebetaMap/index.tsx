@@ -51,6 +51,16 @@ const MINIBUS_SELECTED_IMAGE = require('../../../assets/images/minibus-selected.
 const TAXI_MARKER_IMAGE = require('../../../assets/images/taxi-marker.png');
 
 const EXPLORE_FALLBACK_IMAGE = require('../../../assets/images/other.png');
+let homeFollowPaused = false;
+
+const HOME_FOLLOW_MIN_MOVE_METERS = 25;
+
+const HOME_PAN_PIXEL_TOLERANCE = 30;
+const HOME_ZOOM_TOLERANCE = 0.25;
+
+const EMPTY_FEATURE_COLLECTION = { type: 'FeatureCollection' as const, features: [] };
+
+const HOME_FOLLOW_MAX_DRIFT_METERS = 120;
 
 const EXPLORE_IMAGES: Record<string, any> = {
     restaurant: require('../../../assets/images/restaurant.png'),
@@ -832,8 +842,28 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         const mapHeightRef = useRef(0);
         const hasStartedNavigating = useRef(false);
         const userHasZoomedOut = useRef(false);
-        const homeFollowPausedRef = useRef(false);
         const lastHomeFollowPanAtRef = useRef(0);
+        const lastHomeFollowCenterRef = useRef<{ lat: number; lng: number } | null>(null);
+        const lastRegionCenterRef = useRef<[number, number] | null>(null);
+        const pendingHomeResetRef = useRef(false);
+
+        const commandedCenterRef = useRef<[number, number] | null>(null);
+        const prevCommandedCenterRef = useRef<[number, number] | null>(null);
+        const commandedZoomRef = useRef<number | null>(null);
+        const lastKnownZoomRef = useRef<number | null>(null);
+        const lastSettledCenterRef = useRef<[number, number] | null>(null);
+
+        const markHomeCommand = useCallback((
+            commandCenter: [number, number],
+            commandZoom?: number,
+        ) => {
+            prevCommandedCenterRef.current = commandedCenterRef.current;
+            commandedCenterRef.current = commandCenter;
+            if (commandZoom !== undefined) {
+                commandedZoomRef.current = commandZoom;
+                lastKnownZoomRef.current = commandZoom;
+            }
+        }, []);
         const cameraSuspendedRef = useRef(false);
         const cameraResumeUntilRef = useRef(0);
         const NAV_ZOOM = getAppConfig().navZoom;
@@ -896,6 +926,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             if (cameraRef.current) {
                 pendingFlyTo.current = null;
                 lastFlyToAtRef.current = Date.now();
+                markHomeCommand(options.center, options.zoom);
                 cameraRef.current.setCamera(cameraConfig);
                 const issuedAt = Date.now();
                 const token = ++flyToTokenRef.current;
@@ -905,13 +936,14 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         cameraRef.current &&
                         lastRegionEventAtRef.current < issuedAt
                     ) {
+                        markHomeCommand(options.center, options.zoom);
                         cameraRef.current.setCamera(cameraConfig);
                     }
                 }, 300);
             } else {
                 pendingFlyTo.current = options;
             }
-        }, []);
+        }, [markHomeCommand]);
 
         const unlockNavCamera = useCallback((_reason: string) => {
             if (userHasZoomedOut.current) {
@@ -929,7 +961,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         const handleMapTouchForUnlock = useCallback(() => {
             if (!isNavigating) {
                 if (externalCameraControl) {
-                    homeFollowPausedRef.current = true;
+                    homeFollowPaused = true;
                 }
                 return;
             }
@@ -999,16 +1031,33 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             }
         }, [isNavigating, navCameraFree, unlockNavCamera]);
 
+        const handleRegionWillChange = useCallback((e: any) => {
+            const props = e.properties ?? {};
+            if (
+                !isNavigating &&
+                externalCameraControl &&
+                props.isUserInteraction === true &&
+                props.animated !== true
+            ) {
+                homeFollowPaused = true;
+            }
+
+            if (isNavigating && !navCameraFree) {
+                handleNavigationGestureUnlock(e, 'region-will-change');
+            }
+        }, [isNavigating, externalCameraControl, navCameraFree, handleNavigationGestureUnlock]);
+
         const centerLng = center?.[0];
         const centerLat = center?.[1];
         const exploreCenterAppliedRef = useRef(false);
         useEffect(() => {
             if (isNavigating || !externalCameraControl) return;
             if (centerLng == null || centerLat == null || !cameraRef.current) return;
-            if (homeFollowPausedRef.current) return;
+            if (homeFollowPaused) return;
 
             const firstApply = !exploreCenterAppliedRef.current;
             exploreCenterAppliedRef.current = true;
+            markHomeCommand([centerLng, centerLat], firstApply ? (zoom ?? 15) : undefined);
             cameraRef.current.setCamera({
                 centerCoordinate: [centerLng, centerLat],
                 ...(firstApply ? { zoomLevel: zoom ?? 15 } : {}),
@@ -1020,11 +1069,41 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         useEffect(() => {
             if (isNavigating || !externalCameraControl) return;
             if (!userLocation || !cameraRef.current) return;
-            if (homeFollowPausedRef.current) return;
+            if (homeFollowPaused) return;
 
             const now = Date.now();
             if (now - lastHomeFollowPanAtRef.current < 400) return;
+
+            const lastCenter = lastHomeFollowCenterRef.current;
+            if (
+                lastCenter &&
+                calculateDistance(
+                    lastCenter.lat,
+                    lastCenter.lng,
+                    userLocation.lat,
+                    userLocation.lng,
+                ) < HOME_FOLLOW_MIN_MOVE_METERS
+            ) {
+                return;
+            }
+
+            const cameraCenter = lastRegionCenterRef.current;
+            if (
+                cameraCenter &&
+                calculateDistance(
+                    cameraCenter[1],
+                    cameraCenter[0],
+                    userLocation.lat,
+                    userLocation.lng,
+                ) > HOME_FOLLOW_MAX_DRIFT_METERS
+            ) {
+                homeFollowPaused = true;
+                return;
+            }
+
             lastHomeFollowPanAtRef.current = now;
+            lastHomeFollowCenterRef.current = { lat: userLocation.lat, lng: userLocation.lng };
+            markHomeCommand([userLocation.lng, userLocation.lat]);
 
             cameraRef.current.setCamera({
                 centerCoordinate: [userLocation.lng, userLocation.lat],
@@ -1279,12 +1358,55 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 }
             } else if (!isNavigating && hasStartedNavigating.current) {
                 hasStartedNavigating.current = false;
+                lastFreeCameraRef.current = null;
+                lastRegionCenterRef.current = null;
+
+                homeFollowPaused = false;
+                lastHomeFollowCenterRef.current = null;
+                commandedCenterRef.current = null;
+                prevCommandedCenterRef.current = null;
+                commandedZoomRef.current = null;
+                lastKnownZoomRef.current = null;
+                lastSettledCenterRef.current = null;
+                pendingHomeResetRef.current = true;
                 userHasZoomedOut.current = false;
                 setNavCameraFree(false);
                 navGraceUntilRef.current = 0;
                 lastRegionSnapshotRef.current = null;
             }
         }, [isNavigating, userLocation, userHeading, markAnimatedProgrammaticCamera]);
+
+        useEffect(() => {
+            if (!pendingHomeResetRef.current) return;
+            if (isNavigating || !externalCameraControl) return;
+            if (!userLocation) return;
+
+            const applyHomeReset = () => {
+                if (!cameraRef.current || !pendingHomeResetRef.current) return false;
+                pendingHomeResetRef.current = false;
+                markHomeCommand([userLocation.lng, userLocation.lat], zoom ?? 15);
+                lastHomeFollowCenterRef.current = { lat: userLocation.lat, lng: userLocation.lng };
+                cameraRef.current.setCamera({
+                    centerCoordinate: [userLocation.lng, userLocation.lat],
+                    zoomLevel: zoom ?? 15,
+                    heading: 0,
+                    pitch: 0,
+                    padding: { paddingTop: 0 },
+                    animationDuration: 400,
+                    animationMode: 'easeTo',
+                });
+                return true;
+            };
+
+            if (applyHomeReset()) return;
+
+            const frameId = requestAnimationFrame(() => {
+                if (!applyHomeReset()) {
+                    setTimeout(applyHomeReset, 150);
+                }
+            });
+            return () => cancelAnimationFrame(frameId);
+        }, [isNavigating, externalCameraControl, userLocation?.lat, userLocation?.lng, zoom]);
 
         useLayoutEffect(() => {
             if (!pendingRecenterRef.current || navCameraFree || !isNavigating) return;
@@ -1310,18 +1432,42 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             opacity: routeStyle?.opacity || 0.8,
         };
 
+        const previewRouteShape = useMemo(() => (
+            !isNavigating && routeGeoJSON && !segmentedRoutes
+                ? routeGeoJSON
+                : EMPTY_FEATURE_COLLECTION
+        ), [isNavigating, routeGeoJSON, segmentedRoutes]);
+
         const hasAlternativeRoutes = !isNavigating
             && !segmentedRoutes
             && !routeStyle?.isDotted
             && Array.isArray(alternativeRoutesGeoJSON)
             && alternativeRoutesGeoJSON.length > 0;
 
+        const alternativeRoutesShape = useMemo(() => (
+            hasAlternativeRoutes
+                ? {
+                    type: 'FeatureCollection' as const,
+                    features: alternativeRoutesGeoJSON!.map((alt: any) => (
+                        alt?.type === 'FeatureCollection' ? alt.features ?? [] : [alt]
+                    )).flat(),
+                }
+                : EMPTY_FEATURE_COLLECTION
+        ), [hasAlternativeRoutes, alternativeRoutesGeoJSON]);
+
         useImperativeHandle(ref, () => ({
             flyTo: (options: any) => {
                 applyFlyTo(options);
             },
             resumeFollow: () => {
-                homeFollowPausedRef.current = false;
+                homeFollowPaused = false;
+                lastHomeFollowCenterRef.current = null;
+
+                lastRegionCenterRef.current = null;
+                commandedCenterRef.current = null;
+                prevCommandedCenterRef.current = null;
+                commandedZoomRef.current = null;
+                lastSettledCenterRef.current = null;
             },
             recenterNavigation: () => {
                 userHasZoomedOut.current = false;
@@ -1432,21 +1578,25 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         }, [center?.[0], center?.[1], zoom, isNavigating, mapStyleState, applyInitialCamera, externalCameraControl]);
 
         const handleStyleLoad = useCallback(() => {
+            const settledCenter = lastRegionCenterRef.current;
+            const settledZoom = lastKnownZoomRef.current;
             if (
                 externalCameraControl &&
                 pendingStyleRestoreRef.current &&
-                lastFreeCameraRef.current &&
+                settledCenter &&
+                settledZoom !== null &&
                 Date.now() - lastFlyToAtRef.current > 2500
             ) {
+                markHomeCommand(settledCenter, settledZoom);
                 cameraRef.current?.setCamera({
-                    centerCoordinate: lastFreeCameraRef.current.center,
-                    zoomLevel: lastFreeCameraRef.current.zoom,
+                    centerCoordinate: settledCenter,
+                    zoomLevel: settledZoom,
                     animationDuration: 0,
                     animationMode: 'moveTo',
                 });
             }
             pendingStyleRestoreRef.current = false;
-        }, [externalCameraControl]);
+        }, [externalCameraControl, markHomeCommand]);
 
         const handleMapLoad = useCallback(() => {
             if (!externalCameraControl) {
@@ -1508,6 +1658,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         compassViewPosition={1}
                         compassViewMargins={{ x: 16, y: 130 }}
                         {...({ onTouchStart: handleMapTouchForUnlock } as Record<string, unknown>)}
+                        onRegionWillChange={handleRegionWillChange}
                         onPress={async (e) => {
                             const coords = (e.geometry as any)?.coordinates;
                             if (!coords || !onMapClick) return;
@@ -1535,6 +1686,9 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         onRegionIsChanging={(e: any) => {
                             lastRegionEventAtRef.current = Date.now();
                             const c = e.geometry?.coordinates;
+                            if (Array.isArray(c)) {
+                                lastRegionCenterRef.current = [c[0], c[1]];
+                            }
                             const zoomLevel = e.properties?.zoomLevel ?? e.properties?.zoom;
 
                             if (isNavigating && navCameraFree) {
@@ -1561,17 +1715,63 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         onRegionDidChange={(e: any) => {
                             const centerCoords = e.geometry?.coordinates;
                             if (Array.isArray(centerCoords)) {
+                                lastRegionCenterRef.current = [centerCoords[0], centerCoords[1]];
                                 onRegionCenterChange?.([centerCoords[0], centerCoords[1]]);
                             }
 
                             if (isNavigating || !externalCameraControl) return;
-                            if (Date.now() - lastFlyToAtRef.current < 2500) return;
 
                             const props = e.properties;
                             const zoomLevel = props?.zoomLevel ?? props?.zoom;
-                            const c = e.geometry?.coordinates;
-                            if (Array.isArray(c) && zoomLevel !== undefined) {
-                                lastFreeCameraRef.current = { center: [c[0], c[1]], zoom: zoomLevel };
+
+                            if (Array.isArray(centerCoords) && zoomLevel !== undefined) {
+                                const accepted = ([
+                                    commandedCenterRef.current,
+                                    prevCommandedCenterRef.current,
+                                ].filter(Boolean) as [number, number][]);
+                                if (accepted.length === 0 && lastSettledCenterRef.current) {
+                                    accepted.push(lastSettledCenterRef.current);
+                                }
+                                if (accepted.length > 0) {
+                                    const metersPerPixel =
+                                        (156543.03392 *
+                                            Math.cos((centerCoords[1] * Math.PI) / 180)) /
+                                        Math.pow(2, zoomLevel);
+                                    const offsetPixels = Math.min(
+                                        ...accepted.map((commanded) =>
+                                            calculateDistance(
+                                                commanded[1],
+                                                commanded[0],
+                                                centerCoords[1],
+                                                centerCoords[0],
+                                            ) / metersPerPixel,
+                                        ),
+                                    );
+                                    if (offsetPixels > HOME_PAN_PIXEL_TOLERANCE) {
+                                        homeFollowPaused = true;
+                                    }
+                                }
+
+                                const expectedZoom =
+                                    commandedZoomRef.current ?? lastKnownZoomRef.current;
+                                if (
+                                    expectedZoom !== null &&
+                                    Math.abs(zoomLevel - expectedZoom) > HOME_ZOOM_TOLERANCE
+                                ) {
+                                    homeFollowPaused = true;
+                                }
+                                lastKnownZoomRef.current = zoomLevel;
+                                commandedZoomRef.current = null;
+                                lastSettledCenterRef.current = [centerCoords[0], centerCoords[1]];
+                            }
+
+                            if (Date.now() - lastFlyToAtRef.current < 2500) return;
+
+                            if (Array.isArray(centerCoords) && zoomLevel !== undefined) {
+                                lastFreeCameraRef.current = {
+                                    center: [centerCoords[0], centerCoords[1]],
+                                    zoom: zoomLevel,
+                                };
                             }
                         }}
                         onDidFinishLoadingMap={handleMapLoad}
@@ -1625,24 +1825,21 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         })}
 
 
-                        {hasAlternativeRoutes && alternativeRoutesGeoJSON!.map((altGeoJSON: any, i: number) => (
-                            <MapLibreGL.ShapeSource
-                                key={`route-alternative-${i}`}
-                                id={`route-alternative-source-${i}`}
-                                shape={altGeoJSON}
-                            >
-                                <MapLibreGL.LineLayer
-                                    id={`route-alternative-layer-${i}`}
-                                    style={{
-                                        lineColor: colors.primary.main,
-                                        lineWidth: 5,
-                                        lineOpacity: 0.5,
-                                        lineCap: 'round',
-                                        lineJoin: 'round',
-                                    }}
-                                />
-                            </MapLibreGL.ShapeSource>
-                        ))}
+                        <MapLibreGL.ShapeSource
+                            id="route-alternative-source"
+                            shape={alternativeRoutesShape}
+                        >
+                            <MapLibreGL.LineLayer
+                                id="route-alternative-layer"
+                                style={{
+                                    lineColor: colors.primary.main,
+                                    lineWidth: 5,
+                                    lineOpacity: 0.5,
+                                    lineCap: 'round',
+                                    lineJoin: 'round',
+                                }}
+                            />
+                        </MapLibreGL.ShapeSource>
 
                         {hasAlternativeRoutes && routeTimeLabels?.map((item, i) => (
                             <MapLibreGL.PointAnnotation
@@ -1696,25 +1893,24 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             </MapLibreGL.PointAnnotation>
                         ))}
 
-                        {!isNavigating && routeGeoJSON && !segmentedRoutes && (
-                            <MapLibreGL.ShapeSource
-                                key={`route-preview-${routeStyle?.isDotted ? 'dotted' : 'solid'}`}
-                                id={`route-preview-source-${routeStyle?.isDotted ? 'dotted' : 'solid'}`}
-                                shape={routeGeoJSON}
-                            >
-                                <MapLibreGL.LineLayer
-                                    id={`route-preview-layer-${routeStyle?.isDotted ? 'dotted' : 'solid'}`}
-                                    style={{
-                                        lineColor: defaultRouteStyle.color,
-                                        lineWidth: routeStyle?.isDotted ? 6 : defaultRouteStyle.width,
-                                        lineOpacity: activeSegmentGeoJSON ? 0.35 : (routeStyle?.isDotted ? 1 : defaultRouteStyle.opacity),
-                                        lineCap: 'round',
-                                        lineJoin: 'round',
-                                        ...(routeStyle?.isDotted && { lineDasharray: [0, 2] }),
-                                    }}
-                                />
-                            </MapLibreGL.ShapeSource>
-                        )}
+                        <MapLibreGL.ShapeSource
+                            id="route-preview-source"
+                            shape={previewRouteShape}
+                        >
+                            <MapLibreGL.LineLayer
+                                id="route-preview-layer"
+                                style={{
+                                    lineColor: defaultRouteStyle.color,
+                                    lineWidth: routeStyle?.isDotted ? 6 : defaultRouteStyle.width,
+                                    lineOpacity: activeSegmentGeoJSON ? 0.35 : (routeStyle?.isDotted ? 1 : defaultRouteStyle.opacity),
+                                    lineCap: 'round',
+                                    lineJoin: 'round',
+                                    ...(routeStyle?.isDotted
+                                        ? { lineDasharray: [0, 2] }
+                                        : { lineDasharray: [1, 0] }),
+                                }}
+                            />
+                        </MapLibreGL.ShapeSource>
 
                         {!isNavigating && activeSegmentGeoJSON && (
                             <MapLibreGL.ShapeSource

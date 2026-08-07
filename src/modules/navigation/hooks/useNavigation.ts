@@ -690,14 +690,6 @@ export const useNavigation = (
             startBackgroundTracking();
         }
 
-        if (userLocation) {
-            mapRef.current?.flyTo({
-                center: [userLocation.lng, userLocation.lat],
-                zoom: 15,
-                duration: 1000,
-                pitch: 0,
-            });
-        }
     };
     stopNavigationRef.current = handleStopNavigation;
 
