@@ -3,16 +3,29 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from 'react-i18next';
 import { userService } from '../services/user.service';
 import { AuthResponse, UserLoginRequest } from '../types/user.types';
+import { AuthErrorCode, toFriendlyAuthError } from '../utils/authErrors';
 
 const USER_STORAGE_KEY = '@traffic_app_user';
 const TOKEN_STORAGE_KEY = '@traffic_app_token';
+
+export interface LoginResult {
+    data: AuthResponse | null;
+    error: string | null;
+    code: AuthErrorCode | null;
+}
 
 export const useUserLogin = () => {
     const { t } = useTranslation();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const login = async (data: UserLoginRequest): Promise<AuthResponse | null> => {
+    const fail = (raw?: string, status?: number): LoginResult => {
+        const { code, message } = toFriendlyAuthError(t, 'login', raw, status);
+        setError(message);
+        return { data: null, error: message, code };
+    };
+
+    const login = async (data: UserLoginRequest): Promise<LoginResult> => {
         setLoading(true);
         setError(null);
 
@@ -20,34 +33,20 @@ export const useUserLogin = () => {
             const response = await userService.login(data);
 
             if (response.error) {
-                let errorMessage = response.error;
-
-                if (errorMessage.toLowerCase().includes('not found') ||
-                    errorMessage.toLowerCase().includes('does not exist')) {
-                    errorMessage = t('user-not-found') || 'User not found. Please register first.';
-                } else if (errorMessage.toLowerCase().includes('invalid')) {
-                    errorMessage = t('invalid-phone-or-name') || 'Invalid credentials. Please check your details.';
-                } else if (errorMessage.toLowerCase().includes('network')) {
-                    errorMessage = t('network-error') || 'Network error. Please check your connection.';
-                }
-
-                setError(errorMessage);
-                return null;
+                return fail(response.error, response.status);
             }
 
-            if (response.data) {
-
-                const { password, ...userWithoutPassword } = response.data.user;
-                await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userWithoutPassword));
-                await AsyncStorage.setItem(TOKEN_STORAGE_KEY, response.data.token);
-                return response.data;
+            if (!response.data?.token) {
+                return fail(response.message, response.status);
             }
 
-            return null;
+            const { password, ...userWithoutPassword } = response.data.user;
+            await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userWithoutPassword));
+            await AsyncStorage.setItem(TOKEN_STORAGE_KEY, response.data.token);
+
+            return { data: response.data, error: null, code: null };
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : (t('login-failed') || 'Login failed');
-            setError(errorMessage);
-            return null;
+            return fail(err instanceof Error ? err.message : undefined);
         } finally {
             setLoading(false);
         }

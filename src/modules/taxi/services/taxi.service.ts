@@ -14,6 +14,45 @@ import {
     CreateTaxiRouteStopRequest
 } from '../types/taxi.types';
 
+const NODES_PAGE_LIMIT = 100;
+const NODES_MAX_PAGES = 100;
+
+interface NodesPageInfo {
+    limit: number;
+    cursor: number | null;
+    nextCursor: number | null;
+    hasMore: boolean;
+}
+
+async function fetchAllContributionNodes(): Promise<TaxiNode[]> {
+    const nodes: TaxiNode[] = [];
+    let cursor: number | null = null;
+
+    for (let page = 0; page < NODES_MAX_PAGES; page++) {
+        const query = cursor === null
+            ? `?limit=${NODES_PAGE_LIMIT}`
+            : `?limit=${NODES_PAGE_LIMIT}&cursor=${cursor}`;
+
+        const response = await apiService.get<{ data?: TaxiNode[]; pageInfo?: NodesPageInfo } | TaxiNode[]>(
+            `/api/navigation/taxi/contributions/nodes${query}`
+        );
+
+        if (response.error || !response.data) {
+            throw new Error(response.error || 'Failed to fetch nodes');
+        }
+
+        const body = response.data as any;
+        const items: TaxiNode[] = Array.isArray(body) ? body : body.data || [];
+        nodes.push(...items);
+
+        const pageInfo: NodesPageInfo | undefined = Array.isArray(body) ? undefined : body.pageInfo;
+        if (!pageInfo?.hasMore || pageInfo.nextCursor == null) break;
+        cursor = pageInfo.nextCursor;
+    }
+
+    return nodes;
+}
+
 export const taxiService = {
     async createNode(data: CreateTaxiNodeRequest): Promise<TaxiNode> {
         const response = await apiService.post<TaxiNode>(
@@ -28,30 +67,12 @@ export const taxiService = {
         return response.data;
     },
 
-    async getNodes(limit: number = 100): Promise<TaxiNode[]> {
-        const response = await apiService.get<TaxiNode[]>(
-            `/api/navigation/taxi/contributions/nodes?limit=${limit}`
-        );
-
-        if (response.error || !response.data) {
-            throw new Error(response.error || 'Failed to fetch nodes');
-        }
-
-        return response.data;
+    async getNodes(): Promise<TaxiNode[]> {
+        return fetchAllContributionNodes();
     },
 
     async getAllNodes(): Promise<TaxiNode[]> {
-        const response = await apiService.get<{ data?: TaxiNode[] } | TaxiNode[]>(
-            '/api/navigation/taxi/contributions/nodes?limit=1000'
-        );
-
-        if (response.error || !response.data) {
-            throw new Error(response.error || 'Failed to fetch all nodes');
-        }
-
-        // Handle both response formats
-        const data = response.data as any;
-        return data.data || data;
+        return fetchAllContributionNodes();
     },
 
     async getAllEdges(): Promise<TaxiEdge[]> {
@@ -138,9 +159,9 @@ export const taxiService = {
         return response.data.data;
     },
 
-    async getNodesForRoute(limit: number = 1000): Promise<TaxiNode[]> {
+    async getNodesForRoute(): Promise<TaxiNode[]> {
         const response = await apiService.get<TaxiNode[]>(
-            `/api/taxi/nodes?limit=${limit}`
+            '/api/taxi/nodes'
         );
 
         if (response.error || !response.data) {

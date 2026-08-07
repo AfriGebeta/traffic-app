@@ -5,6 +5,7 @@ export interface User {
     username?: string;
     profileImage?: string | null;
     profileImageLocal?: string | null;
+    sex?: number | null;
     password?: string;
     points: number;
     role?: string;
@@ -26,6 +27,8 @@ export interface UserRegistrationRequest {
 
 export interface UpdateProfileRequest {
     name?: string;
+    phoneNumber?: string;
+    sex?: number;
     profileImage?: string | null;
 }
 

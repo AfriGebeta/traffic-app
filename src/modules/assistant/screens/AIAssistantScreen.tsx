@@ -195,6 +195,7 @@ export default function AIAssistantScreen() {
     const { colors: theme, isDark } = useTheme();
 
     const dummyMapRef = useRef<GebetaMapRef | null>(null);
+    const scrollRef = useRef<ScrollView | null>(null);
 
     const [recordSeconds, setRecordSeconds] = useState(0);
 
@@ -205,13 +206,11 @@ export default function AIAssistantScreen() {
     const {
         isRecording,
         isProcessingVoice,
-        transcription,
-        assistantMessage,
+        messages,
         isSpeaking,
         canReplay,
         replayResponse,
         stopSpeaking,
-        options,
         showOptions,
         handleVoiceStart,
         handleVoiceStop,
@@ -256,8 +255,11 @@ export default function AIAssistantScreen() {
         return () => clearInterval(interval);
     }, [isRecording]);
 
-    const isIdle = !isRecording && !isProcessingVoice && !transcription && !assistantMessage && !showOptions;
-    const isRecordingBlank = isRecording && !transcription && !assistantMessage && !showOptions;
+    const hasConversation = messages.length > 0;
+    const isIdle = !isRecording && !isProcessingVoice && !hasConversation && !showOptions;
+    const isRecordingBlank = isRecording && !hasConversation && !showOptions;
+    const lastAssistantId = [...messages].reverse().find((m) => m.role === 'assistant')?.id;
+    const lastOptionsId = [...messages].reverse().find((m) => m.role === 'options')?.id;
 
     return (
         <View className="flex-1" style={{ paddingTop: insets.top, paddingBottom: insets.bottom, backgroundColor: theme.background }}>
@@ -293,66 +295,75 @@ export default function AIAssistantScreen() {
                 </View>
             ) : (
                 <ScrollView
+                    ref={scrollRef}
                     className="flex-1 px-5"
                     contentContainerStyle={{ paddingVertical: 12 }}
                     keyboardShouldPersistTaps="handled"
+                    onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
                 >
-                    {transcription ? (
-                        <View className="self-end max-w-[85%] mb-3 px-4 py-3 rounded-2xl rounded-tr-sm" style={{ backgroundColor: theme.primaryMuted }}>
-                            <Text className="text-xs mb-1" style={{ color: colors.primary.main, fontFamily: 'PlusJakartaSans-Medium' }}>
-                                {t('you-said')}
-                            </Text>
-                            <Text className="text-base" style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Regular' }}>{transcription}</Text>
-                        </View>
-                    ) : null}
+                    {messages.map((message) =>
+                        message.role === 'options' ? (
+                            <View key={message.id} style={{ opacity: message.id === lastOptionsId ? 1 : 0.5 }}>
+                                {(message.options ?? []).map((option) => (
+                                    <TouchableOpacity
+                                        key={option.id}
+                                        onPress={() => handleOptionSelect(option.id)}
+                                        disabled={message.id !== lastOptionsId}
+                                        className="flex-row items-center p-4 mb-2 rounded-xl"
+                                        style={{ backgroundColor: theme.surface }}
+                                        activeOpacity={0.7}
+                                    >
+                                        <View
+                                            className="w-10 h-10 rounded-full items-center justify-center mr-3"
+                                            style={{ backgroundColor: colors.primary.main }}
+                                        >
+                                            <Ionicons name="location" size={20} color="white" />
+                                        </View>
+                                        <View className="flex-1">
+                                            <Text className="text-base" style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Medium' }}>{option.name}</Text>
+                                            {option.lat != null && option.lng != null && (
+                                                <Text className="text-sm mt-1" style={{ color: theme.textSecondary, fontFamily: 'PlusJakartaSans-Regular' }}>
+                                                    {option.lat.toFixed(6)}, {option.lng.toFixed(6)}
+                                                </Text>
+                                            )}
+                                        </View>
+                                        <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        ) : message.role === 'user' ? (
+                            <View
+                                key={message.id}
+                                className="self-end max-w-[85%] mb-3 px-4 py-3 rounded-2xl rounded-tr-sm"
+                                style={{ backgroundColor: theme.primaryMuted }}
+                            >
+                                <Text className="text-xs mb-1" style={{ color: colors.primary.main, fontFamily: 'PlusJakartaSans-Medium' }}>
+                                    {t('you-said')}
+                                </Text>
+                                <Text className="text-base" style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Regular' }}>{message.text}</Text>
+                            </View>
+                        ) : (
+                            <View key={message.id}>
+                                <View className="self-start max-w-[90%] mb-3 px-4 py-3 rounded-2xl rounded-tl-sm" style={{ backgroundColor: theme.surface }}>
+                                    <Text className="text-base leading-6" style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Regular' }}>{message.text}</Text>
+                                </View>
 
-                    {assistantMessage ? (
-                        <View className="self-start max-w-[90%] mb-3 px-4 py-3 rounded-2xl rounded-tl-sm" style={{ backgroundColor: theme.surface }}>
-                            <Text className="text-base leading-6" style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Regular' }}>{assistantMessage}</Text>
-                        </View>
-                    ) : null}
-
-                    {assistantMessage && (isSpeaking || canReplay) ? (
-                        <TouchableOpacity
-                            onPress={isSpeaking ? stopSpeaking : replayResponse}
-                            className="self-start flex-row items-center mb-3 px-3 py-2 rounded-full"
-                            style={{ backgroundColor: theme.surface }}
-                            activeOpacity={0.7}
-                        >
-                            <Ionicons name={isSpeaking ? 'stop' : 'play'} size={16} color={colors.primary.main} />
-                            <Text className="text-sm ml-1.5" style={{ color: colors.primary.main, fontFamily: 'PlusJakartaSans-Medium' }}>
-                                {isSpeaking ? t('stop') : t('play-again')}
-                            </Text>
-                        </TouchableOpacity>
-                    ) : null}
-
-                    {showOptions
-                        ? options.map((option) => (
-                              <TouchableOpacity
-                                  key={option.id}
-                                  onPress={() => handleOptionSelect(option.id)}
-                                  className="flex-row items-center p-4 mb-2 rounded-xl"
-                                  style={{ backgroundColor: theme.surface }}
-                                  activeOpacity={0.7}
-                              >
-                                  <View
-                                      className="w-10 h-10 rounded-full items-center justify-center mr-3"
-                                      style={{ backgroundColor: colors.primary.main }}
-                                  >
-                                      <Ionicons name="location" size={20} color="white" />
-                                  </View>
-                                  <View className="flex-1">
-                                      <Text className="text-base" style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Medium' }}>{option.name}</Text>
-                                      {option.lat != null && option.lng != null && (
-                                          <Text className="text-sm mt-1" style={{ color: theme.textSecondary, fontFamily: 'PlusJakartaSans-Regular' }}>
-                                              {option.lat.toFixed(6)}, {option.lng.toFixed(6)}
-                                          </Text>
-                                      )}
-                                  </View>
-                                  <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
-                              </TouchableOpacity>
-                          ))
-                        : null}
+                                {message.id === lastAssistantId && (isSpeaking || canReplay) ? (
+                                    <TouchableOpacity
+                                        onPress={isSpeaking ? stopSpeaking : replayResponse}
+                                        className="self-start flex-row items-center mb-3 px-3 py-2 rounded-full"
+                                        style={{ backgroundColor: theme.surface }}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Ionicons name={isSpeaking ? 'stop' : 'play'} size={16} color={colors.primary.main} />
+                                        <Text className="text-sm ml-1.5" style={{ color: colors.primary.main, fontFamily: 'PlusJakartaSans-Medium' }}>
+                                            {isSpeaking ? t('stop') : t('play-again')}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ) : null}
+                            </View>
+                        )
+                    )}
 
                     {isProcessingVoice ? (
                         <View className="flex-row items-center self-start mb-3 px-4 py-3">

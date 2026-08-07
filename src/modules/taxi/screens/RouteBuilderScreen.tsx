@@ -172,7 +172,7 @@ export default function RouteBuilderScreen() {
 
         setLoadingNearby(true);
         try {
-            const response: any = await taxiService.getNodes(500);
+            const response: any = await taxiService.getNodes();
             const allNodes = Array.isArray(response) ? response : response.data || [];
 
             if (!Array.isArray(allNodes)) {

@@ -85,6 +85,13 @@ export interface NavigationOption {
     lng: number;
 }
 
+export interface ConversationMessage {
+    id: string;
+    role: 'user' | 'assistant' | 'options';
+    text: string;
+    options?: NavigationOption[];
+}
+
 export interface VoiceNavigationData {
     origin: NavigationLocation | null;
     destination: NavigationDestination | null;
