@@ -1042,10 +1042,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 homeFollowPaused = true;
             }
 
-            if (isNavigating && !navCameraFree) {
-                handleNavigationGestureUnlock(e, 'region-will-change');
-            }
-        }, [isNavigating, externalCameraControl, navCameraFree, handleNavigationGestureUnlock]);
+        }, [isNavigating, externalCameraControl]);
 
         const centerLng = center?.[0];
         const centerLat = center?.[1];

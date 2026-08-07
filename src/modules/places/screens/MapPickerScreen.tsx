@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,6 +28,44 @@ export default function MapPickerScreen() {
     const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
 
+    const lastFlyToAtRef = useRef(0);
+    const lastPinnedRef = useRef<{ center: [number, number]; zoom: number } | null>(null);
+    const pinTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const pinCameraToCurrentView = async () => {
+        try {
+            const map = mapRef.current?.getMapInstance?.() as any;
+            if (!map?.getCenter || !map?.getZoom) return;
+
+            const [center, zoom] = await Promise.all([map.getCenter(), map.getZoom()]);
+            if (!Array.isArray(center) || center.length < 2 || typeof zoom !== 'number') return;
+
+            const last = lastPinnedRef.current;
+            const unchanged =
+                last &&
+                Math.abs(last.zoom - zoom) < 0.01 &&
+                Math.abs(last.center[0] - center[0]) < 1e-6 &&
+                Math.abs(last.center[1] - center[1]) < 1e-6;
+            if (unchanged) return;
+
+            lastPinnedRef.current = { center: [center[0], center[1]], zoom };
+            mapRef.current?.flyTo({ center: [center[0], center[1]], zoom, duration: 0 });
+        } catch {
+        }
+    };
+
+    const handleRegionCenterChange = () => {
+        if (pinTimerRef.current) clearTimeout(pinTimerRef.current);
+        pinTimerRef.current = setTimeout(() => {
+            if (Date.now() - lastFlyToAtRef.current < 1200) return;
+            pinCameraToCurrentView();
+        }, 150);
+    };
+
+    useEffect(() => () => {
+        if (pinTimerRef.current) clearTimeout(pinTimerRef.current);
+    }, []);
+
     const handleMapClick = (lngLat: [number, number]) => {
         const location = { lng: lngLat[0], lat: lngLat[1] };
         setSelectedLocation(location);
@@ -40,7 +78,7 @@ export default function MapPickerScreen() {
 
         setIsReverseGeocoding(true);
         try {
-            
+
             const place = await navigationService.reverseGeocode(
                 selectedLocation.lat,
                 selectedLocation.lng
@@ -141,6 +179,8 @@ export default function MapPickerScreen() {
             return;
         }
 
+        lastFlyToAtRef.current = Date.now();
+        lastPinnedRef.current = null;
         mapRef.current.flyTo({
             center: [userLocation.lng, userLocation.lat],
             zoom: 15,
@@ -157,6 +197,7 @@ export default function MapPickerScreen() {
                 center={userLocation ? [userLocation.lng, userLocation.lat] : [getAppConfig().defaultMapCenterLng, getAppConfig().defaultMapCenterLat]}
                 zoom={15}
                 onMapClick={handleMapClick}
+                onRegionCenterChange={handleRegionCenterChange}
                 selectedLocation={selectedLocation}
                 userLocation={userLocation}
                 showUserLocationMarker={false}
