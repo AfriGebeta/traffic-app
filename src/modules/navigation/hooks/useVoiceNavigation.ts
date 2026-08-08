@@ -151,7 +151,7 @@ export const useVoiceNavigation = ({
 
     const handleEvent = useCallback((event: VoiceNavEvent) => {
         const { type, data } = event;
-        if (type !== 'pong') {
+        if (type !== 'pong' && type !== 'origin_updated') {
             vlog(`event «${type}» ${sinceReq()}`, data ? JSON.stringify(data).slice(0, 300) : '');
         }
 
@@ -307,7 +307,7 @@ export const useVoiceNavigation = ({
                 break;
 
             case 'origin_updated':
-                vlog('origin_updated:', data);
+                // vlog('origin_updated:', data);
                 break;
 
             case 'language_updated':
@@ -390,7 +390,7 @@ export const useVoiceNavigation = ({
 
     useEffect(() => {
         if (userLocation && socketRef.current?.isOpen) {
-            vlog('→ update_origin', userLocation);
+            // vlog('→ update_origin', userLocation);
             socketRef.current.sendJson('update_origin', {
                 originLat: userLocation.lat,
                 originLng: userLocation.lng,
