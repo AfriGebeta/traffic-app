@@ -34,6 +34,21 @@ export const storeAudioBytes = (bytes: Uint8Array, cacheKey: string): string | n
     }
 };
 
+export const getCachedAudioUri = (cacheKey: string): string | null => {
+    try {
+        const target = new File(getCacheDir(), toFileName(cacheKey));
+        if (!target.exists) return null;
+        if ((target.size ?? 0) === 0) {
+            target.delete();
+            return null;
+        }
+        return target.uri;
+    } catch (error) {
+        console.error('audio cache read error:', error);
+        return null;
+    }
+};
+
 export type AudioCacheResult =
     | { uri: string }
     | { uri: null; reason: 'missing' | 'failed' };

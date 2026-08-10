@@ -22,8 +22,10 @@ import { useTheme } from '../../../shared/theme/ThemeContext';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { showToast } from '../../../shared/utils/toast';
 import { useVoiceRecording } from '../../navigation/hooks/useVoiceRecording';
+import { useTtsPlayback } from '../../../shared/hooks/useTtsPlayback';
 import { placeService } from '../services/place.service';
 import { markHomeOnboardingDone } from '../utils/homeOnboarding';
+import { HOME_ADDRESS_VOICE_CHUNKS } from '../utils/homeAddressScript';
 import {
     HOME_ADDRESS_REQUIRED_FIELDS,
     HomeAddressRequiredField,
@@ -132,6 +134,14 @@ export const AddHomeAddressScreen = () => {
     const { colors: theme } = useTheme();
 
     const { isRecording, startRecording, stopRecording, cancelRecording } = useVoiceRecording();
+    const {
+        status: voiceGuideStatus,
+        play: playVoiceGuide,
+        stop: stopVoiceGuide,
+    } = useTtsPlayback(HOME_ADDRESS_VOICE_CHUNKS, {
+        language: 'amh',
+        prefetch: true,
+    });
 
     const [step, setStep] = useState<Step>('choice');
     const [saving, setSaving] = useState(false);
@@ -286,6 +296,8 @@ export const AddHomeAddressScreen = () => {
 
     const handleMicPressIn = async () => {
         if (saving || isRecording) return;
+
+        if (voiceGuideStatus !== 'idle') await stopVoiceGuide();
 
         setUploadFailed(false);
         pressStartRef.current = Date.now();
@@ -443,6 +455,33 @@ export const AddHomeAddressScreen = () => {
         </View>
     );
 
+    const renderVoiceGuideButton = () => (
+        <TouchableOpacity
+            onPress={playVoiceGuide}
+            disabled={isRecording || saving}
+            activeOpacity={0.8}
+            className="flex-row items-center self-start mt-4 px-4 py-2.5 rounded-full"
+            style={{
+                borderWidth: 1,
+                borderColor: colors.primary.main,
+                opacity: isRecording || saving ? 0.5 : 1,
+            }}
+        >
+            {voiceGuideStatus === 'loading' ? (
+                <ActivityIndicator size="small" color={colors.primary.main} />
+            ) : (
+                <Ionicons
+                    name={voiceGuideStatus === 'playing' ? 'stop' : 'volume-high'}
+                    size={18}
+                    color={colors.primary.main}
+                />
+            )}
+            <Text className="text-sm font-semibold ml-2" style={{ color: colors.primary.main }}>
+                {voiceGuideStatus === 'playing' ? t('stop-voice-guide') : t('play-voice-guide')}
+            </Text>
+        </TouchableOpacity>
+    );
+
     const renderChoice = () => (
         <View className="flex-1 px-6">
             <Text className="text-3xl font-bold mb-3" style={{ color: theme.textPrimary }}>
@@ -451,6 +490,8 @@ export const AddHomeAddressScreen = () => {
             <Text className="text-base leading-6" style={{ color: theme.textSecondary }}>
                 {t('add-home-desc')}
             </Text>
+
+            {renderVoiceGuideButton()}
 
             {renderMicButton()}
 
