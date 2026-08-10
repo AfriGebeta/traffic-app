@@ -22,6 +22,7 @@ import { useTheme } from '../../../shared/theme/ThemeContext';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { showToast } from '../../../shared/utils/toast';
 import { useVoiceRecording } from '../../navigation/hooks/useVoiceRecording';
+import { exploreService } from '../../map/services/exploreService';
 import { useTtsPlayback } from '../../../shared/hooks/useTtsPlayback';
 import { placeService } from '../services/place.service';
 import { markHomeOnboardingDone } from '../utils/homeOnboarding';
@@ -130,7 +131,7 @@ const FIELD_LABEL_KEYS: Record<HomeAddressRequiredField, string> = {
 export const AddHomeAddressScreen = () => {
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const { t } = useTranslation();
+    const { t, isAmharic } = useTranslation();
     const { colors: theme } = useTheme();
 
     const { isRecording, startRecording, stopRecording, cancelRecording } = useVoiceRecording();
@@ -335,6 +336,46 @@ export const AddHomeAddressScreen = () => {
         if (isRecording) cancelRecording();
         setStep('form');
     };
+
+    const prefilledRef = useRef(false);
+
+    useEffect(() => {
+        if (step !== 'form' || prefilledRef.current) return;
+
+        const coords = getCoords();
+        if (!coords) return;
+
+        prefilledRef.current = true;
+        let cancelled = false;
+
+        (async () => {
+            const address = await exploreService.requestAddress(
+                coords.lat,
+                coords.lng,
+                isAmharic ? 'AM' : 'EN'
+            );
+            hlog('prefill from coords:', address);
+            if (!address || cancelled) return;
+
+            const fillIfEmpty = (
+                setter: React.Dispatch<React.SetStateAction<string>>,
+                value: string
+            ) => {
+                if (!value) return;
+                setter(current => (current.trim() ? current : value));
+            };
+
+            fillIfEmpty(setCountry, address.country);
+            fillIfEmpty(setRegion, address.region);
+            fillIfEmpty(setCity, address.city);
+            fillIfEmpty(setSubCity, address.subCity);
+            fillIfEmpty(setWoreda, address.woreda);
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [step, pickedCoords, gpsCoords, coordsSource]);
 
     const handleFormSubmit = async () => {
         if (!region.trim() || !city.trim() || !subCity.trim() || !woreda.trim() || !sefer.trim()) {
