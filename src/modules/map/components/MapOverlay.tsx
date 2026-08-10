@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { SearchBar } from './SearchBar';
 import { QuickActions } from './QuickActions';
+import { FreeDriveButton } from './FreeDriveButton';
 import { SearchResults } from './SearchResults';
 import { DestinationCard } from './DestinationCard';
 import { FloatingActions, BASE_GAP, ROUTE_PREVIEW_GAP, PLACE_DETAIL_GAP } from './FloatingActions';
@@ -159,6 +160,8 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                         isLoading={isExploring}
                         selectedCategory={selectedExploreCategory}
                     />
+
+                    {!showSearchContainer && <FreeDriveButton />}
 
                     <SearchResults
                         results={searchResults}

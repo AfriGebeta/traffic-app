@@ -190,6 +190,7 @@ interface ExtendedGebetaMapProps extends Omit<GebetaMapProps, 'center'> {
     activeSegmentGeoJSON?: any;
     previewStepLocation?: { lng: number; lat: number } | null;
     externalCameraControl?: boolean;
+    isHomeMap?: boolean;
     maneuvers?: Array<{ begin_shape_index: number; type?: number }>;
     boundingBox?: {
         north: number;
@@ -831,7 +832,7 @@ AnimatedNavLayer.displayName = 'AnimatedNavLayer';
 
 
 const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
-    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, maneuvers, boundingBox, alternativeRoutesGeoJSON, routeTimeLabels }, ref) => {
+    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, isHomeMap, maneuvers, boundingBox, alternativeRoutesGeoJSON, routeTimeLabels }, ref) => {
         const { isDark } = useTheme();
         const [mapStyleState, setMapStyleState] = useState<Record<string, unknown> | null>(() =>
             mapStyleJson ? ensureStyleBackgroundLayer(mapStyleJson as Record<string, any>, isDark) : null
@@ -1065,6 +1066,9 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
         useEffect(() => {
             if (isNavigating || !externalCameraControl) return;
+            // The home map is browse-first: location updates move the marker, not the camera.
+            // Recentring remains available through the explicit location button.
+            if (isHomeMap) return;
             if (!userLocation || !cameraRef.current) return;
             if (homeFollowPaused) return;
 
@@ -1107,7 +1111,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 animationDuration: 500,
                 animationMode: 'easeTo',
             });
-        }, [userLocation?.lat, userLocation?.lng, isNavigating, externalCameraControl]);
+        }, [userLocation?.lat, userLocation?.lng, isNavigating, externalCameraControl, isHomeMap]);
 
         const applyRecenterFlyTo = useCallback(() => {
             if (!cameraRef.current || !userLocation) return false;
@@ -1456,6 +1460,21 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             flyTo: (options: any) => {
                 applyFlyTo(options);
             },
+            recenterOnce: (options: { center: [number, number]; zoom?: number }) => {
+                if (!cameraRef.current) return;
+
+                // Home recentering is a single command, never a request to resume following.
+                homeFollowPaused = true;
+                pendingFlyTo.current = null;
+                flyToTokenRef.current += 1;
+                markHomeCommand(options.center, options.zoom);
+                cameraRef.current.setCamera({
+                    centerCoordinate: options.center,
+                    zoomLevel: options.zoom,
+                    animationDuration: 0,
+                    animationMode: 'moveTo',
+                });
+            },
             resumeFollow: () => {
                 homeFollowPaused = false;
                 lastHomeFollowCenterRef.current = null;
@@ -1516,7 +1535,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             updateNavigationPosition: () => { },
             getNavigationState: () => null,
             isNavigating: () => false,
-        }), [applyFlyTo, markAnimatedProgrammaticCamera]);
+        }), [applyFlyTo, markAnimatedProgrammaticCamera, markHomeCommand]);
 
         useEffect(() => {
             if (mapStyleJson) {
@@ -1653,7 +1672,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         rotateEnabled={true}
                         pitchEnabled={true}
                         compassViewPosition={1}
-                        compassViewMargins={{ x: 16, y: 130 }}
+                        compassViewMargins={{ x: isHomeMap ? 10 : 16, y: isHomeMap ? 180 : 130 }}
                         {...({ onTouchStart: handleMapTouchForUnlock } as Record<string, unknown>)}
                         onRegionWillChange={handleRegionWillChange}
                         onPress={async (e) => {
@@ -1779,6 +1798,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                 key={showFollowCamera ? 'nav-follow-camera' : 'explore-camera'}
                                 ref={cameraRef}
                                 maxBounds={undefined}
+                                followUserLocation={isHomeMap ? false : undefined}
                                 defaultSettings={{
                                     centerCoordinate: showExploreCamera && lastFreeCameraRef.current
                                         ? lastFreeCameraRef.current.center

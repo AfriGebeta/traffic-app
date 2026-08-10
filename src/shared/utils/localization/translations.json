@@ -2655,6 +2655,21 @@
         "AM": "ይህን ቦታ እዚህ መጥቶ ለማያውቅ የዲሊቨሪ ሰው እንደሚያስረዱት አድርገው ይግለጹ። ሀገርዎን፣ ክልልዎን፣ ከተማዎን፣ ክፍለ ከተማዎን፣ ወረዳዎን እና የሰፈር ስምዎን ይጥቀሱ።"
     },
     {
+        "key": "you-missed",
+        "EN_US": "You missed:",
+        "AM": "ያልጠቀሷቸው፦"
+    },
+    {
+        "key": "play-voice-guide",
+        "EN_US": "Play voice",
+        "AM": "ድምፅ ያዳምጡ"
+    },
+    {
+        "key": "stop-voice-guide",
+        "EN_US": "Stop",
+        "AM": "አቁም"
+    },
+    {
         "key": "tap-to-speak",
         "EN_US": "Tap to speak",
         "AM": "ለመናገር ይንኩ"
@@ -2953,5 +2968,30 @@
         "key": "error-something-went-wrong",
         "EN_US": "Something went wrong. Please try again",
         "AM": "የሆነ ችግር ተፈጥሯል። እባክዎ እንደገና ይሞክሩ"
+    },
+    {
+        "key": "free-drive",
+        "EN_US": "Free drive",
+        "AM": "ነፃ ጉዞ"
+    },
+    {
+        "key": "free-drive-on-road",
+        "EN_US": "On road",
+        "AM": "በጉዞ ላይ"
+    },
+    {
+        "key": "free-drive-off-road",
+        "EN_US": "Off road",
+        "AM": "ከመንገድ ውጪ"
+    },
+    {
+        "key": "acquiring-gps",
+        "EN_US": "Acquiring GPS…",
+        "AM": "ጂፒኤስ በመፈለግ ላይ…"
+    },
+    {
+        "key": "location-permission-required",
+        "EN_US": "Location permission required",
+        "AM": "የጂፒኤስ ፈቃድ ያስፈልጋል"
     }
 ]

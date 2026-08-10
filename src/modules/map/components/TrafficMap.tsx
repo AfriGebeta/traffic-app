@@ -532,11 +532,9 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
             return;
         }
 
-        (mapRef.current as any).resumeFollow?.();
-        mapRef.current.flyTo({
+        (mapRef.current as any).recenterOnce({
             center: [userLocation.lng, userLocation.lat],
             zoom: USER_LOCATION_ZOOM,
-            duration: 1000,
         });
     };
 
@@ -1102,6 +1100,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 taxiRouteSegments={taxiRouteSegments || undefined}
                 waypointMarkers={waypoints.length > 0 ? waypoints.map(wp => ({ latitude: wp.latitude, longitude: wp.longitude, name: wp.name })) : undefined}
                 externalCameraControl={!navigationMode}
+                isHomeMap
             />
 
             {activeIncidentAlert && (
