@@ -187,7 +187,14 @@ export const exploreService = {
         lat: number,
         lng: number,
         lang: 'AM' | 'EN' = 'EN'
-    ): Promise<{ city: string; district: string; country: string } | null> {
+    ): Promise<{
+        city: string;
+        district: string;
+        country: string;
+        region: string;
+        subCity: string;
+        woreda: string;
+    } | null> {
         try {
             const appCheckToken = await getAppCheckToken();
             const response = await fetch(
@@ -219,10 +226,15 @@ export const exploreService = {
                 '';
             const district = pick(name.district) || pick(name.borough) || '';
             const country = pick(name.country) || '';
+            const region = pick(name.province) || pick(name.county) || '';
+            const subCity = pick(name.borough) || '';
+
+            const woredaMatch = district.match(/^\s*(?:woreda|ወረዳ)\s*(.+)$/i);
+            const woreda = woredaMatch ? woredaMatch[1].trim() : '';
 
             if (!city && !district) return null;
 
-            return { city, district, country };
+            return { city, district, country, region, subCity, woreda };
         } catch (error) {
             console.log('requestAddress error:', error);
             return null;

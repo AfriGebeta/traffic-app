@@ -48,6 +48,22 @@ export const useFreeDriveLocation = ({
                     return;
                 }
 
+                try {
+                    const last = await Location.getLastKnownPositionAsync({
+                        maxAge: 5 * 60 * 1000,
+                    });
+                    if (!cancelled && last) {
+                        onFixRef.current({
+                            lat: last.coords.latitude,
+                            lng: last.coords.longitude,
+                            speed: 0,
+                            heading: last.coords.heading,
+                            t: last.timestamp || Date.now(),
+                        });
+                    }
+                } catch {
+                }
+
                 const sub = await Location.watchPositionAsync(
                     {
                         accuracy: Location.Accuracy.BestForNavigation,

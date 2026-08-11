@@ -48,6 +48,7 @@ interface FreeDriveMapProps {
     onTelemetry?: (telemetry: FreeDriveTelemetry) => void;
     onCameraFreeChange?: (free: boolean) => void;
     nameLang?: string;
+    initialCenter?: { lat: number; lng: number } | null;
 }
 
 const TELEMETRY_MS = 250;
@@ -73,6 +74,7 @@ const FreeDriveMapInner = forwardRef<FreeDriveMapHandle, FreeDriveMapProps>(({
     onTelemetry,
     onCameraFreeChange,
     nameLang,
+    initialCenter,
 }, ref) => {
     const mapRef = useRef<any>(null);
     const cameraRef = useRef<any>(null);
@@ -326,6 +328,18 @@ const FreeDriveMapInner = forwardRef<FreeDriveMapHandle, FreeDriveMapProps>(({
         [size.width, size.height]
     );
 
+    const openAt = lastSampleRef.current
+        ? { center: [lastSampleRef.current.lng, lastSampleRef.current.lat], framed: true }
+        : initialCenter
+            ? { center: [initialCenter.lng, initialCenter.lat], framed: true }
+            : {
+                center: [
+                    getAppConfig().defaultMapCenterLng,
+                    getAppConfig().defaultMapCenterLat,
+                ],
+                framed: false,
+            };
+
     const showOverlayPuck = !cameraFree && ready && motionRef.current.isStarted();
 
     return (
@@ -360,14 +374,9 @@ const FreeDriveMapInner = forwardRef<FreeDriveMapHandle, FreeDriveMapProps>(({
                         key="free-drive-follow-camera"
                         ref={cameraRef}
                         defaultSettings={{
-                            centerCoordinate: lastSampleRef.current
-                                ? [lastSampleRef.current.lng, lastSampleRef.current.lat]
-                                : [
-                                    getAppConfig().defaultMapCenterLng,
-                                    getAppConfig().defaultMapCenterLat,
-                                ],
-                            zoomLevel: lastSampleRef.current ? FREE_DRIVE_ZOOM : WAITING_ZOOM,
-                            pitch: lastSampleRef.current ? FREE_DRIVE_PITCH : WAITING_PITCH,
+                            centerCoordinate: openAt.center,
+                            zoomLevel: openAt.framed ? FREE_DRIVE_ZOOM : WAITING_ZOOM,
+                            pitch: openAt.framed ? FREE_DRIVE_PITCH : WAITING_PITCH,
                             heading: lastSampleRef.current?.heading ?? 0,
                         }}
                     />
