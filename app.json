@@ -15,7 +15,11 @@
       "supportsTablet": true,
       "bundleIdentifier": "co.gebeta.apps.ios.map",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": [
+          "audio",
+          "location"
+        ]
       }
     },
     "android": {

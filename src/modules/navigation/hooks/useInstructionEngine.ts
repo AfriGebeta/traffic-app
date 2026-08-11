@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AppState } from 'react-native';
-import { Audio } from 'expo-av';
+import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
 
 import type { Leg } from '../types/navigation.types';
 import { ttsService } from '../services/tts.service';
@@ -69,7 +68,6 @@ export const useInstructionEngine = ({
     const stopPlaybackRef = useRef<() => void>(() => { });
     const audioRef = useRef<Map<string, string>>(new Map());
     const generationRef = useRef(0);
-    const appActiveRef = useRef(AppState.currentState === 'active');
 
     const plan = useMemo(() => buildInstructionPlan(legs), [legs]);
     useEffect(() => {
@@ -127,8 +125,10 @@ export const useInstructionEngine = ({
             await Audio.setAudioModeAsync({
                 allowsRecordingIOS: false,
                 playsInSilentModeIOS: true,
-                staysActiveInBackground: false,
+                staysActiveInBackground: true,
                 shouldDuckAndroid: true,
+                interruptionModeAndroid: InterruptionModeAndroid.DuckOthers,
+                interruptionModeIOS: InterruptionModeIOS.DuckOthers,
                 playThroughEarpieceAndroid: false,
             });
 
@@ -150,7 +150,6 @@ export const useInstructionEngine = ({
 
     const drain = useCallback(() => {
         if (speakingRef.current) return;
-        if (!appActiveRef.current) return;
         while (queueRef.current.length > 0) {
             const cue = queueRef.current.shift()!;
             const maxAge = cue.tier === 'final' ? FINAL_CUE_MAX_AGE_MS : CUE_MAX_AGE_MS;
@@ -203,14 +202,6 @@ export const useInstructionEngine = ({
     useEffect(() => {
         if (!isNavigating) stopVoice();
     }, [isNavigating, stopVoice]);
-    useEffect(() => {
-        const subscription = AppState.addEventListener('change', (nextState) => {
-            appActiveRef.current = nextState === 'active';
-            stopVoice();
-        });
-        return () => subscription.remove();
-    }, [stopVoice]);
-
     useEffect(() => () => {
         soundRef.current?.unloadAsync().catch(() => { });
         if (watchdogRef.current) clearTimeout(watchdogRef.current);
