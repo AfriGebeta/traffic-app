@@ -161,7 +161,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                         selectedCategory={selectedExploreCategory}
                     />
 
-                    {!showSearchContainer && <FreeDriveButton />}
+                    {!showSearchContainer && <FreeDriveButton userLocation={userLocation} />}
 
                     <SearchResults
                         results={searchResults}

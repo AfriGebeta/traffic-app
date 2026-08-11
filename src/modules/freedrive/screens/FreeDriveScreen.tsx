@@ -1,7 +1,7 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeepAwake } from 'expo-keep-awake';
 import { useTranslation } from 'react-i18next';
@@ -22,6 +22,13 @@ const FreeDriveScreen: React.FC = () => {
     const { currentTheme } = useMapTheme();
     useKeepAwake();
 
+    const params = useLocalSearchParams<{ lat?: string; lng?: string }>();
+    const handoverCenter = useMemo(() => {
+        const lat = Number(params.lat);
+        const lng = Number(params.lng);
+        return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+    }, [params.lat, params.lng]);
+
     const mapHandle = useRef<FreeDriveMapHandle>(null);
 
     const [fix, setFix] = useState<MotionFix | null>(null);
@@ -41,6 +48,7 @@ const FreeDriveScreen: React.FC = () => {
                 styleJson={currentTheme.styleJson}
                 styleUrl={currentTheme.styleUrl}
                 fix={fix}
+                initialCenter={handoverCenter}
                 nameLang={i18n.language === 'am' ? 'am' : 'latin'}
                 onTelemetry={setTelemetry}
                 onCameraFreeChange={setCameraFree}

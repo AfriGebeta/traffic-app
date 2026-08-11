@@ -5,7 +5,11 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 
-export const FreeDriveButton: React.FC = () => {
+interface FreeDriveButtonProps {
+    userLocation?: { lat: number; lng: number } | null;
+}
+
+export const FreeDriveButton: React.FC<FreeDriveButtonProps> = ({ userLocation }) => {
     const router = useRouter();
     const { t } = useTranslation();
     const { colors: theme } = useTheme();
@@ -13,7 +17,19 @@ export const FreeDriveButton: React.FC = () => {
     return (
         <View className="mt-1 items-end">
             <TouchableOpacity
-                onPress={() => router.push('/free-drive')}
+                onPress={() =>
+                    router.push(
+                        userLocation
+                            ? {
+                                pathname: '/free-drive',
+                                params: {
+                                    lat: String(userLocation.lat),
+                                    lng: String(userLocation.lng),
+                                },
+                            }
+                            : '/free-drive'
+                    )
+                }
                 accessibilityRole="button"
                 accessibilityLabel={t('free-drive')}
                 className="rounded-full p-3 shadow-lg"
