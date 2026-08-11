@@ -1,4 +1,4 @@
-import { Audio } from 'expo-av';
+import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
 import { fetchTtsAudioUri } from './tts-fetch';
 
 interface CachedAudio {
@@ -84,8 +84,10 @@ class TTSCacheService {
             await Audio.setAudioModeAsync({
                 allowsRecordingIOS: false,
                 playsInSilentModeIOS: true,
-                staysActiveInBackground: false,
+                staysActiveInBackground: true,
                 shouldDuckAndroid: true,
+                interruptionModeAndroid: InterruptionModeAndroid.DuckOthers,
+                interruptionModeIOS: InterruptionModeIOS.DuckOthers,
                 playThroughEarpieceAndroid: false,
             });
 

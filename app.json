@@ -2,7 +2,7 @@
   "expo": {
     "name": "Gebeta Maps",
     "slug": "gebeta-maps",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
     "scheme": "trafficapp",
@@ -15,7 +15,11 @@
       "supportsTablet": true,
       "bundleIdentifier": "co.gebeta.apps.ios.map",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": [
+          "audio",
+          "location"
+        ]
       }
     },
     "android": {
