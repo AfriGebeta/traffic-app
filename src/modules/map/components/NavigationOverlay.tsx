@@ -1,5 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import Animated, {
+    Easing,
+    FadeOut,
+    useAnimatedStyle,
+    useSharedValue,
+    withRepeat,
+    withTiming,
+} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeepAwake } from 'expo-keep-awake';
@@ -10,6 +18,34 @@ import NavigationDirectionBackground from '../../../../assets/images/navigation-
 import { maneuverIcon } from '../../navigation/utils/instructionEngine';
 
 const NAV_GREEN = '#1E5438';
+const REPORT_HINT_HOLD_MS = 4000;
+
+const BlinkingRuleIcon: React.FC<{ uri: string; size: number }> = ({ uri, size }) => {
+    const opacity = useSharedValue(1);
+
+    useEffect(() => {
+        opacity.value = withRepeat(
+            withTiming(0.15, { duration: 500, easing: Easing.inOut(Easing.ease) }),
+            -1,
+            true
+        );
+        return () => {
+            opacity.value = 1;
+        };
+    }, [opacity, uri]);
+
+    const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+
+    return (
+        <Animated.View style={animatedStyle}>
+            <Image
+                source={{ uri }}
+                style={{ width: size, height: size }}
+                resizeMode="contain"
+            />
+        </Animated.View>
+    );
+};
 
 interface ActiveRule {
     ruleId: string;
@@ -83,6 +119,11 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
         ? maneuverIcon(maneuverType)
         : getDirectionIcon(currentInstruction)) as keyof typeof Ionicons.glyphMap;
     const [showReportHint, setShowReportHint] = useState(true);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setShowReportHint(false), REPORT_HINT_HOLD_MS);
+        return () => clearTimeout(timer);
+    }, []);
 
     const getETA = () => {
         if (!remainingTime) return '--:--';
@@ -191,6 +232,7 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
 
                 <View className="flex-row items-center">
                     {showReportHint && (
+                        <Animated.View exiting={FadeOut.duration(300)}>
                         <TouchableOpacity
                             onPress={() => setShowReportHint(false)}
                             activeOpacity={0.7}
@@ -214,6 +256,7 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                                 {t('share-what-you-see')}
                             </Text>
                         </TouchableOpacity>
+                        </Animated.View>
                     )}
                     <TouchableOpacity
                         onPress={onReportPress}
@@ -341,12 +384,18 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                             justifyContent: 'center',
                         }}
                     >
-                        <NavigationDirectionBackground
-                            width={48}
-                            height={48}
-                            style={{ position: 'absolute' }}
-                        />
-                        <Ionicons name={directionIcon} size={26} color={NAV_GREEN} />
+                        {activeRule ? (
+                            <BlinkingRuleIcon uri={activeRule.ruleImg} size={44} />
+                        ) : (
+                            <>
+                                <NavigationDirectionBackground
+                                    width={48}
+                                    height={48}
+                                    style={{ position: 'absolute' }}
+                                />
+                                <Ionicons name={directionIcon} size={26} color={NAV_GREEN} />
+                            </>
+                        )}
                     </View>
 
                     <View style={{ flex: 1, alignItems: 'center' }}>
