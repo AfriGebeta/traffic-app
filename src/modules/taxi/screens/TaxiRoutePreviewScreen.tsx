@@ -12,6 +12,7 @@ import { showToast } from '../../../shared/utils/toast';
 import { useMapTheme } from '../../map/context/MapThemeContext';
 import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
 import { TaxiNavigationResponse } from '../types/taxi.types';
+import { decodeTaxiSegmentPaths } from '../../navigation/utils/navigationUtils';
 
 export default function TaxiRoutePreviewScreen() {
     const router = useRouter();
@@ -43,10 +44,18 @@ export default function TaxiRoutePreviewScreen() {
 
     const { origin, destination, startNode, endNode, formattedPath, summary, originWalkRoute, destinationWalkRoute, segments } = routeData;
 
-    const walkRoutes = segments?.filter(seg => seg.type === 'walk' || seg.mode === 'pedestrian').map((seg, idx) => ({
-        type: idx === 0 ? 'origin' as const : 'destination' as const,
-        polyline: seg.polyline
-    })) || [];
+    const segmentPaths = decodeTaxiSegmentPaths(segments ?? []);
+    const walkRoutes = (segments ?? [])
+        .map((seg, idx) => ({ seg, idx }))
+        .filter(({ seg }) => seg.type === 'walk' || seg.mode === 'pedestrian')
+        .map(({ seg, idx }) => ({
+            type: idx === 0 ? 'origin' as const
+                : idx === (segments?.length ?? 0) - 1 ? 'destination' as const
+                    : 'transfer' as const,
+            polyline: seg.polyline ?? '',
+            coordinates: segmentPaths[idx].map(([lat, lng]: [number, number]) => [lng, lat] as [number, number]),
+        }))
+        .filter(route => route.coordinates.length >= 2);
 
     console.log('[TaxiRoutePreview] Walk routes prepared:', {
         segmentsCount: segments?.length || 0,
@@ -54,16 +63,15 @@ export default function TaxiRoutePreviewScreen() {
         walkRoutes: walkRoutes.map(r => ({ type: r.type, polylineLength: r.polyline.length }))
     });
 
-    const { decodePolyline } = require('../../../shared/utils/polyline');
-    const taxiSegments = segments?.filter(seg => seg.type === 'taxi' || seg.mode === 'auto').map(seg => {
-        const decoded = decodePolyline(seg.polyline, 6);
-        return {
-            coordinates: decoded.map(([lat, lng]: [number, number]) => [lng, lat] as [number, number]),
+    const taxiSegments = (segments ?? [])
+        .map((seg, idx) => ({ seg, idx }))
+        .filter(({ seg }) => seg.type === 'taxi' || seg.mode === 'auto')
+        .map(({ seg, idx }) => ({
+            coordinates: segmentPaths[idx].map(([lat, lng]: [number, number]) => [lng, lat] as [number, number]),
             cost: seg.fare || 0,
             from: seg.fromNode?.name || '',
             to: seg.toNode?.name || ''
-        };
-    }) || [];
+        }));
 
     const taxiStations = segments ? [
         {
@@ -213,6 +221,12 @@ export default function TaxiRoutePreviewScreen() {
                             const isTaxiSegment = segment.type === 'taxi' || segment.mode === 'auto';
 
                             if (isWalkSegment) {
+                                const isDestinationWalk = index === segments.length - 1;
+
+                                if (index !== 0 && !isDestinationWalk && !segment.distance && !segment.time) {
+                                    return null;
+                                }
+
                                 return (
                                     <View key={index} className="mb-4">
                                         <View className="flex-row items-center mb-2">
@@ -220,7 +234,7 @@ export default function TaxiRoutePreviewScreen() {
                                                 <Ionicons name="walk" size={18} color={theme.blue} />
                                             </View>
                                             <Text className="font-semibold ml-3 flex-1" style={{ color: theme.textPrimary }}>
-                                                {index === 0 ? t('walk-to-boarding-point') : t('walk-to-destination')}
+                                                {isDestinationWalk ? t('walk-to-destination') : t('walk-to-boarding-point')}
                                             </Text>
                                             <Text className="text-sm" style={{ color: theme.textSecondary }}>
                                                 {formatDistance(segment.distance * 1000)}

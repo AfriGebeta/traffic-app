@@ -94,6 +94,13 @@ export const useLocationTracking = ({
     const hasArrivedRef = useRef<boolean>(false);
     const hasReachedRef = useRef<boolean>(false);
 
+    const taxiSegmentsRef = useRef(taxiSegments);
+    taxiSegmentsRef.current = taxiSegments;
+    const totalRouteDistanceRef = useRef(totalRouteDistance);
+    totalRouteDistanceRef.current = totalRouteDistance;
+    const totalRouteDurationRef = useRef(totalRouteDuration);
+    totalRouteDurationRef.current = totalRouteDuration;
+
     const stopLocationTracking = useCallback(() => {
         if (locationSubscription.current) {
             locationSubscription.current.remove();
@@ -139,6 +146,11 @@ export const useLocationTracking = ({
                 let distanceFromRoute = Infinity;
 
                 if (isNavigatingRef.current && routeCoordinates.current.length > 0) {
+
+                    if (lastClosestIndex.current > routeCoordinates.current.length - 2) {
+                        lastClosestIndex.current = 0;
+                        closestIndex = 0;
+                    }
 
                     let minDistance = Infinity;
                     let snappedLat = latitude;
@@ -350,9 +362,9 @@ export const useLocationTracking = ({
                     if (remainingCoords.length > 0) {
                         const routeFromMarker = [[displayLng, displayLat] as [number, number], ...remainingCoords];
 
-                        if (taxiSegments && setSegmentedRoutes) {
+                        if (taxiSegmentsRef.current && setSegmentedRoutes) {
                             const updatedSegments = buildSegmentedRoutesFromPosition(
-                                taxiSegments,
+                                taxiSegmentsRef.current,
                                 closestIndex,
                                 displayLat,
                                 displayLng,
@@ -410,8 +422,8 @@ export const useLocationTracking = ({
 
                         setRemainingDistance(totalDistance);
 
-                        const averageSpeedMps = totalRouteDistance > 0 && totalRouteDuration > 0
-                            ? totalRouteDistance / totalRouteDuration
+                        const averageSpeedMps = totalRouteDistanceRef.current > 0 && totalRouteDurationRef.current > 0
+                            ? totalRouteDistanceRef.current / totalRouteDurationRef.current
                             : (25 * 1000) / 3600;
                         const estimatedTime = totalDistance / averageSpeedMps;
                         setRemainingTime(estimatedTime);

@@ -172,6 +172,7 @@ interface ExtendedGebetaMapProps extends Omit<GebetaMapProps, 'center'> {
     taxiWalkRoutes?: Array<{
         type: 'origin' | 'transfer' | 'destination';
         polyline: string;
+        coordinates?: Array<[number, number]>;
     }>;
     taxiRouteSegments?: Array<{
         coordinates: Array<[number, number]>;
@@ -2002,8 +2003,10 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
                         {taxiWalkRoutes && taxiWalkRoutes.map((route, index) => {
                             try {
-                                const coords = decodePolyline(route.polyline, 6);
-                                const mapCoords = coords.map(([lat, lng]) => [lng, lat]);
+                                const mapCoords = route.coordinates
+                                    ?? decodePolyline(route.polyline, 6).map(([lat, lng]) => [lng, lat] as [number, number]);
+
+                                if (mapCoords.length < 2) return null;
 
 
                                 const color = isTaxiNavigation ? '#3B82F6' : '#EF4444';
