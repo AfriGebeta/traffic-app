@@ -1,12 +1,20 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeepAwake } from 'expo-keep-awake';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { colors as palette } from '../../../shared/theme/colors';
 import { useMapTheme } from '../../map/context/MapThemeContext';
+import { IncidentReportSheet } from '../../map/components/IncidentReportSheet';
+import { IncidentAlert } from '../../map/components/IncidentAlert';
+import { useIncidentAlerts } from '../../map/hooks/useIncidentAlerts';
+import { useRuleAlerts } from '../../map/hooks/useRuleAlerts';
+import { useIncidents } from '../../incidents/hooks/useIncidents';
+import type { TrafficRuleReport } from '../../rules/types/rule.types';
+import { headingRayCoordinates } from '../utils/geo';
 import FreeDriveMap, {
     FreeDriveMapHandle,
     FreeDriveTelemetry,
@@ -34,6 +42,41 @@ const FreeDriveScreen: React.FC = () => {
     const [fix, setFix] = useState<MotionFix | null>(null);
     const [telemetry, setTelemetry] = useState<FreeDriveTelemetry | null>(null);
     const [cameraFree, setCameraFree] = useState(false);
+    const [showReportOptions, setShowReportOptions] = useState(false);
+
+    const reportLocation = useMemo(
+        () => (fix ? { lat: fix.lat, lng: fix.lng } : handoverCenter),
+        [fix, handoverCenter]
+    );
+
+    const { incidents } = useIncidents();
+    const [rules, setRules] = useState<TrafficRuleReport[]>([]);
+
+    useEffect(() => {
+        let cancelled = false;
+        import('../../rules/services/rule.service')
+            .then(({ ruleService }) => ruleService.getAllReports())
+            .then((data) => {
+                if (!cancelled) setRules(data);
+            })
+            .catch(() => { });
+        return () => { cancelled = true; };
+    }, []);
+
+    const aheadCoordinates = useMemo(() => {
+        if (!fix) return undefined;
+        const bearing = fix.roadBearing ?? fix.heading;
+        if (bearing === null || bearing === undefined) return undefined;
+        return headingRayCoordinates({ lat: fix.lat, lng: fix.lng }, bearing);
+    }, [fix]);
+
+    const { activeAlert: activeIncidentAlert, dismissAlert: dismissIncidentAlert } = useIncidentAlerts(
+        reportLocation,
+        incidents,
+        true,
+        aheadCoordinates
+    );
+    const activeRuleAlert = useRuleAlerts(reportLocation, rules, true, aheadCoordinates);
 
     const onFix = useCallback((next: MotionFix) => setFix(next), []);
     const { status } = useFreeDriveLocation({ enabled: true, onFix });
@@ -63,6 +106,45 @@ const FreeDriveScreen: React.FC = () => {
                 ]}
             >
                 <Ionicons name="close" size={22} color={colors.textPrimary} />
+            </TouchableOpacity>
+
+            {activeIncidentAlert && (
+                <IncidentAlert
+                    incidentId={activeIncidentAlert.incidentId}
+                    incidentName={activeIncidentAlert.incidentName}
+                    distance={activeIncidentAlert.distance}
+                    distanceKm={activeIncidentAlert.distanceKm}
+                    incidentType={activeIncidentAlert.incidentType}
+                    onDismiss={dismissIncidentAlert}
+                    topOffset={12}
+                />
+            )}
+
+            {activeRuleAlert && (
+                <View
+                    style={[
+                        styles.ruleBadge,
+                        { bottom: insets.bottom + 108, backgroundColor: colors.surface },
+                    ]}
+                >
+                    <Image
+                        source={{ uri: activeRuleAlert.ruleImg }}
+                        style={{ width: 38, height: 38 }}
+                        resizeMode="contain"
+                    />
+                </View>
+            )}
+
+            <TouchableOpacity
+                onPress={() => setShowReportOptions(true)}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                style={[
+                    styles.reportButton,
+                    { bottom: insets.bottom + 108, backgroundColor: palette.primary.main },
+                ]}
+            >
+                <Ionicons name="warning-outline" size={24} color="#fff" />
             </TouchableOpacity>
 
             {cameraFree && (
@@ -120,6 +202,13 @@ const FreeDriveScreen: React.FC = () => {
                     </Text>
                 </View>
             </View>
+
+            <IncidentReportSheet
+                isVisible={showReportOptions}
+                onClose={() => setShowReportOptions(false)}
+                userLocation={reportLocation}
+                isNavigating={true}
+            />
         </View>
     );
 };
@@ -153,6 +242,35 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.18,
         shadowRadius: 10,
         shadowOffset: { width: 0, height: 3 },
+    },
+    ruleBadge: {
+        position: 'absolute',
+        left: 16,
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOpacity: 0.15,
+        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 2 },
+    },
+    reportButton: {
+        position: 'absolute',
+        right: 16,
+        width: 52,
+        height: 52,
+        borderRadius: 26,
+        alignItems: 'center',
+        justifyContent: 'center',
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOpacity: 0.15,
+        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 2 },
     },
     recenterRow: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
     recenterButton: {

@@ -46,6 +46,25 @@ export class LocalFrame {
     }
 }
 
+export const headingRayCoordinates = (
+    origin: LatLng,
+    bearingDeg: number,
+    lengthM = 1500,
+    stepM = 50
+): [number, number][] => {
+    const frame = new LocalFrame(origin.lat, origin.lng);
+    const rad = (bearingDeg * Math.PI) / 180;
+    const dx = Math.sin(rad);
+    const dy = Math.cos(rad);
+
+    const coordinates: [number, number][] = [];
+    for (let d = 0; d <= lengthM; d += stepM) {
+        const { lat, lng } = frame.toLatLng(dx * d, dy * d);
+        coordinates.push([lng, lat]);
+    }
+    return coordinates;
+};
+
 export const haversine = (a: LatLng, b: LatLng): number => {
     const p1 = (a.lat * Math.PI) / 180;
     const p2 = (b.lat * Math.PI) / 180;

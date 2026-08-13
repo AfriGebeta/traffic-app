@@ -22,11 +22,24 @@ export default function AddRuleReportScreen() {
     const { selectedLocation, setSelectedLocation } = useLocation();
     const { userLocation } = useUserLocation();
 
+    const isNavigating = params.isNavigating === 'true';
+    const navLat = parseFloat(params.lat as string);
+    const navLng = parseFloat(params.lng as string);
+    const navCoordinates = !isNaN(navLat) && !isNaN(navLng) ? { lat: navLat, lng: navLng } : null;
+
     const insets = useSafeAreaInsets();
     const [punishment, setPunishment] = useState('');
-    const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
+    const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(
+        isNavigating ? navCoordinates ?? null : null
+    );
     const [submitting, setSubmitting] = useState(false);
-    const [usingCurrentLocation, setUsingCurrentLocation] = useState(false);
+    const [usingCurrentLocation, setUsingCurrentLocation] = useState(isNavigating && !!navCoordinates);
+
+    React.useEffect(() => {
+        if (!isNavigating || coordinates || !userLocation) return;
+        setCoordinates(userLocation);
+        setUsingCurrentLocation(true);
+    }, [isNavigating, coordinates, userLocation]);
 
     useFocusEffect(
         React.useCallback(() => {
@@ -155,45 +168,51 @@ export default function AddRuleReportScreen() {
                                             {coordinates.lat.toFixed(7)}, {coordinates.lng.toFixed(7)}
                                         </Text>
                                     </View>
-                                    <TouchableOpacity onPress={() => { setCoordinates(null); setUsingCurrentLocation(false); }}>
-                                        <Ionicons name="close-circle" size={24} color={theme.error} />
-                                    </TouchableOpacity>
+                                    {!isNavigating && (
+                                        <TouchableOpacity onPress={() => { setCoordinates(null); setUsingCurrentLocation(false); }}>
+                                            <Ionicons name="close-circle" size={24} color={theme.error} />
+                                        </TouchableOpacity>
+                                    )}
                                 </View>
                             </View>
                         ) : (
                             <View>
-                                <TouchableOpacity
-                                    className="rounded-2xl p-4 flex-row items-center justify-between mb-2"
-                                    onPress={handlePickLocation}
-                                    activeOpacity={0.7}
-                                    style={{
-                                        backgroundColor: theme.surface,
-                                        borderWidth: 2,
-                                        borderColor: theme.border,
-                                        shadowColor: '#000',
-                                        shadowOffset: { width: 0, height: 1 },
-                                        shadowOpacity: 0.05,
-                                        shadowRadius: 4,
-                                        elevation: 1,
-                                    }}
-                                >
-                                    <View className="flex-row items-center flex-1">
-                                        <View className="w-10 h-10 rounded-full items-center justify-center" style={{ backgroundColor: isDark ? theme.background : '#F3F4F6' }}>
-                                            <Ionicons name="map" size={20} color={theme.textSecondary} />
+                                {!isNavigating && (
+                                    <TouchableOpacity
+                                        className="rounded-2xl p-4 flex-row items-center justify-between mb-2"
+                                        onPress={handlePickLocation}
+                                        activeOpacity={0.7}
+                                        style={{
+                                            backgroundColor: theme.surface,
+                                            borderWidth: 2,
+                                            borderColor: theme.border,
+                                            shadowColor: '#000',
+                                            shadowOffset: { width: 0, height: 1 },
+                                            shadowOpacity: 0.05,
+                                            shadowRadius: 4,
+                                            elevation: 1,
+                                        }}
+                                    >
+                                        <View className="flex-row items-center flex-1">
+                                            <View className="w-10 h-10 rounded-full items-center justify-center" style={{ backgroundColor: isDark ? theme.background : '#F3F4F6' }}>
+                                                <Ionicons name="map" size={20} color={theme.textSecondary} />
+                                            </View>
+                                            <View className="ml-3 flex-1">
+                                                <Text className="text-sm font-medium" style={{ color: theme.textSecondary }}>
+                                                    {t('pick-location-on-map')}
+                                                </Text>
+                                            </View>
                                         </View>
-                                        <View className="ml-3 flex-1">
-                                            <Text className="text-sm font-medium" style={{ color: theme.textSecondary }}>
-                                                {t('pick-location-on-map')}
-                                            </Text>
-                                        </View>
+                                        <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+                                    </TouchableOpacity>
+                                )}
+                                {!isNavigating && (
+                                    <View className="flex-row items-center justify-center my-2">
+                                        <View className="flex-1 h-px" style={{ backgroundColor: theme.border }} />
+                                        <Text className="text-sm mx-3" style={{ color: theme.textSecondary }}>{t('or')}</Text>
+                                        <View className="flex-1 h-px" style={{ backgroundColor: theme.border }} />
                                     </View>
-                                    <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
-                                </TouchableOpacity>
-                                <View className="flex-row items-center justify-center my-2">
-                                    <View className="flex-1 h-px" style={{ backgroundColor: theme.border }} />
-                                    <Text className="text-sm mx-3" style={{ color: theme.textSecondary }}>{t('or')}</Text>
-                                    <View className="flex-1 h-px" style={{ backgroundColor: theme.border }} />
-                                </View>
+                                )}
                                 <TouchableOpacity
                                     className="py-3 rounded-xl flex-row items-center justify-center"
                                     style={{ backgroundColor: colors.primary.main }}
