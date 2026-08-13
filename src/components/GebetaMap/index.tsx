@@ -51,7 +51,6 @@ const MINIBUS_SELECTED_IMAGE = require('../../../assets/images/minibus-selected.
 const TAXI_MARKER_IMAGE = require('../../../assets/images/taxi-marker.png');
 
 const EXPLORE_FALLBACK_IMAGE = require('../../../assets/images/other.png');
-let homeFollowPaused = false;
 
 const HOME_FOLLOW_MIN_MOVE_METERS = 25;
 
@@ -860,6 +859,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         const [mapHeight, setMapHeight] = useState(0);
         const mapHeightRef = useRef(0);
         const hasStartedNavigating = useRef(false);
+        const homeFollowPausedRef = useRef(false);
         const userHasZoomedOut = useRef(false);
         const lastHomeFollowPanAtRef = useRef(0);
         const lastHomeFollowCenterRef = useRef<{ lat: number; lng: number } | null>(null);
@@ -890,6 +890,11 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         const pulseAnim = useRef(new Animated.Value(1)).current;
         const [imagesLoaded, setImagesLoaded] = useState(false);
         const [renderKey, setRenderKey] = useState(0);
+        const [homeCameraEpoch, setHomeCameraEpoch] = useState(0);
+        const [homeCameraTarget, setHomeCameraTarget] = useState<{
+            center: [number, number];
+            zoom: number;
+        } | null>(null);
         const [navCameraFree, setNavCameraFree] = useState(false);
         const lastFreeCameraRef = useRef<{ center: [number, number]; zoom: number } | null>(null);
         const navGraceUntilRef = useRef(0);
@@ -980,7 +985,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         const handleMapTouchForUnlock = useCallback(() => {
             if (!isNavigating) {
                 if (externalCameraControl) {
-                    homeFollowPaused = true;
+                    homeFollowPausedRef.current = true;
                 }
                 return;
             }
@@ -1058,7 +1063,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 props.isUserInteraction === true &&
                 props.animated !== true
             ) {
-                homeFollowPaused = true;
+                homeFollowPausedRef.current = true;
             }
 
         }, [isNavigating, externalCameraControl]);
@@ -1069,7 +1074,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         useEffect(() => {
             if (isNavigating || !externalCameraControl) return;
             if (centerLng == null || centerLat == null || !cameraRef.current) return;
-            if (homeFollowPaused) return;
+            if (homeFollowPausedRef.current) return;
 
             const firstApply = !exploreCenterAppliedRef.current;
             exploreCenterAppliedRef.current = true;
@@ -1084,11 +1089,9 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
         useEffect(() => {
             if (isNavigating || !externalCameraControl) return;
-            // The home map is browse-first: location updates move the marker, not the camera.
-            // Recentring remains available through the explicit location button.
             if (isHomeMap) return;
             if (!userLocation || !cameraRef.current) return;
-            if (homeFollowPaused) return;
+            if (homeFollowPausedRef.current) return;
 
             const now = Date.now();
             if (now - lastHomeFollowPanAtRef.current < 400) return;
@@ -1116,7 +1119,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                     userLocation.lng,
                 ) > HOME_FOLLOW_MAX_DRIFT_METERS
             ) {
-                homeFollowPaused = true;
+                homeFollowPausedRef.current = true;
                 return;
             }
 
@@ -1380,7 +1383,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 lastFreeCameraRef.current = null;
                 lastRegionCenterRef.current = null;
 
-                homeFollowPaused = false;
+                homeFollowPausedRef.current = false;
                 lastHomeFollowCenterRef.current = null;
                 commandedCenterRef.current = null;
                 prevCommandedCenterRef.current = null;
@@ -1479,22 +1482,19 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 applyFlyTo(options);
             },
             recenterOnce: (options: { center: [number, number]; zoom?: number }) => {
-                if (!cameraRef.current) return;
-
-                // Home recentering is a single command, never a request to resume following.
-                homeFollowPaused = true;
+                homeFollowPausedRef.current = true;
                 pendingFlyTo.current = null;
                 flyToTokenRef.current += 1;
+                lastFreeCameraRef.current = {
+                    center: options.center,
+                    zoom: options.zoom ?? lastKnownZoomRef.current ?? (zoom ?? 15),
+                };
+                setHomeCameraTarget(lastFreeCameraRef.current);
                 markHomeCommand(options.center, options.zoom);
-                cameraRef.current.setCamera({
-                    centerCoordinate: options.center,
-                    zoomLevel: options.zoom,
-                    animationDuration: 0,
-                    animationMode: 'moveTo',
-                });
+                setHomeCameraEpoch((current) => current + 1);
             },
             resumeFollow: () => {
-                homeFollowPaused = false;
+                homeFollowPausedRef.current = false;
                 lastHomeFollowCenterRef.current = null;
 
                 lastRegionCenterRef.current = null;
@@ -1553,7 +1553,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             updateNavigationPosition: () => { },
             getNavigationState: () => null,
             isNavigating: () => false,
-        }), [applyFlyTo, markAnimatedProgrammaticCamera, markHomeCommand]);
+        }), [applyFlyTo, markAnimatedProgrammaticCamera, markHomeCommand, NAV_ZOOM, zoom]);
 
         useEffect(() => {
             if (mapStyleJson) {
@@ -1659,14 +1659,49 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
 
 
+        const showFollowCamera = isNavigating && !navCameraFree;
+        const showExploreCamera = !isNavigating && externalCameraControl;
+        const cameraDefaultCenter = useMemo<[number, number] | undefined>(
+            () => centerLng == null || centerLat == null ? undefined : [centerLng, centerLat],
+            [centerLng, centerLat],
+        );
+        const exploreCameraTarget = homeCameraTarget || lastFreeCameraRef.current;
+        const exploreCameraDefaultSettings = useMemo(() => ({
+            centerCoordinate: showExploreCamera && exploreCameraTarget
+                ? exploreCameraTarget.center
+                : cameraDefaultCenter,
+            zoomLevel: exploreCameraTarget?.zoom ?? (zoom ?? 15),
+        }), [
+            cameraDefaultCenter,
+            zoom,
+            showExploreCamera,
+            exploreCameraTarget,
+        ]);
+        const followCameraDefaultSettings = useMemo(() => ({
+            centerCoordinate: cameraDefaultCenter,
+            zoomLevel: NAV_ZOOM,
+            pitch: 60,
+            heading: userHeading || 0,
+        }), [
+            cameraDefaultCenter,
+            NAV_ZOOM,
+            userHeading,
+        ]);
+        const cameraDefaultSettings = showFollowCamera
+            ? followCameraDefaultSettings
+            : exploreCameraDefaultSettings;
+
+        useEffect(() => {
+            if (!homeCameraTarget) return;
+            const frameId = requestAnimationFrame(() => setHomeCameraTarget(null));
+            return () => cancelAnimationFrame(frameId);
+        }, [homeCameraTarget]);
+
         if (!mapStyleState || !center) {
             return (
                 <View style={[styles.container, { backgroundColor: getTileLoadingBackground(isDark) }]} />
             );
         }
-
-        const showFollowCamera = isNavigating && !navCameraFree;
-        const showExploreCamera = !isNavigating && externalCameraControl;
 
         return (
             <View style={styles.container}>
@@ -1782,7 +1817,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                         ),
                                     );
                                     if (offsetPixels > HOME_PAN_PIXEL_TOLERANCE) {
-                                        homeFollowPaused = true;
+                                        homeFollowPausedRef.current = true;
                                     }
                                 }
 
@@ -1792,7 +1827,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                     expectedZoom !== null &&
                                     Math.abs(zoomLevel - expectedZoom) > HOME_ZOOM_TOLERANCE
                                 ) {
-                                    homeFollowPaused = true;
+                                    homeFollowPausedRef.current = true;
                                 }
                                 lastKnownZoomRef.current = zoomLevel;
                                 commandedZoomRef.current = null;
@@ -1813,19 +1848,13 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                     >
                         {(showFollowCamera || showExploreCamera) && (
                             <MapLibreGL.Camera
-                                key={showFollowCamera ? 'nav-follow-camera' : 'explore-camera'}
+                                key={showFollowCamera
+                                    ? 'nav-follow-camera'
+                                    : `explore-camera-${homeCameraEpoch}`}
                                 ref={cameraRef}
                                 maxBounds={undefined}
                                 followUserLocation={isHomeMap ? false : undefined}
-                                defaultSettings={{
-                                    centerCoordinate: showExploreCamera && lastFreeCameraRef.current
-                                        ? lastFreeCameraRef.current.center
-                                        : center,
-                                    zoomLevel: showFollowCamera
-                                        ? NAV_ZOOM
-                                        : (lastFreeCameraRef.current?.zoom ?? (zoom ?? 15)),
-                                    ...(showFollowCamera ? { pitch: 60, heading: userHeading || 0 } : {}),
-                                }}
+                                defaultSettings={cameraDefaultSettings}
                             />
                         )}
 
