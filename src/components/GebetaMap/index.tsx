@@ -1,5 +1,5 @@
 import React, { forwardRef, useState, useImperativeHandle, useRef, useEffect, useLayoutEffect, memo, useMemo, useCallback } from 'react';
-import { View, StyleSheet, Alert, Text, Animated, Image, PixelRatio } from 'react-native';
+import { View, StyleSheet, Alert, Text, Animated, Image, PixelRatio, AppState } from 'react-native';
 import MapLibreGL from '@maplibre/maplibre-react-native';
 import { GebetaMapRef, GebetaMapProps } from '@gebeta/tiles-react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -260,6 +260,20 @@ const NavigationMarker = memo(forwardRef<any, {
 }));
 NavigationMarker.displayName = 'NavigationMarker';
 
+const WALK_DASH_PATTERN = [0.1, 2];
+
+const useForegroundEpoch = () => {
+    const [epoch, setEpoch] = useState(0);
+
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', (state) => {
+            if (state === 'active') setEpoch((value) => value + 1);
+        });
+        return () => subscription.remove();
+    }, []);
+
+    return epoch;
+};
 
 const AnimatedSegmentedRoutes = memo(({
     segmentedRoutes,
@@ -290,6 +304,8 @@ const AnimatedSegmentedRoutes = memo(({
         });
     }, [segmentedRoutes, animatedLat, animatedLng, currentTaxiSegmentIndex]);
 
+    const foregroundEpoch = useForegroundEpoch();
+
     return (
         <>
             {animatedSegments.map((route) => {
@@ -304,12 +320,12 @@ const AnimatedSegmentedRoutes = memo(({
                     lineJoin: 'round',
                 };
                 if (route.isWalking) {
-                    lineStyle.lineDasharray = [0, 2];
+                    lineStyle.lineDasharray = WALK_DASH_PATTERN;
                 }
 
                 return (
                     <MapLibreGL.ShapeSource
-                        key={`segment-${route.segmentIndex}-source`}
+                        key={`segment-${route.segmentIndex}-source-${route.isWalking ? foregroundEpoch : 0}`}
                         id={`segment-${route.segmentIndex}-source`}
                         shape={route.geoJSON}
                     >
@@ -835,6 +851,7 @@ AnimatedNavLayer.displayName = 'AnimatedNavLayer';
 const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
     ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, isHomeMap, maneuvers, boundingBox, alternativeRoutesGeoJSON, routeTimeLabels }, ref) => {
         const { isDark } = useTheme();
+        const foregroundEpoch = useForegroundEpoch();
         const [mapStyleState, setMapStyleState] = useState<Record<string, unknown> | null>(() =>
             mapStyleJson ? ensureStyleBackgroundLayer(mapStyleJson as Record<string, any>, isDark) : null
         );
@@ -1826,11 +1843,11 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                 lineJoin: 'round',
                             };
                             if (route.isWalking) {
-                                lineStyle.lineDasharray = [0, 2];
+                                lineStyle.lineDasharray = WALK_DASH_PATTERN;
                             }
                             return (
                                 <MapLibreGL.ShapeSource
-                                    key={`segment-static-${route.segmentIndex}`}
+                                    key={`segment-static-${route.segmentIndex}-${route.isWalking ? foregroundEpoch : 0}`}
                                     id={`segment-${route.segmentIndex}-source`}
                                     shape={route.geoJSON}
                                 >
@@ -1924,7 +1941,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                     lineCap: 'round',
                                     lineJoin: 'round',
                                     ...(routeStyle?.isDotted
-                                        ? { lineDasharray: [0, 2] }
+                                        ? { lineDasharray: WALK_DASH_PATTERN }
                                         : { lineDasharray: [1, 0] }),
                                 }}
                             />
@@ -2021,7 +2038,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                 };
                                 return (
                                     <MapLibreGL.ShapeSource
-                                        key={`taxi-walk-${route.type}-${index}`}
+                                        key={`taxi-walk-${route.type}-${index}-${foregroundEpoch}`}
                                         id={`taxi-walk-${route.type}-${index}-source`}
                                         shape={walkGeoJSON}
                                     >
@@ -2129,7 +2146,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                 lineOpacity: 0.6,
                                 lineCap: 'round',
                                 lineJoin: 'round',
-                                ...(routeStyle?.isDotted && { lineDasharray: [0, 2] }),
+                                ...(routeStyle?.isDotted && { lineDasharray: WALK_DASH_PATTERN }),
                             }}
                             segmentedRoutes={segmentedRoutes}
                             isTaxiNavigation={!!isTaxiNavigation}
