@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ruleService } from '../services/rule.service';
 import { TrafficRuleType } from '../types/rule.types';
@@ -12,6 +12,7 @@ export default function RuleContributionScreen() {
     const router = useRouter();
     const { t } = useTranslation();
     const { colors: theme, isDark } = useTheme();
+    const { isNavigating, lat, lng } = useLocalSearchParams<{ isNavigating?: string; lat?: string; lng?: string }>();
     const [ruleTypes, setRuleTypes] = useState<TrafficRuleType[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -42,6 +43,9 @@ export default function RuleContributionScreen() {
                 typeName: displayName,
                 typeDescription: displayDescription,
                 typeImg: ruleType.img,
+                isNavigating: isNavigating ?? '',
+                lat: lat ?? '',
+                lng: lng ?? '',
             },
         });
     };

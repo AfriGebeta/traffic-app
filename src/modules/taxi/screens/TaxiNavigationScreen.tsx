@@ -17,7 +17,7 @@ import { useTaxiSimulation } from '../../navigation/hooks/useTaxiSimulation';
 import { useLocationTracking } from '../../navigation/hooks/useLocationTracking';
 import { SegmentProgressBar } from '../../navigation/components/SegmentProgressBar';
 import { ArrivalModal } from '../../navigation/components/ArrivalModal';
-import { decodePolyline } from '../../../shared/utils/polyline';
+import { decodeTaxiSegmentPaths } from '../../navigation/utils/navigationUtils';
 import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
 
 const NAV_GREEN = '#0F9D58';
@@ -143,17 +143,13 @@ export default function TaxiNavigationScreen() {
         let distance = 0;
         let duration = 0;
 
-        activeRoute.segments?.forEach(segment => {
-            try {
-                const decoded = decodePolyline(segment.polyline, 6);
-                decoded.forEach(([lat, lng]: [number, number]) => {
-                    coords.push([lng, lat]);
-                });
-                distance += segment.distance * 1000;
-                duration += segment.time;
-            } catch (error) {
-                console.error('Error decoding segment:', error);
-            }
+        const paths = decodeTaxiSegmentPaths(activeRoute.segments ?? []);
+        activeRoute.segments?.forEach((segment, idx) => {
+            paths[idx].forEach(([lat, lng]: [number, number]) => {
+                coords.push([lng, lat]);
+            });
+            distance += segment.distance * 1000;
+            duration += segment.time;
         });
 
         allRouteCoordinates.current = coords;
@@ -181,9 +177,10 @@ export default function TaxiNavigationScreen() {
     useEffect(() => {
         if (!activeRoute.segments) return;
 
+        const paths = decodeTaxiSegmentPaths(activeRoute.segments);
+
         const routes = activeRoute.segments.map((seg, idx) => {
-            const decoded = decodePolyline(seg.polyline, 6);
-            const coordinates = decoded.map(([lat, lng]: [number, number]) => [lng, lat] as [number, number]);
+            const coordinates = paths[idx].map(([lat, lng]: [number, number]) => [lng, lat] as [number, number]);
 
             return {
                 geoJSON: {
@@ -198,6 +195,18 @@ export default function TaxiNavigationScreen() {
                 segmentIndex: idx
             };
         });
+
+        if (__DEV__) {
+            console.log('[TaxiDebug] source segments:', activeRoute.segments.map((seg, idx) => ({
+                idx,
+                type: seg.type,
+                mode: seg.mode,
+                polylineChars: seg.polyline?.length ?? 0,
+                points: paths[idx].length,
+                first: paths[idx][0],
+                last: paths[idx][paths[idx].length - 1],
+            })));
+        }
 
         setSegmentedRoutes(routes);
     }, [activeRoute]);
@@ -223,7 +232,9 @@ export default function TaxiNavigationScreen() {
         updateNavigationState,
     });
 
-    const { startLocationTracking, stopLocationTracking } = useLocationTracking({
+    const resetClosestIndexRef = useRef<() => void>(() => { });
+
+    const { startLocationTracking, stopLocationTracking, resetClosestIndex } = useLocationTracking({
         routeCoordinates: allRouteCoordinates,
         isNavigatingRef,
         mapRef,
@@ -253,28 +264,24 @@ export default function TaxiNavigationScreen() {
                 });
 
                 if (newRoute.success && newRoute.segments) {
-                    setCurrentRoute(newRoute);
-
                     const coords: [number, number][] = [];
                     let distance = 0;
                     let duration = 0;
 
-                    newRoute.segments?.forEach(segment => {
-                        try {
-                            const decoded = decodePolyline(segment.polyline, 6);
-                            decoded.forEach(([lat, lng]: [number, number]) => {
-                                coords.push([lng, lat]);
-                            });
-                            distance += segment.distance * 1000;
-                            duration += segment.time;
-                        } catch (error) {
-                            console.error('Error decoding segment:', error);
-                        }
+                    const paths = decodeTaxiSegmentPaths(newRoute.segments ?? []);
+                    newRoute.segments?.forEach((segment, idx) => {
+                        paths[idx].forEach(([lat, lng]: [number, number]) => {
+                            coords.push([lng, lat]);
+                        });
+                        distance += segment.distance * 1000;
+                        duration += segment.time;
                     });
 
+                    resetClosestIndexRef.current();
                     allRouteCoordinates.current = coords;
                     totalDistance.current = distance;
                     totalDuration.current = duration;
+                    setCurrentRoute(newRoute);
 
                     showToast('Route Updated: New route calculated');
                 } else {
@@ -294,6 +301,8 @@ export default function TaxiNavigationScreen() {
         setSegmentedRoutes,
         updateNavigationState,
     });
+
+    resetClosestIndexRef.current = resetClosestIndex;
 
     const {
         currentSegmentIndex,
@@ -377,7 +386,10 @@ export default function TaxiNavigationScreen() {
     console.log('[TaxiNav] Rendering map with segmentedRoutes:', {
         count: segmentedRoutes.length,
         isTaxiNavigation: true,
-        currentSegmentIndex
+        currentSegmentIndex,
+        drawn: segmentedRoutes.map(r =>
+            `${r.segmentIndex}:${r.isWalking ? 'walk' : 'taxi'}:${r.geoJSON.geometry.coordinates.length}`
+        ).join(' '),
     });
 
     return (

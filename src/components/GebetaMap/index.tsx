@@ -1,5 +1,5 @@
 import React, { forwardRef, useState, useImperativeHandle, useRef, useEffect, useLayoutEffect, memo, useMemo, useCallback } from 'react';
-import { View, StyleSheet, Alert, Text, Animated, Image, PixelRatio } from 'react-native';
+import { View, StyleSheet, Alert, Text, Animated, Image, PixelRatio, AppState } from 'react-native';
 import MapLibreGL from '@maplibre/maplibre-react-native';
 import { GebetaMapRef, GebetaMapProps } from '@gebeta/tiles-react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -51,7 +51,6 @@ const MINIBUS_SELECTED_IMAGE = require('../../../assets/images/minibus-selected.
 const TAXI_MARKER_IMAGE = require('../../../assets/images/taxi-marker.png');
 
 const EXPLORE_FALLBACK_IMAGE = require('../../../assets/images/other.png');
-let homeFollowPaused = false;
 
 const HOME_FOLLOW_MIN_MOVE_METERS = 25;
 
@@ -172,6 +171,7 @@ interface ExtendedGebetaMapProps extends Omit<GebetaMapProps, 'center'> {
     taxiWalkRoutes?: Array<{
         type: 'origin' | 'transfer' | 'destination';
         polyline: string;
+        coordinates?: Array<[number, number]>;
     }>;
     taxiRouteSegments?: Array<{
         coordinates: Array<[number, number]>;
@@ -259,6 +259,20 @@ const NavigationMarker = memo(forwardRef<any, {
 }));
 NavigationMarker.displayName = 'NavigationMarker';
 
+const WALK_DASH_PATTERN = [0.1, 2];
+
+const useForegroundEpoch = () => {
+    const [epoch, setEpoch] = useState(0);
+
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', (state) => {
+            if (state === 'active') setEpoch((value) => value + 1);
+        });
+        return () => subscription.remove();
+    }, []);
+
+    return epoch;
+};
 
 const AnimatedSegmentedRoutes = memo(({
     segmentedRoutes,
@@ -289,6 +303,8 @@ const AnimatedSegmentedRoutes = memo(({
         });
     }, [segmentedRoutes, animatedLat, animatedLng, currentTaxiSegmentIndex]);
 
+    const foregroundEpoch = useForegroundEpoch();
+
     return (
         <>
             {animatedSegments.map((route) => {
@@ -303,12 +319,12 @@ const AnimatedSegmentedRoutes = memo(({
                     lineJoin: 'round',
                 };
                 if (route.isWalking) {
-                    lineStyle.lineDasharray = [0, 2];
+                    lineStyle.lineDasharray = WALK_DASH_PATTERN;
                 }
 
                 return (
                     <MapLibreGL.ShapeSource
-                        key={`segment-${route.segmentIndex}-source`}
+                        key={`segment-${route.segmentIndex}-source-${route.isWalking ? foregroundEpoch : 0}`}
                         id={`segment-${route.segmentIndex}-source`}
                         shape={route.geoJSON}
                     >
@@ -834,6 +850,7 @@ AnimatedNavLayer.displayName = 'AnimatedNavLayer';
 const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
     ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, isHomeMap, maneuvers, boundingBox, alternativeRoutesGeoJSON, routeTimeLabels }, ref) => {
         const { isDark } = useTheme();
+        const foregroundEpoch = useForegroundEpoch();
         const [mapStyleState, setMapStyleState] = useState<Record<string, unknown> | null>(() =>
             mapStyleJson ? ensureStyleBackgroundLayer(mapStyleJson as Record<string, any>, isDark) : null
         );
@@ -842,6 +859,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         const [mapHeight, setMapHeight] = useState(0);
         const mapHeightRef = useRef(0);
         const hasStartedNavigating = useRef(false);
+        const homeFollowPausedRef = useRef(false);
         const userHasZoomedOut = useRef(false);
         const lastHomeFollowPanAtRef = useRef(0);
         const lastHomeFollowCenterRef = useRef<{ lat: number; lng: number } | null>(null);
@@ -872,6 +890,11 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         const pulseAnim = useRef(new Animated.Value(1)).current;
         const [imagesLoaded, setImagesLoaded] = useState(false);
         const [renderKey, setRenderKey] = useState(0);
+        const [homeCameraEpoch, setHomeCameraEpoch] = useState(0);
+        const [homeCameraTarget, setHomeCameraTarget] = useState<{
+            center: [number, number];
+            zoom: number;
+        } | null>(null);
         const [navCameraFree, setNavCameraFree] = useState(false);
         const lastFreeCameraRef = useRef<{ center: [number, number]; zoom: number } | null>(null);
         const navGraceUntilRef = useRef(0);
@@ -962,7 +985,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         const handleMapTouchForUnlock = useCallback(() => {
             if (!isNavigating) {
                 if (externalCameraControl) {
-                    homeFollowPaused = true;
+                    homeFollowPausedRef.current = true;
                 }
                 return;
             }
@@ -1040,7 +1063,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 props.isUserInteraction === true &&
                 props.animated !== true
             ) {
-                homeFollowPaused = true;
+                homeFollowPausedRef.current = true;
             }
 
         }, [isNavigating, externalCameraControl]);
@@ -1051,7 +1074,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         useEffect(() => {
             if (isNavigating || !externalCameraControl) return;
             if (centerLng == null || centerLat == null || !cameraRef.current) return;
-            if (homeFollowPaused) return;
+            if (homeFollowPausedRef.current) return;
 
             const firstApply = !exploreCenterAppliedRef.current;
             exploreCenterAppliedRef.current = true;
@@ -1066,11 +1089,9 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
         useEffect(() => {
             if (isNavigating || !externalCameraControl) return;
-            // The home map is browse-first: location updates move the marker, not the camera.
-            // Recentring remains available through the explicit location button.
             if (isHomeMap) return;
             if (!userLocation || !cameraRef.current) return;
-            if (homeFollowPaused) return;
+            if (homeFollowPausedRef.current) return;
 
             const now = Date.now();
             if (now - lastHomeFollowPanAtRef.current < 400) return;
@@ -1098,7 +1119,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                     userLocation.lng,
                 ) > HOME_FOLLOW_MAX_DRIFT_METERS
             ) {
-                homeFollowPaused = true;
+                homeFollowPausedRef.current = true;
                 return;
             }
 
@@ -1362,7 +1383,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 lastFreeCameraRef.current = null;
                 lastRegionCenterRef.current = null;
 
-                homeFollowPaused = false;
+                homeFollowPausedRef.current = false;
                 lastHomeFollowCenterRef.current = null;
                 commandedCenterRef.current = null;
                 prevCommandedCenterRef.current = null;
@@ -1461,22 +1482,19 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 applyFlyTo(options);
             },
             recenterOnce: (options: { center: [number, number]; zoom?: number }) => {
-                if (!cameraRef.current) return;
-
-                // Home recentering is a single command, never a request to resume following.
-                homeFollowPaused = true;
+                homeFollowPausedRef.current = true;
                 pendingFlyTo.current = null;
                 flyToTokenRef.current += 1;
+                lastFreeCameraRef.current = {
+                    center: options.center,
+                    zoom: options.zoom ?? lastKnownZoomRef.current ?? (zoom ?? 15),
+                };
+                setHomeCameraTarget(lastFreeCameraRef.current);
                 markHomeCommand(options.center, options.zoom);
-                cameraRef.current.setCamera({
-                    centerCoordinate: options.center,
-                    zoomLevel: options.zoom,
-                    animationDuration: 0,
-                    animationMode: 'moveTo',
-                });
+                setHomeCameraEpoch((current) => current + 1);
             },
             resumeFollow: () => {
-                homeFollowPaused = false;
+                homeFollowPausedRef.current = false;
                 lastHomeFollowCenterRef.current = null;
 
                 lastRegionCenterRef.current = null;
@@ -1535,7 +1553,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             updateNavigationPosition: () => { },
             getNavigationState: () => null,
             isNavigating: () => false,
-        }), [applyFlyTo, markAnimatedProgrammaticCamera, markHomeCommand]);
+        }), [applyFlyTo, markAnimatedProgrammaticCamera, markHomeCommand, NAV_ZOOM, zoom]);
 
         useEffect(() => {
             if (mapStyleJson) {
@@ -1641,14 +1659,49 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
 
 
+        const showFollowCamera = isNavigating && !navCameraFree;
+        const showExploreCamera = !isNavigating && externalCameraControl;
+        const cameraDefaultCenter = useMemo<[number, number] | undefined>(
+            () => centerLng == null || centerLat == null ? undefined : [centerLng, centerLat],
+            [centerLng, centerLat],
+        );
+        const exploreCameraTarget = homeCameraTarget || lastFreeCameraRef.current;
+        const exploreCameraDefaultSettings = useMemo(() => ({
+            centerCoordinate: showExploreCamera && exploreCameraTarget
+                ? exploreCameraTarget.center
+                : cameraDefaultCenter,
+            zoomLevel: exploreCameraTarget?.zoom ?? (zoom ?? 15),
+        }), [
+            cameraDefaultCenter,
+            zoom,
+            showExploreCamera,
+            exploreCameraTarget,
+        ]);
+        const followCameraDefaultSettings = useMemo(() => ({
+            centerCoordinate: cameraDefaultCenter,
+            zoomLevel: NAV_ZOOM,
+            pitch: 60,
+            heading: userHeading || 0,
+        }), [
+            cameraDefaultCenter,
+            NAV_ZOOM,
+            userHeading,
+        ]);
+        const cameraDefaultSettings = showFollowCamera
+            ? followCameraDefaultSettings
+            : exploreCameraDefaultSettings;
+
+        useEffect(() => {
+            if (!homeCameraTarget) return;
+            const frameId = requestAnimationFrame(() => setHomeCameraTarget(null));
+            return () => cancelAnimationFrame(frameId);
+        }, [homeCameraTarget]);
+
         if (!mapStyleState || !center) {
             return (
                 <View style={[styles.container, { backgroundColor: getTileLoadingBackground(isDark) }]} />
             );
         }
-
-        const showFollowCamera = isNavigating && !navCameraFree;
-        const showExploreCamera = !isNavigating && externalCameraControl;
 
         return (
             <View style={styles.container}>
@@ -1764,7 +1817,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                         ),
                                     );
                                     if (offsetPixels > HOME_PAN_PIXEL_TOLERANCE) {
-                                        homeFollowPaused = true;
+                                        homeFollowPausedRef.current = true;
                                     }
                                 }
 
@@ -1774,7 +1827,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                     expectedZoom !== null &&
                                     Math.abs(zoomLevel - expectedZoom) > HOME_ZOOM_TOLERANCE
                                 ) {
-                                    homeFollowPaused = true;
+                                    homeFollowPausedRef.current = true;
                                 }
                                 lastKnownZoomRef.current = zoomLevel;
                                 commandedZoomRef.current = null;
@@ -1795,19 +1848,13 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                     >
                         {(showFollowCamera || showExploreCamera) && (
                             <MapLibreGL.Camera
-                                key={showFollowCamera ? 'nav-follow-camera' : 'explore-camera'}
+                                key={showFollowCamera
+                                    ? 'nav-follow-camera'
+                                    : `explore-camera-${homeCameraEpoch}`}
                                 ref={cameraRef}
                                 maxBounds={undefined}
                                 followUserLocation={isHomeMap ? false : undefined}
-                                defaultSettings={{
-                                    centerCoordinate: showExploreCamera && lastFreeCameraRef.current
-                                        ? lastFreeCameraRef.current.center
-                                        : center,
-                                    zoomLevel: showFollowCamera
-                                        ? NAV_ZOOM
-                                        : (lastFreeCameraRef.current?.zoom ?? (zoom ?? 15)),
-                                    ...(showFollowCamera ? { pitch: 60, heading: userHeading || 0 } : {}),
-                                }}
+                                defaultSettings={cameraDefaultSettings}
                             />
                         )}
 
@@ -1825,11 +1872,11 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                 lineJoin: 'round',
                             };
                             if (route.isWalking) {
-                                lineStyle.lineDasharray = [0, 2];
+                                lineStyle.lineDasharray = WALK_DASH_PATTERN;
                             }
                             return (
                                 <MapLibreGL.ShapeSource
-                                    key={`segment-static-${route.segmentIndex}`}
+                                    key={`segment-static-${route.segmentIndex}-${route.isWalking ? foregroundEpoch : 0}`}
                                     id={`segment-${route.segmentIndex}-source`}
                                     shape={route.geoJSON}
                                 >
@@ -1923,7 +1970,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                     lineCap: 'round',
                                     lineJoin: 'round',
                                     ...(routeStyle?.isDotted
-                                        ? { lineDasharray: [0, 2] }
+                                        ? { lineDasharray: WALK_DASH_PATTERN }
                                         : { lineDasharray: [1, 0] }),
                                 }}
                             />
@@ -2002,8 +2049,10 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
                         {taxiWalkRoutes && taxiWalkRoutes.map((route, index) => {
                             try {
-                                const coords = decodePolyline(route.polyline, 6);
-                                const mapCoords = coords.map(([lat, lng]) => [lng, lat]);
+                                const mapCoords = route.coordinates
+                                    ?? decodePolyline(route.polyline, 6).map(([lat, lng]) => [lng, lat] as [number, number]);
+
+                                if (mapCoords.length < 2) return null;
 
 
                                 const color = isTaxiNavigation ? '#3B82F6' : '#EF4444';
@@ -2018,7 +2067,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                 };
                                 return (
                                     <MapLibreGL.ShapeSource
-                                        key={`taxi-walk-${route.type}-${index}`}
+                                        key={`taxi-walk-${route.type}-${index}-${foregroundEpoch}`}
                                         id={`taxi-walk-${route.type}-${index}-source`}
                                         shape={walkGeoJSON}
                                     >
@@ -2126,7 +2175,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                 lineOpacity: 0.6,
                                 lineCap: 'round',
                                 lineJoin: 'round',
-                                ...(routeStyle?.isDotted && { lineDasharray: [0, 2] }),
+                                ...(routeStyle?.isDotted && { lineDasharray: WALK_DASH_PATTERN }),
                             }}
                             segmentedRoutes={segmentedRoutes}
                             isTaxiNavigation={!!isTaxiNavigation}

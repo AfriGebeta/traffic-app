@@ -33,8 +33,22 @@ export const useTaxiNavigation = ({
 
     const currentRouteRef = useRef(taxiRoute);
 
+    const isFirstRouteRef = useRef(true);
+
     useEffect(() => {
         currentRouteRef.current = taxiRoute;
+
+        if (isFirstRouteRef.current) {
+            isFirstRouteRef.current = false;
+            return;
+        }
+
+        setCurrentSegmentIndex(0);
+        const firstSegment = taxiRoute.segments?.[0];
+        if (firstSegment) {
+            setIsOnTaxi(firstSegment.mode === 'auto' || firstSegment.type === 'taxi');
+            announceSegmentTransition(firstSegment);
+        }
     }, [taxiRoute]);
 
     const currentSegment = currentRouteRef.current.segments?.[currentSegmentIndex];

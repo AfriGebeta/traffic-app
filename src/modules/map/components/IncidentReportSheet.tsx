@@ -20,6 +20,10 @@ import RadarLightIcon from '../../../../assets/images/radar-light.svg';
 import RadarDarkIcon from '../../../../assets/images/radar-dark.svg';
 import TrafficJamLightIcon from '../../../../assets/images/traffic-jam-light.svg';
 import TrafficJamDarkIcon from '../../../../assets/images/traffic-jam-dark.svg';
+import DangerTriangleIcon from '../../../../assets/images/Danger Triangle.svg';
+import DarkDangerTriangleIcon from '../../../../assets/images/dark-report.svg';
+import TrafficLightIcon from '../../../../assets/images/contribute-traffic-light.svg';
+import TrafficDarkIcon from '../../../../assets/images/contribute-traffic-dark.svg';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
@@ -63,17 +67,27 @@ export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
     const router = useRouter();
     const { colors: theme, isDark } = useTheme();
     const [incidentTypes, setIncidentTypes] = React.useState(INCIDENT_TYPES);
+    const [step, setStep] = React.useState<'choose' | 'incident'>(isNavigating ? 'choose' : 'incident');
+
+    React.useEffect(() => {
+        if (!isVisible) return;
+        setStep(isNavigating ? 'choose' : 'incident');
+    }, [isVisible, isNavigating]);
 
     React.useEffect(() => {
         if (!isVisible) return;
 
         const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+            if (isNavigating && step === 'incident') {
+                setStep('choose');
+                return true;
+            }
             onClose();
             return true;
         });
 
         return () => backHandler.remove();
-    }, [isVisible, onClose]);
+    }, [isVisible, onClose, isNavigating, step]);
 
     React.useEffect(() => {
         const fetchIncidentTypes = async () => {
@@ -128,14 +142,97 @@ export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
         [userLocation, router, onClose, isNavigating, onNavigateToReport]
     );
 
+    const handleContributeRulesPress = React.useCallback(() => {
+        const params = new URLSearchParams({
+            isNavigating: isNavigating.toString(),
+            lat: userLocation?.lat.toString() || '',
+            lng: userLocation?.lng.toString() || '',
+        });
+        onNavigateToReport?.();
+        router.push(`/rules/contribute?${params.toString()}`);
+        onClose();
+    }, [router, onClose, onNavigateToReport, isNavigating, userLocation]);
+
     if (!isVisible) return null;
+
+    if (step === 'choose') {
+        const IncidentCardIcon = isDark ? DarkDangerTriangleIcon : DangerTriangleIcon;
+        const RuleCardIcon = isDark ? TrafficDarkIcon : TrafficLightIcon;
+
+        const chooserOptions = [
+            {
+                id: 'incident',
+                titleKey: 'report-incidents',
+                descriptionKey: 'help-other-drivers-by-reporting-incidents',
+                Icon: IncidentCardIcon,
+                onPress: () => setStep('incident'),
+            },
+            {
+                id: 'rules',
+                titleKey: 'report-traffic-rule',
+                descriptionKey: 'report-traffic-rule-description',
+                Icon: RuleCardIcon,
+                onPress: handleContributeRulesPress,
+            },
+        ];
+
+        return (
+            <BottomSheet expandWhenOpen={true}>
+                <View className="pb-4">
+                    <View className="flex-row items-center mb-6">
+                        <TouchableOpacity
+                            onPress={onClose}
+                            className="mr-4 rounded-full p-2"
+                            style={{ backgroundColor: isDark ? theme.surface : '#F3F4F6' }}
+                            activeOpacity={0.7}
+                        >
+                            <Ionicons name="arrow-back" size={22} color={theme.textPrimary} />
+                        </TouchableOpacity>
+                        <View className="flex-1">
+                            <Text className="text-2xl font-bold" style={{ color: theme.textPrimary }}>{t('share-what-you-see')}</Text>
+                            <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>
+                                {t('choose-what-to-contribute')}
+                            </Text>
+                        </View>
+                    </View>
+
+                    <View className="gap-4">
+                        {chooserOptions.map((option) => (
+                            <TouchableOpacity
+                                key={option.id}
+                                className="rounded-2xl p-5"
+                                style={{ backgroundColor: theme.surface, borderWidth: 2, borderColor: theme.border }}
+                                onPress={option.onPress}
+                                activeOpacity={0.7}
+                            >
+                                <View className="flex-row items-center">
+                                    <View className="w-12 h-12 items-center justify-center mr-4">
+                                        <option.Icon width={40} height={40} />
+                                    </View>
+                                    <View className="flex-1">
+                                        <Text className="text-lg font-semibold mb-1" style={{ color: theme.textPrimary }}>
+                                            {t(option.titleKey)}
+                                        </Text>
+                                        <Text className="text-sm" style={{ color: theme.textSecondary }}>
+                                            {t(option.descriptionKey)}
+                                        </Text>
+                                    </View>
+                                    <Ionicons name="chevron-forward" size={24} color={theme.textSecondary} />
+                                </View>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </View>
+            </BottomSheet>
+        );
+    }
 
     return (
         <BottomSheet expandWhenOpen={true}>
             <View className="pb-4">
                 <View className="flex-row items-center mb-6">
                     <TouchableOpacity
-                        onPress={onClose}
+                        onPress={() => (isNavigating ? setStep('choose') : onClose())}
                         className="mr-4 rounded-full p-2"
                         style={{ backgroundColor: isDark ? theme.surface : '#F3F4F6' }}
                         activeOpacity={0.7}

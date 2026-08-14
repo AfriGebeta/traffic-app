@@ -6,6 +6,41 @@ export type TaxiSegmentInput = {
     mode: string;
 };
 
+const decodeSegmentPolyline = (segment: TaxiSegmentInput): [number, number][] => {
+    try {
+        return segment.polyline ? decodePolyline(segment.polyline, 6) : [];
+    } catch (error) {
+        return [];
+    }
+};
+
+const COORD_EPSILON = 1e-7;
+
+const isSamePoint = (a: [number, number], b: [number, number]) =>
+    Math.abs(a[0] - b[0]) < COORD_EPSILON && Math.abs(a[1] - b[1]) < COORD_EPSILON;
+
+const hasDrawableExtent = (path: [number, number][]) =>
+    path.length >= 2 && path.some((point) => !isSamePoint(point, path[0]));
+export const decodeTaxiSegmentPaths = (segments: TaxiSegmentInput[]): [number, number][][] => {
+    const paths = segments.map(decodeSegmentPolyline);
+
+    if (__DEV__) {
+        paths.forEach((path, idx) => {
+            if (hasDrawableExtent(path)) return;
+            const segment = segments[idx];
+            console.warn(
+                `[Taxi] segment ${idx} (${segment.type}/${segment.mode}) has no drawable geometry ` +
+                `(points=${path.length}) — leaves a gap in the drawn route`
+            );
+        });
+    }
+
+    return paths;
+};
+
+export const decodeTaxiSegmentCoordinates = (segment: TaxiSegmentInput): [number, number][] =>
+    decodeTaxiSegmentPaths([segment])[0];
+
 export type SegmentedRouteOutput = {
     geoJSON: {
         type: 'Feature';
@@ -23,23 +58,23 @@ export const buildSegmentedRoutesFromPosition = (
     displayLng: number,
     includeMarkerInProps = false
 ): SegmentedRouteOutput[] => {
+    const paths = decodeTaxiSegmentPaths(taxiSegments);
+
     let coordCount = 0;
     let currentSegIdx = 0;
     let positionInSegment = closestIndex;
 
-    for (let i = 0; i < taxiSegments.length; i++) {
-        const decoded = decodePolyline(taxiSegments[i].polyline, 6);
-        if (closestIndex < coordCount + decoded.length) {
+    for (let i = 0; i < paths.length; i++) {
+        if (closestIndex < coordCount + paths[i].length) {
             currentSegIdx = i;
             positionInSegment = closestIndex - coordCount;
             break;
         }
-        coordCount += decoded.length;
+        coordCount += paths[i].length;
     }
 
     return taxiSegments.map((seg, idx) => {
-        const decoded = decodePolyline(seg.polyline, 6);
-        let coordinates = decoded.map(([lat, lng]: [number, number]) => [lng, lat] as [number, number]);
+        let coordinates = paths[idx].map(([lat, lng]: [number, number]) => [lng, lat] as [number, number]);
 
         if (idx === currentSegIdx) {
             // Start from the next point on the route, not from user's off-road position

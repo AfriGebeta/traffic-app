@@ -42,6 +42,7 @@ import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 import { useRulePreferences } from '../../rules/hooks/useRulePreferences';
 import type { SharedLocation } from '../../../shared/utils/deepLinking';
 import { decodePolyline } from '../../../shared/utils/polyline';
+import { decodeTaxiSegmentPaths } from '../../navigation/utils/navigationUtils';
 import { exploreService } from '../services/exploreService';
 import type { TaxiNavigationResponse } from '../../taxi/types/taxi.types';
 import { setNavigationPreviewData } from '../../navigation/services/navigationPreviewCache';
@@ -804,15 +805,25 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         fetchIntermediateNodes();
 
         const fetchTransferWalks = async () => {
-            const walkRoutes: Array<{ type: 'origin' | 'transfer' | 'destination'; polyline: string }> = [];
+            const walkRoutes: Array<{
+                type: 'origin' | 'transfer' | 'destination';
+                polyline: string;
+                coordinates?: Array<[number, number]>;
+            }> = [];
 
             if (taxiRouteData.segments && taxiRouteData.segments.length > 0) {
+                const paths = decodeTaxiSegmentPaths(taxiRouteData.segments);
+
                 taxiRouteData.segments.forEach((segment: any, index: number) => {
-                    if ((segment.type === 'walk' || segment.mode === 'pedestrian') && segment.polyline) {
+                    if (segment.type === 'walk' || segment.mode === 'pedestrian') {
                         const type = index === 0 ? 'origin' :
                             index === taxiRouteData.segments.length - 1 ? 'destination' :
                                 'transfer';
-                        walkRoutes.push({ type, polyline: segment.polyline });
+                        const coordinates = paths[index].map(
+                            ([lat, lng]: [number, number]) => [lng, lat] as [number, number]
+                        );
+                        if (coordinates.length < 2) return;
+                        walkRoutes.push({ type, polyline: segment.polyline ?? '', coordinates });
                     }
                 });
             } else {
@@ -873,6 +884,29 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
 
 
         const fetchTaxiDrivingRoute = async () => {
+            const taxiLegs = (taxiRouteData.segments ?? []).filter(
+                (seg: any) => seg.type === 'taxi' || seg.mode === 'auto'
+            );
+
+            if (taxiLegs.length > 0) {
+                const paths = decodeTaxiSegmentPaths(taxiRouteData.segments);
+                const legs = taxiRouteData.segments
+                    .map((seg: any, idx: number) => ({ seg, path: paths[idx] }))
+                    .filter(({ seg }: any) => seg.type === 'taxi' || seg.mode === 'auto')
+                    .map(({ seg, path }: any) => ({
+                        coordinates: path.map(([lat, lng]: [number, number]) => [lng, lat] as [number, number]),
+                        cost: seg.fare ?? 0,
+                        from: seg.fromNode?.name ?? taxiRouteData.startNode.name,
+                        to: seg.toNode?.name ?? taxiRouteData.endNode.name,
+                    }))
+                    .filter((leg: any) => leg.coordinates.length >= 2);
+
+                if (legs.length > 0) {
+                    setTaxiRouteSegments(legs);
+                    return;
+                }
+            }
+
             try {
                 const { navigationService } = await import('../../navigation/services/navigation.service');
                 const routeData = await navigationService.getNavigation({
@@ -947,6 +981,12 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
             }, 100);
         }
     }, [taxiRouteData, isMapLoaded]);
+
+    useEffect(() => {
+        if (showRoutePreview) return;
+        setTaxiRouteData(null);
+        setIsFromTaxiSearch(false);
+    }, [showRoutePreview]);
 
     useEffect(() => {
         if (navigationMode) return;

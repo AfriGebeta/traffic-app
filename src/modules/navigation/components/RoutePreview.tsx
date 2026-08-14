@@ -477,7 +477,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                         </ScrollView>
                     )}
 
-                     {__DEV__ && (
+                    {__DEV__ && (
                         <View className="px-6 py-3" style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}>
                             <TouchableOpacity
                                 onPress={onSimulateToggle}
@@ -526,6 +526,11 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                             if (isWalkSegment) {
                                                 const isOrigin = index === 0;
                                                 const isDestination = index === taxiRoute.segments!.length - 1;
+
+                                                if (!isOrigin && !isDestination && !segment.distance && !segment.time) {
+                                                    return null;
+                                                }
+
                                                 return (
                                                     <View key={index} className={`flex-row items-start ${!isLastSegment ? 'mb-3' : ''}`}>
                                                         <View className="w-8 items-center pt-1">
@@ -534,12 +539,12 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                                         </View>
                                                         <View className="flex-1 ml-3">
                                                             <Text className="text-sm" style={{ color: theme.textSecondary }}>
-                                                                {isOrigin ? t('walk-to-boarding-point') : t('walk-to-destination')}
+                                                                {isDestination ? t('walk-to-destination') : t('walk-to-boarding-point')}
                                                             </Text>
                                                             <Text className="font-semibold text-sm mt-1" style={{ color: theme.textPrimary }}>
-                                                                {isOrigin
-                                                                    ? (segment.toNode?.name || taxiRoute.startNode?.name || 'Boarding Point')
-                                                                    : destinationName
+                                                                {isDestination
+                                                                    ? destinationName
+                                                                    : (segment.toNode?.name || taxiRoute.startNode?.name || 'Boarding Point')
                                                                 }
                                                             </Text>
                                                             <Text className="text-xs" style={{ color: theme.textSecondary }}>
@@ -635,100 +640,100 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                     </ScrollView>
 
                     {!showRouteOptionCards && (
-                    <View className="px-6 py-3 mb-2" style={{ borderTopWidth: 1, borderTopColor: theme.border }}>
-                        <View className="rounded-2xl p-4" style={{ backgroundColor: isDark ? theme.surface : '#E5E7EB' }}>
-                            <View className="flex-row items-start justify-between">
-                                <View className="flex-1 mr-3" style={{ opacity: isFetchingRoute && transportMode !== 'taxi' ? 0.4 : 1 }}>
-                                    {transportMode === 'taxi' && taxiRoute && taxiRoute.summary ? (
-                                        <>
-                                            <Text className="text-3xl font-bold" style={{ color: colors.primary.main }}>
-                                                {taxiRoute.summary?.estimatedFare || 0} {taxiRoute.summary?.currency || 'ETB'}
-                                            </Text>
-                                            <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>
-                                                {t('taxi-fare')} • {formatTime(displayDuration)}
-                                            </Text>
-                                            <Text className="font-medium mt-1" style={{ color: theme.textPrimary }} numberOfLines={2} ellipsizeMode="tail">
-                                                {destinationName}
-                                            </Text>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <View className="flex-row items-center">
-                                                <Text className="text-3xl font-bold" style={{ color: theme.textPrimary }}>
-                                                    {formatTime(duration)}
+                        <View className="px-6 py-3 mb-2" style={{ borderTopWidth: 1, borderTopColor: theme.border }}>
+                            <View className="rounded-2xl p-4" style={{ backgroundColor: isDark ? theme.surface : '#E5E7EB' }}>
+                                <View className="flex-row items-start justify-between">
+                                    <View className="flex-1 mr-3" style={{ opacity: isFetchingRoute && transportMode !== 'taxi' ? 0.4 : 1 }}>
+                                        {transportMode === 'taxi' && taxiRoute && taxiRoute.summary ? (
+                                            <>
+                                                <Text className="text-3xl font-bold" style={{ color: colors.primary.main }}>
+                                                    {taxiRoute.summary?.estimatedFare || 0} {taxiRoute.summary?.currency || 'ETB'}
                                                 </Text>
-                                                {isFetchingRoute && (
-                                                    <ActivityIndicator size="small" color={colors.primary.main} style={{ marginLeft: 10 }} />
-                                                )}
-                                            </View>
-                                            <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>
-                                                {t('eta')} {formatETA(duration)} • {formatDistance(distance)}
-                                            </Text>
-                                            <Text className="font-medium mt-1" style={{ color: theme.textPrimary }} numberOfLines={2} ellipsizeMode="tail">
-                                                {destinationName}
-                                            </Text>
-                                        </>
-                                    )}
-                                </View>
+                                                <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>
+                                                    {t('taxi-fare')} • {formatTime(displayDuration)}
+                                                </Text>
+                                                <Text className="font-medium mt-1" style={{ color: theme.textPrimary }} numberOfLines={2} ellipsizeMode="tail">
+                                                    {destinationName}
+                                                </Text>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <View className="flex-row items-center">
+                                                    <Text className="text-3xl font-bold" style={{ color: theme.textPrimary }}>
+                                                        {formatTime(duration)}
+                                                    </Text>
+                                                    {isFetchingRoute && (
+                                                        <ActivityIndicator size="small" color={colors.primary.main} style={{ marginLeft: 10 }} />
+                                                    )}
+                                                </View>
+                                                <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>
+                                                    {t('eta')} {formatETA(duration)} • {formatDistance(distance)}
+                                                </Text>
+                                                <Text className="font-medium mt-1" style={{ color: theme.textPrimary }} numberOfLines={2} ellipsizeMode="tail">
+                                                    {destinationName}
+                                                </Text>
+                                            </>
+                                        )}
+                                    </View>
 
-                                <View className="flex-row items-center flex-shrink-0">
-                                    {destination && (
-                                        <>
-                                            <TouchableOpacity
-                                                onPress={savedPlace ? handleUnsavePlace : () => router.push({
-                                                    pathname: '/places/save',
-                                                    params: { lat: destination.latitude, lng: destination.longitude, name: destination.name },
-                                                } as any)}
-                                                className="rounded-2xl px-3 py-4 -mr-3"
-                                            >
-                                                <Ionicons
-                                                    name={savedPlace ? "bookmark" : "bookmark-outline"}
-                                                    size={24}
-                                                    color={colors.primary.main}
-                                                />
-                                            </TouchableOpacity>
-                                            <TouchableOpacity
-                                                onPress={async () => {
-                                                    const { Share } = await import('react-native');
-                                                    const url = `https://maps.gebeta.app/?lat=${destination.latitude}&lng=${destination.longitude}&name=${encodeURIComponent(destination.name)}`;
-                                                    Share.share({
-                                                        message: `Check out ${destination.name} on Gebeta Maps: ${url}`,
-                                                        url: url,
-                                                    });
-                                                }}
-                                                className="rounded-2xl px-3 py-4"
-                                            >
-                                                <Ionicons name="share-social" size={24} color={colors.primary.main} />
-                                            </TouchableOpacity>
-                                        </>
-                                    )}
+                                    <View className="flex-row items-center flex-shrink-0">
+                                        {destination && (
+                                            <>
+                                                <TouchableOpacity
+                                                    onPress={savedPlace ? handleUnsavePlace : () => router.push({
+                                                        pathname: '/places/save',
+                                                        params: { lat: destination.latitude, lng: destination.longitude, name: destination.name },
+                                                    } as any)}
+                                                    className="rounded-2xl px-3 py-4 -mr-3"
+                                                >
+                                                    <Ionicons
+                                                        name={savedPlace ? "bookmark" : "bookmark-outline"}
+                                                        size={24}
+                                                        color={colors.primary.main}
+                                                    />
+                                                </TouchableOpacity>
+                                                <TouchableOpacity
+                                                    onPress={async () => {
+                                                        const { Share } = await import('react-native');
+                                                        const url = `https://maps.gebeta.app/?lat=${destination.latitude}&lng=${destination.longitude}&name=${encodeURIComponent(destination.name)}`;
+                                                        Share.share({
+                                                            message: `Check out ${destination.name} on Gebeta Maps: ${url}`,
+                                                            url: url,
+                                                        });
+                                                    }}
+                                                    className="rounded-2xl px-3 py-4"
+                                                >
+                                                    <Ionicons name="share-social" size={24} color={colors.primary.main} />
+                                                </TouchableOpacity>
+                                            </>
+                                        )}
 
-                                    <TouchableOpacity
-                                        onPress={
-                                            transportMode === 'taxi'
-                                                ? handleStartNavigation
-                                                : isCustomOrigin
-                                                    ? handlePreviewPress
-                                                    : handleStartNavigation
-                                        }
-                                        className="rounded-2xl px-8 py-4 shadow-lg"
-                                        style={{
-                                            backgroundColor: colors.primary.main,
-                                            shadowColor: colors.primary.main,
-                                            shadowOffset: { width: 0, height: 4 },
-                                            shadowOpacity: 0.3,
-                                            shadowRadius: 8,
-                                            elevation: 8,
-                                        }}
-                                    >
-                                        <Text className="text-white text-xl font-bold">
-                                            {transportMode === 'taxi' || !isCustomOrigin ? t('go') : t('preview')}
-                                        </Text>
-                                    </TouchableOpacity>
+                                        <TouchableOpacity
+                                            onPress={
+                                                transportMode === 'taxi'
+                                                    ? handleStartNavigation
+                                                    : isCustomOrigin
+                                                        ? handlePreviewPress
+                                                        : handleStartNavigation
+                                            }
+                                            className="rounded-2xl px-8 py-4 shadow-lg"
+                                            style={{
+                                                backgroundColor: colors.primary.main,
+                                                shadowColor: colors.primary.main,
+                                                shadowOffset: { width: 0, height: 4 },
+                                                shadowOpacity: 0.3,
+                                                shadowRadius: 8,
+                                                elevation: 8,
+                                            }}
+                                        >
+                                            <Text className="text-white text-xl font-bold">
+                                                {transportMode === 'taxi' || !isCustomOrigin ? t('go') : t('preview')}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
                                 </View>
                             </View>
                         </View>
-                    </View>
                     )}
 
                 </View>
