@@ -3058,5 +3058,15 @@
         "key": "enter-landmark-description",
         "EN_US": "Enter a nearby landmark",
         "AM": "በአቅራቢያ ያለ መለያ ቦታ ያስገቡ"
+    },
+    {
+        "key": "logout-confirm-title",
+        "EN_US": "Are you sure?",
+        "AM": "እርግጠኛ ነዎት?"
+    },
+    {
+        "key": "logout-confirm-message",
+        "EN_US": "You will be signed out of your account.",
+        "AM": "ከመለያዎ ይወጣሉ።"
     }
 ]

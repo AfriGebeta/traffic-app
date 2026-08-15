@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Image, Pressable, BackHandler } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -51,6 +51,8 @@ export const ProfileScreen = () => {
     const [showFiltersModal, setShowFiltersModal] = useState(false);
     const [showLanguages, setShowLanguages] = useState(false);
     const [remoteAvatarFailed, setRemoteAvatarFailed] = useState(false);
+    const [showMenu, setShowMenu] = useState(false);
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
     const [level, setLevel] = useState('');
     const [rank, setRank] = useState(0);
@@ -123,7 +125,20 @@ export const ProfileScreen = () => {
         }
     };
 
+    useEffect(() => {
+        if (!showMenu && !showLogoutConfirm) return;
+
+        const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+            setShowMenu(false);
+            setShowLogoutConfirm(false);
+            return true;
+        });
+
+        return () => subscription.remove();
+    }, [showMenu, showLogoutConfirm]);
+
     const handleLogout = async () => {
+        setShowLogoutConfirm(false);
         await clearAuth();
         router.replace('/');
     };
@@ -283,11 +298,11 @@ export const ProfileScreen = () => {
                             </View>
                         </View>
                         <TouchableOpacity
-                            onPress={handleLogout}
+                            onPress={() => setShowMenu(true)}
                             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                             className="items-center justify-center p-2"
                         >
-                            <LogoutIcon width={22} height={22} color={theme.textPrimary} />
+                            <Ionicons name="ellipsis-vertical" size={20} color={theme.textPrimary} />
                         </TouchableOpacity>
                     </View>
 
@@ -543,6 +558,93 @@ export const ProfileScreen = () => {
                 visible={showFiltersModal}
                 onClose={() => setShowFiltersModal(false)}
             />
+
+            {showMenu && (
+                <Pressable
+                    className="absolute inset-0"
+                    style={{ top: 0, left: 0, right: 0, bottom: 0 }}
+                    onPress={() => setShowMenu(false)}
+                >
+                    <View
+                        className="absolute overflow-hidden"
+                        style={{
+                            top: insets.top + 84,
+                            right: 20,
+                            minWidth: 160,
+                            ...elevatedCardStyle,
+                        }}
+                    >
+                        <TouchableOpacity
+                            className="flex-row items-center px-4 py-3.5"
+                            activeOpacity={0.7}
+                            onPress={() => {
+                                setShowMenu(false);
+                                setShowLogoutConfirm(true);
+                            }}
+                        >
+                            <View className="mr-3">
+                                <LogoutIcon width={18} height={18} color="#EF4444" />
+                            </View>
+                            <Text className="text-sm font-medium" style={{ color: '#EF4444' }}>
+                                {t('logout') || 'Logout'}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </Pressable>
+            )}
+
+            {showLogoutConfirm && (
+                <Pressable
+                    className="absolute items-center justify-center px-8"
+                    style={{
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    }}
+                    onPress={() => setShowLogoutConfirm(false)}
+                >
+                    <Pressable
+                        className="w-full px-5 py-5"
+                        style={{ ...elevatedCardStyle, maxWidth: 340 }}
+                        onPress={() => { }}
+                    >
+                        <Text className="font-bold text-lg mb-2" style={{ color: theme.textPrimary }}>
+                            {t('logout-confirm-title') || 'Are you sure?'}
+                        </Text>
+                        <Text className="text-sm mb-5" style={{ color: theme.textSecondary }}>
+                            {t('logout-confirm-message') || 'You will be signed out of your account.'}
+                        </Text>
+                        <View className="flex-row gap-3">
+                            <TouchableOpacity
+                                className="flex-1 py-3 items-center justify-center"
+                                activeOpacity={0.7}
+                                style={{
+                                    borderRadius: INNER_RADIUS,
+                                    borderWidth: 1,
+                                    borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)',
+                                }}
+                                onPress={() => setShowLogoutConfirm(false)}
+                            >
+                                <Text className="text-sm font-semibold" style={{ color: theme.textPrimary }}>
+                                    {t('cancel') || 'Cancel'}
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                className="flex-1 py-3 items-center justify-center"
+                                activeOpacity={0.8}
+                                style={{ borderRadius: INNER_RADIUS, backgroundColor: '#EF4444' }}
+                                onPress={handleLogout}
+                            >
+                                <Text className="text-sm font-semibold text-white">
+                                    {t('logout') || 'Logout'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </Pressable>
+                </Pressable>
+            )}
         </View>
     );
 };
