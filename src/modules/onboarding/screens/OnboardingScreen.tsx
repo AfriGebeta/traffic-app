@@ -58,7 +58,7 @@ export const OnboardingScreen: React.FC = () => {
     const handleGetStarted = async () => {
         await AsyncStorage.setItem('hasSeenOnboarding', 'true');
         dashboardEventsService.onboardComplete();
-        router.replace('/');
+        router.replace('/select-language');
     };
 
     const renderItem = ({ item }: { item: OnboardingStep }) => (
