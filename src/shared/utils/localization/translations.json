@@ -2993,5 +2993,80 @@
         "key": "location-permission-required",
         "EN_US": "Location permission required",
         "AM": "የጂፒኤስ ፈቃድ ያስፈልጋል"
+    },
+    {
+        "key": "choose-taxi-contribution-type",
+        "EN_US": "Choose what taxi info you want to add",
+        "AM": "ምን ዓይነት የታክሲ መረጃ ማስገባት እንደሚፈልጉ ይምረጡ"
+    },
+    {
+        "key": "contribute-taxi-route",
+        "EN_US": "Contribute Route",
+        "AM": "መስመር ያስገቡ"
+    },
+    {
+        "key": "contribute-taxi-route-description",
+        "EN_US": "Add a full taxi route with stops, prices and schedule",
+        "AM": "ሙሉ የታክሲ መስመር ከማቆሚያዎች፣ ዋጋዎች እና የሰዓት ጋር ያስገቡ"
+    },
+    {
+        "key": "contribute-taxi-station",
+        "EN_US": "Contribute Taxi Station",
+        "AM": "የታክሲ ጣቢያ ያስገቡ"
+    },
+    {
+        "key": "contribute-taxi-station-description",
+        "EN_US": "Add a single taxi station or stop only",
+        "AM": "አንድ የታክሲ ጣቢያ ወይም ማቆሚያ ብቻ ያስገቡ"
+    },
+    {
+        "key": "station-name",
+        "EN_US": "Station Name",
+        "AM": "የጣቢያ ስም"
+    },
+    {
+        "key": "picked-on-map",
+        "EN_US": "Picked on map",
+        "AM": "በካርታ ላይ የተመረጠ"
+    },
+    {
+        "key": "pick-station-location",
+        "EN_US": "Pick Station Location",
+        "AM": "የጣቢያ ቦታ ይምረጡ"
+    },
+    {
+        "key": "please-select-station-location",
+        "EN_US": "Please select the station location",
+        "AM": "እባክዎ የጣቢያውን ቦታ ይምረጡ"
+    },
+    {
+        "key": "station-created-successfully",
+        "EN_US": "Station created successfully",
+        "AM": "ጣቢያው በተሳካ ሁኔታ ተፈጥሯል"
+    },
+    {
+        "key": "failed-to-create-station",
+        "EN_US": "Failed to create station",
+        "AM": "ጣቢያ መፍጠር አልተሳካም"
+    },
+    {
+        "key": "avoid-duplicate-station",
+        "EN_US": "Check these before adding a duplicate",
+        "AM": "ተመሳሳይ ከማስገባትዎ በፊት እነዚህን ይመልከቱ"
+    },
+    {
+        "key": "enter-landmark-description",
+        "EN_US": "Enter a nearby landmark",
+        "AM": "በአቅራቢያ ያለ መለያ ቦታ ያስገቡ"
+    },
+    {
+        "key": "logout-confirm-title",
+        "EN_US": "Are you sure?",
+        "AM": "እርግጠኛ ነዎት?"
+    },
+    {
+        "key": "logout-confirm-message",
+        "EN_US": "You will be signed out of your account.",
+        "AM": "ከመለያዎ ይወጣሉ።"
     }
 ]

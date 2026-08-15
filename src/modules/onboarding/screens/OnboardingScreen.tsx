@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../../../shared/theme/colors';
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
+import { LANGUAGE_SELECTION_PENDING_KEY } from './SelectLanguageScreen';
 
 const { width } = Dimensions.get('window');
 
@@ -57,8 +58,9 @@ export const OnboardingScreen: React.FC = () => {
 
     const handleGetStarted = async () => {
         await AsyncStorage.setItem('hasSeenOnboarding', 'true');
+        await AsyncStorage.setItem(LANGUAGE_SELECTION_PENDING_KEY, 'true');
         dashboardEventsService.onboardComplete();
-        router.replace('/');
+        router.replace('/select-language');
     };
 
     const renderItem = ({ item }: { item: OnboardingStep }) => (

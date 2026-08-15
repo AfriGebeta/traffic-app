@@ -28,6 +28,7 @@ export default function MapPickerScreen() {
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
     const { setPendingStop } = useRouteBuilder();
+    const isCoordsMode = params.mode === 'coords';
     const mapRef = useRef<GebetaMapRef>(null);
     const { userLocation } = useUserLocation();
     const { apiKey } = useRemoteConfig();
@@ -183,7 +184,7 @@ export default function MapPickerScreen() {
             return;
         }
 
-        if (!stopName.trim()) {
+        if (!isCoordsMode && !stopName.trim()) {
             Alert.alert(t('error'), t('please-enter-stop-name'));
             return;
         }
@@ -210,6 +211,8 @@ export default function MapPickerScreen() {
                 return t('pick-end-station');
             case 'intermediate':
                 return t('pick-intermediate-stop');
+            case 'station':
+                return t('pick-station-location');
             default:
                 return t('pick-location');
         }
@@ -273,6 +276,7 @@ export default function MapPickerScreen() {
                                 showsVerticalScrollIndicator={false}
                                 contentContainerStyle={{ padding: 16 }}
                             >
+                                {!isCoordsMode && (
                                 <View className="mb-3">
                                     <Text className="text-gray-700 font-semibold mb-2">{t('stop-name')} *</Text>
                                     {selectedExisting && (
@@ -333,8 +337,9 @@ export default function MapPickerScreen() {
 
                                     {loadingStations && <Text className="text-gray-500 text-sm mt-2">{t('loading-nearby-stations-and-stops') || 'Loading nearby stations & stops...'}</Text>}
                                 </View>
+                                )}
 
-                                {params.type !== 'intermediate' && !selectedExisting && (
+                                {!isCoordsMode && params.type !== 'intermediate' && !selectedExisting && (
                                     <View className="mb-3">
                                         <Text className="text-gray-700 font-semibold mb-2">{t('type')}</Text>
                                         <View className="flex-row gap-3">
@@ -365,7 +370,7 @@ export default function MapPickerScreen() {
                                     </View>
                                 )}
 
-                                {!selectedExisting && (
+                                {!isCoordsMode && !selectedExisting && (
                                     <View className="mb-3">
                                         <Text className="text-gray-700 font-semibold mb-2">{t('landmark')}</Text>
                                         <TextInput

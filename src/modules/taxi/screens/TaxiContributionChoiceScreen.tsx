@@ -5,49 +5,31 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../shared/theme/ThemeContext';
-import PlaceLightIcon from '../../../../assets/images/contribute-place-light.svg';
-import PlaceDarkIcon from '../../../../assets/images/contribute-place-dark.svg';
-import NeighborhoodLightIcon from '../../../../assets/images/contribute-neighborhood-light.svg';
-import NeighborhoodDarkIcon from '../../../../assets/images/contribute-neighborhood-dark.svg';
-import TrafficLightIcon from '../../../../assets/images/contribute-traffic-light.svg';
-import TrafficDarkIcon from '../../../../assets/images/contribute-traffic-dark.svg';
-import TaxiLightIcon from '../../../../assets/images/contribute-taxi-light.svg';
-import TaxiDarkIcon from '../../../../assets/images/contribute-taxi-dark.svg';
+import RouteLightIcon from '../../../../assets/images/taxi-route-light.svg';
+import RouteDarkIcon from '../../../../assets/images/taxi-route-dark.svg';
+import StationLightIcon from '../../../../assets/images/taxi-station-light.svg';
+import StationDarkIcon from '../../../../assets/images/taxi-station-dark.svg';
 
-export default function ContributionScreen() {
+export default function TaxiContributionChoiceScreen() {
     const router = useRouter();
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors: theme, isDark } = useTheme();
 
-    const contributionOptions = [
+    const options = [
         {
-            id: 'places',
-            titleKey: 'contribute-place',
-            descriptionKey: 'contribute-place-description',
-            Icon: isDark ? PlaceDarkIcon : PlaceLightIcon,
-            route: '/places/contribute',
+            id: 'route',
+            titleKey: 'contribute-taxi-route',
+            descriptionKey: 'contribute-taxi-route-description',
+            Icon: isDark ? RouteDarkIcon : RouteLightIcon,
+            route: '/taxi/build-route',
         },
         {
-            id: 'neighborhoods',
-            titleKey: 'contribute-neighborhood',
-            descriptionKey: 'contribute-neighborhood-description',
-            Icon: isDark ? NeighborhoodDarkIcon : NeighborhoodLightIcon,
-            route: '/neighborhoods/contribute',
-        },
-        {
-            id: 'rules',
-            titleKey: 'report-traffic-rule',
-            descriptionKey: 'report-traffic-rule-description',
-            Icon: isDark ? TrafficDarkIcon : TrafficLightIcon,
-            route: '/rules/contribute',
-        },
-        {
-            id: 'taxi',
-            titleKey: 'contribute-taxi-info',
-            descriptionKey: 'contribute-taxi-info-description',
-            Icon: isDark ? TaxiDarkIcon : TaxiLightIcon,
-            route: '/taxi/contribute',
+            id: 'station',
+            titleKey: 'contribute-taxi-station',
+            descriptionKey: 'contribute-taxi-station-description',
+            Icon: isDark ? StationDarkIcon : StationLightIcon,
+            route: '/taxi/add-station',
         },
     ];
 
@@ -55,21 +37,17 @@ export default function ContributionScreen() {
         <View className="flex-1" style={{ paddingTop: insets.top, paddingBottom: insets.bottom, backgroundColor: theme.background }}>
             <View className="px-4 py-6" style={{ borderBottomWidth: 1, borderBottomColor: theme.background }}>
                 <View className="flex-row items-center mb-2">
-                    <TouchableOpacity
-                        onPress={() => router.back()}
-                        className="mr-4"
-                        activeOpacity={0.7}
-                    >
+                    <TouchableOpacity onPress={() => router.back()} className="mr-4" activeOpacity={0.7}>
                         <Ionicons name="arrow-back" size={28} color={theme.textPrimary} />
                     </TouchableOpacity>
-                    <Text className="text-2xl font-bold" style={{ color: theme.textPrimary }}>{t('contribute')}</Text>
+                    <Text className="text-2xl font-bold" style={{ color: theme.textPrimary }}>{t('contribute-taxi-info')}</Text>
                 </View>
-                <Text className="mt-2" style={{ color: theme.textSecondary }}>{t('choose-what-to-contribute')}</Text>
+                <Text className="mt-2" style={{ color: theme.textSecondary }}>{t('choose-taxi-contribution-type')}</Text>
             </View>
 
             <ScrollView className="flex-1 p-4">
                 <View className="gap-4">
-                    {contributionOptions.map((option) => (
+                    {options.map((option) => (
                         <TouchableOpacity
                             key={option.id}
                             className="rounded-2xl p-6 shadow-sm"

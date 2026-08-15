@@ -95,8 +95,6 @@ export const useRoadSnapper = (
                 );
                 if (seq !== seqRef.current) return;
 
-                // Hold the last name across gaps in label placement; only give
-                // up after several queries in a row have found nothing.
                 const found = nearestRoadName(names?.features, frame, p, lang);
                 if (found) {
                     roadNameRef.current = found;

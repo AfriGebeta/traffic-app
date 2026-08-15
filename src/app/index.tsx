@@ -9,6 +9,7 @@ import { resolveLocationUrl, type SharedLocation } from '../shared/utils/deepLin
 import { useTheme } from '../shared/theme/ThemeContext';
 import { getColdStartHomePromptRoute } from '../modules/places/utils/homeOnboarding';
 import { resolveProfileGateRoute } from '../modules/register/utils/profileGate';
+import { LANGUAGE_SELECTION_PENDING_KEY } from '../modules/onboarding/screens/SelectLanguageScreen';
 
 const GUEST_MODE_KEY = '@traffic_app_guest_mode';
 
@@ -81,6 +82,12 @@ export default function Index() {
 
     if (!hasSeenOnboarding) {
       router.replace('/onboarding');
+      return;
+    }
+
+    const languagePending = await AsyncStorage.getItem(LANGUAGE_SELECTION_PENDING_KEY);
+    if (languagePending) {
+      router.replace('/select-language');
       return;
     }
 
