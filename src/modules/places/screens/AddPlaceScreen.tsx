@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Image, ActivityIndicator, useWindowDimensions } from 'react-native';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -45,6 +45,8 @@ export default function AddPlaceScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { colors: theme, isDark } = useTheme();
+    const { width: windowWidth } = useWindowDimensions();
+    const tileSize = Math.floor((windowWidth - 48 - 24) / 3);
     const params = useLocalSearchParams();
     const placeType = params.type as PlaceType;
     const { selectedLocation, setSelectedLocation } = useLocation();
@@ -307,10 +309,10 @@ export default function AddPlaceScreen() {
                     <View>
                         <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('photos')}</Text>
 
-                        <View className="flex-row gap-3 mb-3">
+                        <View className="flex-row flex-wrap gap-3 mb-3">
                             <TouchableOpacity
-                                className="rounded-2xl w-28 h-28 items-center justify-center"
-                                style={{ backgroundColor: theme.surface, borderWidth: 2, borderStyle: 'dashed', borderColor: theme.border }}
+                                className="rounded-2xl items-center justify-center"
+                                style={{ width: tileSize, height: tileSize, backgroundColor: theme.surface, borderWidth: 2, borderStyle: 'dashed', borderColor: theme.border }}
                                 onPress={takePhoto}
                                 disabled={uploading}
                                 activeOpacity={0.7}
@@ -322,8 +324,8 @@ export default function AddPlaceScreen() {
                             </TouchableOpacity>
 
                             <TouchableOpacity
-                                className="rounded-2xl w-28 h-28 items-center justify-center"
-                                style={{ backgroundColor: theme.surface, borderWidth: 2, borderStyle: 'dashed', borderColor: theme.border }}
+                                className="rounded-2xl items-center justify-center"
+                                style={{ width: tileSize, height: tileSize, backgroundColor: theme.surface, borderWidth: 2, borderStyle: 'dashed', borderColor: theme.border }}
                                 onPress={pickImage}
                                 disabled={uploading}
                                 activeOpacity={0.7}
@@ -333,33 +335,29 @@ export default function AddPlaceScreen() {
                                 </View>
                                 <Text className="text-xs font-medium" style={{ color: theme.textSecondary }}>{t('gallery')}</Text>
                             </TouchableOpacity>
+
+                            {images.map((img, index) => (
+                                <View key={index} className="relative">
+                                    <Image
+                                        source={{ uri: img.localUri }}
+                                        style={{ width: tileSize, height: tileSize, borderRadius: 16 }}
+                                        resizeMode="cover"
+                                    />
+                                    <TouchableOpacity
+                                        className="absolute -top-2 -right-2 bg-red-500 rounded-full w-7 h-7 items-center justify-center shadow-lg"
+                                        onPress={() => removeImage(index)}
+                                        activeOpacity={0.8}
+                                    >
+                                        <Ionicons name="close" size={16} color="white" />
+                                    </TouchableOpacity>
+                                </View>
+                            ))}
                         </View>
 
                         {uploading && (
                             <View className="flex-row items-center mb-3 rounded-xl p-3" style={{ backgroundColor: theme.blueMuted }}>
                                 <ActivityIndicator size="small" color={theme.blue} />
                                 <Text className="text-sm ml-2 font-medium" style={{ color: theme.blue }}>{t('uploading')}</Text>
-                            </View>
-                        )}
-
-                        {images.length > 0 && (
-                            <View className="flex-row flex-wrap gap-3">
-                                {images.map((img, index) => (
-                                    <View key={index} className="relative">
-                                        <Image
-                                            source={{ uri: img.localUri }}
-                                            style={{ width: 112, height: 112, borderRadius: 16 }}
-                                            resizeMode="cover"
-                                        />
-                                        <TouchableOpacity
-                                            className="absolute -top-2 -right-2 bg-red-500 rounded-full w-7 h-7 items-center justify-center shadow-lg"
-                                            onPress={() => removeImage(index)}
-                                            activeOpacity={0.8}
-                                        >
-                                            <Ionicons name="close" size={16} color="white" />
-                                        </TouchableOpacity>
-                                    </View>
-                                ))}
                             </View>
                         )}
                     </View>
