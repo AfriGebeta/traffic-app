@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { changeLanguage } from '../../../shared/utils/localization/i18n';
 
-export const LANGUAGE_SELECTED_KEY = 'hasSelectedLanguage';
+export const LANGUAGE_SELECTION_PENDING_KEY = 'languageSelectionPending';
 
 type LanguageCode = 'en' | 'am';
 
@@ -38,7 +38,7 @@ export const SelectLanguageScreen: React.FC = () => {
         setIsSaving(true);
         try {
             await changeLanguage(selected);
-            await AsyncStorage.setItem(LANGUAGE_SELECTED_KEY, 'true');
+            await AsyncStorage.removeItem(LANGUAGE_SELECTION_PENDING_KEY);
             router.replace('/');
         } finally {
             setIsSaving(false);
