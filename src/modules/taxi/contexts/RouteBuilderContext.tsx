@@ -16,8 +16,8 @@ interface RouteStop {
 interface RouteBuilderContextType {
     pendingStop: RouteStop | null;
     setPendingStop: (stop: RouteStop | null) => void;
-    pickType: 'start' | 'end' | 'intermediate' | null;
-    setPickType: (type: 'start' | 'end' | 'intermediate' | null) => void;
+    pickType: 'start' | 'end' | 'intermediate' | 'station' | null;
+    setPickType: (type: 'start' | 'end' | 'intermediate' | 'station' | null) => void;
     cachedRoute: CachedRouteData | null;
     loadCachedRoute: () => Promise<void>;
     clearCache: () => Promise<void>;
@@ -32,7 +32,7 @@ const RouteBuilderContext = createContext<RouteBuilderContextType | undefined>(u
 
 export function RouteBuilderProvider({ children }: { children: ReactNode }) {
     const [pendingStop, setPendingStop] = useState<RouteStop | null>(null);
-    const [pickType, setPickType] = useState<'start' | 'end' | 'intermediate' | null>(null);
+    const [pickType, setPickType] = useState<'start' | 'end' | 'intermediate' | 'station' | null>(null);
     const [cachedRoute, setCachedRoute] = useState<CachedRouteData | null>(null);
     const [isCollecting, setIsCollecting] = useState<boolean>(false);
     const [currentRouteName, setCurrentRouteName] = useState<string>('');

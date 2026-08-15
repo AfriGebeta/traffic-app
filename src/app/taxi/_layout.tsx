@@ -9,7 +9,9 @@ export default function TaxiLayout() {
                     headerShown: false,
                 }}
             >
+                <Stack.Screen name="contribute" />
                 <Stack.Screen name="build-route" />
+                <Stack.Screen name="add-station" />
                 <Stack.Screen name="map-picker" />
                 <Stack.Screen name="set-pricing" />
             </Stack>
