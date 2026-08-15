@@ -129,7 +129,7 @@ export const fetchTtsAudioUri = async (
     speaker_name?: string,
     options: TtsFetchOptions = {}
 ): Promise<string | null> => {
-    const { shouldBeStored } = options;
+    const { shouldBeStored = true } = options;
     const startedAt = Date.now();
     const cacheKey = ttsCacheKey(text, language, speaker_name);
 
@@ -151,7 +151,7 @@ export const fetchTtsAudioUri = async (
 
     const appCheckToken = await getAppCheckToken();
 
-    const callSynthesize = (store?: boolean) =>
+    const callSynthesize = (store: boolean) =>
         fetch(`${API_URL}/api/asr/tts/synthesize`, {
             method: 'POST',
             headers: {
@@ -162,7 +162,7 @@ export const fetchTtsAudioUri = async (
                 text,
                 ...(language ? { language } : {}),
                 ...(speaker_name ? { speaker_name } : {}),
-                ...(store === undefined ? {} : { shouldBeStored: store }),
+                shouldBeStored: store,
             }),
         });
 
@@ -191,7 +191,7 @@ export const fetchTtsAudioUri = async (
         if (!signedUrl) return null;
 
         if (!(await objectMatchesText(signedUrl, text, language))) {
-            if (shouldBeStored === undefined) {
+            if (shouldBeStored !== false) {
                 return fetchTtsAudioUri(text, language, speaker_name, {
                     ...options,
                     shouldBeStored: false,

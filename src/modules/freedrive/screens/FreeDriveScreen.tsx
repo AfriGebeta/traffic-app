@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeepAwake } from 'expo-keep-awake';
 import { useTranslation } from 'react-i18next';
+
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { colors as palette } from '../../../shared/theme/colors';
 import { useMapTheme } from '../../map/context/MapThemeContext';
