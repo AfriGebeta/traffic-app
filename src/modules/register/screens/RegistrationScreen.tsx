@@ -81,7 +81,7 @@ export default function RegistrationScreen() {
     return (
         <KeyboardAvoidingView
             className="flex-1 bg-white"
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            behavior="padding"
             keyboardVerticalOffset={0}
         >
             <StatusBar barStyle="dark-content" backgroundColor="#ffffff" translucent={false} />
@@ -92,7 +92,10 @@ export default function RegistrationScreen() {
             <ScrollView
                 contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingBottom: 20 }}
                 keyboardShouldPersistTaps="handled"
+                keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
                 showsVerticalScrollIndicator={false}
+                bounces={false}
+                alwaysBounceVertical={false}
             >
                 <View className="px-6 py-8">
                     <View className="items-center mb-8 mt-4">

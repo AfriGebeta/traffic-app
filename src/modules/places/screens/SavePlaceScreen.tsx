@@ -119,7 +119,7 @@ export const SavePlaceScreen = () => {
         <KeyboardAvoidingView
             className="flex-1"
             style={{ backgroundColor: theme.background }}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            behavior="padding"
         >
             <View
                 className="flex-row items-center px-6 pb-4"
@@ -137,7 +137,13 @@ export const SavePlaceScreen = () => {
                 </Text>
             </View>
 
-            <ScrollView className="flex-1 px-6" keyboardShouldPersistTaps="handled">
+            <ScrollView
+                className="flex-1 px-6"
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+                bounces={false}
+                alwaysBounceVertical={false}
+            >
                 <Text className="text-sm font-semibold mb-3" style={{ color: theme.textPrimary }}>
                     {t('place-type')}
                 </Text>

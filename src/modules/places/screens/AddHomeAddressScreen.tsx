@@ -636,7 +636,14 @@ export const AddHomeAddressScreen = () => {
     );
 
     const renderForm = () => (
-        <ScrollView className="flex-1 px-6" keyboardShouldPersistTaps="handled">
+        <ScrollView
+            className="flex-1 px-6"
+            contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+            bounces={false}
+            alwaysBounceVertical={false}
+        >
             <Text className="text-2xl font-bold mb-6" style={{ color: theme.textPrimary }}>
                 {t('add-saved-place')}
             </Text>
@@ -732,7 +739,7 @@ export const AddHomeAddressScreen = () => {
         <KeyboardAvoidingView
             className="flex-1"
             style={{ backgroundColor: theme.background }}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            behavior="padding"
         >
             <View
                 className="flex-row items-center justify-between px-6 pb-4"
@@ -760,7 +767,7 @@ export const AddHomeAddressScreen = () => {
             {step === 'followup' && renderFollowup()}
             {step === 'form' && renderForm()}
 
-            <View style={{ height: insets.bottom + 16 }} />
+            {step !== 'form' && <View style={{ height: insets.bottom + 16 }} />}
         </KeyboardAvoidingView>
     );
 };

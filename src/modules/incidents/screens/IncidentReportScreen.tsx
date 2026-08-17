@@ -187,15 +187,17 @@ export default function IncidentReportScreen() {
         <KeyboardAvoidingView
             className="flex-1"
             style={{ backgroundColor: theme.background }}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            behavior="padding"
         >
             <ScrollView
                 className="flex-1"
                 style={{ backgroundColor: theme.background }}
                 contentContainerStyle={{ paddingBottom: insets.bottom + 32, flexGrow: 1 }}
                 keyboardShouldPersistTaps="handled"
-                keyboardDismissMode="on-drag"
+                keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
                 showsVerticalScrollIndicator={false}
+                bounces={false}
+                alwaysBounceVertical={false}
             >
                 <View className="px-6 pb-6" style={{ paddingTop: insets.top + 16 }}>
                     <View
