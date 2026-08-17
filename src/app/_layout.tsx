@@ -48,7 +48,7 @@ function ThemedNavigationBar() {
 
 function AppShell() {
   useTelegramDeepLink();
-  const { updateRequired } = useRemoteConfig();
+  const { updateRequired, storeUrl } = useRemoteConfig();
   const backgroundedAtRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -102,7 +102,7 @@ function AppShell() {
                   }}
                 />
                 <ToastHost />
-                <ForceUpdateModal visible={updateRequired} />
+                <ForceUpdateModal visible={updateRequired} storeUrl={storeUrl} />
               </IncidentFiltersProvider>
             </LocationProvider>
           </UserLocationProvider>
