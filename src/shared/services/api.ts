@@ -9,6 +9,7 @@ export interface ApiResponse<T> {
     data?: T;
     error?: string;
     errorData?: unknown;
+    errorBody?: any;
     message?: string;
     status?: number;
 }
@@ -80,6 +81,7 @@ class ApiService {
                 return {
                     error: errorMessage,
                     errorData: data.error,
+                    errorBody: data,
                     message: data.message,
                     status: response.status,
                 };
@@ -151,6 +153,7 @@ class ApiService {
                 return {
                     error: errorMessage,
                     errorData: data.error,
+                    errorBody: data,
                     message: data.message,
                     status: response.status,
                 };

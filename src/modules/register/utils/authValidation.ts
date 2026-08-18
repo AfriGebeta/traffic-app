@@ -4,6 +4,10 @@ export const MIN_PASSWORD_LENGTH = 6;
 
 export const LOCAL_PHONE_PATTERN = /^[79]\d{8}$/;
 
+export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+export const VERIFICATION_CODE_LENGTH = 6;
+
 export function toLocalPhone(fullNumber?: string | null): string {
     const digits = (fullNumber || '').replace(/\D/g, '');
     if (!digits) return '';
@@ -30,6 +34,15 @@ export function validateName(t: TFunction, name: string): string | null {
 
     if (!value) return t('error-enter-name');
     if (value.length < 2) return t('error-name-too-short');
+
+    return null;
+}
+
+export function validateEmail(t: TFunction, email: string): string | null {
+    const value = email.trim();
+
+    if (!value) return t('error-enter-email');
+    if (!EMAIL_PATTERN.test(value)) return t('error-email-format');
 
     return null;
 }

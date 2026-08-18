@@ -7,9 +7,8 @@ import { useTranslation } from 'react-i18next';
 import { colors } from '../../../shared/theme/colors';
 import { LanguageSwitcher } from '../../../shared/components/LanguageSwitcher';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { resolveAfterAuthRoute } from '../utils/profileGate';
 import { FieldError, FormError } from '../components/FormError';
-import { validateLocalPhone, validateName, validatePassword } from '../utils/authValidation';
+import { validateEmail, validateLocalPhone, validateName, validatePassword } from '../utils/authValidation';
 
 const GUEST_MODE_KEY = '@traffic_app_guest_mode';
 
@@ -18,10 +17,12 @@ export default function RegistrationScreen() {
     const router = useRouter();
     const [phoneNumber, setPhoneNumber] = useState('');
     const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [formError, setFormError] = useState<string | null>(null);
     const [nameError, setNameError] = useState<string | null>(null);
     const [phoneError, setPhoneError] = useState<string | null>(null);
+    const [emailError, setEmailError] = useState<string | null>(null);
     const [passwordError, setPasswordError] = useState<string | null>(null);
     const { register, loading } = useUserRegistration();
 
@@ -34,29 +35,33 @@ export default function RegistrationScreen() {
 
         const nameIssue = validateName(t, name);
         const phoneIssue = validateLocalPhone(t, phoneNumber);
+        const emailIssue = validateEmail(t, email);
         const passwordIssue = validatePassword(t, password);
 
         setNameError(nameIssue);
         setPhoneError(phoneIssue);
+        setEmailError(emailIssue);
         setPasswordError(passwordIssue);
 
-        if (nameIssue || phoneIssue || passwordIssue) {
+        if (nameIssue || phoneIssue || emailIssue || passwordIssue) {
             return;
         }
 
         const fullPhoneNumber = `+251${phoneNumber.trim()}`;
-        const { data, error, code } = await register({
+        const trimmedEmail = email.trim();
+        const { userId, error, code } = await register({
             phoneNumber: fullPhoneNumber,
             name: name.trim(),
+            email: trimmedEmail,
             password: password.trim(),
         });
 
-        if (data) {
-            showToast(t('registration-successful') || 'Registration successful');
-            const route = await resolveAfterAuthRoute();
-            setTimeout(() => {
-                router.replace(route as any);
-            }, 1000);
+        if (userId) {
+            showToast(t('verification-code-sent'));
+            router.replace({
+                pathname: '/verify-email',
+                params: { userId, email: trimmedEmail },
+            } as any);
             return;
         }
 
@@ -165,6 +170,30 @@ export default function RegistrationScreen() {
                                 />
                             </View>
                             <FieldError message={phoneError} />
+                        </View>
+
+                        <View className="mb-5">
+                            <Text className="text-sm font-bold text-gray-900 mb-2">
+                                {t('email')}
+                            </Text>
+                            <TextInput
+                                className="bg-gray-50 border rounded-xl px-4 py-3.5 text-base text-gray-900 font-semibold"
+                                style={{ borderColor: emailError ? colors.error.main : '#D1D5DB' }}
+                                placeholder={t('enter-your-email')}
+                                placeholderTextColor="#9CA3AF"
+                                value={email}
+                                onChangeText={(text) => {
+                                    setEmail(text);
+                                    setEmailError(null);
+                                    setFormError(null);
+                                }}
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                                autoComplete="email"
+                                editable={!loading}
+                            />
+                            <FieldError message={emailError} />
                         </View>
 
                         <View className="mb-6">
