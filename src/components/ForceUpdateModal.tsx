@@ -1,10 +1,7 @@
 import { Modal, View, Text, Linking, Pressable } from 'react-native';
 import { colors } from '../shared/theme/colors';
 
-const PLAY_STORE_URL =
-  'https://play.google.com/store/apps/details?id=co.gebeta.apps.android.map';  //safe
-
-export function ForceUpdateModal({ visible }: { visible: boolean }) {
+export function ForceUpdateModal({ visible, storeUrl }: { visible: boolean; storeUrl: string }) {
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent>
       <View className="flex-1 items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
@@ -16,7 +13,7 @@ export function ForceUpdateModal({ visible }: { visible: boolean }) {
           <Pressable
             className="rounded-xl py-3 px-10"
             style={{ backgroundColor: colors.primary.main }}
-            onPress={() => Linking.openURL(PLAY_STORE_URL)}
+            onPress={() => Linking.openURL(storeUrl)}
           >
             <Text className="text-white font-bold text-base">Update Now</Text>
           </Pressable>

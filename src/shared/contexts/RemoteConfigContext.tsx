@@ -1,10 +1,20 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { Platform } from 'react-native';
 import { getRemoteConfig, fetchAndActivate, getString, getValue, setDefaults, setConfigSettings } from '@react-native-firebase/remote-config';
 import semver from 'semver';
 import * as Application from 'expo-application';
 import { buildRemoteConfigDefaults, hydrateAppConfig, getAppConfig, RC_KEYS } from '../config/remoteConfigValues';
 
 const FALLBACK_API_KEY = process.env.EXPO_PUBLIC_GEBETA_API_KEY ?? '';
+
+const isIOS = Platform.OS === 'ios';
+
+const MIN_VERSION_KEY = isIOS ? 'min_ios_version' : 'min_android_version';
+const STORE_URL_KEY = isIOS ? 'store_url_ios' : 'store_url_android';
+
+const FALLBACK_STORE_URL = isIOS
+  ? 'itms-beta://'
+  : 'https://play.google.com/store/apps/details?id=co.gebeta.apps.android.map';
 
 export interface RemoteMapStyle {
   id: string;
@@ -25,12 +35,14 @@ const FALLBACK_MAP_STYLES: RemoteMapStyle[] = [
 interface RemoteConfigState {
   apiKey: string;
   updateRequired: boolean;
+  storeUrl: string;
   mapStyles: RemoteMapStyle[];
 }
 
 const RemoteConfigContext = createContext<RemoteConfigState>({
   apiKey: FALLBACK_API_KEY,
   updateRequired: false,
+  storeUrl: FALLBACK_STORE_URL,
   mapStyles: FALLBACK_MAP_STYLES,
 });
 
@@ -38,6 +50,7 @@ export function RemoteConfigProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<RemoteConfigState>({
     apiKey: FALLBACK_API_KEY,
     updateRequired: false,
+    storeUrl: FALLBACK_STORE_URL,
     mapStyles: FALLBACK_MAP_STYLES,
   });
 
@@ -47,6 +60,9 @@ export function RemoteConfigProvider({ children }: { children: ReactNode }) {
 
       await setDefaults(rc, {
         min_android_version: '1.0.0',
+        min_ios_version: '1.0.0',
+        store_url_android: 'https://play.google.com/store/apps/details?id=co.gebeta.apps.android.map',
+        store_url_ios: 'itms-beta://',
         gebeta_api_key: FALLBACK_API_KEY,
         map_styles: JSON.stringify(FALLBACK_MAP_STYLES),
         ...buildRemoteConfigDefaults(),
@@ -67,9 +83,19 @@ export function RemoteConfigProvider({ children }: { children: ReactNode }) {
       console.log('remoteconfig: tier2 resolved values:', JSON.stringify(appConfig));
 
       const apiKey = getString(rc, 'gebeta_api_key') || FALLBACK_API_KEY;
-      const minVersion = getString(rc, 'min_android_version');
+      const minVersion = getString(rc, MIN_VERSION_KEY);
       const currentVersion = Application.nativeApplicationVersion ?? '0.0.0';
-      const updateRequired = semver.lt(currentVersion, minVersion);
+      const storeUrl = getString(rc, STORE_URL_KEY) || FALLBACK_STORE_URL;
+
+      if (!semver.valid(minVersion) || !semver.valid(currentVersion)) {
+        console.error(
+          `remoteconfig: invalid version compare, ${MIN_VERSION_KEY}="${minVersion}" current="${currentVersion}", skipping force update`
+        );
+      }
+      const updateRequired =
+        !!semver.valid(minVersion) &&
+        !!semver.valid(currentVersion) &&
+        semver.lt(currentVersion, minVersion);
 
       let mapStyles = FALLBACK_MAP_STYLES;
       try {
@@ -80,8 +106,8 @@ export function RemoteConfigProvider({ children }: { children: ReactNode }) {
       }
 
       const source = getString(rc, 'gebeta_api_key') ? 'remote-config' : 'fallback';
-      console.log(`remoteconfig: apikey source: ${source}, min_android_version: ${minVersion}, map_styles: ${mapStyles.map(s => s.id).join(', ')}`);
-      setState({ apiKey, updateRequired, mapStyles });
+      console.log(`remoteconfig: apikey source: ${source}, ${MIN_VERSION_KEY}: ${minVersion}, current: ${currentVersion}, updateRequired: ${updateRequired}, storeUrl: ${storeUrl}, map_styles: ${mapStyles.map(s => s.id).join(', ')}`);
+      setState({ apiKey, updateRequired, storeUrl, mapStyles });
     };
 
     fetchConfig().catch(console.error);
