@@ -2685,6 +2685,11 @@
         "AM": "ይህን ቦታ እዚህ መጥቶ ለማያውቅ የዲሊቨሪ ሰው እንደሚያስረዱት አድርገው ይግለጹ። ሀገርዎን፣ ክልልዎን፣ ከተማዎን፣ ክፍለ ከተማዎን፣ ወረዳዎን እና የሰፈር ስምዎን ይጥቀሱ።"
     },
     {
+        "key": "add-home-desc-landmark",
+        "EN_US": "Also explain your landmark: the well-known spot nearest to you (a church, school, hotel, cafe) and which direction to go from it.",
+        "AM": "እንዲሁም የአካባቢዎን ምልክት ወደ እርስዎ ቅርብ የሆነውን የታወቀ ቦታ (ቤተ ክርስቲያን፣ ትምህርት ቤት፣ ሆቴል፣ ካፌ) እና ከዚያ ወዴት አቅጣጫ መሄድ እንዳለበት ይናገሩ።"
+    },
+    {
         "key": "you-missed",
         "EN_US": "You missed:",
         "AM": "ያልጠቀሷቸው፦"

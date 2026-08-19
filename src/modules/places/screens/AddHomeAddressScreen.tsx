@@ -531,6 +531,9 @@ export const AddHomeAddressScreen = () => {
             <Text className="text-base leading-6" style={{ color: theme.textSecondary }}>
                 {t('add-home-desc')}
             </Text>
+            <Text className="text-base leading-6 mt-2" style={{ color: theme.textSecondary }}>
+                {t('add-home-desc-landmark')}
+            </Text>
 
             {renderVoiceGuideButton()}
 
