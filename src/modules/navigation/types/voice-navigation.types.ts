@@ -1,3 +1,5 @@
+import type { TaxiNavigationResponse } from '../../taxi/types/taxi.types';
+
 export interface VoiceNavigationRequest {
     audio: File | Blob;
     translate: boolean;
@@ -85,11 +87,19 @@ export interface NavigationOption {
     lng: number;
 }
 
+export interface TaxiPlan {
+    narrative: string;
+    message: string;
+    route: TaxiNavigationResponse;
+    started: boolean;
+}
+
 export interface ConversationMessage {
     id: string;
-    role: 'user' | 'assistant' | 'options';
+    role: 'user' | 'assistant' | 'options' | 'taxi';
     text: string;
     options?: NavigationOption[];
+    taxiPlan?: TaxiPlan;
 }
 
 export interface VoiceNavigationData {

@@ -3098,5 +3098,25 @@
         "key": "logout-confirm-message",
         "EN_US": "You will be signed out of your account.",
         "AM": "ከመለያዎ ይወጣሉ።"
+    },
+    {
+        "key": "start-trip",
+        "EN_US": "Start trip",
+        "AM": "ጉዞ ጀምር"
+    },
+    {
+        "key": "trip-started",
+        "EN_US": "Trip started",
+        "AM": "ጉዞ ተጀምሯል"
+    },
+    {
+        "key": "estimated-fare",
+        "EN_US": "Estimated fare",
+        "AM": "የተገመተ ዋጋ"
+    },
+    {
+        "key": "taxi-plan",
+        "EN_US": "Taxi route",
+        "AM": "የታክሲ መንገድ"
     }
 ]
