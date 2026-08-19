@@ -42,7 +42,24 @@ export default function LoginScreen() {
         }
 
         const fullPhoneNumber = `+251${phoneNumber.trim()}`;
-        const { data, error, code } = await login({ phoneNumber: fullPhoneNumber, password: password.trim() });
+        const { data, error, code, userId, email, hasEmail } = await login({
+            phoneNumber: fullPhoneNumber,
+            password: password.trim(),
+        });
+
+        if (code === 'EMAIL_NOT_VERIFIED') {
+            showToast(t('error-email-not-verified'));
+            router.replace({
+                pathname: '/verify-email',
+                params: {
+                    ...(userId ? { userId } : {}),
+                    ...(email ? { email } : {}),
+                    phoneNumber: fullPhoneNumber,
+                    hasEmail: hasEmail ? '1' : '0',
+                },
+            } as any);
+            return;
+        }
 
         if (data) {
             showToast(t('login-successful') || 'Login successful');

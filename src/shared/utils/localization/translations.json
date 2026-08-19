@@ -3098,5 +3098,120 @@
         "key": "logout-confirm-message",
         "EN_US": "You will be signed out of your account.",
         "AM": "ከመለያዎ ይወጣሉ።"
+    },
+    {
+        "key": "email",
+        "EN_US": "Email",
+        "AM": "ኢሜይል"
+    },
+    {
+        "key": "enter-your-email",
+        "EN_US": "Enter your email",
+        "AM": "ኢሜይልዎን ያስገቡ"
+    },
+    {
+        "key": "verify-your-email",
+        "EN_US": "Verify your email",
+        "AM": "ኢሜይልዎን ያረጋግጡ"
+    },
+    {
+        "key": "verification-code-sent-to",
+        "EN_US": "We sent a 6-digit code to",
+        "AM": "የ6 አሃዝ የማረጋገጫ ኮድ ልከናል ወደ"
+    },
+    {
+        "key": "verify",
+        "EN_US": "Verify",
+        "AM": "አረጋግጥ"
+    },
+    {
+        "key": "didnt-get-code",
+        "EN_US": "Didn't get the code?",
+        "AM": "ኮዱ አልደረሰዎትም?"
+    },
+    {
+        "key": "resend-code",
+        "EN_US": "Resend code",
+        "AM": "ኮድ እንደገና ላክ"
+    },
+    {
+        "key": "resend-in",
+        "EN_US": "Resend in",
+        "AM": "እንደገና ላክ በ"
+    },
+    {
+        "key": "wrong-email",
+        "EN_US": "Wrong email?",
+        "AM": "የተሳሳተ ኢሜይል?"
+    },
+    {
+        "key": "email-verified",
+        "EN_US": "Email verified",
+        "AM": "ኢሜይል ተረጋግጧል"
+    },
+    {
+        "key": "verification-code-sent",
+        "EN_US": "Verification code sent to your email",
+        "AM": "የማረጋገጫ ኮድ ወደ ኢሜይልዎ ተልኳል"
+    },
+    {
+        "key": "error-enter-email",
+        "EN_US": "Please enter your email",
+        "AM": "እባክዎ ኢሜይልዎን ያስገቡ"
+    },
+    {
+        "key": "error-email-format",
+        "EN_US": "Please enter a valid email address",
+        "AM": "እባክዎ ትክክለኛ ኢሜይል አድራሻ ያስገቡ"
+    },
+    {
+        "key": "error-enter-full-code",
+        "EN_US": "Please enter all 6 digits",
+        "AM": "እባክዎ ስድስቱንም አሃዞች ያስገቡ"
+    },
+    {
+        "key": "error-email-not-verified",
+        "EN_US": "Your email is not verified yet",
+        "AM": "ኢሜይልዎ ገና አልተረጋገጠም"
+    },
+    {
+        "key": "error-invalid-code",
+        "EN_US": "That code is not correct. Please try again",
+        "AM": "ኮዱ ትክክል አይደለም። እባክዎ እንደገና ይሞክሩ"
+    },
+    {
+        "key": "error-code-expired",
+        "EN_US": "That code has expired. Request a new one",
+        "AM": "ኮዱ ጊዜው አልፎበታል። አዲስ ይጠይቁ"
+    },
+    {
+        "key": "add-email-to-verify",
+        "EN_US": "Add your email address so we can send you a verification code",
+        "AM": "የማረጋገጫ ኮድ እንድንልክልዎ የኢሜይል አድራሻዎን ያስገቡ"
+    },
+    {
+        "key": "send-code",
+        "EN_US": "Send code",
+        "AM": "ኮድ ላክ"
+    },
+    {
+        "key": "change-email",
+        "EN_US": "Change email",
+        "AM": "ኢሜይል ቀይር"
+    },
+    {
+        "key": "error-could-not-add-email",
+        "EN_US": "We couldn't add that email. Please contact support.",
+        "AM": "ኢሜይሉን ማከል አልቻልንም። እባክዎ ድጋፍን ያግኙ።"
+    },
+    {
+        "key": "check-email-for-code",
+        "EN_US": "Check your email for the 6-digit code",
+        "AM": "የ6 አሃዝ ኮድ በኢሜይልዎ ውስጥ ይመልከቱ"
+    },
+    {
+        "key": "check-spam-folder",
+        "EN_US": "Can't find it? Check your spam folder.",
+        "AM": "ካላገኙት የspam ኢሜይል ይመልከቱ።"
     }
 ]
