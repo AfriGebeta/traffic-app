@@ -34,6 +34,7 @@ export interface TaxiRoute {
     type: 'minibus' | 'taxi';
     geometry?: any;
     isActive: boolean;
+    stops?: TaxiRouteStop[];
     createdAt: string;
     updatedAt: string;
 }
@@ -50,6 +51,13 @@ export interface TaxiRouteStop {
     nodeId: number;
     sequenceIndex: number;
     fareFromStart: number;
+    distanceFromStart?: number;
+    node?: {
+        id: number;
+        name: string;
+        lat: number;
+        lng: number;
+    };
     createdAt: string;
     updatedAt: string;
 }
@@ -144,16 +152,18 @@ export interface TaxiNavigationResponse {
     };
     startNode: {
         id: number;
-        node_type: string;
-        route_name: string;
+        nodeType?: string;
+        node_type?: string;
+        route_name?: string;
         name: string;
         lat: number;
         lng: number;
     };
     endNode: {
         id: number;
-        node_type: string;
-        route_name: string;
+        nodeType?: string;
+        node_type?: string;
+        route_name?: string;
         name: string;
         lat: number;
         lng: number;

@@ -12,6 +12,9 @@ export interface LoginResult {
     data: AuthResponse | null;
     error: string | null;
     code: AuthErrorCode | null;
+    userId?: string | null;
+    email?: string | null;
+    hasEmail?: boolean;
 }
 
 export const useUserLogin = () => {
@@ -19,10 +22,23 @@ export const useUserLogin = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const fail = (raw?: string, status?: number): LoginResult => {
-        const { code, message } = toFriendlyAuthError(t, 'login', raw, status);
+    const fail = (raw?: string, status?: number, errorBody?: any): LoginResult => {
+        const { code, message } = toFriendlyAuthError(t, 'login', raw, status, errorBody);
+
+        if (code === 'EMAIL_NOT_VERIFIED') {
+            setError(null);
+            return {
+                data: null,
+                error: message,
+                code,
+                userId: errorBody?.userId ?? null,
+                email: errorBody?.email ?? null,
+                hasEmail: errorBody?.hasEmail !== false,
+            };
+        }
+
         setError(message);
-        return { data: null, error: message, code };
+        return { data: null, error: message, code, userId: null, email: null };
     };
 
     const login = async (data: UserLoginRequest): Promise<LoginResult> => {
@@ -33,18 +49,24 @@ export const useUserLogin = () => {
             const response = await userService.login(data);
 
             if (response.error) {
-                return fail(response.error, response.status);
+                return fail(response.error, response.status, response.errorBody);
             }
 
             if (!response.data?.token) {
-                return fail(response.message, response.status);
+                return fail(response.message, response.status, response.errorBody);
             }
 
             const { password, ...userWithoutPassword } = response.data.user;
             await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userWithoutPassword));
             await AsyncStorage.setItem(TOKEN_STORAGE_KEY, response.data.token);
 
-            return { data: response.data, error: null, code: null };
+            return {
+                data: response.data,
+                error: null,
+                code: null,
+                userId: response.data.user?.id ?? null,
+                email: response.data.user?.email ?? null,
+            };
         } catch (err) {
             return fail(err instanceof Error ? err.message : undefined);
         } finally {

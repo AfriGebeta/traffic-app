@@ -8,7 +8,8 @@ import { showToast } from '../../../shared/utils/toast';
 import { generateSessionId } from '../../../shared/utils/session';
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
-import type { VoiceNavigationData, NavigationOption, ConversationMessage } from '../types/voice-navigation.types';
+import type { VoiceNavigationData, NavigationOption, ConversationMessage, TaxiPlan } from '../types/voice-navigation.types';
+import type { TaxiNavigationResponse } from '../../taxi/types/taxi.types';
 import type { GeocodingPlace } from '../types/navigation.types';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
@@ -20,6 +21,7 @@ interface UseVoiceNavigationProps {
     userLocation: { lat: number; lng: number } | null;
     language?: string;
     onDestinationFound?: (destination: GeocodingPlace) => void;
+    onTaxiRouteStarted?: (route: TaxiNavigationResponse) => void;
 }
 
 const toWsLanguage = (lang?: string): 'am' | 'en' =>
@@ -68,6 +70,7 @@ export const useVoiceNavigation = ({
     userLocation,
     language = 'amh',
     onDestinationFound,
+    onTaxiRouteStarted,
 }: UseVoiceNavigationProps) => {
     const {
         isRecording,
@@ -90,6 +93,7 @@ export const useVoiceNavigation = ({
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [canReplay, setCanReplay] = useState(false);
     const [messages, setMessages] = useState<ConversationMessage[]>([]);
+    const [taxiPlan, setTaxiPlan] = useState<TaxiPlan | null>(null);
 
     const messageSeqRef = useRef(0);
     const appendMessage = useCallback((role: ConversationMessage['role'], text: string) => {
@@ -100,6 +104,16 @@ export const useVoiceNavigation = ({
             if (last && last.role === role && last.text === trimmed) return prev;
             messageSeqRef.current += 1;
             return [...prev, { id: `${role}-${messageSeqRef.current}`, role, text: trimmed }];
+        });
+    }, []);
+
+    const appendTaxiPlan = useCallback((plan: TaxiPlan) => {
+        setMessages((prev) => {
+            messageSeqRef.current += 1;
+            return [
+                ...prev,
+                { id: `taxi-${messageSeqRef.current}`, role: 'taxi', text: plan.narrative, taxiPlan: plan },
+            ];
         });
     }, []);
 
@@ -126,6 +140,10 @@ export const useVoiceNavigation = ({
     userLocationRef.current = userLocation;
     const onDestinationFoundRef = useRef(onDestinationFound);
     onDestinationFoundRef.current = onDestinationFound;
+    const onTaxiRouteStartedRef = useRef(onTaxiRouteStarted);
+    onTaxiRouteStartedRef.current = onTaxiRouteStarted;
+    const taxiSpokenRef = useRef<string>('');
+    const startedRouteRef = useRef<string>('');
     const wsLanguageRef = useRef<'am' | 'en'>(toWsLanguage(language));
     wsLanguageRef.current = toWsLanguage(language);
 
@@ -151,9 +169,7 @@ export const useVoiceNavigation = ({
 
     const handleEvent = useCallback((event: VoiceNavEvent) => {
         const { type, data } = event;
-        if (type !== 'pong' && type !== 'origin_updated') {
-            vlog(`event «${type}» ${sinceReq()}`, data ? JSON.stringify(data).slice(0, 300) : '');
-        }
+        vlog(`event «${type}» ${sinceReq()}`, JSON.stringify(event));
 
         switch (type) {
             case 'connected': {
@@ -202,9 +218,44 @@ export const useVoiceNavigation = ({
                 vlog(`speak (about to stream): "${data?.message ?? ''}"`);
                 if (data?.message) {
                     setAssistantMessage(data.message);
-                    appendMessage('assistant', data.message);
+                    if (data.message.trim() !== taxiSpokenRef.current) {
+                        appendMessage('assistant', data.message);
+                    }
                 }
                 break;
+
+            case 'taxi_confirm':
+            case 'taxi_route': {
+                const route: TaxiNavigationResponse | undefined = data?.route;
+                if (!route) {
+                    vlog(`${type} without route — ignored`);
+                    break;
+                }
+
+                const started = type === 'taxi_route';
+                const fare = route.summary?.estimatedFare;
+                vlog(
+                    `${type}: ${route.segments?.length ?? 0} segment(s), ${fare ?? '?'} ${route.summary?.currency ?? ''}`,
+                    route.formattedPath,
+                );
+
+                taxiSpokenRef.current = (data?.message ?? '').trim();
+                const plan: TaxiPlan = {
+                    narrative: data?.narrative ?? '',
+                    message: data?.message ?? '',
+                    route,
+                    started,
+                };
+                setTaxiPlan(plan);
+                appendTaxiPlan(plan);
+                finishProcessing();
+
+                if (started && startedRouteRef.current !== route.timestamp) {
+                    startedRouteRef.current = route.timestamp;
+                    onTaxiRouteStartedRef.current?.(route);
+                }
+                break;
+            }
 
             case 'disambiguate': {
                 const opts: NavigationOption[] = data?.options ?? [];
@@ -318,7 +369,7 @@ export const useVoiceNavigation = ({
                 vlog('unhandled event type:', type);
                 break;
         }
-    }, [finishProcessing, handleDestination, setIsProcessing, appendMessage, appendOptions]);
+    }, [finishProcessing, handleDestination, setIsProcessing, appendMessage, appendOptions, appendTaxiPlan]);
 
 
     useEffect(() => {
@@ -475,6 +526,9 @@ export const useVoiceNavigation = ({
         setTranscription('');
         setAssistantMessage('');
         setMessages([]);
+        setTaxiPlan(null);
+        taxiSpokenRef.current = '';
+        startedRouteRef.current = '';
         playerRef.current?.stopPlayback();
         setIsSpeaking(false);
         setCanReplay(false);
@@ -493,6 +547,29 @@ export const useVoiceNavigation = ({
         setIsSpeaking(false);
         socketRef.current?.sendJson('stop_tts');
         setCanReplay(playerRef.current?.canReplay ?? false);
+    }, []);
+
+    const startTaxiRoute = useCallback((route: TaxiNavigationResponse): boolean => {
+        if (startedRouteRef.current === route.timestamp) {
+            vlog('taxi start ignored — route already started');
+            return false;
+        }
+        startedRouteRef.current = route.timestamp;
+        vlog(`taxi start → ${route.formattedPath}`);
+
+        playerRef.current?.stopPlayback();
+        setIsSpeaking(false);
+        socketRef.current?.sendJson('stop_tts');
+
+        setMessages((prev) =>
+            prev.map((message) =>
+                message.taxiPlan && message.taxiPlan.route.timestamp === route.timestamp
+                    ? { ...message, taxiPlan: { ...message.taxiPlan, started: true } }
+                    : message,
+            ),
+        );
+        setTaxiPlan((prev) => (prev && prev.route.timestamp === route.timestamp ? { ...prev, started: true } : prev));
+        return true;
     }, []);
 
     const handleOptionSelect = useCallback(async (optionId: number) => {
@@ -542,6 +619,8 @@ export const useVoiceNavigation = ({
         transcription,
         assistantMessage,
         messages,
+        taxiPlan,
+        startTaxiRoute,
         meteringLevel,
         isSpeaking,
         canReplay,

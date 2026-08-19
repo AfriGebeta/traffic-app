@@ -6,12 +6,14 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Audio } from 'expo-av';
 import AiIcon from '../../../../assets/images/ai-icon.svg';
+import TaxiPlanCard from '../components/TaxiPlanCard';
 import { useVoiceNavigation } from '../../navigation/hooks/useVoiceNavigation';
 import { navigationService } from '../../navigation/services/navigation.service';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
+import type { TaxiNavigationResponse } from '../../taxi/types/taxi.types';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 
 const WAVEFORM_BARS = 9;
@@ -200,8 +202,15 @@ export default function AIAssistantScreen() {
     const [recordSeconds, setRecordSeconds] = useState(0);
 
     useEffect(() => {
-        Audio.requestPermissionsAsync().catch(() => {});
+        Audio.requestPermissionsAsync().catch(() => { });
     }, []);
+
+    const openTaxiNavigation = (route: TaxiNavigationResponse) => {
+        router.replace({
+            pathname: '/taxi/navigation',
+            params: { routeData: JSON.stringify(route) },
+        });
+    };
 
     const {
         isRecording,
@@ -215,6 +224,7 @@ export default function AIAssistantScreen() {
         handleVoiceStart,
         handleVoiceStop,
         handleOptionSelect,
+        startTaxiRoute,
     } = useVoiceNavigation({
         mapRef: dummyMapRef,
         userLocation,
@@ -243,6 +253,7 @@ export default function AIAssistantScreen() {
                 });
             }, 0);
         },
+        onTaxiRouteStarted: openTaxiNavigation,
     });
 
     useEffect(() => {
@@ -258,8 +269,23 @@ export default function AIAssistantScreen() {
     const hasConversation = messages.length > 0;
     const isIdle = !isRecording && !isProcessingVoice && !hasConversation && !showOptions;
     const isRecordingBlank = isRecording && !hasConversation && !showOptions;
-    const lastAssistantId = [...messages].reverse().find((m) => m.role === 'assistant')?.id;
+    const lastSpokenId = [...messages].reverse().find((m) => m.role === 'assistant' || m.role === 'taxi')?.id;
     const lastOptionsId = [...messages].reverse().find((m) => m.role === 'options')?.id;
+
+    const renderAudioControl = (messageId: string) =>
+        messageId === lastSpokenId && (isSpeaking || canReplay) ? (
+            <TouchableOpacity
+                onPress={isSpeaking ? stopSpeaking : replayResponse}
+                className="self-start flex-row items-center mb-3 px-3 py-2 rounded-full"
+                style={{ backgroundColor: theme.surface }}
+                activeOpacity={0.7}
+            >
+                <Ionicons name={isSpeaking ? 'stop' : 'play'} size={16} color={colors.primary.main} />
+                <Text className="text-sm ml-1.5" style={{ color: colors.primary.main, fontFamily: 'PlusJakartaSans-Medium' }}>
+                    {isSpeaking ? t('stop') : t('play-again')}
+                </Text>
+            </TouchableOpacity>
+        ) : null;
 
     return (
         <View className="flex-1" style={{ paddingTop: insets.top, paddingBottom: insets.bottom, backgroundColor: theme.background }}>
@@ -331,6 +357,17 @@ export default function AIAssistantScreen() {
                                     </TouchableOpacity>
                                 ))}
                             </View>
+                        ) : message.role === 'taxi' && message.taxiPlan ? (
+                            <View key={message.id}>
+                                <TaxiPlanCard
+                                    plan={message.taxiPlan}
+                                    onStart={() => {
+                                        const { route } = message.taxiPlan!;
+                                        if (startTaxiRoute(route)) openTaxiNavigation(route);
+                                    }}
+                                />
+                                {renderAudioControl(message.id)}
+                            </View>
                         ) : message.role === 'user' ? (
                             <View
                                 key={message.id}
@@ -348,19 +385,7 @@ export default function AIAssistantScreen() {
                                     <Text className="text-base leading-6" style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Regular' }}>{message.text}</Text>
                                 </View>
 
-                                {message.id === lastAssistantId && (isSpeaking || canReplay) ? (
-                                    <TouchableOpacity
-                                        onPress={isSpeaking ? stopSpeaking : replayResponse}
-                                        className="self-start flex-row items-center mb-3 px-3 py-2 rounded-full"
-                                        style={{ backgroundColor: theme.surface }}
-                                        activeOpacity={0.7}
-                                    >
-                                        <Ionicons name={isSpeaking ? 'stop' : 'play'} size={16} color={colors.primary.main} />
-                                        <Text className="text-sm ml-1.5" style={{ color: colors.primary.main, fontFamily: 'PlusJakartaSans-Medium' }}>
-                                            {isSpeaking ? t('stop') : t('play-again')}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ) : null}
+                                {renderAudioControl(message.id)}
                             </View>
                         )
                     )}
@@ -405,10 +430,10 @@ export default function AIAssistantScreen() {
                             {isProcessingVoice
                                 ? t('processing')
                                 : isRecording
-                                  ? t('listening')
-                                  : showOptions
-                                    ? t('or-speak-your-answer')
-                                    : t('push-to-talk')}
+                                    ? t('listening')
+                                    : showOptions
+                                        ? t('or-speak-your-answer')
+                                        : t('push-to-talk')}
                         </Text>
                     )}
                 </View>

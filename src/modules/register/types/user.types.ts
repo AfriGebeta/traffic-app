@@ -2,6 +2,8 @@ export interface User {
     id: string;
     phoneNumber: string;
     name: string;
+    email?: string;
+    isEmailVerified?: boolean;
     username?: string;
     profileImage?: string | null;
     profileImageLocal?: string | null;
@@ -23,6 +25,31 @@ export interface UserRegistrationRequest {
     phoneNumber: string;
     password: string;
     name: string;
+    email: string;
+}
+
+export interface RegistrationResponse {
+    message: string;
+    userId: string;
+}
+
+export interface VerifyEmailRequest {
+    userId: string;
+    code: string;
+}
+
+export interface ResendVerificationRequest {
+    userId: string;
+}
+
+export interface SubmitEmailRequest {
+    phoneNumber: string;
+    email: string;
+}
+
+export interface SubmitEmailResponse {
+    userId: string;
+    message: string;
 }
 
 export interface UpdateProfileRequest {

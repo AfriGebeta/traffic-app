@@ -10,7 +10,7 @@ const USER_STORAGE_KEY = '@traffic_app_user';
 const TOKEN_STORAGE_KEY = '@traffic_app_token';
 
 export interface RegisterResult {
-    data: AuthResponse | null;
+    userId: string | null;
     error: string | null;
     code: AuthErrorCode | null;
 }
@@ -26,10 +26,10 @@ export const useUserRegistration = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const fail = (raw?: string, status?: number): RegisterResult => {
-        const { code, message } = toFriendlyAuthError(t, 'register', raw, status);
+    const fail = (raw?: string, status?: number, errorBody?: any): RegisterResult => {
+        const { code, message } = toFriendlyAuthError(t, 'register', raw, status, errorBody);
         setError(message);
-        return { data: null, error: message, code };
+        return { userId: null, error: message, code };
     };
 
     const register = async (data: UserRegistrationRequest): Promise<RegisterResult> => {
@@ -40,18 +40,14 @@ export const useUserRegistration = () => {
             const response = await userService.register(data);
 
             if (response.error) {
-                return fail(response.error, response.status);
+                return fail(response.error, response.status, response.errorBody);
             }
 
-            if (!response.data?.token) {
-                return fail(response.message, response.status);
+            if (!response.data?.userId) {
+                return fail(response.message, response.status, response.errorBody);
             }
 
-            const { password, ...userWithoutPassword } = response.data.user;
-            await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userWithoutPassword));
-            await AsyncStorage.setItem(TOKEN_STORAGE_KEY, response.data.token);
-
-            return { data: response.data, error: null, code: null };
+            return { userId: response.data.userId, error: null, code: null };
         } catch (err) {
             return fail(err instanceof Error ? err.message : undefined);
         } finally {
