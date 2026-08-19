@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Image, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -106,6 +107,11 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
     const [walkingRoute, setWalkingRoute] = useState<{ distance: number; duration: number } | null>(null);
     const [loadingWalkingRoute, setLoadingWalkingRoute] = useState(false);
 
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [fareModalVisible, setFareModalVisible] = useState(false);
+    const [fareInput, setFareInput] = useState('');
+    const [savingFare, setSavingFare] = useState(false);
+
     const isCustomOrigin = origin !== null;
 
     const getOriginCoords = () => {
@@ -117,6 +123,62 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
     useEffect(() => {
         checkIfSaved();
     }, [destination]);
+
+    useEffect(() => {
+        let cancelled = false;
+        AsyncStorage.getItem('@traffic_app_token')
+            .then(token => {
+                if (!cancelled) setIsAuthenticated(!!token);
+            })
+            .catch(() => {
+                if (!cancelled) setIsAuthenticated(false);
+            });
+        return () => { cancelled = true; };
+    }, []);
+
+    const openFareEditor = () => {
+        setFareInput(String(taxiRoute?.summary?.estimatedFare ?? ''));
+        setFareModalVisible(true);
+    };
+
+    const handleSaveFare = async () => {
+        const fare = Number(fareInput);
+        if (!fareInput.trim() || Number.isNaN(fare) || fare < 0) {
+            showToast(t('invalid-fare'));
+            return;
+        }
+
+        const path = taxiRoute?.path;
+        if (!path?.length) return;
+
+        setSavingFare(true);
+        try {
+            const match = await taxiService.findRouteForPath(path);
+            if (!match) {
+                showToast(t('fare-stop-not-found'));
+                return;
+            }
+
+            await taxiService.updateStopFare(
+                match.routeId,
+                match.endStop.id,
+                match.startStop.fareFromStart + fare
+            );
+
+            setTaxiRoute(prev => prev ? {
+                ...prev,
+                summary: { ...prev.summary, estimatedFare: fare },
+            } : prev);
+
+            setFareModalVisible(false);
+            showToast(t('fare-updated'));
+        } catch (error) {
+            console.error('[RoutePreview] failed to update stop fare:', error);
+            showToast(t('fare-update-failed'));
+        } finally {
+            setSavingFare(false);
+        }
+    };
 
     useFocusEffect(
         React.useCallback(() => {
@@ -646,9 +708,20 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                     <View className="flex-1 mr-3" style={{ opacity: isFetchingRoute && transportMode !== 'taxi' ? 0.4 : 1 }}>
                                         {transportMode === 'taxi' && taxiRoute && taxiRoute.summary ? (
                                             <>
-                                                <Text className="text-3xl font-bold" style={{ color: colors.primary.main }}>
-                                                    {taxiRoute.summary?.estimatedFare || 0} {taxiRoute.summary?.currency || 'ETB'}
-                                                </Text>
+                                                <View className="flex-row items-center">
+                                                    <Text className="text-3xl font-bold" style={{ color: colors.primary.main }}>
+                                                        {taxiRoute.summary?.estimatedFare || 0} {taxiRoute.summary?.currency || 'ETB'}
+                                                    </Text>
+                                                    {isAuthenticated && taxiRoute.endNode && (
+                                                        <TouchableOpacity
+                                                            onPress={openFareEditor}
+                                                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                                            className="ml-2"
+                                                        >
+                                                            <Ionicons name="pencil" size={18} color={theme.textSecondary} />
+                                                        </TouchableOpacity>
+                                                    )}
+                                                </View>
                                                 <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>
                                                     {t('taxi-fare')} • {formatTime(displayDuration)}
                                                 </Text>
@@ -738,6 +811,72 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
 
                 </View>
             </BlurView>
+
+            <Modal
+                visible={fareModalVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setFareModalVisible(false)}
+            >
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                    className="flex-1 items-center justify-center px-8"
+                    style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+                >
+                    <View className="w-full rounded-3xl p-6" style={{ backgroundColor: theme.surface }}>
+                        <Text className="text-lg font-bold" style={{ color: theme.textPrimary }}>
+                            {t('update-taxi-fare')}
+                        </Text>
+                        <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>
+                            {t('enter-new-fare')}
+                        </Text>
+
+                        <View
+                            className="flex-row items-center rounded-2xl px-4 mt-4"
+                            style={{ borderWidth: 1, borderColor: theme.border }}
+                        >
+                            <TextInput
+                                value={fareInput}
+                                onChangeText={setFareInput}
+                                keyboardType="numeric"
+                                autoFocus
+                                editable={!savingFare}
+                                className="flex-1 py-3 text-2xl font-bold"
+                                style={{ color: theme.textPrimary }}
+                                placeholderTextColor={theme.textSecondary}
+                                placeholder="0"
+                            />
+                            <Text className="text-base font-semibold ml-2" style={{ color: theme.textSecondary }}>
+                                {taxiRoute?.summary?.currency || 'ETB'}
+                            </Text>
+                        </View>
+
+                        <View className="flex-row justify-end items-center mt-5">
+                            <TouchableOpacity
+                                onPress={() => setFareModalVisible(false)}
+                                disabled={savingFare}
+                                className="px-5 py-3"
+                            >
+                                <Text className="font-semibold" style={{ color: theme.textSecondary }}>
+                                    {t('cancel')}
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={handleSaveFare}
+                                disabled={savingFare}
+                                className="rounded-2xl px-6 py-3 ml-2"
+                                style={{ backgroundColor: colors.primary.main, opacity: savingFare ? 0.6 : 1 }}
+                            >
+                                {savingFare ? (
+                                    <ActivityIndicator size="small" color="#FFFFFF" />
+                                ) : (
+                                    <Text className="text-white font-bold">{t('save')}</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </KeyboardAvoidingView>
+            </Modal>
         </View>
     );
 };

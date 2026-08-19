@@ -17,6 +17,9 @@ import {
 const NODES_PAGE_LIMIT = 100;
 const NODES_MAX_PAGES = 100;
 
+const ROUTES_CACHE_TTL_MS = 5 * 60 * 1000;
+let routesCache: { routes: TaxiRoute[]; fetchedAt: number } | null = null;
+
 interface NodesPageInfo {
     limit: number;
     cursor: number | null;
@@ -205,5 +208,69 @@ export const taxiService = {
 
         const result = response.data.data || response.data;
         return result;
+    },
+
+    async getRoutes(forceRefresh: boolean = false): Promise<TaxiRoute[]> {
+        if (!forceRefresh && routesCache && Date.now() - routesCache.fetchedAt < ROUTES_CACHE_TTL_MS) {
+            return routesCache.routes;
+        }
+
+        const response = await apiService.get<{ data?: TaxiRoute[] } | TaxiRoute[]>(
+            '/api/taxi/routes'
+        );
+
+        if (response.error) {
+            throw new Error(response.error);
+        }
+
+        const body = response.data as any;
+        const routes: TaxiRoute[] = Array.isArray(body) ? body : body?.data || [];
+        routesCache = { routes, fetchedAt: Date.now() };
+        return routes;
+    },
+
+    async updateStopFare(routeId: number, stopId: number, fareFromStart: number): Promise<TaxiRouteStop> {
+        const response = await apiService.patch<any>(
+            `/api/taxi/routes/${routeId}/stops/${stopId}`,
+            { fareFromStart }
+        );
+
+        if (response.error) {
+            throw new Error(response.error);
+        }
+
+        if (!response.data) {
+            throw new Error('failed to update stop fare - no data returned');
+        }
+
+        routesCache = null;
+        return response.data.data || response.data;
+    },
+
+    async findRouteForPath(path: number[]): Promise<{ routeId: number; startStop: TaxiRouteStop; endStop: TaxiRouteStop } | null> {
+        if (path.length < 2) return null;
+
+        const routes = await taxiService.getRoutes();
+        const startNodeId = path[0];
+        const endNodeId = path[path.length - 1];
+
+        let best: { routeId: number; startStop: TaxiRouteStop; endStop: TaxiRouteStop; covered: number } | null = null;
+
+        for (const route of routes) {
+            const stops = route.stops;
+            if (!stops?.length) continue;
+
+            const startStop = stops.find(s => s.nodeId === startNodeId);
+            const endStop = stops.find(s => s.nodeId === endNodeId);
+            if (!startStop || !endStop || startStop.sequenceIndex >= endStop.sequenceIndex) continue;
+
+            const covered = path.filter(nodeId => stops.some(s => s.nodeId === nodeId)).length;
+            if (!best || covered > best.covered) {
+                best = { routeId: route.id, startStop, endStop, covered };
+            }
+        }
+
+        if (!best) return null;
+        return { routeId: best.routeId, startStop: best.startStop, endStop: best.endStop };
     },
 };

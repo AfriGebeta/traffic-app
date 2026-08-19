@@ -2055,6 +2055,36 @@
         "AM": "የታክሲ ዋጋ"
     },
     {
+        "key": "update-taxi-fare",
+        "EN_US": "Update Taxi Fare",
+        "AM": "የታክሲ ዋጋ ያሻሽሉ"
+    },
+    {
+        "key": "enter-new-fare",
+        "EN_US": "Enter the new fare in ETB",
+        "AM": "አዲሱን ዋጋ በብር ያስገቡ"
+    },
+    {
+        "key": "fare-updated",
+        "EN_US": "Fare updated",
+        "AM": "ዋጋ ተሻሽሏል"
+    },
+    {
+        "key": "fare-update-failed",
+        "EN_US": "Could not update the fare. Please try again.",
+        "AM": "ዋጋውን ማሻሻል አልተቻለም። እባክዎ እንደገና ይሞክሩ።"
+    },
+    {
+        "key": "invalid-fare",
+        "EN_US": "Enter a valid fare amount",
+        "AM": "ትክክለኛ የዋጋ መጠን ያስገቡ"
+    },
+    {
+        "key": "fare-stop-not-found",
+        "EN_US": "This stop is not editable yet.",
+        "AM": "ማስተካከል አልተቻለም።"
+    },
+    {
         "key": "taxi-route-unavailable",
         "EN_US": "Taxi route is not available for this destination. Please try a different location.",
         "AM": "ለዚህ መድረሻ የታክሲ መስመር አይገኝም። እባክዎ ሌላ ቦታ ይሞክሩ።"
