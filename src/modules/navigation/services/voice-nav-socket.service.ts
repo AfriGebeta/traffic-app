@@ -84,9 +84,7 @@ export class VoiceNavSocket {
         if (event.data instanceof ArrayBuffer) {
             const { header, payload } = splitBinaryFrame(new Uint8Array(event.data));
             if (!header) { console.log('voicenav: binary frame: no header'); return; }
-            if (header.type !== 'pong' && header.type !== 'origin_updated') {
-                console.log('voicenav: binary', header.type, 'payload', payload.length);
-            }
+            console.log('voicenav: binary', header.type, 'payload', payload.length, JSON.stringify(header));
             if (header.type === 'tts_chunk') {
                 this.handlers.onPcm(payload);
             } else {
@@ -102,9 +100,7 @@ export class VoiceNavSocket {
                     : new TextDecoder().decode(event.data as any);
             const nl = raw.indexOf('\n');
             const json = JSON.parse(nl !== -1 ? raw.slice(0, nl) : raw);
-            if (json?.type !== 'pong' && json?.type !== 'origin_updated') {
-                console.log('voicenav: event', json?.type, JSON.stringify(json?.data)?.slice(0, 200));
-            }
+            console.log('voicenav: event', json?.type, JSON.stringify(json));
             this.handlers.onEvent(json);
         } catch (err) {
             console.log('voicenav: frame parse failed:', String(event.data).slice(0, 200), err);
