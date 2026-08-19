@@ -137,6 +137,14 @@ export const ProfileScreen = () => {
         return () => subscription.remove();
     }, [showMenu, showLogoutConfirm]);
 
+    const handleBack = () => {
+        if (router.canGoBack()) {
+            router.back();
+        } else {
+            router.replace('/');
+        }
+    };
+
     const handleLogout = async () => {
         setShowLogoutConfirm(false);
         await clearAuth();
@@ -199,7 +207,7 @@ export const ProfileScreen = () => {
         return (
             <View className="flex-1" style={{ backgroundColor: theme.background }}>
                 <View className="px-6 pt-12 pb-6">
-                    <TouchableOpacity onPress={() => router.back()} className="mb-6">
+                    <TouchableOpacity onPress={handleBack} className="mb-6">
                         <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
                     </TouchableOpacity>
                 </View>
@@ -237,6 +245,15 @@ export const ProfileScreen = () => {
                 }}
             >
                 <View className="px-5">
+                    <TouchableOpacity
+                        onPress={handleBack}
+                        activeOpacity={0.7}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        className="self-start mb-3 -ml-2 p-2"
+                    >
+                        <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
+                    </TouchableOpacity>
+
                     <View className="px-4 py-3.5 mb-6 flex-row items-center justify-between" style={elevatedCardStyle}>
                         <View className="flex-row items-center flex-1 mr-3">
                             <TouchableOpacity
