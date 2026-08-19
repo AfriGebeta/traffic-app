@@ -3213,5 +3213,25 @@
         "key": "check-spam-folder",
         "EN_US": "Can't find it? Check your spam folder.",
         "AM": "ካላገኙት የspam ኢሜይል ይመልከቱ።"
+    },
+    {
+        "key": "start-trip",
+        "EN_US": "Start trip",
+        "AM": "ጉዞ ጀምር"
+    },
+    {
+        "key": "trip-started",
+        "EN_US": "Trip started",
+        "AM": "ጉዞ ተጀምሯል"
+    },
+    {
+        "key": "estimated-fare",
+        "EN_US": "Estimated fare",
+        "AM": "የተገመተ ዋጋ"
+    },
+    {
+        "key": "taxi-plan",
+        "EN_US": "Taxi route",
+        "AM": "የታክሲ መንገድ"
     }
 ]
