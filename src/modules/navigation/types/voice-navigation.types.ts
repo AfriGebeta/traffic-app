@@ -96,7 +96,7 @@ export interface TaxiPlan {
 
 export interface ConversationMessage {
     id: string;
-    role: 'user' | 'assistant' | 'options' | 'taxi';
+    role: 'user' | 'assistant' | 'options' | 'taxi' | 'places';
     text: string;
     options?: NavigationOption[];
     taxiPlan?: TaxiPlan;

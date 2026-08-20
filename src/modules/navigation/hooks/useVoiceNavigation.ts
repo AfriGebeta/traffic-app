@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { File } from 'expo-file-system';
 import { useVoiceRecording } from './useVoiceRecording';
 import { VoiceNavSocket, type VoiceNavEvent } from '../services/voice-nav-socket.service';
+import { streamChat } from '../services/voice-nav-chat.service';
 import { StreamingPcmPlayer } from '../utils/streamingPcmPlayer';
 import { navigationService } from '../services/navigation.service';
 import { showToast } from '../../../shared/utils/toast';
@@ -117,6 +118,13 @@ export const useVoiceNavigation = ({
         });
     }, []);
 
+    const appendPlaces = useCallback((places: NavigationOption[]) => {
+        setMessages((prev) => {
+            messageSeqRef.current += 1;
+            return [...prev, { id: `places-${messageSeqRef.current}`, role: 'places', text: '', options: places }];
+        });
+    }, []);
+
     const appendOptions = useCallback((opts: NavigationOption[]) => {
         if (opts.length === 0) return;
         setMessages((prev) => {
@@ -144,6 +152,7 @@ export const useVoiceNavigation = ({
     onTaxiRouteStartedRef.current = onTaxiRouteStarted;
     const taxiSpokenRef = useRef<string>('');
     const startedRouteRef = useRef<string>('');
+    const lastInputModeRef = useRef<'voice' | 'text'>('voice');
     const wsLanguageRef = useRef<'am' | 'en'>(toWsLanguage(language));
     wsLanguageRef.current = toWsLanguage(language);
 
@@ -223,6 +232,17 @@ export const useVoiceNavigation = ({
                     }
                 }
                 break;
+
+            case 'suggestions': {
+                const places: NavigationOption[] = data?.places ?? [];
+                vlog(`suggestions: ${places.length} place(s)`, places.map((p) => p.name));
+                if (places.length === 0) break;
+
+                taxiSpokenRef.current = (data?.spokenMessage ?? '').trim();
+                appendPlaces(places);
+                finishProcessing();
+                break;
+            }
 
             case 'taxi_confirm':
             case 'taxi_route': {
@@ -369,7 +389,7 @@ export const useVoiceNavigation = ({
                 vlog('unhandled event type:', type);
                 break;
         }
-    }, [finishProcessing, handleDestination, setIsProcessing, appendMessage, appendOptions, appendTaxiPlan]);
+    }, [finishProcessing, handleDestination, setIsProcessing, appendMessage, appendOptions, appendPlaces, appendTaxiPlan]);
 
 
     useEffect(() => {
@@ -474,6 +494,7 @@ export const useVoiceNavigation = ({
         socketRef.current?.sendJson('stop_tts');
 
         recordingStartTime.current = Date.now();
+        lastInputModeRef.current = 'voice';
         vlog('recording started');
         const started = await startRecording();
         if (!started) {
@@ -549,6 +570,47 @@ export const useVoiceNavigation = ({
         setCanReplay(playerRef.current?.canReplay ?? false);
     }, []);
 
+    const handlePlaceSelect = useCallback((place: NavigationOption) => {
+        vlog(`suggestion tap "${place.name}" ${place.lat},${place.lng}`);
+        playerRef.current?.stopPlayback();
+        setIsSpeaking(false);
+        socketRef.current?.sendJson('stop_tts');
+        handleDestination(place);
+    }, [handleDestination]);
+
+    const sendTextMessage = useCallback(async (raw: string) => {
+        const text = raw.trim();
+        if (!text || isProcessing || isRecording) return;
+
+        appendMessage('user', text);
+        playerRef.current?.stopPlayback();
+        setIsSpeaking(false);
+        socketRef.current?.sendJson('stop_tts');
+        setShowOptions(false);
+        lastInputModeRef.current = 'text';
+        setIsProcessing(true);
+        reqStartRef.current = Date.now();
+
+        const loc = userLocationRef.current;
+        vlog(`chat: post "${text}"`);
+        try {
+            await streamChat(
+                {
+                    sessionId: sessionIdRef.current,
+                    text,
+                    ...(loc ? { originLat: loc.lat, originLng: loc.lng } : {}),
+                },
+                handleEvent,
+            );
+            vlog(`chat: complete ${sinceReq()}`);
+        } catch (error) {
+            vlog('chat failed:', String(error));
+            showToast('Something went wrong: Please try again');
+        } finally {
+            setIsProcessing(false);
+        }
+    }, [appendMessage, handleEvent, isProcessing, isRecording, setIsProcessing]);
+
     const startTaxiRoute = useCallback((route: TaxiNavigationResponse): boolean => {
         if (startedRouteRef.current === route.timestamp) {
             vlog('taxi start ignored — route already started');
@@ -575,6 +637,12 @@ export const useVoiceNavigation = ({
     const handleOptionSelect = useCallback(async (optionId: number) => {
         const selected = options.find((opt) => opt.id === optionId);
         if (!selected) return;
+
+        if (lastInputModeRef.current === 'text') {
+            const index = options.findIndex((opt) => opt.id === optionId);
+            void sendTextMessage(`ምርጫው ${index + 1}`);
+            return;
+        }
 
         playerRef.current?.stopPlayback();
         setIsSpeaking(false);
@@ -605,7 +673,7 @@ export const useVoiceNavigation = ({
         } catch (err) {
             failed(`error ${String(err)}`);
         }
-    }, [options, setIsProcessing, handleDestination]);
+    }, [options, sendTextMessage, setIsProcessing, handleDestination]);
 
     return {
         isRecording,
@@ -621,6 +689,7 @@ export const useVoiceNavigation = ({
         messages,
         taxiPlan,
         startTaxiRoute,
+        sendTextMessage,
         meteringLevel,
         isSpeaking,
         canReplay,
@@ -629,6 +698,7 @@ export const useVoiceNavigation = ({
         handleVoiceStop,
         handleCloseVoiceModal,
         handleOptionSelect,
+        handlePlaceSelect,
         clearVoiceNavigation,
         replayResponse,
         stopSpeaking,

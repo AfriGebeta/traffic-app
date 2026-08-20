@@ -3238,5 +3238,15 @@
         "key": "taxi-plan",
         "EN_US": "Taxi route",
         "AM": "የታክሲ መንገድ"
+    },
+    {
+        "key": "type-a-message",
+        "EN_US": "Type a message",
+        "AM": "መልእክት ይጻፉ"
+    },
+    {
+        "key": "nearby-places",
+        "EN_US": "Nearby places",
+        "AM": "በአቅራቢያ ያሉ ቦታዎች"
     }
 ]
