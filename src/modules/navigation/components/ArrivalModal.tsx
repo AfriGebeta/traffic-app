@@ -78,7 +78,7 @@ export const ArrivalModal: React.FC<ArrivalModalProps> = ({
                             style={{ backgroundColor: colors.primary.main }}
                         >
                             <Text className="text-white text-center font-semibold text-base">
-                                {t('done') || 'Done'}
+                                {t('ok') || 'OK'}
                             </Text>
                         </TouchableOpacity>
                     </View>

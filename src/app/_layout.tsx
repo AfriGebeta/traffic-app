@@ -1,4 +1,4 @@
-import { Stack } from "expo-router";
+import { Stack, usePathname } from "expo-router";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { MapThemeProvider } from '../modules/map/context/MapThemeContext';
@@ -14,6 +14,7 @@ import { useTelegramDeepLink } from '../shared/hooks/useTelegramDeepLink';
 import { useRemoteConfig, RemoteConfigProvider } from '../shared/contexts/RemoteConfigContext';
 import { initializeAppCheckSingleton } from '../shared/utils/appCheck';
 import { ForceUpdateModal } from '../components/ForceUpdateModal';
+import { UpdateBanner } from '../components/UpdateBanner';
 import { ToastHost } from '../shared/components/ToastHost';
 import telemetryApiService from '../shared/services/telemetry-api.service';
 import { dashboardEventsService } from '../shared/services/dashboard-events.service';
@@ -48,7 +49,9 @@ function ThemedNavigationBar() {
 
 function AppShell() {
   useTelegramDeepLink();
-  const { updateRequired, storeUrl } = useRemoteConfig();
+  const { updateRequired, updateAvailable, latestVersion, storeUrl } = useRemoteConfig();
+  const pathname = usePathname();
+  const showUpdateBanner = updateAvailable && !updateRequired && pathname === '/';
   const backgroundedAtRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -91,22 +94,27 @@ function AppShell() {
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <MapThemeProvider>
-        <ThemeProvider>
-          <ThemedNavigationBar />
-          <UserLocationProvider>
-            <LocationProvider>
-              <IncidentFiltersProvider>
-                <Stack
-                  screenOptions={{
-                    headerShown: false,
-                  }}
-                />
-                <ToastHost />
-                <ForceUpdateModal visible={updateRequired} storeUrl={storeUrl} />
-              </IncidentFiltersProvider>
-            </LocationProvider>
-          </UserLocationProvider>
-        </ThemeProvider>
+          <ThemeProvider>
+            <ThemedNavigationBar />
+            <UserLocationProvider>
+              <LocationProvider>
+                <IncidentFiltersProvider>
+                  <Stack
+                    screenOptions={{
+                      headerShown: false,
+                    }}
+                  />
+                  <ToastHost />
+                  <UpdateBanner
+                    visible={showUpdateBanner}
+                    latestVersion={latestVersion}
+                    storeUrl={storeUrl}
+                  />
+                  <ForceUpdateModal visible={updateRequired} storeUrl={storeUrl} />
+                </IncidentFiltersProvider>
+              </LocationProvider>
+            </UserLocationProvider>
+          </ThemeProvider>
         </MapThemeProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>

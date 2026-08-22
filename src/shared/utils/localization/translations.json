@@ -3248,5 +3248,20 @@
         "key": "nearby-places",
         "EN_US": "Nearby places",
         "AM": "በአቅራቢያ ያሉ ቦታዎች"
+    },
+    {
+        "key": "new-version-available",
+        "EN_US": "New version available",
+        "AM": "መተግበሪያው ተሻሽሏል"
+    },
+    {
+        "key": "update-for-latest-features",
+        "EN_US": "Update to get the latest features",
+        "AM": "አዳዲስ ማሻሻያዎችን ለማግኘት ያውርዱ"
+    },
+    {
+        "key": "update",
+        "EN_US": "Update",
+        "AM": "ያውርዱ"
     }
 ]
