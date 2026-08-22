@@ -17,6 +17,7 @@ module.exports = {
     ...appJson.expo,
     ios: {
       ...appJson.expo.ios,
+      googleServicesFile: process.env.GOOGLE_SERVICES_INFO_PLIST ?? appJson.expo.ios.googleServicesFile,
       associatedDomains: [
         ...(appJson.expo.ios.associatedDomains ?? []),
         `applinks:${telegramLoginHost}`,

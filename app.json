@@ -2,7 +2,7 @@
   "expo": {
     "name": "Gebeta Maps",
     "slug": "gebeta-maps",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
     "scheme": "trafficapp",
@@ -148,6 +148,7 @@
       "expo-secure-store",
       "@react-native-firebase/app",
       "@react-native-firebase/app-check",
+      "@react-native-firebase/crashlytics",
       [
         "react-native-audio-api",
         {

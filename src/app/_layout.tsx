@@ -23,9 +23,12 @@ import './globals.css';
 import '../shared/utils/localization/i18n';
 import { applyGlobalFont } from '../shared/utils/globalFont';
 import { installClientHeaders } from '../shared/utils/clientHeaders';
+import { initializeCrashlytics, logBreadcrumb } from '../shared/utils/crashlytics';
 
 import '../modules/navigation/services/nav-foreground-service';
 
+// First thing on the JS thread, so early failures are still captured.
+initializeCrashlytics();
 applyGlobalFont();
 installClientHeaders();
 
@@ -64,6 +67,7 @@ function AppShell() {
 
   useEffect(() => {
     const handleAppStateChange = (nextState: AppStateStatus) => {
+      logBreadcrumb(`app state: ${nextState}`);
       if (nextState === 'background' || nextState === 'inactive') {
         backgroundedAtRef.current = Date.now();
       } else if (nextState === 'active') {

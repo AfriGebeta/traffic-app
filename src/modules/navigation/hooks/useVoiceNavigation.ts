@@ -6,6 +6,7 @@ import { streamChat } from '../services/voice-nav-chat.service';
 import { StreamingPcmPlayer } from '../utils/streamingPcmPlayer';
 import { navigationService } from '../services/navigation.service';
 import { showToast } from '../../../shared/utils/toast';
+import { logBreadcrumb } from '../../../shared/utils/crashlytics';
 import { generateSessionId } from '../../../shared/utils/session';
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
@@ -398,6 +399,7 @@ export const useVoiceNavigation = ({
             return;
         }
 
+        logBreadcrumb('voicenav: audio engine created');
         playerRef.current = new StreamingPcmPlayer(() => setIsSpeaking(false));
         let disposed = false;
         let reconnectAttempt = 0;
@@ -450,6 +452,7 @@ export const useVoiceNavigation = ({
         connect();
 
         return () => {
+            logBreadcrumb('voicenav: audio engine disposed');
             disposed = true;
             if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
             socketRef.current?.close();
