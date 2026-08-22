@@ -1,5 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Animated, Easing } from 'react-native';
+import {
+    View,
+    Text,
+    TouchableOpacity,
+    ScrollView,
+    ActivityIndicator,
+    Animated,
+    Easing,
+    TextInput,
+} from 'react-native';
+import Reanimated, { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -200,6 +210,9 @@ export default function AIAssistantScreen() {
     const scrollRef = useRef<ScrollView | null>(null);
 
     const [recordSeconds, setRecordSeconds] = useState(0);
+    const [draft, setDraft] = useState('');
+    const [inputMode, setInputMode] = useState<'none' | 'voice' | 'text'>('none');
+    const keyboard = useAnimatedKeyboard();
 
     useEffect(() => {
         Audio.requestPermissionsAsync().catch(() => { });
@@ -224,7 +237,9 @@ export default function AIAssistantScreen() {
         handleVoiceStart,
         handleVoiceStop,
         handleOptionSelect,
+        handlePlaceSelect,
         startTaxiRoute,
+        sendTextMessage,
     } = useVoiceNavigation({
         mapRef: dummyMapRef,
         userLocation,
@@ -269,8 +284,25 @@ export default function AIAssistantScreen() {
     const hasConversation = messages.length > 0;
     const isIdle = !isRecording && !isProcessingVoice && !hasConversation && !showOptions;
     const isRecordingBlank = isRecording && !hasConversation && !showOptions;
-    const lastSpokenId = [...messages].reverse().find((m) => m.role === 'assistant' || m.role === 'taxi')?.id;
+    const lastSpokenId = [...messages].reverse().find((m) => m.role === 'assistant' || m.role === 'taxi' || m.role === 'places')?.id;
     const lastOptionsId = [...messages].reverse().find((m) => m.role === 'options')?.id;
+
+    const canSendDraft = draft.trim().length > 0 && !isRecording && !isProcessingVoice;
+    const submitDraft = () => {
+        if (!canSendDraft) return;
+        const text = draft;
+        setDraft('');
+        setInputMode('text');
+        void sendTextMessage(text);
+    };
+
+    useEffect(() => {
+        if (messages.length === 0) setInputMode('none');
+    }, [messages.length]);
+
+    const bottomBarStyle = useAnimatedStyle(() => ({
+        paddingBottom: Math.max(keyboard.height.value, insets.bottom) + 8,
+    }));
 
     const renderAudioControl = (messageId: string) =>
         messageId === lastSpokenId && (isSpeaking || canReplay) ? (
@@ -288,7 +320,7 @@ export default function AIAssistantScreen() {
         ) : null;
 
     return (
-        <View className="flex-1" style={{ paddingTop: insets.top, paddingBottom: insets.bottom, backgroundColor: theme.background }}>
+        <View className="flex-1" style={{ paddingTop: insets.top, backgroundColor: theme.background }}>
             <View className="flex-row items-center px-4 py-4">
                 <TouchableOpacity
                     onPress={() => router.back()}
@@ -357,6 +389,40 @@ export default function AIAssistantScreen() {
                                     </TouchableOpacity>
                                 ))}
                             </View>
+                        ) : message.role === 'places' ? (
+                            <View key={message.id}>
+                                <View className="mb-3 rounded-2xl rounded-tl-sm overflow-hidden" style={{ backgroundColor: theme.surface }}>
+                                    <View className="flex-row items-center px-4 pt-4 pb-2">
+                                        <Ionicons name="compass-outline" size={18} color={colors.primary.main} />
+                                        <Text className="text-base ml-2" style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Medium' }}>
+                                            {t('nearby-places')}
+                                        </Text>
+                                    </View>
+                                    {(message.options ?? []).map((place) => (
+                                        <View key={place.id} className="flex-row items-center px-4 py-3">
+                                            <View className="flex-1 mr-3">
+                                                <Text className="text-base" numberOfLines={1} style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Regular' }}>
+                                                    {place.name}
+                                                </Text>
+                                                <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary, fontFamily: 'PlusJakartaSans-Regular' }}>
+                                                    {place.lat.toFixed(5)}, {place.lng.toFixed(5)}
+                                                </Text>
+                                            </View>
+                                            <TouchableOpacity
+                                                onPress={() => handlePlaceSelect(place)}
+                                                className="px-4 py-2 rounded-full"
+                                                style={{ backgroundColor: colors.primary.main }}
+                                                activeOpacity={0.8}
+                                            >
+                                                <Text className="text-sm" style={{ color: 'white', fontFamily: 'PlusJakartaSans-Medium' }}>
+                                                    {t('go')}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    ))}
+                                </View>
+                                {renderAudioControl(message.id)}
+                            </View>
                         ) : message.role === 'taxi' && message.taxiPlan ? (
                             <View key={message.id}>
                                 <TaxiPlanCard
@@ -399,45 +465,90 @@ export default function AIAssistantScreen() {
                 </ScrollView>
             )}
 
-            <View className="items-center pb-6 pt-2">
-                <View style={{ width: MIC_SIZE, height: MIC_SIZE, alignItems: 'center', justifyContent: 'center' }}>
-                    <View style={{ position: 'absolute' }}>
-                        <MicPulse active={isRecording} />
+            <Reanimated.View className="items-center pt-2" style={bottomBarStyle}>
+                {inputMode !== 'text' ? (
+                    <>
+                        <View style={{ width: MIC_SIZE, height: MIC_SIZE, alignItems: 'center', justifyContent: 'center' }}>
+                            <View style={{ position: 'absolute' }}>
+                                <MicPulse active={isRecording} />
+                            </View>
+                            <TouchableOpacity
+                                onPressIn={() => {
+                                    setInputMode('voice');
+                                    handleVoiceStart();
+                                }}
+                                onPressOut={handleVoiceStop}
+                                disabled={isProcessingVoice}
+                                className="items-center justify-center rounded-full"
+                                style={{
+                                    width: MIC_SIZE,
+                                    height: MIC_SIZE,
+                                    backgroundColor: isRecording ? '#FFA500' : 'transparent',
+                                    borderWidth: 1,
+                                    borderColor: '#FFA500',
+                                    opacity: isProcessingVoice ? 0.5 : 1,
+                                }}
+                                activeOpacity={0.7}
+                            >
+                                <Ionicons name={isRecording ? 'mic' : 'mic-outline'} size={30} color={isRecording ? 'white' : '#FFA500'} />
+                            </TouchableOpacity>
+                        </View>
+                        <View className="mt-3 h-5 justify-center">
+                            {isRecording ? (
+                                <RecordingTimer seconds={recordSeconds} />
+                            ) : (
+                                <Text className="text-xs" style={{ color: theme.textSecondary, fontFamily: 'PlusJakartaSans-Regular' }}>
+                                    {isProcessingVoice
+                                        ? t('processing')
+                                        : isRecording
+                                            ? t('listening')
+                                            : showOptions
+                                                ? t('or-speak-your-answer')
+                                                : t('push-to-talk')}
+                                </Text>
+                            )}
+                        </View>
+                    </>
+                ) : null}
+
+                {inputMode !== 'voice' ? (
+                    <View className="flex-row items-center w-full px-5 mt-4">
+                        <TextInput
+                            value={draft}
+                            onChangeText={setDraft}
+                            onSubmitEditing={submitDraft}
+                            editable={!isRecording && !isProcessingVoice}
+                            placeholder={t('type-a-message')}
+                            placeholderTextColor={theme.textSecondary}
+                            returnKeyType="send"
+                            multiline
+                            className="flex-1 px-4 py-3 rounded-2xl text-base"
+                            style={{
+                                backgroundColor: theme.surface,
+                                color: theme.textPrimary,
+                                fontFamily: 'PlusJakartaSans-Regular',
+                                maxHeight: 96,
+                                opacity: isRecording || isProcessingVoice ? 0.5 : 1,
+                            }}
+                        />
+                        <TouchableOpacity
+                            onPress={submitDraft}
+                            disabled={!canSendDraft}
+                            className="w-11 h-11 rounded-full items-center justify-center ml-2"
+                            style={{
+                                backgroundColor: canSendDraft ? colors.primary.main : theme.surface,
+                            }}
+                            activeOpacity={0.7}
+                        >
+                            <Ionicons
+                                name="arrow-up"
+                                size={20}
+                                color={canSendDraft ? 'white' : theme.textSecondary}
+                            />
+                        </TouchableOpacity>
                     </View>
-                    <TouchableOpacity
-                        onPressIn={handleVoiceStart}
-                        onPressOut={handleVoiceStop}
-                        disabled={isProcessingVoice}
-                        className="items-center justify-center rounded-full"
-                        style={{
-                            width: MIC_SIZE,
-                            height: MIC_SIZE,
-                            backgroundColor: isRecording ? '#FFA500' : 'transparent',
-                            borderWidth: 1,
-                            borderColor: '#FFA500',
-                            opacity: isProcessingVoice ? 0.5 : 1,
-                        }}
-                        activeOpacity={0.7}
-                    >
-                        <Ionicons name={isRecording ? 'mic' : 'mic-outline'} size={30} color={isRecording ? 'white' : '#FFA500'} />
-                    </TouchableOpacity>
-                </View>
-                <View className="mt-3 h-5 justify-center">
-                    {isRecording ? (
-                        <RecordingTimer seconds={recordSeconds} />
-                    ) : (
-                        <Text className="text-xs" style={{ color: theme.textSecondary, fontFamily: 'PlusJakartaSans-Regular' }}>
-                            {isProcessingVoice
-                                ? t('processing')
-                                : isRecording
-                                    ? t('listening')
-                                    : showOptions
-                                        ? t('or-speak-your-answer')
-                                        : t('push-to-talk')}
-                        </Text>
-                    )}
-                </View>
-            </View>
+                ) : null}
+            </Reanimated.View>
         </View>
     );
 }

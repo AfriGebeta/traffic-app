@@ -12,6 +12,7 @@ import { useRouteRecalculation } from './useRouteRecalculation';
 import { useInstructionEngine } from './useInstructionEngine';
 import { ManeuverType } from '../utils/instructionEngine';
 import { startNavService, stopNavService, updateNavNotification } from '../services/nav-foreground-service';
+import { logBreadcrumb } from '../../../shared/utils/crashlytics';
 import { addNavExitListener } from '../../../../modules/nav-notification';
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import { calculateBearing, calculateDistance } from '../utils/navigationUtils';
@@ -633,15 +634,18 @@ export const useNavigation = (
             }
 
             if (simulateMovement) {
+                logBreadcrumb('nav: started (simulation)');
                 startSimulation();
                 showToast('Navigation Started: GPS simulation is running for testing');
             } else {
+                logBreadcrumb('nav: started (live GPS)');
                 startLocationTracking();
                 void startNavService(engineState?.primaryText || 'Navigating…');
             }
 
         } catch (error: any) {
             console.error('Navigation start error:', error);
+            logBreadcrumb(`nav: start failed — ${error?.message ?? 'unknown'}`);
             showToast(`Navigation Failed: ${error.message || 'Could not start navigation'}`);
             setIsNavigating(false);
             isNavigatingRef.current = false;
@@ -658,6 +662,7 @@ export const useNavigation = (
         setIsNavigating(false);
         isNavigatingRef.current = false;
 
+        logBreadcrumb('nav: stopped');
         voiceNavigationService.stopSpeaking();
         voiceNavigationService.clearCache();
 
@@ -725,6 +730,7 @@ export const useNavigation = (
 
     useEffect(() => {
         return () => {
+            logBreadcrumb('nav: hook unmounting');
             stopLocationTracking();
             stopSimulation();
             void stopNavService();

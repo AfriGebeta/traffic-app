@@ -276,7 +276,7 @@ export default function AddStationScreen() {
                         </View>
 
                         <View className="mb-6">
-                            <Text className="font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('landmark')} ({t('optional')})</Text>
+                            <Text className="font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('landmark')}</Text>
                             <TextInput
                                 className="rounded-xl px-4 py-3"
                                 style={{ backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border, color: theme.textPrimary }}

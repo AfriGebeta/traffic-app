@@ -3,6 +3,7 @@ import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import { updateNativeNavNotification } from '../../../../modules/nav-notification';
 import { colors } from '../../../shared/theme/colors';
+import { logBreadcrumb } from '../../../shared/utils/crashlytics';
 
 
 const NAV_TASK = 'gebeta-nav-location-task';
@@ -59,6 +60,7 @@ export async function startNavService(initialBody = 'Navigating…'): Promise<vo
         .catch(() => false);
     if (already) {
         running = true;
+        logBreadcrumb('nav service: already running, reattaching');
         void attachExitAction(token);
         return;
     }
@@ -69,14 +71,17 @@ export async function startNavService(initialBody = 'Navigating…'): Promise<vo
         try {
             await Location.startLocationUpdatesAsync(NAV_TASK, buildOptions(lastBody));
             running = true;
+            logBreadcrumb(`nav service: started (attempt ${attempt + 1})`);
             void attachExitAction(token);
             return;
         } catch (e) {
             if (attempt >= START_RETRY_DELAYS_MS.length) {
                 console.warn('nav-foreground-service: failed to start', e);
+                logBreadcrumb(`nav service: gave up starting after ${attempt + 1} attempts`);
                 running = false;
                 return;
             }
+            logBreadcrumb(`nav service: start attempt ${attempt + 1} failed, retrying`);
             await delay(START_RETRY_DELAYS_MS[attempt]);
             if (token !== startToken) return;
         }
@@ -111,6 +116,7 @@ export async function updateNavNotification(body: string): Promise<void> {
 
 export async function stopNavService(): Promise<void> {
     startToken++;
+    logBreadcrumb('nav service: stopping');
     running = false;
     lastBody = '';
     lastUpdateAt = 0;

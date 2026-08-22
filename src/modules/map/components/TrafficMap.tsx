@@ -20,6 +20,7 @@ import { useUserLocation } from '../hooks/useUserLocation';
 import { useSearch } from '../hooks/useSearch';
 
 import { colors } from '../../../shared/theme/colors';
+import { logBreadcrumb } from '../../../shared/utils/crashlytics';
 import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 import { useNavigation } from '../../navigation/hooks/useNavigation';
 import { useVoiceNavigation } from '../../navigation/hooks/useVoiceNavigation';
@@ -512,6 +513,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     );
 
     const handleMapLoaded = () => {
+        logBreadcrumb('map: loaded');
         setIsMapLoaded(true);
         setTimeout(() => {
             addIncidentMarkers();
