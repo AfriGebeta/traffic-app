@@ -11,7 +11,11 @@ import {
 } from 'react-native';
 import { WebView, WebViewMessageEvent, WebViewNavigation } from 'react-native-webview';
 import {
+    buildTelegramPushFetchJs,
+    getTelegramAuthConfig,
     getTelegramWebViewStartUrl,
+    TELEGRAM_DIAG_JS,
+    TELEGRAM_EARLY_JS,
     TELEGRAM_WEBVIEW_INJECTED_JS,
 } from '../../../shared/config/telegram-auth.config';
 import {
@@ -196,6 +200,30 @@ export function TelegramAuthWebView({
     };
 
     const handleMessage = (event: WebViewMessageEvent) => {
+        try {
+            const probe = JSON.parse(event.nativeEvent.data) as {
+                diag?: { event?: string };
+                tg_auth_result?: string;
+            };
+
+            if (probe?.diag) {
+                const { event: name, ...rest } = probe.diag;
+                telegramAuthLog.diag(`page:${name ?? 'unknown'}`, rest);
+                return;
+            }
+
+            if (probe?.tg_auth_result) {
+                const recoveredUrl = `${getTelegramAuthConfig().webRedirectUri}#tgAuthResult=${probe.tg_auth_result}`;
+                telegramAuthLog.url('recovered tgAuthResult from /auth/push', recoveredUrl);
+
+                if (!completeWithUrl(recoveredUrl, 'push fetch')) {
+                    telegramAuthLog.warn('recovered tgAuthResult had no usable id_token');
+                }
+                return;
+            }
+        } catch {
+        }
+
         if (handledRef.current) {
             return;
         }
@@ -285,7 +313,8 @@ export function TelegramAuthWebView({
                         source={{ uri: startUrl }}
                         userAgent={WEBVIEW_USER_AGENT}
                         onMessage={handleMessage}
-                        injectedJavaScript={TELEGRAM_WEBVIEW_INJECTED_JS}
+                        injectedJavaScriptBeforeContentLoaded={TELEGRAM_EARLY_JS}
+                        injectedJavaScript={TELEGRAM_WEBVIEW_INJECTED_JS + TELEGRAM_DIAG_JS}
                         javaScriptEnabled
                         domStorageEnabled
                         thirdPartyCookiesEnabled
@@ -311,6 +340,14 @@ export function TelegramAuthWebView({
                         onShouldStartLoadWithRequest={(request) => {
                             const { url } = request;
                             telegramAuthLog.url('auth webview should load', url);
+
+                            if (url.includes('/auth/push') && !handledRef.current) {
+                                telegramAuthLog.info('intercepting /auth/push, fetching same-origin');
+                                webViewRef.current?.injectJavaScript(
+                                    buildTelegramPushFetchJs(url)
+                                );
+                                return false;
+                            }
 
                             if (url.startsWith('trafficapp://')) {
                                 handleExternalUrl('shouldLoad', url);
