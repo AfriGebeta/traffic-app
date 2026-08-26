@@ -1285,6 +1285,86 @@
         "AM": "ማቆም የተከለከለ ነው።"
     },
     {
+        "key": "rule-30-is-the-limit",
+        "EN_US": "30 Is The Limit",
+        "AM": "የ30 ኪ.ሜ ወሰን"
+    },
+    {
+        "key": "rule-30-is-the-limit-description",
+        "EN_US": "Maximum speed limit is 30 km/h.",
+        "AM": "ከፍተኛው የፍጥነት ወሰን 30 ኪ.ሜ በሰዓት ነው።"
+    },
+    {
+        "key": "rule-50-is-the-limit",
+        "EN_US": "50 Is The Limit",
+        "AM": "የ50 ኪ.ሜ ወሰን"
+    },
+    {
+        "key": "rule-50-is-the-limit-description",
+        "EN_US": "Maximum speed limit is 50 km/h.",
+        "AM": "ከፍተኛው የፍጥነት ወሰን 50 ኪ.ሜ በሰዓት ነው።"
+    },
+    {
+        "key": "rule-no-overtaking",
+        "EN_US": "No Overtaking",
+        "AM": "ማለፍ አይፈቀድም"
+    },
+    {
+        "key": "rule-no-overtaking-description",
+        "EN_US": "Overtaking other vehicles is prohibited.",
+        "AM": "ሌሎች ተሽከርካሪዎችን ማለፍ የተከለከለ ነው።"
+    },
+    {
+        "key": "rule-no-stopping",
+        "EN_US": "No Stopping",
+        "AM": "መቆም አይፈቀድም"
+    },
+    {
+        "key": "rule-no-stopping-description",
+        "EN_US": "Stopping is not allowed in this area.",
+        "AM": "በዚህ አካባቢ መቆም አይፈቀድም።"
+    },
+    {
+        "key": "rule-one-way",
+        "EN_US": "One Way",
+        "AM": "አንድ አቅጣጫ"
+    },
+    {
+        "key": "rule-one-way-description",
+        "EN_US": "Traffic flows in one direction only.",
+        "AM": "ትራፊክ በአንድ አቅጣጫ ብቻ ይንቀሳቀሳል።"
+    },
+    {
+        "key": "rule-steep-hill",
+        "EN_US": "Steep Hill",
+        "AM": "ዳገታማ መንገድ"
+    },
+    {
+        "key": "rule-steep-hill-description",
+        "EN_US": "Steep hill ahead, reduce speed and use lower gear.",
+        "AM": "ከፊት ዳገታማ መንገድ አለ፤ ፍጥነት ይቀንሱ።"
+    },
+    {
+        "key": "rule-traffic-light",
+        "EN_US": "Traffic Light",
+        "AM": "የትራፊክ መብራት"
+    },
+    {
+        "key": "rule-traffic-light-description",
+        "EN_US": "Traffic light controlled intersection ahead.",
+        "AM": "ከፊት የትራፊክ መብራት ያለበት መስቀለኛ መንገድ አለ።"
+    },
+    {
+        "key": "rule-two-way",
+        "EN_US": "Two Way",
+        "AM": "ሁለት አቅጣጫ"
+    },
+    {
+        "key": "rule-two-way-description",
+        "EN_US": "Two-way traffic is present on this road.",
+        "AM": "በዚህ መንገድ ትራፊክ በሁለት አቅጣጫ ይንቀሳቀሳል።"
+    },
+    {
         "key": "incident-filters",
         "EN_US": "Incident Filters",
         "AM": "የማስጠንቀቂያ ማጣሪያዎች"
