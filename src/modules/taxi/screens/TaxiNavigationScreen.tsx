@@ -4,6 +4,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import GebetaMap from '../../../components/GebetaMap';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 import { colors } from '../../../shared/theme/colors';
@@ -19,12 +20,16 @@ import { SegmentProgressBar } from '../../navigation/components/SegmentProgressB
 import { ArrivalModal } from '../../navigation/components/ArrivalModal';
 import { decodeTaxiSegmentPaths } from '../../navigation/utils/navigationUtils';
 import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
+import LekfelPaySheet from '../components/LekfelPaySheet';
+
+import LekfelLogo from '../../../../assets/images/lekfel.svg';
 
 const NAV_GREEN = '#0F9D58';
 
 export default function TaxiNavigationScreen() {
     useKeepAwake();
     const router = useRouter();
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
     const { currentTheme } = useMapTheme();
@@ -59,6 +64,7 @@ export default function TaxiNavigationScreen() {
     const [isOffRoute, setIsOffRoute] = useState(false);
     const [isRecalculating, setIsRecalculating] = useState(false);
     const [hasUserZoomedOut, setHasUserZoomedOut] = useState(false);
+    const [showPaySheet, setShowPaySheet] = useState(false);
 
 
     const [navigationState, setNavigationState] = useState<{
@@ -485,6 +491,30 @@ export default function TaxiNavigationScreen() {
                     className="absolute left-4 right-4"
                     style={{ bottom: insets.bottom + 24 }}
                 >
+                    <View className="flex-row mb-3">
+                        <TouchableOpacity
+                            activeOpacity={0.85}
+                            onPress={() => setShowPaySheet(true)}
+                            className="flex-row items-center rounded-full"
+                            style={{
+                                backgroundColor: '#DCFCE7',
+                                borderWidth: 1,
+                                borderColor: theme.green,
+                                paddingVertical: 4,
+                                paddingHorizontal: 6,
+                                paddingRight: 14,
+                            }}
+                        >
+                            <LekfelLogo width={26} height={26} />
+                            <Text
+                                className="ml-1.5"
+                                style={{ color: theme.textPrimary, fontSize: 13, fontFamily: 'PlusJakartaSans-Bold' }}
+                            >
+                                {t('pay-with-lekfel')}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+
                     {hasUserZoomedOut && (
                         <View className="items-center mb-3">
                             <TouchableOpacity
@@ -570,6 +600,17 @@ export default function TaxiNavigationScreen() {
                         router.back();
                     }}
                     destinationName={endNode.name}
+                />
+
+                <LekfelPaySheet
+                    visible={showPaySheet}
+                    onClose={() => setShowPaySheet(false)}
+                    originName={activeRoute?.startNode?.name}
+                    originLat={activeRoute?.startNode?.lat}
+                    originLng={activeRoute?.startNode?.lng}
+                    destinationName={endNode.name}
+                    destinationLat={endNode.lat}
+                    destinationLng={endNode.lng}
                 />
             </View>
         </View>

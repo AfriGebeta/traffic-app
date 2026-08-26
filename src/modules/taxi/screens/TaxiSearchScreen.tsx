@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -8,6 +8,10 @@ import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { taxiService } from '../services/taxi.service';
 import { TaxiNode, TaxiNavigationRequest } from '../types/taxi.types';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { useUserRegistration } from '../../register/hooks/useUserRegistration';
+import LekfelPaymentModal from '../components/LekfelPaymentModal';
+import LekfelPayCard from '../components/LekfelPayCard';
+import { useLekfelPayment } from '../hooks/useLekfelPayment';
 
 export default function TaxiSearchScreen() {
     const router = useRouter();
@@ -15,6 +19,8 @@ export default function TaxiSearchScreen() {
     const insets = useSafeAreaInsets();
     const { userLocation } = useUserLocation();
     const { colors: theme, isDark } = useTheme();
+    const { getStoredUser } = useUserRegistration();
+    const { stage: paymentStage, errorMessage: paymentError, pay, reset: resetPayment } = useLekfelPayment();
 
     const [originName, setOriginName] = useState('');
     const [destinationName, setDestinationName] = useState('');
@@ -26,10 +32,21 @@ export default function TaxiSearchScreen() {
     const [selectedOriginCoords, setSelectedOriginCoords] = useState<{ lat: number; lng: number } | null>(null);
     const [selectedCoords, setSelectedCoords] = useState<{ lat: number; lng: number } | null>(null);
     const [isSelectingOrigin, setIsSelectingOrigin] = useState(false);
+    const [payerPhone, setPayerPhone] = useState('');
+    const [receiverPhone, setReceiverPhone] = useState('');
+    const [payAmount, setPayAmount] = useState('');
     const lastProcessedTimestamp = useRef<number>(0);
+    const skipOriginFilter = useRef(false);
+    const skipDestinationFilter = useRef(false);
 
     useEffect(() => {
         fetchStations();
+    }, []);
+
+    useEffect(() => {
+        getStoredUser().then(storedUser => {
+            if (storedUser?.phoneNumber) setPayerPhone(storedUser.phoneNumber);
+        });
     }, []);
 
     useFocusEffect(
@@ -45,6 +62,10 @@ export default function TaxiSearchScreen() {
     );
 
     useEffect(() => {
+        if (skipOriginFilter.current) {
+            skipOriginFilter.current = false;
+            return;
+        }
         if (originName.trim()) {
             const filtered = stations.filter((station) =>
                 station.name.toLowerCase().includes(originName.toLowerCase()) ||
@@ -57,6 +78,10 @@ export default function TaxiSearchScreen() {
     }, [originName, stations]);
 
     useEffect(() => {
+        if (skipDestinationFilter.current) {
+            skipDestinationFilter.current = false;
+            return;
+        }
         if (destinationName.trim()) {
             const filtered = stations.filter((station) =>
                 station.name.toLowerCase().includes(destinationName.toLowerCase()) ||
@@ -209,12 +234,48 @@ export default function TaxiSearchScreen() {
         }
     };
 
+    const canPay = payerPhone.trim().length > 0
+        && receiverPhone.trim().length > 0
+        && Number(payAmount.trim()) > 0;
+
+    const handlePay = () => {
+        const now = new Date();
+        const originCoords = selectedOriginCoords
+            || (userLocation ? { lat: userLocation.lat, lng: userLocation.lng } : null);
+        const resolvedOriginName = originName.trim() || t('current-location');
+
+        pay({
+            payerPhone: payerPhone.trim(),
+            receiverPhone: receiverPhone.trim(),
+            amount: Number(payAmount.trim()),
+            description: `${t('taxi-ride')} ${resolvedOriginName} -> ${destinationName.trim()}`,
+            originName: resolvedOriginName,
+            originLat: originCoords?.lat,
+            originLng: originCoords?.lng,
+            destinationName: destinationName.trim(),
+            destinationLat: selectedCoords?.lat,
+            destinationLng: selectedCoords?.lng,
+            tripDayOfWeek: now.getDay(),
+            tripMinutesOfDay: now.getHours() * 60 + now.getMinutes(),
+        });
+    };
+
+    const handleDismissPayment = () => {
+        if (paymentStage === 'success') {
+            setReceiverPhone('');
+            setPayAmount('');
+        }
+        resetPayment();
+    };
+
     const handleStationSelect = (station: TaxiNode) => {
         if (isSelectingOrigin) {
+            skipOriginFilter.current = true;
             setOriginName(station.name);
             setSelectedOriginCoords({ lat: station.lat, lng: station.lng });
             setFilteredOriginStations([]);
         } else {
+            skipDestinationFilter.current = true;
             setDestinationName(station.name);
             setSelectedCoords({ lat: station.lat, lng: station.lng });
             setFilteredStations([]);
@@ -233,7 +294,12 @@ export default function TaxiSearchScreen() {
     };
 
     return (
-        <View className="flex-1" style={{ paddingTop: insets.top, backgroundColor: theme.background }}>
+        <KeyboardAvoidingView
+            className="flex-1"
+            style={{ paddingTop: insets.top, backgroundColor: theme.background }}
+            behavior="padding"
+            keyboardVerticalOffset={0}
+        >
             <View className="px-4 py-6" style={{ backgroundColor: theme.background, borderBottomWidth: 1, borderBottomColor: theme.border }}>
                 <View className="flex-row items-center mb-2">
                     <TouchableOpacity onPress={() => router.back()} className="mr-4" activeOpacity={0.7}>
@@ -244,7 +310,12 @@ export default function TaxiSearchScreen() {
                 <Text className="mt-2" style={{ color: theme.textSecondary }}>{t('find-taxi-route-to-destination')}</Text>
             </View>
 
-            <ScrollView className="flex-1 p-4" keyboardShouldPersistTaps="handled">
+            <ScrollView
+                className="flex-1 p-4"
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="on-drag"
+                contentContainerStyle={{ flexGrow: 1, paddingBottom: insets.bottom + 40 }}
+            >
                 <View className="rounded-2xl p-6 shadow-sm" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
                     <View className="mb-4">
                         <Text className="font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('from')}</Text>
@@ -399,7 +470,30 @@ export default function TaxiSearchScreen() {
                         )}
                     </TouchableOpacity>
                 </View>
+
+                {destinationName.trim().length > 0 && (
+                    <LekfelPayCard
+                        payerPhone={payerPhone}
+                        onPayerPhoneChange={setPayerPhone}
+                        receiverPhone={receiverPhone}
+                        onReceiverPhoneChange={setReceiverPhone}
+                        amount={payAmount}
+                        onAmountChange={setPayAmount}
+                        currency="ETB"
+                        canPay={canPay}
+                        onPay={handlePay}
+                    />
+                )}
             </ScrollView>
-        </View>
+
+            <LekfelPaymentModal
+                stage={paymentStage}
+                errorMessage={paymentError}
+                amount={payAmount}
+                currency="ETB"
+                onRetry={resetPayment}
+                onDismiss={handleDismissPayment}
+            />
+        </KeyboardAvoidingView>
     );
 }

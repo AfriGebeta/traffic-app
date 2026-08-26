@@ -1975,6 +1975,96 @@
         "AM": "ተመለስ"
     },
     {
+        "key": "pay",
+        "EN_US": "Pay",
+        "AM": "ይክፈሉ"
+    },
+    {
+        "key": "powered-by",
+        "EN_US": "Powered by",
+        "AM": "አቅራቢ"
+    },
+    {
+        "key": "pay-with-lekfel",
+        "EN_US": "Pay with Lekfel",
+        "AM": "በልክፈል ይክፈሉ"
+    },
+    {
+        "key": "pay-with-lekfel-desc",
+        "EN_US": "Pay your taxi fare securely once you find your route",
+        "AM": "መስመርዎን ካገኙ በኋላ የታክሲ ዋጋዎን በደህንነት ይክፈሉ"
+    },
+    {
+        "key": "your-phone-number",
+        "EN_US": "Your Phone Number",
+        "AM": "የእርስዎ ስልክ ቁጥር"
+    },
+    {
+        "key": "driver-phone-number",
+        "EN_US": "Driver's Phone Number",
+        "AM": "የአሽከርካሪ ስልክ ቁጥር"
+    },
+    {
+        "key": "payment-amount",
+        "EN_US": "Amount",
+        "AM": "መጠን"
+    },
+    {
+        "key": "suggested-fare",
+        "EN_US": "suggested fare",
+        "AM": "የተጠቆመ ዋጋ"
+    },
+    {
+        "key": "pay-now",
+        "EN_US": "Pay",
+        "AM": "ይክፈሉ"
+    },
+    {
+        "key": "confirm-on-phone",
+        "EN_US": "Confirm on your phone",
+        "AM": "በስልክዎ ላይ ያረጋግጡ"
+    },
+    {
+        "key": "confirm-on-phone-desc",
+        "EN_US": "We sent a PIN prompt to your phone. Enter your PIN to complete the payment.",
+        "AM": "ወደ ስልክዎ የፒን መልእክት ልከናል። ክፍያውን ለማጠናቀቅ ፒንዎን ያስገቡ።"
+    },
+    {
+        "key": "payment-success",
+        "EN_US": "Payment successful",
+        "AM": "ክፍያው ተሳክቷል"
+    },
+    {
+        "key": "payment-failed",
+        "EN_US": "Payment failed. Please try again.",
+        "AM": "ክፍያው አልተሳካም። እባክዎ እንደገና ይሞክሩ።"
+    },
+    {
+        "key": "payment-expired",
+        "EN_US": "Payment prompt expired. Please try again.",
+        "AM": "የክፍያ ጥያቄው ጊዜው አልፎበታል። እባክዎ እንደገና ይሞክሩ።"
+    },
+    {
+        "key": "enter-receiver-phone",
+        "EN_US": "Enter the driver's phone number",
+        "AM": "የአሽከርካሪውን ስልክ ቁጥር ያስገቡ"
+    },
+    {
+        "key": "enter-valid-amount",
+        "EN_US": "Enter a valid amount",
+        "AM": "ትክክለኛ መጠን ያስገቡ"
+    },
+    {
+        "key": "missing-payer-phone",
+        "EN_US": "Your phone number is missing. Please log in again.",
+        "AM": "ስልክ ቁጥርዎ አልተገኘም። እባክዎ እንደገና ይግቡ።"
+    },
+    {
+        "key": "try-again",
+        "EN_US": "Try Again",
+        "AM": "እንደገና ይሞክሩ"
+    },
+    {
         "key": "on-taxi",
         "EN_US": "On Taxi",
         "AM": "በታክሲ ላይ"

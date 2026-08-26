@@ -8,7 +8,7 @@ import { useTheme } from '../../../shared/theme/ThemeContext';
 interface MapThemeSelectorProps {
     visible: boolean;
     onClose: () => void;
-    bottomOffset: number;
+    topOffset: number;
 }
 
 const CARD_WIDTH = 112;
@@ -42,7 +42,7 @@ const isDarkPreview = (theme: MapTheme): boolean => {
 export const MapThemeSelector: React.FC<MapThemeSelectorProps> = ({
     visible,
     onClose,
-    bottomOffset,
+    topOffset,
 }) => {
     const { t, i18n } = useTranslation();
     const { currentTheme, setTheme, themes } = useMapTheme();
@@ -72,7 +72,7 @@ export const MapThemeSelector: React.FC<MapThemeSelectorProps> = ({
             <Animated.View
                 className="absolute left-4 rounded-3xl shadow-lg"
                 style={{
-                    bottom: bottomOffset,
+                    top: topOffset,
                     right: RIGHT_GUTTER,
                     zIndex: 31,
                     backgroundColor: theme.surface,
