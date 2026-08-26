@@ -411,6 +411,7 @@ export default function TaxiRoutePreviewScreen() {
                                 {summary.pricingSource}
                             </Text>
                         </View>
+
                     </View>
                 </ScrollView>
 
@@ -434,6 +435,7 @@ export default function TaxiRoutePreviewScreen() {
                     </TouchableOpacity>
                 </View>
             </View>
+
         </View>
     );
 }

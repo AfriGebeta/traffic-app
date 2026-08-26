@@ -15,6 +15,7 @@ import type { SavedPlace } from '../../places/types/place.types';
 import { taxiService } from '../../taxi/services/taxi.service';
 import { navigationService } from '../services/navigation.service';
 import type { TaxiNavigationResponse } from '../../taxi/types/taxi.types';
+import LekfelPaySheet from '../../taxi/components/LekfelPaySheet';
 
 interface RoutePreviewProps {
     distance: number;
@@ -101,6 +102,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
     const [savedPlace, setSavedPlace] = useState<SavedPlace | null>(null);
 
     const [transportMode, setTransportMode] = useState<'driving' | 'taxi' | 'walking'>(initialMode);
+    const [showPaySheet, setShowPaySheet] = useState(false);
     const [taxiRoute, setTaxiRoute] = useState<TaxiNavigationResponse | null>(null);
     const [loadingTaxiRoute, setLoadingTaxiRoute] = useState(false);
     const [taxiRouteError, setTaxiRouteError] = useState<string | null>(null);
@@ -539,7 +541,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                         </ScrollView>
                     )}
 
-                    {__DEV__ && (
+                    {/* {__DEV__ && (
                         <View className="px-6 py-3" style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}>
                             <TouchableOpacity
                                 onPress={onSimulateToggle}
@@ -557,6 +559,41 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                 </View>
                             </TouchableOpacity>
                         </View>
+                    )} */}
+
+                    {transportMode === 'taxi' && (
+                        <TouchableOpacity
+                            onPress={() => setShowPaySheet(true)}
+                            activeOpacity={0.7}
+                            className="flex-row items-center justify-between"
+                            style={{
+                                marginHorizontal: 24,
+                                marginTop: 12,
+                                marginBottom: 16,
+                                paddingHorizontal: 16,
+                                paddingVertical: 14,
+                                borderRadius: 16,
+                                borderWidth: 1,
+                                borderColor: theme.border,
+                                backgroundColor: theme.surface,
+                                flexShrink: 0,
+                                overflow: 'visible',
+                                zIndex: 20,
+                            }}
+                        >
+                            <Text
+                                className="text-lg"
+                                style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Bold' }}
+                            >
+                                {t('pay')}
+                            </Text>
+                            <View className="flex-row items-baseline">
+                                <Text style={{ color: theme.textSecondary }}>{t('powered-by')} </Text>
+                                <Text style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Bold' }}>
+                                    Lekefel
+                                </Text>
+                            </View>
+                        </TouchableOpacity>
                     )}
                     <ScrollView className="max-h-48">
                         {loadingTaxiRoute ? (
@@ -877,6 +914,17 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                     </View>
                 </KeyboardAvoidingView>
             </Modal>
+
+            <LekfelPaySheet
+                visible={showPaySheet}
+                onClose={() => setShowPaySheet(false)}
+                originName={taxiRoute?.startNode.name ?? origin?.name}
+                originLat={taxiRoute?.startNode.lat ?? userLocation?.lat}
+                originLng={taxiRoute?.startNode.lng ?? userLocation?.lng}
+                destinationName={taxiRoute?.endNode.name ?? destinationName}
+                destinationLat={taxiRoute?.endNode.lat ?? destination?.latitude}
+                destinationLng={taxiRoute?.endNode.lng ?? destination?.longitude}
+            />
         </View>
     );
 };

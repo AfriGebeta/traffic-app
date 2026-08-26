@@ -33,4 +33,36 @@ export const RULE_TRANSLATION_MAP: Record<string, { name: string; description: s
         name: 'rule-no-parking',
         description: 'rule-no-parking-description',
     },
+    '30 Is The Limit': {
+        name: 'rule-30-is-the-limit',
+        description: 'rule-30-is-the-limit-description',
+    },
+    '50 Is The Limit': {
+        name: 'rule-50-is-the-limit',
+        description: 'rule-50-is-the-limit-description',
+    },
+    'No Overtaking': {
+        name: 'rule-no-overtaking',
+        description: 'rule-no-overtaking-description',
+    },
+    'No Stopping': {
+        name: 'rule-no-stopping',
+        description: 'rule-no-stopping-description',
+    },
+    'One Way': {
+        name: 'rule-one-way',
+        description: 'rule-one-way-description',
+    },
+    'Steep Hill': {
+        name: 'rule-steep-hill',
+        description: 'rule-steep-hill-description',
+    },
+    'Traffic Light': {
+        name: 'rule-traffic-light',
+        description: 'rule-traffic-light-description',
+    },
+    'Two Way': {
+        name: 'rule-two-way',
+        description: 'rule-two-way-description',
+    },
 };

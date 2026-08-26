@@ -1285,6 +1285,86 @@
         "AM": "ማቆም የተከለከለ ነው።"
     },
     {
+        "key": "rule-30-is-the-limit",
+        "EN_US": "30 Is The Limit",
+        "AM": "የ30 ኪ.ሜ ወሰን"
+    },
+    {
+        "key": "rule-30-is-the-limit-description",
+        "EN_US": "Maximum speed limit is 30 km/h.",
+        "AM": "ከፍተኛው የፍጥነት ወሰን 30 ኪ.ሜ በሰዓት ነው።"
+    },
+    {
+        "key": "rule-50-is-the-limit",
+        "EN_US": "50 Is The Limit",
+        "AM": "የ50 ኪ.ሜ ወሰን"
+    },
+    {
+        "key": "rule-50-is-the-limit-description",
+        "EN_US": "Maximum speed limit is 50 km/h.",
+        "AM": "ከፍተኛው የፍጥነት ወሰን 50 ኪ.ሜ በሰዓት ነው።"
+    },
+    {
+        "key": "rule-no-overtaking",
+        "EN_US": "No Overtaking",
+        "AM": "ማለፍ አይፈቀድም"
+    },
+    {
+        "key": "rule-no-overtaking-description",
+        "EN_US": "Overtaking other vehicles is prohibited.",
+        "AM": "ሌሎች ተሽከርካሪዎችን ማለፍ የተከለከለ ነው።"
+    },
+    {
+        "key": "rule-no-stopping",
+        "EN_US": "No Stopping",
+        "AM": "መቆም አይፈቀድም"
+    },
+    {
+        "key": "rule-no-stopping-description",
+        "EN_US": "Stopping is not allowed in this area.",
+        "AM": "በዚህ አካባቢ መቆም አይፈቀድም።"
+    },
+    {
+        "key": "rule-one-way",
+        "EN_US": "One Way",
+        "AM": "አንድ አቅጣጫ"
+    },
+    {
+        "key": "rule-one-way-description",
+        "EN_US": "Traffic flows in one direction only.",
+        "AM": "ትራፊክ በአንድ አቅጣጫ ብቻ ይንቀሳቀሳል።"
+    },
+    {
+        "key": "rule-steep-hill",
+        "EN_US": "Steep Hill",
+        "AM": "ዳገታማ መንገድ"
+    },
+    {
+        "key": "rule-steep-hill-description",
+        "EN_US": "Steep hill ahead, reduce speed and use lower gear.",
+        "AM": "ከፊት ዳገታማ መንገድ አለ፤ ፍጥነት ይቀንሱ።"
+    },
+    {
+        "key": "rule-traffic-light",
+        "EN_US": "Traffic Light",
+        "AM": "የትራፊክ መብራት"
+    },
+    {
+        "key": "rule-traffic-light-description",
+        "EN_US": "Traffic light controlled intersection ahead.",
+        "AM": "ከፊት የትራፊክ መብራት ያለበት መስቀለኛ መንገድ አለ።"
+    },
+    {
+        "key": "rule-two-way",
+        "EN_US": "Two Way",
+        "AM": "ሁለት አቅጣጫ"
+    },
+    {
+        "key": "rule-two-way-description",
+        "EN_US": "Two-way traffic is present on this road.",
+        "AM": "በዚህ መንገድ ትራፊክ በሁለት አቅጣጫ ይንቀሳቀሳል።"
+    },
+    {
         "key": "incident-filters",
         "EN_US": "Incident Filters",
         "AM": "የማስጠንቀቂያ ማጣሪያዎች"
@@ -1973,6 +2053,101 @@
         "key": "go-back",
         "EN_US": "Go Back",
         "AM": "ተመለስ"
+    },
+    {
+        "key": "pay",
+        "EN_US": "Pay",
+        "AM": "ይክፈሉ"
+    },
+    {
+        "key": "set-destination-to-pay",
+        "EN_US": "Enter your destination first to pay",
+        "AM": "ለመክፈል መጀመሪያ መድረሻዎን ያስገቡ"
+    },
+    {
+        "key": "powered-by",
+        "EN_US": "Powered by",
+        "AM": "አቅራቢ"
+    },
+    {
+        "key": "pay-with-lekfel",
+        "EN_US": "Pay with Lekfel",
+        "AM": "በልክፈል ይክፈሉ"
+    },
+    {
+        "key": "pay-with-lekfel-desc",
+        "EN_US": "Pay your taxi fare securely once you find your route",
+        "AM": "መስመርዎን ካገኙ በኋላ የታክሲ ዋጋዎን በደህንነት ይክፈሉ"
+    },
+    {
+        "key": "your-phone-number",
+        "EN_US": "Your Phone Number",
+        "AM": "የእርስዎ ስልክ ቁጥር"
+    },
+    {
+        "key": "driver-phone-number",
+        "EN_US": "Driver's Phone Number",
+        "AM": "የአሽከርካሪ ስልክ ቁጥር"
+    },
+    {
+        "key": "payment-amount",
+        "EN_US": "Amount",
+        "AM": "መጠን"
+    },
+    {
+        "key": "suggested-fare",
+        "EN_US": "suggested fare",
+        "AM": "የተጠቆመ ዋጋ"
+    },
+    {
+        "key": "pay-now",
+        "EN_US": "Pay",
+        "AM": "ይክፈሉ"
+    },
+    {
+        "key": "confirm-on-phone",
+        "EN_US": "Confirm on your phone",
+        "AM": "በስልክዎ ላይ ያረጋግጡ"
+    },
+    {
+        "key": "confirm-on-phone-desc",
+        "EN_US": "We sent a PIN prompt to your phone. Enter your PIN to complete the payment.",
+        "AM": "ወደ ስልክዎ የፒን መልእክት ልከናል። ክፍያውን ለማጠናቀቅ ፒንዎን ያስገቡ።"
+    },
+    {
+        "key": "payment-success",
+        "EN_US": "Payment successful",
+        "AM": "ክፍያው ተሳክቷል"
+    },
+    {
+        "key": "payment-failed",
+        "EN_US": "Payment failed. Please try again.",
+        "AM": "ክፍያው አልተሳካም። እባክዎ እንደገና ይሞክሩ።"
+    },
+    {
+        "key": "payment-expired",
+        "EN_US": "Payment prompt expired. Please try again.",
+        "AM": "የክፍያ ጥያቄው ጊዜው አልፎበታል። እባክዎ እንደገና ይሞክሩ።"
+    },
+    {
+        "key": "enter-receiver-phone",
+        "EN_US": "Enter the driver's phone number",
+        "AM": "የአሽከርካሪውን ስልክ ቁጥር ያስገቡ"
+    },
+    {
+        "key": "enter-valid-amount",
+        "EN_US": "Enter a valid amount",
+        "AM": "ትክክለኛ መጠን ያስገቡ"
+    },
+    {
+        "key": "missing-payer-phone",
+        "EN_US": "Your phone number is missing. Please log in again.",
+        "AM": "ስልክ ቁጥርዎ አልተገኘም። እባክዎ እንደገና ይግቡ።"
+    },
+    {
+        "key": "try-again",
+        "EN_US": "Try Again",
+        "AM": "እንደገና ይሞክሩ"
     },
     {
         "key": "on-taxi",
