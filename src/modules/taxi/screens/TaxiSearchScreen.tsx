@@ -439,9 +439,6 @@ export default function TaxiSearchScreen() {
                             </View>
                         )}
 
-                        {loadingStations && (
-                            <Text className="text-sm mt-2" style={{ color: theme.textSecondary }}>{t('loading-stations')}</Text>
-                        )}
                     </View>
 
                     <TouchableOpacity
@@ -471,19 +468,19 @@ export default function TaxiSearchScreen() {
                     </TouchableOpacity>
                 </View>
 
-                {destinationName.trim().length > 0 && (
-                    <LekfelPayCard
-                        payerPhone={payerPhone}
-                        onPayerPhoneChange={setPayerPhone}
-                        receiverPhone={receiverPhone}
-                        onReceiverPhoneChange={setReceiverPhone}
-                        amount={payAmount}
-                        onAmountChange={setPayAmount}
-                        currency="ETB"
-                        canPay={canPay}
-                        onPay={handlePay}
-                    />
-                )}
+                <LekfelPayCard
+                    payerPhone={payerPhone}
+                    onPayerPhoneChange={setPayerPhone}
+                    receiverPhone={receiverPhone}
+                    onReceiverPhoneChange={setReceiverPhone}
+                    amount={payAmount}
+                    onAmountChange={setPayAmount}
+                    currency="ETB"
+                    canPay={canPay}
+                    onPay={handlePay}
+                    disabled={destinationName.trim().length === 0}
+                    disabledHint={t('set-destination-to-pay')}
+                />
             </ScrollView>
 
             <LekfelPaymentModal

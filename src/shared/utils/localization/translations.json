@@ -1980,6 +1980,11 @@
         "AM": "ይክፈሉ"
     },
     {
+        "key": "set-destination-to-pay",
+        "EN_US": "Enter your destination first to pay",
+        "AM": "ለመክፈል መጀመሪያ መድረሻዎን ያስገቡ"
+    },
+    {
         "key": "powered-by",
         "EN_US": "Powered by",
         "AM": "አቅራቢ"
