@@ -61,6 +61,40 @@ const EMPTY_FEATURE_COLLECTION = { type: 'FeatureCollection' as const, features:
 
 const HOME_FOLLOW_MAX_DRIFT_METERS = 120;
 
+const INCIDENT_MIN_ZOOM = 13;
+const RULE_MIN_ZOOM = 14;
+const MARKER_ZOOM_HYSTERESIS = 0.3;
+const MARKER_BOUNDS_PADDING_RATIO = 0.25;
+const MARKER_BOUNDS_EPSILON = 1e-4;
+
+type MarkerBounds = [west: number, south: number, east: number, north: number];
+
+const isMarkerLayerVisible = (zoomLevel: number, minZoom: number, wasVisible: boolean) =>
+    zoomLevel >= (wasVisible ? minZoom - MARKER_ZOOM_HYSTERESIS : minZoom);
+
+const markerBoundsChanged = (prev: MarkerBounds | null, next: MarkerBounds) => {
+    if (!prev) return true;
+    return next.some((value, index) => Math.abs(value - prev[index]) > MARKER_BOUNDS_EPSILON);
+};
+
+const filterMarkersToBounds = <T extends { lat: number; lng: number }>(
+    items: T[],
+    bounds: MarkerBounds | null,
+): T[] => {
+    if (!bounds) return items;
+    const [west, south, east, north] = bounds;
+    if (east <= west || north <= south) return items;
+    const lngPad = (east - west) * MARKER_BOUNDS_PADDING_RATIO;
+    const latPad = (north - south) * MARKER_BOUNDS_PADDING_RATIO;
+    return items.filter(
+        (item) =>
+            item.lng >= west - lngPad &&
+            item.lng <= east + lngPad &&
+            item.lat >= south - latPad &&
+            item.lat <= north + latPad,
+    );
+};
+
 const EXPLORE_IMAGES: Record<string, any> = {
     restaurant: require('../../../assets/images/restaurant.png'),
     restaurants: require('../../../assets/images/restaurant.png'),
@@ -883,6 +917,82 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 lastKnownZoomRef.current = commandZoom;
             }
         }, []);
+        const [markerLayerVisibility, setMarkerLayerVisibility] = useState(() => {
+            const initialZoom = zoom ?? 15;
+            return {
+                incidents: initialZoom >= INCIDENT_MIN_ZOOM,
+                rules: initialZoom >= RULE_MIN_ZOOM,
+            };
+        });
+        const markerLayerVisibilityRef = useRef(markerLayerVisibility);
+        const [markerBounds, setMarkerBounds] = useState<MarkerBounds | null>(null);
+
+        const markerZoomRef = useRef<number | null>(null);
+
+        const updateMarkerViewport = useCallback((e: any) => {
+            const zoomLevel = e?.properties?.zoomLevel ?? e?.properties?.zoom;
+
+            if (typeof zoomLevel === 'number') {
+                markerZoomRef.current = zoomLevel;
+                const prev = markerLayerVisibilityRef.current;
+                const next = {
+                    incidents: isMarkerLayerVisible(zoomLevel, INCIDENT_MIN_ZOOM, prev.incidents),
+                    rules: isMarkerLayerVisible(zoomLevel, RULE_MIN_ZOOM, prev.rules),
+                };
+                if (next.incidents !== prev.incidents || next.rules !== prev.rules) {
+                    markerLayerVisibilityRef.current = next;
+                    setMarkerLayerVisibility(next);
+                    console.log(
+                        `[markers] zoom ${zoomLevel.toFixed(2)} threshold-cross ->`,
+                        `incidents ${prev.incidents ? 'on' : 'off'}=>${next.incidents ? 'on' : 'off'}`,
+                        `rules ${prev.rules ? 'on' : 'off'}=>${next.rules ? 'on' : 'off'}`,
+                    );
+                }
+            }
+
+            const visibleBounds = e?.properties?.visibleBounds;
+            if (Array.isArray(visibleBounds) && visibleBounds.length === 2) {
+                const [ne, sw] = visibleBounds;
+                if (Array.isArray(ne) && Array.isArray(sw)) {
+                    const next: MarkerBounds = [sw[0], sw[1], ne[0], ne[1]];
+                    setMarkerBounds(prev => (markerBoundsChanged(prev, next) ? next : prev));
+                }
+            }
+        }, []);
+
+        const visibleIncidents = useMemo(() => {
+            if (!incidents || !markerLayerVisibility.incidents) return [];
+            return filterMarkersToBounds(incidents, markerBounds);
+        }, [incidents, markerLayerVisibility.incidents, markerBounds]);
+
+        const visibleRules = useMemo(() => {
+            if (!rules || !markerLayerVisibility.rules) return [];
+            return filterMarkersToBounds(rules, markerBounds);
+        }, [rules, markerLayerVisibility.rules, markerBounds]);
+
+        useEffect(() => {
+            const zoomLevel = markerZoomRef.current;
+            const bounds = markerBounds
+                ? markerBounds.map(v => v.toFixed(4)).join(', ')
+                : 'none (unfiltered)';
+            console.log(
+                `[markers] zoom ${zoomLevel === null ? 'initial' : zoomLevel.toFixed(2)}`,
+                `| incidents ${visibleIncidents.length}/${incidents?.length ?? 0}`,
+                `(min ${INCIDENT_MIN_ZOOM}, layer ${markerLayerVisibility.incidents ? 'on' : 'off'})`,
+                `| rules ${visibleRules.length}/${rules?.length ?? 0}`,
+                `(min ${RULE_MIN_ZOOM}, layer ${markerLayerVisibility.rules ? 'on' : 'off'}${isNavigating ? ', nav-hidden' : ''})`,
+                `| bounds W,S,E,N [${bounds}]`,
+            );
+        }, [
+            visibleIncidents,
+            visibleRules,
+            incidents,
+            rules,
+            markerBounds,
+            markerLayerVisibility,
+            isNavigating,
+        ]);
+
         const cameraSuspendedRef = useRef(false);
         const cameraResumeUntilRef = useRef(0);
         const NAV_ZOOM = getAppConfig().navZoom;
@@ -1271,7 +1381,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             if (!imagesLoaded || !mapStyleState) return;
             const timer = setTimeout(() => setRenderKey(prev => prev + 1), 200);
             return () => clearTimeout(timer);
-        }, [rules, imagesLoaded, mapStyleState]);
+        }, [rules, visibleRules.length, markerLayerVisibility.rules, imagesLoaded, mapStyleState]);
 
 
         useEffect(() => {
@@ -1782,6 +1892,8 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             }
                         }}
                         onRegionDidChange={(e: any) => {
+                            updateMarkerViewport(e);
+
                             const centerCoords = e.geometry?.coordinates;
                             if (Array.isArray(centerCoords)) {
                                 lastRegionCenterRef.current = [centerCoords[0], centerCoords[1]];
@@ -2222,7 +2334,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             />
                         )}
 
-                        {incidents && imagesLoaded && incidents.map((incident) => {
+                        {imagesLoaded && visibleIncidents.map((incident) => {
                             const iconPair = INCIDENT_SVG_ICONS[incident.type.name as keyof typeof INCIDENT_SVG_ICONS];
                             const IncidentSvgIcon = iconPair ? (isDark ? iconPair.dark : iconPair.light) : null;
 
@@ -2251,7 +2363,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             );
                         })}
 
-                        {rules && imagesLoaded && mapStyleState && !isNavigating && rules.map((rule, index) => {
+                        {imagesLoaded && mapStyleState && !isNavigating && visibleRules.map((rule) => {
                             return (
                                 <MapLibreGL.PointAnnotation
                                     key={`rule-${rule.id}-${renderKey}`}
