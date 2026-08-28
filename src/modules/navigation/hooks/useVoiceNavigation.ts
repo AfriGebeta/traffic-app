@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { File } from 'expo-file-system';
 import { useVoiceRecording } from './useVoiceRecording';
 import { VoiceNavSocket, type VoiceNavEvent } from '../services/voice-nav-socket.service';
-import { streamChat } from '../services/voice-nav-chat.service';
+import { streamChat, resetChatSession } from '../services/voice-nav-chat.service';
 import { StreamingPcmPlayer } from '../utils/streamingPcmPlayer';
 import { navigationService } from '../services/navigation.service';
 import { showToast } from '../../../shared/utils/toast';
@@ -614,6 +614,11 @@ export const useVoiceNavigation = ({
         }
     }, [appendMessage, handleEvent, isProcessing, isRecording, setIsProcessing]);
 
+    const resetSession = useCallback(() => {
+        vlog(`chat: reset session ${sessionIdRef.current}`);
+        void resetChatSession(sessionIdRef.current);
+    }, []);
+
     const startTaxiRoute = useCallback((route: TaxiNavigationResponse): boolean => {
         if (startedRouteRef.current === route.timestamp) {
             vlog('taxi start ignored — route already started');
@@ -703,6 +708,7 @@ export const useVoiceNavigation = ({
         handleOptionSelect,
         handlePlaceSelect,
         clearVoiceNavigation,
+        resetSession,
         replayResponse,
         stopSpeaking,
         cancelRecording,

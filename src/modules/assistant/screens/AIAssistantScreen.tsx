@@ -8,6 +8,7 @@ import {
     Animated,
     Easing,
     TextInput,
+    AppState,
 } from 'react-native';
 import Reanimated, { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
@@ -240,6 +241,7 @@ export default function AIAssistantScreen() {
         handlePlaceSelect,
         startTaxiRoute,
         sendTextMessage,
+        resetSession,
     } = useVoiceNavigation({
         mapRef: dummyMapRef,
         userLocation,
@@ -270,6 +272,19 @@ export default function AIAssistantScreen() {
         },
         onTaxiRouteStarted: openTaxiNavigation,
     });
+
+    const resetSessionRef = useRef(resetSession);
+    resetSessionRef.current = resetSession;
+
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', (state) => {
+            if (state === 'background') resetSessionRef.current();
+        });
+        return () => {
+            subscription.remove();
+            resetSessionRef.current();
+        };
+    }, []);
 
     useEffect(() => {
         if (!isRecording) {

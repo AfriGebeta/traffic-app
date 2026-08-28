@@ -927,13 +927,10 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         const markerLayerVisibilityRef = useRef(markerLayerVisibility);
         const [markerBounds, setMarkerBounds] = useState<MarkerBounds | null>(null);
 
-        const markerZoomRef = useRef<number | null>(null);
-
         const updateMarkerViewport = useCallback((e: any) => {
             const zoomLevel = e?.properties?.zoomLevel ?? e?.properties?.zoom;
 
             if (typeof zoomLevel === 'number') {
-                markerZoomRef.current = zoomLevel;
                 const prev = markerLayerVisibilityRef.current;
                 const next = {
                     incidents: isMarkerLayerVisible(zoomLevel, INCIDENT_MIN_ZOOM, prev.incidents),
@@ -942,11 +939,6 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 if (next.incidents !== prev.incidents || next.rules !== prev.rules) {
                     markerLayerVisibilityRef.current = next;
                     setMarkerLayerVisibility(next);
-                    console.log(
-                        `[markers] zoom ${zoomLevel.toFixed(2)} threshold-cross ->`,
-                        `incidents ${prev.incidents ? 'on' : 'off'}=>${next.incidents ? 'on' : 'off'}`,
-                        `rules ${prev.rules ? 'on' : 'off'}=>${next.rules ? 'on' : 'off'}`,
-                    );
                 }
             }
 
@@ -969,29 +961,6 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             if (!rules || !markerLayerVisibility.rules) return [];
             return filterMarkersToBounds(rules, markerBounds);
         }, [rules, markerLayerVisibility.rules, markerBounds]);
-
-        useEffect(() => {
-            const zoomLevel = markerZoomRef.current;
-            const bounds = markerBounds
-                ? markerBounds.map(v => v.toFixed(4)).join(', ')
-                : 'none (unfiltered)';
-            console.log(
-                `[markers] zoom ${zoomLevel === null ? 'initial' : zoomLevel.toFixed(2)}`,
-                `| incidents ${visibleIncidents.length}/${incidents?.length ?? 0}`,
-                `(min ${INCIDENT_MIN_ZOOM}, layer ${markerLayerVisibility.incidents ? 'on' : 'off'})`,
-                `| rules ${visibleRules.length}/${rules?.length ?? 0}`,
-                `(min ${RULE_MIN_ZOOM}, layer ${markerLayerVisibility.rules ? 'on' : 'off'}${isNavigating ? ', nav-hidden' : ''})`,
-                `| bounds W,S,E,N [${bounds}]`,
-            );
-        }, [
-            visibleIncidents,
-            visibleRules,
-            incidents,
-            rules,
-            markerBounds,
-            markerLayerVisibility,
-            isNavigating,
-        ]);
 
         const cameraSuspendedRef = useRef(false);
         const cameraResumeUntilRef = useRef(0);
