@@ -145,6 +145,13 @@ const SavedPlaceChips = ({
         return map;
     }, [savedPlaces]);
 
+    const handleSelectPlace = (place: SavedPlace) => {
+        onPrepareSelect?.();
+        Keyboard.dismiss();
+        setSelectedType(null);
+        onSelectPlace(savedPlaceToGeocodingPlace(place));
+    };
+
     const handleChipPress = (type: SavedPlaceType) => {
         const places = placesByType[type];
         if (!places || places.length === 0) {
@@ -152,14 +159,11 @@ const SavedPlaceChips = ({
             router.push('/saved-places');
             return;
         }
+        if (places.length === 1) {
+            handleSelectPlace(places[0]);
+            return;
+        }
         setSelectedType(prev => (prev === type ? null : type));
-    };
-
-    const handleSelectPlace = (place: SavedPlace) => {
-        onPrepareSelect?.();
-        Keyboard.dismiss();
-        setSelectedType(null);
-        onSelectPlace(savedPlaceToGeocodingPlace(place));
     };
 
     const expandedPlaces = selectedType ? (placesByType[selectedType] ?? []) : [];
