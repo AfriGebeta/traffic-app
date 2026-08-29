@@ -225,6 +225,7 @@ interface ExtendedGebetaMapProps extends Omit<GebetaMapProps, 'center'> {
     previewStepLocation?: { lng: number; lat: number } | null;
     externalCameraControl?: boolean;
     isHomeMap?: boolean;
+    freeCamera?: boolean;
     maneuvers?: Array<{ begin_shape_index: number; type?: number }>;
     boundingBox?: {
         north: number;
@@ -882,7 +883,7 @@ AnimatedNavLayer.displayName = 'AnimatedNavLayer';
 
 
 const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
-    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, isHomeMap, maneuvers, boundingBox, alternativeRoutesGeoJSON, routeTimeLabels }, ref) => {
+    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, isHomeMap, freeCamera, maneuvers, boundingBox, alternativeRoutesGeoJSON, routeTimeLabels }, ref) => {
         const { isDark } = useTheme();
         const foregroundEpoch = useForegroundEpoch();
         const [mapStyleState, setMapStyleState] = useState<Record<string, unknown> | null>(() =>
@@ -1168,7 +1169,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
         useEffect(() => {
             if (isNavigating || !externalCameraControl) return;
-            if (isHomeMap) return;
+            if (isHomeMap || freeCamera) return;
             if (!userLocation || !cameraRef.current) return;
             if (homeFollowPausedRef.current) return;
 
@@ -1211,7 +1212,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 animationDuration: 500,
                 animationMode: 'easeTo',
             });
-        }, [userLocation?.lat, userLocation?.lng, isNavigating, externalCameraControl, isHomeMap]);
+        }, [userLocation?.lat, userLocation?.lng, isNavigating, externalCameraControl, isHomeMap, freeCamera]);
 
         const applyRecenterFlyTo = useCallback(() => {
             if (!cameraRef.current || !userLocation) return false;
@@ -1934,7 +1935,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                     : `explore-camera-${homeCameraEpoch}`}
                                 ref={cameraRef}
                                 maxBounds={undefined}
-                                followUserLocation={isHomeMap ? false : undefined}
+                                followUserLocation={isHomeMap || freeCamera ? false : undefined}
                                 defaultSettings={cameraDefaultSettings}
                             />
                         )}
