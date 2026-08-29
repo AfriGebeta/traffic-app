@@ -313,7 +313,7 @@ export default function TaxiSearchScreen() {
             <ScrollView
                 className="flex-1 p-4"
                 keyboardShouldPersistTaps="handled"
-                keyboardDismissMode="on-drag"
+                keyboardDismissMode="interactive"
                 contentContainerStyle={{ flexGrow: 1, paddingBottom: insets.bottom + 40 }}
             >
                 <View className="rounded-2xl p-6 shadow-sm" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
@@ -363,7 +363,7 @@ export default function TaxiSearchScreen() {
                                                 {t('available-stations')}
                                             </Text>
                                         </View>
-                                        <ScrollView style={{ maxHeight: 150 }} nestedScrollEnabled>
+                                        <ScrollView style={{ maxHeight: 150 }} nestedScrollEnabled keyboardShouldPersistTaps="always">
                                             {filteredOriginStations.slice(0, 10).map((station) => (
                                                 <TouchableOpacity
                                                     key={station.id}
@@ -419,7 +419,7 @@ export default function TaxiSearchScreen() {
                                         {t('available-stations')}
                                     </Text>
                                 </View>
-                                <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
+                                <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled keyboardShouldPersistTaps="always">
                                     {filteredStations.slice(0, 10).map((station) => (
                                         <TouchableOpacity
                                             key={station.id}

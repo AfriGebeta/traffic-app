@@ -581,12 +581,19 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                 zIndex: 20,
                             }}
                         >
-                            <Text
-                                className="text-lg"
-                                style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Bold' }}
-                            >
-                                {t('pay')}
-                            </Text>
+                            <View className="flex-row items-center">
+                                <Text
+                                    className="text-lg"
+                                    style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Bold' }}
+                                >
+                                    {t('pay')}
+                                </Text>
+                                <Image
+                                    source={require('../../../../assets/images/telebirr-logo.png')}
+                                    style={{ width: 24, height: 24, marginLeft: 8 }}
+                                    resizeMode="contain"
+                                />
+                            </View>
                             <View className="flex-row items-baseline">
                                 <Text style={{ color: theme.textSecondary }}>{t('powered-by')} </Text>
                                 <Text style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Bold' }}>

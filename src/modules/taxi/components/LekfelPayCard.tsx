@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Pressable } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Pressable, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../../../shared/theme/colors';
@@ -15,6 +15,8 @@ interface PayFieldProps {
     disabled?: boolean;
     showEditIcon?: boolean;
 }
+
+const TELEBIRR_LOGO = require('../../../../assets/images/telebirr-logo.png');
 
 const ACCENT = '#F97316';
 const ICON_ACCENT = colors.primary.main;
@@ -108,9 +110,16 @@ export default function LekfelPayCard({
             }}
         >
             <View className="flex-row items-center justify-between mb-5">
-                <Text className="text-xl" style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Bold' }}>
-                    {t('pay')}
-                </Text>
+                <View className="flex-row items-center">
+                    <Text className="text-xl" style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Bold' }}>
+                        {t('pay')}
+                    </Text>
+                    <Image
+                        source={TELEBIRR_LOGO}
+                        style={{ width: 24, height: 24, marginLeft: 8 }}
+                        resizeMode="contain"
+                    />
+                </View>
                 <View className="flex-row items-baseline">
                     <Text style={{ color: theme.textSecondary }}>{t('powered-by')} </Text>
                     <Text style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Bold' }}>
