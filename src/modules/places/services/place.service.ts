@@ -4,13 +4,31 @@ import { ClaimBusinessRequest, ClaimBusinessResponse } from '../types/claim.type
 
 export const placeService = {
     async contributePlace(data: PlaceContributionRequest): Promise<Place> {
-        const response = await apiService.post<Place>('/api/places', data);
+        const { customType, ...payload } = data;
+        const response = await apiService.post<Place>('/api/places', payload);
 
-        if (response.error || !response.data) {
-            throw new Error(response.error || 'Failed to contribute place');
+        if (!response.error && response.data) {
+            return response.data;
         }
 
-        return response.data;
+        const categoryRejected = customType && (response.status === 400 || response.status === 422);
+
+        if (categoryRejected) {
+            console.log('places api: custom category rejected, retrying as other', { customType, error: response.error });
+            const fallback = await apiService.post<Place>('/api/places', {
+                ...payload,
+                type: 'other',
+                description: payload.description ? `${customType} - ${payload.description}` : customType,
+            });
+
+            if (fallback.error || !fallback.data) {
+                throw new Error(fallback.error || 'Failed to contribute place');
+            }
+
+            return fallback.data;
+        }
+
+        throw new Error(response.error || 'Failed to contribute place');
     },
 
     async getPlaces(): Promise<Place[]> {

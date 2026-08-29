@@ -3438,5 +3438,40 @@
         "key": "update",
         "EN_US": "Update",
         "AM": "ያውርዱ"
+    },
+    {
+        "key": "cafe",
+        "EN_US": "Cafe",
+        "AM": "ካፌ"
+    },
+    {
+        "key": "clinic",
+        "EN_US": "Clinic",
+        "AM": "ክሊኒክ"
+    },
+    {
+        "key": "pharmacy",
+        "EN_US": "Pharmacy",
+        "AM": "ፋርማሲ"
+    },
+    {
+        "key": "school",
+        "EN_US": "School",
+        "AM": "ትምህርት ቤት"
+    },
+    {
+        "key": "place-category",
+        "EN_US": "Category",
+        "AM": "አይነት"
+    },
+    {
+        "key": "place-category-placeholder",
+        "EN_US": "e.g. Car wash, Bakery, Gym",
+        "AM": "ለምሳሌ የመኪና እጥበት፣ ዳቦ ቤት፣ ጂም"
+    },
+    {
+        "key": "place-category-hint",
+        "EN_US": "Tell us what kind of place this is",
+        "AM": "ይህ ቦታ ምን ዓይነት እንደሆነ ይንገሩን"
     }
 ]

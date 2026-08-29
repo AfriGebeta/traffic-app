@@ -7,30 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { getPlaceTranslationKey } from '../utils/placeTranslations';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../shared/theme/ThemeContext';
-
-import GasStationLight from '../../../../assets/images/contribute-place-gas-station-light.svg';
-import GasStationDark from '../../../../assets/images/contribute-place-gas-station-dark.svg';
-import TaxiLight from '../../../../assets/images/contribute-place-taxi-light.svg';
-import TaxiDark from '../../../../assets/images/contribute-place-taxi-dark.svg';
-import RestaurantLight from '../../../../assets/images/contribute-place-restaurant-light.svg';
-import RestaurantDark from '../../../../assets/images/contribute-place-restaurant-dark.svg';
-import ParkingLight from '../../../../assets/images/contribute-place-parking-light.svg';
-import ParkingDark from '../../../../assets/images/contribute-place-parking-dark.svg';
-import HospitalLight from '../../../../assets/images/contribute-place-hospital-light.svg';
-import HospitalDark from '../../../../assets/images/contribute-place-hospital-dark.svg';
-import BuildingLight from '../../../../assets/images/contribute-place-building-light.svg';
-import BuildingDark from '../../../../assets/images/contribute-place-building-dark.svg';
-import CompanyLight from '../../../../assets/images/contribute-place-company-light.svg';
-import CompanyDark from '../../../../assets/images/contribute-place-company-dark.svg';
-
-import GovernmentLight from '../../../../assets/images/contribute-place-government-light.svg';
-import GovernmentDark from '../../../../assets/images/contribute-place-government-dark.svg';
-import MallLight from '../../../../assets/images/contribute-place-mall-light.svg';
-import MallDark from '../../../../assets/images/contribute-place-mall-dark.svg';
-import ShopLight from '../../../../assets/images/contribute-place-shop-light.svg';
-import ShopDark from '../../../../assets/images/contribute-place-shop-dark.svg';
-import MoreLight from '../../../../assets/images/contribute-place-more-light.svg';
-import MoreDark from '../../../../assets/images/contribute-place-more-dark.svg';
+import { getPlaceIcon } from '../utils/placeIcons';
 
 export default function PlaceContributionScreen() {
     const router = useRouter();
@@ -64,21 +41,7 @@ export default function PlaceContributionScreen() {
             <ScrollView className="flex-1 p-4" contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}>
                 <View className="gap-3">
                     {PLACE_TYPES.map((placeType) => {
-                        const placeIconMap: Record<string, React.FC<{ width?: number; height?: number }>> = {
-                            'gas_station': isDark ? GasStationDark : GasStationLight,
-                            'taxi_station': isDark ? TaxiDark : TaxiLight,
-                            'restaurant': isDark ? RestaurantDark : RestaurantLight,
-                            'parking': isDark ? ParkingDark : ParkingLight,
-                            'hospital': isDark ? HospitalDark : HospitalLight,
-                            'building': isDark ? BuildingDark : BuildingLight,
-                            'company': isDark ? CompanyDark : CompanyLight,
-                            'government': isDark ? GovernmentDark : GovernmentLight,
-                            'mall': isDark ? MallDark : MallLight,
-                            'shop': isDark ? ShopDark : ShopLight,
-                            'other': isDark ? MoreDark : MoreLight,
-                        };
-
-                        const Icon = placeIconMap[placeType.id] ?? (isDark ? MoreDark : MoreLight);
+                        const Icon = getPlaceIcon(placeType.id, isDark);
 
                         return (
                             <TouchableOpacity
