@@ -575,6 +575,11 @@
         "AM": "ለመቀጠል ይመዝገቡ"
     },
     {
+        "key": "register-or-login-to-continue",
+        "EN_US": "Register or login to continue",
+        "AM": "ለመቀጠል ይመዝገቡ ወይም ይግቡ"
+    },
+    {
         "key": "or",
         "EN_US": "Or",
         "AM": "ወይም"
@@ -590,9 +595,24 @@
         "AM": "እባክዎ ይመዝገቡ"
     },
     {
+        "key": "please-register-or-login",
+        "EN_US": "Please Register or Login",
+        "AM": "እባክዎ ይመዝገቡ ወይም ይግቡ"
+    },
+    {
+        "key": "register-or-login",
+        "EN_US": "Register / Login",
+        "AM": "ይመዝገቡ / ይግቡ"
+    },
+    {
         "key": "register-to-access-profile",
         "EN_US": "Register to access your profile and track your contributions",
         "AM": "መገለጫዎን ለማግኘት እና አስተዋፅዖዎን ለመከታተል ይመዝገቡ"
+    },
+    {
+        "key": "register-or-login-to-access-profile",
+        "EN_US": "Register or login to access your profile and track your contributions",
+        "AM": "መገለጫዎን ለማግኘት እና አስተዋፅዖዎን ለመከታተል ይመዝገቡ ወይም ይግቡ"
     },
     {
         "key": "your-points",
