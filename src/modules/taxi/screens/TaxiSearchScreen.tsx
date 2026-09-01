@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -229,6 +229,16 @@ export default function TaxiSearchScreen() {
         }
     };
 
+    const hasOrigin = selectedOriginCoords !== null || userLocation !== null;
+    const hasValidDestination = selectedCoords !== null
+        || stations.some(s => s.name.toLowerCase() === destinationName.trim().toLowerCase());
+    const canSearch = hasOrigin && hasValidDestination && !loading;
+    const showNoMatch = !loadingStations
+        && !isSelectingOrigin
+        && destinationName.trim().length > 0
+        && !hasValidDestination
+        && filteredStations.length === 0;
+
     const canPay = payerPhone.trim().length > 0
         && receiverPhone.trim().length > 0
         && Number(payAmount.trim()) > 0;
@@ -286,6 +296,13 @@ export default function TaxiSearchScreen() {
 
     const handleMapPicker = () => {
         router.push('/taxi/destination-picker');
+    };
+
+    const handleAddStation = () => {
+        router.push({
+            pathname: '/taxi/add-station',
+            params: { prefillName: destinationName.trim() },
+        } as any);
     };
 
     return (
@@ -346,6 +363,7 @@ export default function TaxiSearchScreen() {
                                     value={originName}
                                     onChangeText={(text) => {
                                         setOriginName(text);
+                                        setSelectedOriginCoords(null);
                                         setIsSelectingOrigin(true);
                                     }}
                                     onFocus={() => setIsSelectingOrigin(true)}
@@ -402,6 +420,7 @@ export default function TaxiSearchScreen() {
                             value={destinationName}
                             onChangeText={(text) => {
                                 setDestinationName(text);
+                                setSelectedCoords(null);
                                 setIsSelectingOrigin(false);
                             }}
                             onFocus={() => setIsSelectingOrigin(false)}
@@ -434,6 +453,25 @@ export default function TaxiSearchScreen() {
                             </View>
                         )}
 
+                        {showNoMatch && (
+                            <TouchableOpacity
+                                className="mt-2 rounded-xl px-4 py-3 flex-row items-center"
+                                style={{ backgroundColor: theme.background, borderWidth: StyleSheet.hairlineWidth, borderColor: theme.border }}
+                                onPress={handleAddStation}
+                                activeOpacity={0.7}
+                            >
+                                <Ionicons name="add-circle-outline" size={20} color="#FFA500" />
+                                <View className="ml-2 flex-1">
+                                    <Text className="font-semibold" numberOfLines={1} style={{ color: theme.textPrimary }}>
+                                        {t('add')} "{destinationName.trim()}"
+                                    </Text>
+                                    <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }}>
+                                        {t('no-station-matches')}
+                                    </Text>
+                                </View>
+                                <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+                            </TouchableOpacity>
+                        )}
                     </View>
 
                     <TouchableOpacity
@@ -448,9 +486,9 @@ export default function TaxiSearchScreen() {
 
                     <TouchableOpacity
                         className="py-4 rounded-xl"
-                        style={{ backgroundColor: loading || (!selectedOriginCoords && !userLocation) ? theme.border : '#F97316' }}
+                        style={{ backgroundColor: canSearch ? '#F97316' : theme.border }}
                         onPress={handleSearch}
-                        disabled={loading || (!selectedOriginCoords && !userLocation)}
+                        disabled={!canSearch}
                         activeOpacity={0.7}
                     >
                         {loading ? (

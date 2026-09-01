@@ -2010,6 +2010,16 @@
         "AM": "ወይም በካርታ ላይ ይምረጡ"
     },
     {
+        "key": "no-station-matches",
+        "EN_US": "No station matches",
+        "AM": "ጣቢያ አልተገኘም"
+    },
+    {
+        "key": "add",
+        "EN_US": "Add",
+        "AM": "ጨምር"
+    },
+    {
         "key": "find-taxi-route",
         "EN_US": "Find Taxi Route",
         "AM": "የታክሲ መስመር ያግኙ"
