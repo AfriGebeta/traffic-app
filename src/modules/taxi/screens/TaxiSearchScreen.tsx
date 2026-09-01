@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -92,6 +92,22 @@ export default function TaxiSearchScreen() {
             setFilteredStations([]);
         }
     }, [destinationName, stations]);
+
+    const stationLabels = useMemo(() => {
+        const seen = new Map<string, number>();
+        const labels: Record<string, string> = {};
+
+        for (const station of stations) {
+            const key = station.name.trim().toLowerCase();
+            const count = (seen.get(key) ?? 0) + 1;
+            seen.set(key, count);
+            labels[String(station.id)] = count > 1 ? `${station.name} (${count})` : station.name;
+        }
+
+        return labels;
+    }, [stations]);
+
+    const labelFor = (station: TaxiNode) => stationLabels[String(station.id)] ?? station.name;
 
     const fetchStations = async () => {
         try {
@@ -384,7 +400,7 @@ export default function TaxiSearchScreen() {
                                                     style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}
                                                     onPress={() => handleStationSelect(station)}
                                                 >
-                                                    <Text className="font-semibold" style={{ color: theme.textPrimary }}>{station.name}</Text>
+                                                    <Text className="font-semibold" style={{ color: theme.textPrimary }}>{labelFor(station)}</Text>
                                                     {station.routeName && (
                                                         <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>
                                                             {station.routeName}
@@ -441,7 +457,7 @@ export default function TaxiSearchScreen() {
                                             style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}
                                             onPress={() => handleStationSelect(station)}
                                         >
-                                            <Text className="font-semibold" style={{ color: theme.textPrimary }}>{station.name}</Text>
+                                            <Text className="font-semibold" style={{ color: theme.textPrimary }}>{labelFor(station)}</Text>
                                             {station.routeName && (
                                                 <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>
                                                     {station.routeName}
