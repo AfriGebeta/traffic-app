@@ -212,11 +212,6 @@ export default function TaxiSearchScreen() {
                     taxiDestLng: destination.longitude.toString(),
                     taxiDestName: destination.name,
                     showTaxiMode: 'true',
-                    ...(hasCustomOrigin && {
-                        taxiOriginLat: selectedOriginCoords.lat.toString(),
-                        taxiOriginLng: selectedOriginCoords.lng.toString(),
-                        taxiOriginName: originName.trim() || 'Custom Origin',
-                    }),
                 });
             }, 100);
         } catch (error: any) {

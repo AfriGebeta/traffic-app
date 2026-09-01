@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,6 +13,7 @@ import { useMapTheme } from '../../map/context/MapThemeContext';
 import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
 import { TaxiNavigationResponse } from '../types/taxi.types';
 import { decodeTaxiSegmentPaths } from '../../navigation/utils/navigationUtils';
+import { fitBoundsToCoords } from '../../navigation/utils/navigationPreviewUtils';
 
 export default function TaxiRoutePreviewScreen() {
     const router = useRouter();
@@ -25,11 +26,11 @@ export default function TaxiRoutePreviewScreen() {
     const mapRef = useRef<GebetaMapRef>(null);
 
     const [mapReady, setMapReady] = useState(false);
-    const [simulateMovement, setSimulateMovement] = useState(false);
 
-    const routeData: TaxiNavigationResponse | null = params.routeData
-        ? JSON.parse(params.routeData as string)
-        : null;
+    const routeData: TaxiNavigationResponse | null = useMemo(
+        () => (params.routeData ? JSON.parse(params.routeData as string) : null),
+        [params.routeData]
+    );
 
     if (!routeData) {
         return (
@@ -44,8 +45,9 @@ export default function TaxiRoutePreviewScreen() {
 
     const { origin, destination, startNode, endNode, formattedPath, summary, originWalkRoute, destinationWalkRoute, segments } = routeData;
 
-    const segmentPaths = decodeTaxiSegmentPaths(segments ?? []);
-    const walkRoutes = (segments ?? [])
+    const segmentPaths = useMemo(() => decodeTaxiSegmentPaths(segments ?? []), [segments]);
+
+    const walkRoutes = useMemo(() => (segments ?? [])
         .map((seg, idx) => ({ seg, idx }))
         .filter(({ seg }) => seg.type === 'walk' || seg.mode === 'pedestrian')
         .map(({ seg, idx }) => ({
@@ -55,7 +57,7 @@ export default function TaxiRoutePreviewScreen() {
             polyline: seg.polyline ?? '',
             coordinates: segmentPaths[idx].map(([lat, lng]: [number, number]) => [lng, lat] as [number, number]),
         }))
-        .filter(route => route.coordinates.length >= 2);
+        .filter(route => route.coordinates.length >= 2), [segments, segmentPaths]);
 
     console.log('[TaxiRoutePreview] Walk routes prepared:', {
         segmentsCount: segments?.length || 0,
@@ -63,7 +65,7 @@ export default function TaxiRoutePreviewScreen() {
         walkRoutes: walkRoutes.map(r => ({ type: r.type, polylineLength: r.polyline.length }))
     });
 
-    const taxiSegments = (segments ?? [])
+    const taxiSegments = useMemo(() => (segments ?? [])
         .map((seg, idx) => ({ seg, idx }))
         .filter(({ seg }) => seg.type === 'taxi' || seg.mode === 'auto')
         .map(({ seg, idx }) => ({
@@ -71,9 +73,9 @@ export default function TaxiRoutePreviewScreen() {
             cost: seg.fare || 0,
             from: seg.fromNode?.name || '',
             to: seg.toNode?.name || ''
-        }));
+        })), [segments, segmentPaths]);
 
-    const taxiStations = segments ? [
+    const taxiStations = useMemo(() => (segments ? [
         {
             id: startNode.id || 1,
             name: startNode.name,
@@ -88,7 +90,7 @@ export default function TaxiRoutePreviewScreen() {
             lng: endNode.lng,
             type: 'end' as const
         }
-    ] : [];
+    ] : []), [segments, startNode, endNode]);
 
     console.log('[TaxiRoutePreview] Taxi segments prepared:', {
         taxiSegmentsCount: taxiSegments.length,
@@ -96,48 +98,28 @@ export default function TaxiRoutePreviewScreen() {
         taxiStations: taxiStations.map(s => ({ name: s.name, type: s.type }))
     });
 
+    const didAddMarkersRef = useRef(false);
+
     useEffect(() => {
-        if (mapReady && mapRef.current) {
-            mapRef.current.addImageMarker(
-                [startNode.lng, startNode.lat],
-                '',
-                [40, 40],
-                () => showToast(`${startNode.name}: Boarding Point`),
-                10
-            );
+        if (!mapReady || !mapRef.current || didAddMarkersRef.current) return;
+        didAddMarkersRef.current = true;
 
-            mapRef.current.addImageMarker(
-                [endNode.lng, endNode.lat],
-                '',
-                [40, 40],
-                () => showToast(`${endNode.name}: Drop-off Point`),
-                10
-            );
+        mapRef.current.addImageMarker(
+            [startNode.lng, startNode.lat],
+            '',
+            [40, 40],
+            () => showToast(`${startNode.name}: Boarding Point`),
+            10
+        );
 
-            const allCoords = [
-                [origin.lng, origin.lat],
-                [startNode.lng, startNode.lat],
-                [endNode.lng, endNode.lat],
-                [destination.lng, destination.lat],
-            ];
-
-            const lngs = allCoords.map(c => c[0]);
-            const lats = allCoords.map(c => c[1]);
-            const minLng = Math.min(...lngs);
-            const maxLng = Math.max(...lngs);
-            const minLat = Math.min(...lats);
-            const maxLat = Math.max(...lats);
-
-            const centerLng = (minLng + maxLng) / 2;
-            const centerLat = (minLat + maxLat) / 2;
-
-            mapRef.current.flyTo({
-                center: [centerLng, centerLat],
-                zoom: 12,
-                duration: 1000,
-            });
-        }
-    }, [mapReady, startNode, endNode, origin, destination]);
+        mapRef.current.addImageMarker(
+            [endNode.lng, endNode.lat],
+            '',
+            [40, 40],
+            () => showToast(`${endNode.name}: Drop-off Point`),
+            10
+        );
+    }, [mapReady, startNode, endNode]);
 
     const formatDistance = (meters: number): string => {
         if (meters < 1000) {
@@ -156,15 +138,31 @@ export default function TaxiRoutePreviewScreen() {
         return `${hours} hr ${remainingMinutes} min`;
     };
 
-    const handleStartNavigation = () => {
-        router.push({
-            pathname: '/taxi/navigation',
-            params: {
-                routeData: JSON.stringify(routeData),
-                simulateMovement: simulateMovement.toString(),
-            },
-        });
-    };
+    const [initialCamera] = useState(() => {
+        const endpointCoords = [origin, startNode, endNode, destination]
+            .filter((point): point is { lat: number; lng: number } =>
+                !!point && Number.isFinite(point.lng) && Number.isFinite(point.lat))
+            .map((point) => [point.lng, point.lat] as [number, number]);
+
+        const fit = fitBoundsToCoords([
+            ...endpointCoords,
+            ...taxiSegments.flatMap((segment) => segment.coordinates),
+            ...walkRoutes.flatMap((route) => route.coordinates),
+        ]);
+
+        if (!fit) return { center: [startNode.lng, startNode.lat] as [number, number], zoom: 13 };
+
+        return { center: fit.center, zoom: Math.max(fit.zoom - 2, 9) };
+    });
+
+    useEffect(() => {
+        if (mapReady) return;
+        const timer = setTimeout(() => {
+            console.warn('[TaxiRoutePreview] onMapLoaded never fired — revealing map anyway');
+            setMapReady(true);
+        }, 4000);
+        return () => clearTimeout(timer);
+    }, [mapReady]);
 
     return (
         <View className="flex-1" style={{ backgroundColor: theme.background }}>
@@ -174,8 +172,11 @@ export default function TaxiRoutePreviewScreen() {
                     apiKey={apiKey || ''}
                     mapStyleUrl={currentTheme.styleUrl ? `${currentTheme.styleUrl}?apiKey=${apiKey}` : undefined}
                     mapStyleJson={currentTheme.styleJson}
-                    center={[origin.lng, origin.lat]}
-                    zoom={13}
+                    center={initialCamera.center}
+                    zoom={initialCamera.zoom}
+                    externalCameraControl
+                    freeCamera
+                    staticInitialCamera
                     onMapLoaded={() => setMapReady(true)}
                     taxiWalkRoutes={walkRoutes.length > 0 ? walkRoutes : undefined}
                     taxiRouteSegments={taxiSegments.length > 0 ? taxiSegments : undefined}
@@ -230,8 +231,8 @@ export default function TaxiRoutePreviewScreen() {
                                 return (
                                     <View key={index} className="mb-4">
                                         <View className="flex-row items-center mb-2">
-                                            <View className="w-8 h-8 rounded-full items-center justify-center" style={{ backgroundColor: theme.blueMuted }}>
-                                                <Ionicons name="walk" size={18} color={theme.blue} />
+                                            <View className="w-8 h-8 items-center justify-center">
+                                                <Ionicons name="walk" size={20} color={theme.blue} />
                                             </View>
                                             <Text className="font-semibold ml-3 flex-1" style={{ color: theme.textPrimary }}>
                                                 {isDestinationWalk ? t('walk-to-destination') : t('walk-to-boarding-point')}
@@ -256,11 +257,8 @@ export default function TaxiRoutePreviewScreen() {
                                 return (
                                     <View key={index} className="mb-4">
                                         <View className="flex-row items-center mb-2">
-                                            <View
-                                                className="w-8 h-8 rounded-full items-center justify-center"
-                                                style={{ backgroundColor: colors.primary.light }}
-                                            >
-                                                <Ionicons name="car" size={18} color={colors.primary.main} />
+                                            <View className="w-8 h-8 items-center justify-center">
+                                                <Ionicons name="car" size={20} color={colors.primary.main} />
                                             </View>
                                             <Text className="font-semibold ml-3 flex-1" style={{ color: theme.textPrimary }}>
                                                 {t('taxi-ride')}
@@ -295,8 +293,8 @@ export default function TaxiRoutePreviewScreen() {
                                 {originWalkRoute && (
                                     <View className="mb-4">
                                         <View className="flex-row items-center mb-2">
-                                            <View className="w-8 h-8 rounded-full items-center justify-center" style={{ backgroundColor: theme.blueMuted }}>
-                                                <Ionicons name="walk" size={18} color={theme.blue} />
+                                            <View className="w-8 h-8 items-center justify-center">
+                                                <Ionicons name="walk" size={20} color={theme.blue} />
                                             </View>
                                             <Text className="font-semibold ml-3 flex-1" style={{ color: theme.textPrimary }}>
                                                 {t('walk-to-boarding-point')}
@@ -318,11 +316,8 @@ export default function TaxiRoutePreviewScreen() {
 
                                 <View className="mb-4">
                                     <View className="flex-row items-center mb-2">
-                                        <View
-                                            className="w-8 h-8 rounded-full items-center justify-center"
-                                            style={{ backgroundColor: colors.primary.light }}
-                                        >
-                                            <Ionicons name="car" size={18} color={colors.primary.main} />
+                                        <View className="w-8 h-8 items-center justify-center">
+                                            <Ionicons name="car" size={20} color={colors.primary.main} />
                                         </View>
                                         <Text className="font-semibold ml-3 flex-1" style={{ color: theme.textPrimary }}>
                                             {t('taxi-ride')}
@@ -350,8 +345,8 @@ export default function TaxiRoutePreviewScreen() {
                                 {destinationWalkRoute && (
                                     <View className="mb-4">
                                         <View className="flex-row items-center mb-2">
-                                            <View className="w-8 h-8 rounded-full items-center justify-center" style={{ backgroundColor: theme.greenMuted }}>
-                                                <Ionicons name="walk" size={18} color={theme.green} />
+                                            <View className="w-8 h-8 items-center justify-center">
+                                                <Ionicons name="walk" size={20} color={theme.green} />
                                             </View>
                                             <Text className="font-semibold ml-3 flex-1" style={{ color: theme.textPrimary }}>
                                                 {t('walk-to-destination')}
@@ -375,6 +370,8 @@ export default function TaxiRoutePreviewScreen() {
                     </View>
 
                     <View className="px-6 py-4" style={{ backgroundColor: theme.surface, borderTopWidth: 1, borderTopColor: theme.border }}>
+                        {/* dev-only movement simulation — needs the simulateMovement state and
+                            a start-navigation handler back if this is ever re-enabled:
                         {__DEV__ && (
                             <TouchableOpacity
                                 onPress={() => setSimulateMovement(!simulateMovement)}
@@ -393,7 +390,7 @@ export default function TaxiRoutePreviewScreen() {
                                 </View>
                             </TouchableOpacity>
                         )}
-
+                        */}
                         <View className="flex-row items-center justify-between mb-2">
                             <Text style={{ color: theme.textSecondary }}>{t('total-fare')}</Text>
                             <Text
@@ -403,37 +400,9 @@ export default function TaxiRoutePreviewScreen() {
                                 {summary.estimatedFare} {summary.currency}
                             </Text>
                         </View>
-                        <View className="flex-row items-center justify-between">
-                            <Text className="text-sm" style={{ color: theme.textSecondary }}>
-                                {summary.taxiSegments} {t('taxi-segments')} • {summary.walkSegments} {t('walk-segments')}
-                            </Text>
-                            <Text className="text-sm" style={{ color: theme.textSecondary }}>
-                                {summary.pricingSource}
-                            </Text>
-                        </View>
-
                     </View>
                 </ScrollView>
 
-                <View className="px-6 pt-4">
-                    <TouchableOpacity
-                        onPress={handleStartNavigation}
-                        className="rounded-2xl py-4 shadow-lg"
-                        style={{
-                            backgroundColor: colors.primary.main,
-                            shadowColor: colors.primary.main,
-                            shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: 0.3,
-                            shadowRadius: 8,
-                            elevation: 8,
-                        }}
-                        activeOpacity={0.8}
-                    >
-                        <Text className="text-white text-center font-bold text-lg">
-                            {t('start-navigation')}
-                        </Text>
-                    </TouchableOpacity>
-                </View>
             </View>
 
         </View>

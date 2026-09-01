@@ -144,3 +144,34 @@ export function segmentToGeoJSON(coords: [number, number][]) {
         },
     };
 }
+
+export function fitBoundsToCoords(coords: [number, number][]) {
+    if (coords.length === 0) return null;
+
+    const bounds = coords.reduce(
+        (acc, [lng, lat]) => ({
+            minLng: Math.min(acc.minLng, lng),
+            maxLng: Math.max(acc.maxLng, lng),
+            minLat: Math.min(acc.minLat, lat),
+            maxLat: Math.max(acc.maxLat, lat),
+        }),
+        {
+            minLng: coords[0][0],
+            maxLng: coords[0][0],
+            minLat: coords[0][1],
+            maxLat: coords[0][1],
+        }
+    );
+
+    const centerLng = (bounds.minLng + bounds.maxLng) / 2;
+    const centerLat = (bounds.minLat + bounds.maxLat) / 2;
+    const maxDiff = Math.max(bounds.maxLat - bounds.minLat, bounds.maxLng - bounds.minLng);
+
+    let zoom = 16;
+    if (maxDiff > 0.08) zoom = 12;
+    else if (maxDiff > 0.04) zoom = 13;
+    else if (maxDiff > 0.015) zoom = 14;
+    else if (maxDiff > 0.006) zoom = 15;
+
+    return { center: [centerLng, centerLat] as [number, number], zoom };
+}

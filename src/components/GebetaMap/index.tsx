@@ -225,6 +225,8 @@ interface ExtendedGebetaMapProps extends Omit<GebetaMapProps, 'center'> {
     previewStepLocation?: { lng: number; lat: number } | null;
     externalCameraControl?: boolean;
     isHomeMap?: boolean;
+    //position the cam purely from the initial center
+    staticInitialCamera?: boolean;
     freeCamera?: boolean;
     maneuvers?: Array<{ begin_shape_index: number; type?: number }>;
     boundingBox?: {
@@ -883,7 +885,7 @@ AnimatedNavLayer.displayName = 'AnimatedNavLayer';
 
 
 const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
-    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, isHomeMap, freeCamera, maneuvers, boundingBox, alternativeRoutesGeoJSON, routeTimeLabels }, ref) => {
+    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, isHomeMap, staticInitialCamera, freeCamera, maneuvers, boundingBox, alternativeRoutesGeoJSON, routeTimeLabels }, ref) => {
         const { isDark } = useTheme();
         const foregroundEpoch = useForegroundEpoch();
         const [mapStyleState, setMapStyleState] = useState<Record<string, unknown> | null>(() =>
@@ -1019,6 +1021,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             zoom?: number;
             duration?: number;
             pitch?: number;
+            heading?: number;
         }) => {
             const cameraConfig = {
                 centerCoordinate: options.center,
@@ -1026,6 +1029,9 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 animationMode: 'easeTo' as const,
                 animationDuration: options.duration ?? 1000,
                 pitch: options.pitch ?? 0,
+                // left alone unless asked: navigation rotates the map, and only the caller
+                // knows whether the view should be levelled back to north-up
+                ...(options.heading !== undefined && { heading: options.heading }),
             };
             if (cameraRef.current) {
                 pendingFlyTo.current = null;
@@ -1153,6 +1159,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         const exploreCenterAppliedRef = useRef(false);
         useEffect(() => {
             if (isNavigating || !externalCameraControl) return;
+            if (staticInitialCamera) return;
             if (centerLng == null || centerLat == null || !cameraRef.current) return;
             if (homeFollowPausedRef.current) return;
 
@@ -1165,7 +1172,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 animationDuration: firstApply ? 0 : 500,
                 animationMode: firstApply ? 'moveTo' : 'easeTo',
             });
-        }, [centerLng, centerLat, isNavigating, externalCameraControl]);
+        }, [centerLng, centerLat, isNavigating, externalCameraControl, staticInitialCamera]);
 
         useEffect(() => {
             if (isNavigating || !externalCameraControl) return;
@@ -1383,7 +1390,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
         const taxiStationsKey = useMemo(
             () => (taxiStations && taxiStations.length > 0
-                ? taxiStations.map((s) => s.id).join(',')
+                ? taxiStations.map((s) => `${s.id}:${s.lat}:${s.lng}`).join(',')
                 : null),
             [taxiStations]
         );
@@ -1534,11 +1541,20 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             opacity: routeStyle?.opacity || 0.8,
         };
 
-        const previewRouteShape = useMemo(() => (
-            !isNavigating && routeGeoJSON && !segmentedRoutes
-                ? routeGeoJSON
-                : EMPTY_FEATURE_COLLECTION
-        ), [isNavigating, routeGeoJSON, segmentedRoutes]);
+        // the dash mode is baked into the data, not just the layer style: flipping only the
+        // style leaves the already-painted line untouched until a camera change invalidates
+        // the tile (which is why zooming out "fixes" it). changing the shape makes the source
+        // re-upload and repaint immediately.
+        const previewRouteShape = useMemo(() => {
+            if (isNavigating || !routeGeoJSON || segmentedRoutes) return EMPTY_FEATURE_COLLECTION;
+            return {
+                ...routeGeoJSON,
+                properties: {
+                    ...(routeGeoJSON.properties ?? {}),
+                    lineMode: routeStyle?.isDotted ? 'dotted' : 'solid',
+                },
+            };
+        }, [isNavigating, routeGeoJSON, segmentedRoutes, routeStyle?.isDotted]);
 
         const hasAlternativeRoutes = !isNavigating
             && !segmentedRoutes
@@ -1560,6 +1576,52 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         useImperativeHandle(ref, () => ({
             flyTo: (options: any) => {
                 applyFlyTo(options);
+            },
+            /**
+             * Rebuild the Camera in place, keeping the current view. Returning to a screen
+             * whose map stayed mounted under another map leaves the native camera unable to
+             * hold user gestures; remounting it (the one thing recenterOnce does that fixes
+             * this) clears that without moving the view.
+             */
+            refreshCamera: () => {
+                // everything recenterOnce does, except the camera move: pausing follow is what
+                // stops the explore-centre effect re-applying the center prop, and the epoch
+                // bump rebuilds the Camera. together they are what the recentre button does
+                // that makes the map controllable again.
+                homeFollowPausedRef.current = true;
+                pendingFlyTo.current = null;
+                flyToTokenRef.current += 1;
+
+                const settledCenter = lastRegionCenterRef.current;
+                const settledZoom = lastKnownZoomRef.current;
+                const target = settledCenter && settledZoom !== null
+                    ? { center: settledCenter, zoom: settledZoom }
+                    : lastFreeCameraRef.current;
+
+                if (target) {
+                    // the remounted Camera reads defaultSettings from this, so it comes back
+                    // exactly where the user left it instead of jumping
+                    lastFreeCameraRef.current = target;
+                    setHomeCameraTarget(target);
+                    markHomeCommand(target.center, target.zoom);
+                }
+
+                setHomeCameraEpoch((current) => current + 1);
+
+                // the remount alone was not enough: issue a real setCamera at the current
+                // position after the new Camera mounts, which is the part of recenterOnce
+                // that actually makes the map controllable again. no visible movement.
+                if (target) {
+                    requestAnimationFrame(() => {
+                        cameraRef.current?.setCamera({
+                            centerCoordinate: target.center,
+                            zoomLevel: target.zoom,
+                            animationDuration: 0,
+                            animationMode: 'moveTo',
+                        });
+                    });
+                }
+
             },
             recenterOnce: (options: { center: [number, number]; zoom?: number }) => {
                 homeFollowPausedRef.current = true;
@@ -2040,11 +2102,13 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         ))}
 
                         <MapLibreGL.ShapeSource
-                            id="route-preview-source"
+                            key={`route-preview-source-${routeStyle?.isDotted ? 'dotted' : 'solid'}`}
+                            id={`route-preview-source-${routeStyle?.isDotted ? 'dotted' : 'solid'}`}
                             shape={previewRouteShape}
                         >
                             <MapLibreGL.LineLayer
-                                id="route-preview-layer"
+                                key={`route-preview-layer-${routeStyle?.isDotted ? 'dotted' : 'solid'}`}
+                                id={`route-preview-layer-${routeStyle?.isDotted ? 'dotted' : 'solid'}`}
                                 style={{
                                     lineColor: defaultRouteStyle.color,
                                     lineWidth: routeStyle?.isDotted ? 6 : defaultRouteStyle.width,

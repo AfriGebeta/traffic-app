@@ -3,7 +3,6 @@ import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Image } fr
 import { useRouter } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
@@ -17,7 +16,7 @@ import {
     getNavigationPreviewData,
     clearNavigationPreviewData,
 } from '../services/navigationPreviewCache';
-import { segmentToGeoJSON } from '../utils/navigationPreviewUtils';
+import { segmentToGeoJSON, fitBoundsToCoords } from '../utils/navigationPreviewUtils';
 
 const formatDistance = (meters: number): string => {
     if (meters < 1000) return `${Math.round(meters)} m`;
@@ -40,37 +39,6 @@ const formatETA = (seconds: number): string => {
     return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
 };
 
-const fitBoundsToCoords = (coords: [number, number][]) => {
-    if (coords.length === 0) return null;
-
-    const bounds = coords.reduce(
-        (acc, [lng, lat]) => ({
-            minLng: Math.min(acc.minLng, lng),
-            maxLng: Math.max(acc.maxLng, lng),
-            minLat: Math.min(acc.minLat, lat),
-            maxLat: Math.max(acc.maxLat, lat),
-        }),
-        {
-            minLng: coords[0][0],
-            maxLng: coords[0][0],
-            minLat: coords[0][1],
-            maxLat: coords[0][1],
-        }
-    );
-
-    const centerLng = (bounds.minLng + bounds.maxLng) / 2;
-    const centerLat = (bounds.minLat + bounds.maxLat) / 2;
-    const maxDiff = Math.max(bounds.maxLat - bounds.minLat, bounds.maxLng - bounds.minLng);
-
-    let zoom = 16;
-    if (maxDiff > 0.08) zoom = 12;
-    else if (maxDiff > 0.04) zoom = 13;
-    else if (maxDiff > 0.015) zoom = 14;
-    else if (maxDiff > 0.006) zoom = 15;
-
-    return { center: [centerLng, centerLat] as [number, number], zoom };
-};
-
 export default function RouteDirectionsPreviewScreen() {
     useKeepAwake();
     const router = useRouter();
@@ -79,13 +47,14 @@ export default function RouteDirectionsPreviewScreen() {
     const { currentTheme } = useMapTheme();
     const { apiKey } = useRemoteConfig();
     const { userLocation } = useUserLocation();
+    const [frozenUserLocation] = useState(userLocation);
     const mapRef = useRef<GebetaMapRef>(null);
 
     const previewData = getNavigationPreviewData();
     const [mapReady, setMapReady] = useState(false);
     const [stepIndex, setStepIndex] = useState(0);
     const [showAllSteps, setShowAllSteps] = useState(false);
-    const hasInitialFit = useRef(false);
+    const hasSteppedRef = useRef(false);
 
     const steps = previewData?.previewSteps ?? [];
     const currentStep = steps[stepIndex];
@@ -99,50 +68,61 @@ export default function RouteDirectionsPreviewScreen() {
         return () => clearNavigationPreviewData();
     }, []);
 
+    const [initialCamera] = useState(() => {
+        const coords = previewData?.routeGeoJSON?.geometry?.coordinates as [number, number][] | undefined;
+        const fit = coords?.length ? fitBoundsToCoords(coords) : null;
+        if (fit) return { center: fit.center, zoom: Math.max(fit.zoom - 1, 9) };
+
+        const fallback = previewData?.origin
+            ? [previewData.origin.longitude, previewData.origin.latitude] as [number, number]
+            : coords?.[0];
+        return { center: fallback, zoom: 13 };
+    });
+    const mapRouteStyle = useMemo(() => ({
+        color: colors.primary.main,
+        width: 6,
+        opacity: 0.9,
+    }), []);
+
+    const mapSelectedDestination = useMemo(() => (previewData?.destination ? {
+        latitude: previewData.destination.latitude,
+        longitude: previewData.destination.longitude,
+        name: previewData.destination.name,
+    } : undefined), [previewData?.destination]);
+
+    const mapWaypointMarkers = useMemo(() => (previewData?.waypoints?.length
+        ? previewData.waypoints.map((wp) => ({
+            latitude: wp.latitude,
+            longitude: wp.longitude,
+            name: wp.name,
+        }))
+        : undefined), [previewData?.waypoints]);
+
+    const mapPreviewStepLocation = useMemo(() => (currentStep
+        ? { lng: currentStep.center[0], lat: currentStep.center[1] }
+        : null), [currentStep]);
+
     useEffect(() => {
-        if (!mapReady || !mapRef.current || !previewData || !currentStep) return;
+        if (!mapReady || !mapRef.current || !currentStep) return;
+        if (!hasSteppedRef.current) return;
 
-        const flyToStep = (coords: [number, number][], fallbackCenter?: [number, number]) => {
-            const fit = fitBoundsToCoords(coords);
-            if (fit) {
-                mapRef.current?.flyTo({
-                    center: fit.center,
-                    zoom: Math.min(fit.zoom + 1, 18),
-                    duration: 700,
-                    pitch: 0,
-                });
-            } else if (fallbackCenter) {
-                mapRef.current?.flyTo({
-                    center: fallbackCenter,
-                    zoom: 17,
-                    duration: 700,
-                    pitch: 0,
-                });
-            }
-        };
-
-        if (!hasInitialFit.current) {
-            hasInitialFit.current = true;
-
-            if (stepIndex === 0 && previewData.routeGeoJSON) {
-                const coords = previewData.routeGeoJSON.geometry?.coordinates as [number, number][] | undefined;
-                if (coords?.length) {
-                    const fit = fitBoundsToCoords(coords);
-                    if (fit) {
-                        mapRef.current.flyTo({
-                            center: fit.center,
-                            zoom: fit.zoom,
-                            duration: 1000,
-                            pitch: 0,
-                        });
-                        return;
-                    }
-                }
-            }
+        const fit = fitBoundsToCoords(currentStep.segmentCoords);
+        if (fit) {
+            mapRef.current.flyTo({
+                center: fit.center,
+                zoom: Math.min(fit.zoom + 1, 18),
+                duration: 700,
+                pitch: 0,
+            });
+        } else if (currentStep.center) {
+            mapRef.current.flyTo({
+                center: currentStep.center,
+                zoom: 17,
+                duration: 700,
+                pitch: 0,
+            });
         }
-
-        flyToStep(currentStep.segmentCoords, currentStep.center);
-    }, [mapReady, stepIndex, currentStep, previewData]);
+    }, [mapReady, stepIndex, currentStep]);
 
     if (!previewData || steps.length === 0) {
         return (
@@ -163,6 +143,8 @@ export default function RouteDirectionsPreviewScreen() {
             <GebetaMap
                 ref={mapRef}
                 externalCameraControl
+                freeCamera
+                staticInitialCamera
                 apiKey={apiKey || ''}
                 mapStyleUrl={
                     currentTheme.styleUrl
@@ -170,42 +152,18 @@ export default function RouteDirectionsPreviewScreen() {
                         : undefined
                 }
                 mapStyleJson={currentTheme.styleJson}
-                center={
-                    origin
-                        ? [origin.longitude, origin.latitude]
-                        : routeGeoJSON.geometry.coordinates[0]
-                }
-                zoom={13}
+                center={initialCamera.center}
+                zoom={initialCamera.zoom}
                 onMapLoaded={() => setMapReady(true)}
                 routeGeoJSON={routeGeoJSON}
-                routeStyle={{
-                    color: colors.primary.main,
-                    width: 6,
-                    opacity: 0.9,
-                }}
+                routeStyle={mapRouteStyle}
                 activeSegmentGeoJSON={activeSegmentGeoJSON}
-                previewStepLocation={
-                    currentStep
-                        ? { lng: currentStep.center[0], lat: currentStep.center[1] }
-                        : null
-                }
-                selectedDestination={{
-                    latitude: destination.latitude,
-                    longitude: destination.longitude,
-                    name: destination.name,
-                }}
+                previewStepLocation={mapPreviewStepLocation}
+                selectedDestination={mapSelectedDestination}
                 routeOrigin={origin}
-                userLocation={userLocation}
+                userLocation={frozenUserLocation ?? userLocation}
                 showUserLocationMarker={!origin}
-                waypointMarkers={
-                    waypoints.length > 0
-                        ? waypoints.map((wp) => ({
-                              latitude: wp.latitude,
-                              longitude: wp.longitude,
-                              name: wp.name,
-                          }))
-                        : undefined
-                }
+                waypointMarkers={mapWaypointMarkers}
             />
 
             {!mapReady && (
@@ -240,8 +198,8 @@ export default function RouteDirectionsPreviewScreen() {
                 className="absolute left-4 right-4 rounded-3xl shadow-2xl overflow-hidden"
                 style={{ bottom: insets.bottom > 0 ? insets.bottom + 8 : 24 }}
             >
-                <BlurView intensity={100} tint="light" style={{ borderRadius: 24 }}>
-                    <View style={{ backgroundColor: 'rgba(255, 255, 255, 0.45)', borderRadius: 24 }}>
+                <View style={{ backgroundColor: 'rgba(255, 255, 255, 0.97)', borderRadius: 24 }}>
+                    <View style={{ borderRadius: 24 }}>
                         <View className="px-5 pt-4 pb-2 border-b border-gray-100">
                             <Text className="text-lg font-bold text-gray-900" numberOfLines={1}>
                                 {destination.name}
@@ -254,7 +212,7 @@ export default function RouteDirectionsPreviewScreen() {
                         <View className="px-5 py-4">
                             <View className="flex-row items-center justify-between mb-3">
                                 <TouchableOpacity
-                                    onPress={() => setStepIndex((i) => Math.max(0, i - 1))}
+                                    onPress={() => { hasSteppedRef.current = true; setStepIndex((i) => Math.max(0, i - 1)); }}
                                     disabled={stepIndex === 0}
                                     className="w-11 h-11 rounded-full bg-gray-100 items-center justify-center"
                                     style={{ opacity: stepIndex === 0 ? 0.35 : 1 }}
@@ -274,7 +232,7 @@ export default function RouteDirectionsPreviewScreen() {
                                 </View>
 
                                 <TouchableOpacity
-                                    onPress={() => setStepIndex((i) => Math.min(steps.length - 1, i + 1))}
+                                    onPress={() => { hasSteppedRef.current = true; setStepIndex((i) => Math.min(steps.length - 1, i + 1)); }}
                                     disabled={stepIndex >= steps.length - 1}
                                     className="w-11 h-11 rounded-full bg-gray-100 items-center justify-center"
                                     style={{ opacity: stepIndex >= steps.length - 1 ? 0.35 : 1 }}
@@ -312,7 +270,7 @@ export default function RouteDirectionsPreviewScreen() {
                                 {steps.map((step, index) => (
                                     <TouchableOpacity
                                         key={index}
-                                        onPress={() => setStepIndex(index)}
+                                        onPress={() => { hasSteppedRef.current = true; setStepIndex(index); }}
                                         className="px-5 py-3 flex-row items-center"
                                         style={{
                                             backgroundColor:
@@ -352,7 +310,7 @@ export default function RouteDirectionsPreviewScreen() {
                             </View>
                         </View>
                     </View>
-                </BlurView>
+                </View>
             </View>
         </View>
     );
