@@ -8,6 +8,45 @@ export const getRuleDescriptionTranslationKey = (ruleName: string): string => {
     return `rule-${normalizedName}-description`;
 };
 
+const NON_PUNISHABLE_RULES = new Set([
+    'steep hill',
+    'two way',
+]);
+
+export const isPunishableRule = (ruleName?: string | null): boolean => {
+    if (!ruleName) return true;
+    return !NON_PUNISHABLE_RULES.has(ruleName.trim().toLowerCase());
+};
+
+export const NO_PUNISHMENT_VALUE = '0';
+
+const RULE_DISPLAY_ORDER = [
+    'No U-Turn',
+    'Traffic Light',
+    'No Left Turn',
+    'No Right Turn',
+    'One Way',
+    'No Overtaking',
+    'No Parking',
+    'Stop',
+    'No Stopping',
+    'Two Way',
+    '30 Is The Limit',
+    '50 Is The Limit',
+    'Steep Hill',
+];
+
+const RULE_ORDER_INDEX = new Map(
+    RULE_DISPLAY_ORDER.map((name, index) => [name.toLowerCase(), index])
+);
+
+export const sortRuleTypes = <T extends { name: string }>(ruleTypes: T[]): T[] => {
+    const rank = (name: string) =>
+        RULE_ORDER_INDEX.get(name.trim().toLowerCase()) ?? RULE_DISPLAY_ORDER.length;
+
+    return [...ruleTypes].sort((a, b) => rank(a.name) - rank(b.name));
+};
+
 export const RULE_TRANSLATION_MAP: Record<string, { name: string; description: string }> = {
     'Stop': {
         name: 'rule-stop',

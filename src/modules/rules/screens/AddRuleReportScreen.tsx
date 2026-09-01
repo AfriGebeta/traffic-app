@@ -12,13 +12,15 @@ import { useTranslation } from 'react-i18next';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { isPunishableRule, NO_PUNISHMENT_VALUE } from '../utils/ruleTranslations';
 
 export default function AddRuleReportScreen() {
     const router = useRouter();
     const { t } = useTranslation();
     const { colors: theme, isDark } = useTheme();
     const params = useLocalSearchParams();
-    const { typeId, typeName, typeDescription, typeImg } = params;
+    const { typeId, typeName, typeRawName, typeDescription, typeImg } = params;
+    const requiresPunishment = isPunishableRule(typeRawName as string);
     const { selectedLocation, setSelectedLocation } = useLocation();
     const { userLocation } = useUserLocation();
 
@@ -69,7 +71,7 @@ export default function AddRuleReportScreen() {
     };
 
     const handleSubmit = async () => {
-        if (!punishment.trim()) {
+        if (requiresPunishment && !punishment.trim()) {
             showToast(`${t('punishment-required')}: ${t('enter-punishment-details')}`);
             return;
         }
@@ -85,7 +87,7 @@ export default function AddRuleReportScreen() {
                 lat: coordinates.lat,
                 lng: coordinates.lng,
                 typeId: typeId as string,
-                punishment: punishment.trim(),
+                punishment: requiresPunishment ? punishment.trim() : NO_PUNISHMENT_VALUE,
             });
 
             dashboardEventsService.contribute();
@@ -140,21 +142,23 @@ export default function AddRuleReportScreen() {
 
             <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
                 <View className="gap-5 pb-6">
-                    <View>
-                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
-                            {t('punishment')} <Text style={{ color: theme.primary }}>*</Text>
-                        </Text>
-                        <Input
-                            placeholder={t('punishment-placeholder')}
-                            value={punishment}
-                            onChangeText={setPunishment}
-                            multiline
-                            numberOfLines={3}
-                        />
-                        <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>
-                            {t('punishment-description')}
-                        </Text>
-                    </View>
+                    {requiresPunishment && (
+                        <View>
+                            <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
+                                {t('punishment')} <Text style={{ color: theme.primary }}>*</Text>
+                            </Text>
+                            <Input
+                                placeholder={t('punishment-placeholder')}
+                                value={punishment}
+                                onChangeText={setPunishment}
+                                multiline
+                                numberOfLines={3}
+                            />
+                            <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>
+                                {t('punishment-description')}
+                            </Text>
+                        </View>
+                    )}
 
                     <View>
                         <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
@@ -274,7 +278,7 @@ export default function AddRuleReportScreen() {
                 <Button
                     title={submitting ? t('submitting') : t('submit-report')}
                     onPress={handleSubmit}
-                    disabled={submitting || !punishment.trim() || !coordinates}
+                    disabled={submitting || (requiresPunishment && !punishment.trim()) || !coordinates}
                 />
             </View>
         </View>

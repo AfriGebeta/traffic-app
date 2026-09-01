@@ -14,6 +14,7 @@ interface RuleAlertProps {
 
 export const RuleAlert: React.FC<RuleAlertProps> = ({ ruleImg, punishment, hasIncidentAlert = false }) => {
     const insets = useSafeAreaInsets();
+    const showPunishment = !!punishment?.trim() && punishment.trim() !== '0';
 
     return (
         <Animated.View
@@ -39,27 +40,29 @@ export const RuleAlert: React.FC<RuleAlertProps> = ({ ruleImg, punishment, hasIn
                 }}
                 resizeMode="contain"
             />
-            <View
-                style={{
-                    marginTop: 4,
-                    backgroundColor: 'rgba(0, 0, 0, 0.75)',
-                    paddingHorizontal: 8,
-                    paddingVertical: 4,
-                    borderRadius: 4,
-                }}
-            >
-                <Text
+            {showPunishment && (
+                <View
                     style={{
-                        color: '#FFFFFF',
-                        fontSize: 12,
-                        fontWeight: '600',
-                        textAlign: 'center',
+                        marginTop: 4,
+                        backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                        paddingHorizontal: 8,
+                        paddingVertical: 4,
+                        borderRadius: 4,
                     }}
-                    numberOfLines={2}
                 >
-                    {punishment}
-                </Text>
-            </View>
+                    <Text
+                        style={{
+                            color: '#FFFFFF',
+                            fontSize: 12,
+                            fontWeight: '600',
+                            textAlign: 'center',
+                        }}
+                        numberOfLines={2}
+                    >
+                        {punishment}
+                    </Text>
+                </View>
+            )}
         </Animated.View>
     );
 };

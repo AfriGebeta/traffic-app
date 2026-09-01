@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ruleService } from '../services/rule.service';
 import { TrafficRuleType } from '../types/rule.types';
 import { useTranslation } from 'react-i18next';
-import { RULE_TRANSLATION_MAP } from '../utils/ruleTranslations';
+import { RULE_TRANSLATION_MAP, sortRuleTypes } from '../utils/ruleTranslations';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 
 export default function RuleContributionScreen() {
@@ -23,7 +23,7 @@ export default function RuleContributionScreen() {
     const loadRuleTypes = async () => {
         try {
             const types = await ruleService.getRuleTypes();
-            setRuleTypes(types);
+            setRuleTypes(sortRuleTypes(types));
         } catch (error) {
             console.error('Failed to load rule types:', error);
         } finally {
@@ -41,6 +41,7 @@ export default function RuleContributionScreen() {
             params: {
                 typeId: ruleType.id,
                 typeName: displayName,
+                typeRawName: ruleType.name,
                 typeDescription: displayDescription,
                 typeImg: ruleType.img,
                 isNavigating: isNavigating ?? '',
