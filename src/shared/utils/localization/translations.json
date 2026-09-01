@@ -3470,6 +3470,16 @@
         "AM": "ያውርዱ"
     },
     {
+        "key": "update-now",
+        "EN_US": "Update now",
+        "AM": "አሁን ያውርዱ"
+    },
+    {
+        "key": "later",
+        "EN_US": "Later",
+        "AM": "በኋላ"
+    },
+    {
         "key": "cafe",
         "EN_US": "Cafe",
         "AM": "ካፌ"

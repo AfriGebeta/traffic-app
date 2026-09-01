@@ -40,42 +40,53 @@ export function UpdateBanner({ visible, latestVersion, storeUrl }: Props) {
     return (
         <View
             className="absolute left-0 right-0 px-4"
-            style={{ top: insets.top + 8 }}
+            style={{ bottom: insets.bottom + 16 }}
             pointerEvents="box-none"
         >
             <View
-                className="flex-row items-center rounded-2xl px-4 py-3"
+                className="rounded-2xl px-4 pt-4 pb-3"
                 style={{
                     backgroundColor: isDark ? theme.surface : '#FFFFFF',
                     shadowColor: '#000',
                     shadowOpacity: 0.15,
                     shadowRadius: 8,
-                    shadowOffset: { width: 0, height: 2 },
+                    shadowOffset: { width: 0, height: -2 },
                     elevation: 5,
                 }}
             >
-                <Ionicons name="arrow-up-circle" size={22} color={palette.primary.main} />
-                <View className="flex-1 ml-3">
-                    <Text className="text-sm font-semibold" style={{ color: theme.textPrimary }}>
-                        {t('new-version-available') || 'New version available'}
-                    </Text>
-                    <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }}>
-                        {t('update-for-latest-features') || 'Update to get the latest features and fixes'}
-                    </Text>
+                <View className="flex-row items-center">
+                    <Ionicons name="arrow-up-circle" size={22} color={palette.primary.main} />
+                    <View className="flex-1 ml-3">
+                        <Text className="text-sm font-semibold" style={{ color: theme.textPrimary }}>
+                            {t('new-version-available') || 'New version available'}
+                        </Text>
+                        <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }}>
+                            {t('update-for-latest-features') || 'Update to get the latest features and fixes'}
+                        </Text>
+                    </View>
                 </View>
-                <Pressable
-                    className="rounded-xl px-3 py-2 ml-2"
-                    style={{ backgroundColor: palette.primary.main }}
-                    onPress={() => {
-                        dismiss();
-                        Linking.openURL(storeUrl).catch(() => undefined);
-                    }}
-                >
-                    <Text className="text-white text-xs font-bold">{t('update') || 'Update'}</Text>
-                </Pressable>
-                <Pressable className="ml-1 p-1" onPress={dismiss} hitSlop={8}>
-                    <Ionicons name="close" size={18} color={theme.textSecondary} />
-                </Pressable>
+                <View className="flex-row items-center mt-4">
+                    <Pressable
+                        className="flex-1 rounded-xl py-3 items-center"
+                        onPress={dismiss}
+                    >
+                        <Text className="text-sm font-semibold" style={{ color: theme.textSecondary }}>
+                            {t('later') || 'Later'}
+                        </Text>
+                    </Pressable>
+                    <Pressable
+                        className="flex-1 rounded-xl py-3 items-center ml-2"
+                        style={{ backgroundColor: palette.primary.main }}
+                        onPress={() => {
+                            dismiss();
+                            Linking.openURL(storeUrl).catch(() => undefined);
+                        }}
+                    >
+                        <Text className="text-white text-sm font-bold">
+                            {t('update-now') || 'Update now'}
+                        </Text>
+                    </Pressable>
+                </View>
             </View>
         </View>
     );
