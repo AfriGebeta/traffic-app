@@ -237,6 +237,8 @@ interface ExtendedGebetaMapProps extends Omit<GebetaMapProps, 'center'> {
     } | null;
     alternativeRoutesGeoJSON?: any[];
     routeTimeLabels?: Array<{ coordinate: [number, number]; label: string; isPrimary: boolean }>;
+    // a camera move has run on this map, so it needs the stale-stop guard
+    syncCameraStopOnGesture?: boolean;
 }
 
 
@@ -297,6 +299,10 @@ const NavigationMarker = memo(forwardRef<any, {
 NavigationMarker.displayName = 'NavigationMarker';
 
 const WALK_DASH_PATTERN = [0.1, 2];
+
+// small enough to read as a settle rather than a jump, large enough that the native
+// camera treats it as a real move instead of collapsing it into a no-op
+const PREVIEW_CAMERA_WAKE_ZOOM_NUDGE = 0.4;
 
 const useForegroundEpoch = () => {
     const [epoch, setEpoch] = useState(0);
@@ -885,7 +891,7 @@ AnimatedNavLayer.displayName = 'AnimatedNavLayer';
 
 
 const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
-    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, isHomeMap, staticInitialCamera, freeCamera, maneuvers, boundingBox, alternativeRoutesGeoJSON, routeTimeLabels }, ref) => {
+    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, isHomeMap, staticInitialCamera, freeCamera, maneuvers, boundingBox, alternativeRoutesGeoJSON, routeTimeLabels, syncCameraStopOnGesture }, ref) => {
         const { isDark } = useTheme();
         const foregroundEpoch = useForegroundEpoch();
         const [mapStyleState, setMapStyleState] = useState<Record<string, unknown> | null>(() =>
@@ -967,6 +973,9 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
         const cameraSuspendedRef = useRef(false);
         const cameraResumeUntilRef = useRef(0);
+        const neutralizeStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+        const previewCameraRefreshedRef = useRef(false);
+        const previewCameraRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
         const NAV_ZOOM = getAppConfig().navZoom;
         const lastSetZoom = useRef<number>(NAV_ZOOM);
         const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -1016,6 +1025,8 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             });
         }, [center, zoom, isNavigating]);
 
+        const neutralizeCameraStopRef = useRef<((afterMs: number) => void) | null>(null);
+
         const applyFlyTo = useCallback((options: {
             center: [number, number];
             zoom?: number;
@@ -1050,6 +1061,8 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         cameraRef.current.setCamera(cameraConfig);
                     }
                 }, 300);
+                // once the move has landed, drop the stored stop
+                neutralizeCameraStopRef.current?.((options.duration ?? 1000) + 400);
             } else {
                 pendingFlyTo.current = options;
             }
@@ -1504,6 +1517,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                     animationDuration: 400,
                     animationMode: 'easeTo',
                 });
+                neutralizeCameraStopRef.current?.(800);
                 return true;
             };
 
@@ -1573,56 +1587,100 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 : EMPTY_FEATURE_COLLECTION
         ), [hasAlternativeRoutes, alternativeRoutesGeoJSON]);
 
+        const neutralizeCameraStop = useCallback((afterMs: number) => {
+            if (!syncCameraStopOnGesture) return;
+            if (neutralizeStopTimerRef.current) {
+                clearTimeout(neutralizeStopTimerRef.current);
+            }
+            neutralizeStopTimerRef.current = setTimeout(() => {
+                cameraRef.current?.setCamera({
+                    animationDuration: 0,
+                    animationMode: 'moveTo',
+                });
+            }, afterMs);
+        }, [syncCameraStopOnGesture]);
+
+        useEffect(() => {
+            neutralizeCameraStopRef.current = neutralizeCameraStop;
+        }, [neutralizeCameraStop]);
+
+        useEffect(() => () => {
+            if (neutralizeStopTimerRef.current) {
+                clearTimeout(neutralizeStopTimerRef.current);
+            }
+        }, []);
+        const unstickPreviewCamera = useCallback(() => {
+            homeFollowPausedRef.current = true;
+            pendingFlyTo.current = null;
+            flyToTokenRef.current += 1;
+
+            const settledCenter = lastRegionCenterRef.current;
+            const settledZoom = lastKnownZoomRef.current;
+            const target = settledCenter && settledZoom !== null
+                ? { center: settledCenter, zoom: settledZoom }
+                : lastFreeCameraRef.current
+                ?? (center ? { center, zoom: zoom ?? 15 } : null);
+
+            if (!target || !cameraRef.current) return;
+
+            markHomeCommand(target.center, target.zoom);
+            cameraRef.current.setCamera({
+                centerCoordinate: target.center,
+                zoomLevel: target.zoom + PREVIEW_CAMERA_WAKE_ZOOM_NUDGE,
+                animationDuration: 0,
+                animationMode: 'moveTo',
+            });
+
+            requestAnimationFrame(() => {
+                markHomeCommand(target.center, target.zoom);
+                lastFreeCameraRef.current = target;
+                cameraRef.current?.setCamera({
+                    centerCoordinate: target.center,
+                    zoomLevel: target.zoom,
+                    animationDuration: 250,
+                    animationMode: 'easeTo',
+                });
+            });
+        }, [markHomeCommand, center, zoom]);
+
+        const rebuildCameraInPlace = useCallback(() => {
+            homeFollowPausedRef.current = true;
+            pendingFlyTo.current = null;
+            flyToTokenRef.current += 1;
+
+            const settledCenter = lastRegionCenterRef.current;
+            const settledZoom = lastKnownZoomRef.current;
+            const target = settledCenter && settledZoom !== null
+                ? { center: settledCenter, zoom: settledZoom }
+                : lastFreeCameraRef.current
+                ?? (center ? { center, zoom: zoom ?? 15 } : null);
+
+            if (target) {
+                lastFreeCameraRef.current = target;
+                setHomeCameraTarget(target);
+                markHomeCommand(target.center, target.zoom);
+            }
+
+            setHomeCameraEpoch((current) => current + 1);
+
+            if (target) {
+                requestAnimationFrame(() => {
+                    cameraRef.current?.setCamera({
+                        centerCoordinate: target.center,
+                        zoomLevel: target.zoom,
+                        animationDuration: 0,
+                        animationMode: 'moveTo',
+                    });
+                    neutralizeCameraStopRef.current?.(300);
+                });
+            }
+        }, [markHomeCommand, center, zoom]);
+
         useImperativeHandle(ref, () => ({
             flyTo: (options: any) => {
                 applyFlyTo(options);
             },
-            /**
-             * Rebuild the Camera in place, keeping the current view. Returning to a screen
-             * whose map stayed mounted under another map leaves the native camera unable to
-             * hold user gestures; remounting it (the one thing recenterOnce does that fixes
-             * this) clears that without moving the view.
-             */
-            refreshCamera: () => {
-                // everything recenterOnce does, except the camera move: pausing follow is what
-                // stops the explore-centre effect re-applying the center prop, and the epoch
-                // bump rebuilds the Camera. together they are what the recentre button does
-                // that makes the map controllable again.
-                homeFollowPausedRef.current = true;
-                pendingFlyTo.current = null;
-                flyToTokenRef.current += 1;
-
-                const settledCenter = lastRegionCenterRef.current;
-                const settledZoom = lastKnownZoomRef.current;
-                const target = settledCenter && settledZoom !== null
-                    ? { center: settledCenter, zoom: settledZoom }
-                    : lastFreeCameraRef.current;
-
-                if (target) {
-                    // the remounted Camera reads defaultSettings from this, so it comes back
-                    // exactly where the user left it instead of jumping
-                    lastFreeCameraRef.current = target;
-                    setHomeCameraTarget(target);
-                    markHomeCommand(target.center, target.zoom);
-                }
-
-                setHomeCameraEpoch((current) => current + 1);
-
-                // the remount alone was not enough: issue a real setCamera at the current
-                // position after the new Camera mounts, which is the part of recenterOnce
-                // that actually makes the map controllable again. no visible movement.
-                if (target) {
-                    requestAnimationFrame(() => {
-                        cameraRef.current?.setCamera({
-                            centerCoordinate: target.center,
-                            zoomLevel: target.zoom,
-                            animationDuration: 0,
-                            animationMode: 'moveTo',
-                        });
-                    });
-                }
-
-            },
+            refreshCamera: rebuildCameraInPlace,
             recenterOnce: (options: { center: [number, number]; zoom?: number }) => {
                 homeFollowPausedRef.current = true;
                 pendingFlyTo.current = null;
@@ -1695,7 +1753,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             updateNavigationPosition: () => { },
             getNavigationState: () => null,
             isNavigating: () => false,
-        }), [applyFlyTo, markAnimatedProgrammaticCamera, markHomeCommand, NAV_ZOOM, zoom]);
+        }), [applyFlyTo, markAnimatedProgrammaticCamera, markHomeCommand, rebuildCameraInPlace, NAV_ZOOM, zoom]);
 
         useEffect(() => {
             if (mapStyleJson) {
@@ -1783,6 +1841,14 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             }
             onMapLoaded?.();
 
+            if (externalCameraControl && staticInitialCamera && !previewCameraRefreshedRef.current) {
+                previewCameraRefreshedRef.current = true;
+                if (previewCameraRefreshTimerRef.current) {
+                    clearTimeout(previewCameraRefreshTimerRef.current);
+                }
+                previewCameraRefreshTimerRef.current = setTimeout(unstickPreviewCamera, 300);
+            }
+
             if (userLocation && showUserLocationMarker && !isNavigating && !routeOrigin) {
                 setRenderKey(prev => prev + 1);
                 setTimeout(() => setRenderKey(prev => prev + 1), 100);
@@ -1797,9 +1863,15 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             showUserLocationMarker,
             isNavigating,
             routeOrigin,
+            staticInitialCamera,
+            unstickPreviewCamera,
         ]);
 
-
+        useEffect(() => () => {
+            if (previewCameraRefreshTimerRef.current) {
+                clearTimeout(previewCameraRefreshTimerRef.current);
+            }
+        }, []);
 
         const showFollowCamera = isNavigating && !navCameraFree;
         const showExploreCamera = !isNavigating && externalCameraControl;
@@ -1838,6 +1910,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             const frameId = requestAnimationFrame(() => setHomeCameraTarget(null));
             return () => cancelAnimationFrame(frameId);
         }, [homeCameraTarget]);
+
 
         if (!mapStyleState || !center) {
             return (
@@ -1985,6 +2058,9 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                     center: [centerCoords[0], centerCoords[1]],
                                     zoom: zoomLevel,
                                 };
+                                if (props?.isUserInteraction === true) {
+                                    neutralizeCameraStop(0);
+                                }
                             }
                         }}
                         onDidFinishLoadingMap={handleMapLoad}
@@ -2009,8 +2085,8 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             if (route.geoJSON.geometry.coordinates.length === 0) return null;
                             const isCurrentSegment = currentTaxiSegmentIndex === route.segmentIndex;
                             const lineStyle: any = {
-                                lineColor: route.isWalking ? '#EF4444' : '#3B82F6',
-                                lineWidth: route.isWalking ? 5 : 7,
+                                lineColor: route.isWalking ? colors.route.walking : colors.route.main,
+                                lineWidth: route.isWalking ? 6 : 7,
                                 lineOpacity: isCurrentSegment ? 1 : 0.7,
                                 lineCap: 'round',
                                 lineJoin: 'round',
@@ -2040,66 +2116,14 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             <MapLibreGL.LineLayer
                                 id="route-alternative-layer"
                                 style={{
-                                    lineColor: colors.primary.main,
+                                    lineColor: colors.route.alternative,
                                     lineWidth: 5,
-                                    lineOpacity: 0.5,
+                                    lineOpacity: 0.85,
                                     lineCap: 'round',
                                     lineJoin: 'round',
                                 }}
                             />
                         </MapLibreGL.ShapeSource>
-
-                        {hasAlternativeRoutes && routeTimeLabels?.map((item, i) => (
-                            <MapLibreGL.PointAnnotation
-                                key={`route-time-label-${i}`}
-                                id={`route-time-label-${i}`}
-                                coordinate={item.coordinate}
-                                anchor={{ x: 0.5, y: 1 }}
-                            >
-                                <View collapsable={false} style={{ width: 120, height: 44, alignItems: 'center', justifyContent: 'flex-end' }}>
-                                    <View
-                                        collapsable={false}
-                                        style={{
-                                            backgroundColor: '#FFFFFF',
-                                            paddingHorizontal: 10,
-                                            paddingVertical: 5,
-                                            borderRadius: 14,
-                                            borderWidth: 1,
-                                            borderColor: item.isPrimary ? colors.primary.main : '#D1D5DB',
-                                            shadowColor: '#000',
-                                            shadowOpacity: 0.2,
-                                            shadowRadius: 4,
-                                            shadowOffset: { width: 0, height: 1 },
-                                            elevation: 3,
-                                        }}
-                                    >
-                                        <Text
-                                            style={{
-                                                color: '#374151',
-                                                fontSize: 12,
-                                                fontWeight: '700',
-                                            }}
-                                            numberOfLines={1}
-                                        >
-                                            {item.label}
-                                        </Text>
-                                    </View>
-                                    <View
-                                        style={{
-                                            width: 0,
-                                            height: 0,
-                                            borderLeftWidth: 5,
-                                            borderRightWidth: 5,
-                                            borderTopWidth: 6,
-                                            borderLeftColor: 'transparent',
-                                            borderRightColor: 'transparent',
-                                            borderTopColor: item.isPrimary ? colors.primary.main : '#D1D5DB',
-                                            marginTop: -1,
-                                        }}
-                                    />
-                                </View>
-                            </MapLibreGL.PointAnnotation>
-                        ))}
 
                         <MapLibreGL.ShapeSource
                             key={`route-preview-source-${routeStyle?.isDotted ? 'dotted' : 'solid'}`}
@@ -2182,7 +2206,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                     <MapLibreGL.LineLayer
                                         id={`taxi-segment-${index}-layer`}
                                         style={{
-                                            lineColor: colors.primary.main,
+                                            lineColor: colors.route.main,
                                             lineWidth: 6,
                                             lineOpacity: 0.8,
                                             lineCap: 'round',
@@ -2201,7 +2225,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                 if (mapCoords.length < 2) return null;
 
 
-                                const color = isTaxiNavigation ? '#3B82F6' : '#EF4444';
+                                const color = isTaxiNavigation ? '#3B82F6' : colors.route.walking;
 
                                 const walkGeoJSON = {
                                     type: 'Feature' as const,
@@ -2221,10 +2245,11 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                             id={`taxi-walk-${route.type}-${index}-layer`}
                                             style={{
                                                 lineColor: color,
-                                                lineWidth: isTaxiNavigation ? 4 : 8,
+                                                lineWidth: isTaxiNavigation ? 4 : 6,
                                                 lineOpacity: 1,
-                                                lineDasharray: [2, 2], //dotted line
+                                                lineDasharray: WALK_DASH_PATTERN,
                                                 lineCap: 'round',
+                                                lineJoin: 'round',
                                             }}
                                         />
                                     </MapLibreGL.ShapeSource>
@@ -2310,6 +2335,59 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                 </MapLibreGL.ShapeSource>
                             );
                         })()}
+
+                        {hasAlternativeRoutes && routeTimeLabels?.map((item, i) => (
+                            <MapLibreGL.MarkerView
+                                key={`route-time-label-${i}`}
+                                id={`route-time-label-${i}`}
+                                coordinate={item.coordinate}
+                                anchor={{ x: 0.5, y: 1 }}
+                                allowOverlap
+                            >
+                                <View collapsable={false} style={{ width: 120, height: 44, alignItems: 'center', justifyContent: 'flex-end' }}>
+                                    <View
+                                        collapsable={false}
+                                        style={{
+                                            backgroundColor: '#FFFFFF',
+                                            paddingHorizontal: 10,
+                                            paddingVertical: 5,
+                                            borderRadius: 14,
+                                            borderWidth: 1,
+                                            borderColor: item.isPrimary ? colors.route.main : '#D1D5DB',
+                                            shadowColor: '#000',
+                                            shadowOpacity: 0.2,
+                                            shadowRadius: 4,
+                                            shadowOffset: { width: 0, height: 1 },
+                                            elevation: 3,
+                                        }}
+                                    >
+                                        <Text
+                                            style={{
+                                                color: '#374151',
+                                                fontSize: 12,
+                                                fontWeight: '700',
+                                            }}
+                                            numberOfLines={1}
+                                        >
+                                            {item.label}
+                                        </Text>
+                                    </View>
+                                    <View
+                                        style={{
+                                            width: 0,
+                                            height: 0,
+                                            borderLeftWidth: 5,
+                                            borderRightWidth: 5,
+                                            borderTopWidth: 6,
+                                            borderLeftColor: 'transparent',
+                                            borderRightColor: 'transparent',
+                                            borderTopColor: item.isPrimary ? colors.route.main : '#D1D5DB',
+                                            marginTop: -1,
+                                        }}
+                                    />
+                                </View>
+                            </MapLibreGL.MarkerView>
+                        ))}
 
                         <AnimatedNavLayer
                             userLocation={userLocation ?? null}

@@ -79,7 +79,7 @@ export default function RouteDirectionsPreviewScreen() {
         return { center: fallback, zoom: 13 };
     });
     const mapRouteStyle = useMemo(() => ({
-        color: colors.primary.main,
+        color: colors.route.main,
         width: 6,
         opacity: 0.9,
     }), []);

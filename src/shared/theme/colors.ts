@@ -18,6 +18,12 @@ export const colors = {
     },
     white: '#FFFFFF',
     black: '#000000',
+    route: {
+        walking: '#A14795',
+        main: '#007D82',
+        mainCasing: '#005A5E',
+        alternative: '#7FBFC2',
+    },
 } as const;
 
 export const lightTheme = {

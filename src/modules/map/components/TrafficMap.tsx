@@ -768,6 +768,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
 
     // same rebuild after navigation ends: the nav camera leaves the same stuck state behind
     const wasNavigatingRef = useRef(false);
+    const [returnedFromNavigation, setReturnedFromNavigation] = useState(false);
     useEffect(() => {
         if (navigationMode) {
             wasNavigatingRef.current = true;
@@ -775,13 +776,12 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         }
         if (!wasNavigatingRef.current) return;
         wasNavigatingRef.current = false;
+        setReturnedFromNavigation(true);
         if (userLocation) {
             (mapRef.current as any)?.recenterOnce?.({
                 center: [userLocation.lng, userLocation.lat],
                 zoom: USER_LOCATION_ZOOM,
             });
-            // navigation leaves the camera pitched at 60° and rotated to the travel heading;
-            // the recentre above moves it but keeps those angles. level it back to north-up.
             requestAnimationFrame(() => {
                 mapRef.current?.flyTo({
                     center: [userLocation.lng, userLocation.lat],
@@ -1177,7 +1177,9 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 }
                 routeTimeLabels={routeTimeLabels}
                 routeStyle={{
-                    color: navigationMode ? '#3B82F6' : colors.primary.main,
+                    color: navigationMode
+                        ? '#3B82F6'
+                        : (currentCosting === 'pedestrian' ? colors.route.walking : colors.route.main),
                     width: 5,
                     opacity: 0.8,
                     isDotted: currentCosting === 'pedestrian',
@@ -1216,6 +1218,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 taxiRouteSegments={taxiRouteSegments || undefined}
                 waypointMarkers={waypoints.length > 0 ? waypoints.map(wp => ({ latitude: wp.latitude, longitude: wp.longitude, name: wp.name })) : undefined}
                 externalCameraControl={!navigationMode}
+                syncCameraStopOnGesture={!navigationMode && (showRoutePreview || returnedFromNavigation)}
                 isHomeMap
             />
 
