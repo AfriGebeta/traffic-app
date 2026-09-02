@@ -768,7 +768,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
 
     // same rebuild after navigation ends: the nav camera leaves the same stuck state behind
     const wasNavigatingRef = useRef(false);
-    const [returnedFromNavigation, setReturnedFromNavigation] = useState(false);
     useEffect(() => {
         if (navigationMode) {
             wasNavigatingRef.current = true;
@@ -776,7 +775,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         }
         if (!wasNavigatingRef.current) return;
         wasNavigatingRef.current = false;
-        setReturnedFromNavigation(true);
         if (userLocation) {
             (mapRef.current as any)?.recenterOnce?.({
                 center: [userLocation.lng, userLocation.lat],
@@ -1218,7 +1216,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 taxiRouteSegments={taxiRouteSegments || undefined}
                 waypointMarkers={waypoints.length > 0 ? waypoints.map(wp => ({ latitude: wp.latitude, longitude: wp.longitude, name: wp.name })) : undefined}
                 externalCameraControl={!navigationMode}
-                syncCameraStopOnGesture={!navigationMode && (showRoutePreview || returnedFromNavigation)}
                 isHomeMap
             />
 

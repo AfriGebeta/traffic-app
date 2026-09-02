@@ -237,8 +237,6 @@ interface ExtendedGebetaMapProps extends Omit<GebetaMapProps, 'center'> {
     } | null;
     alternativeRoutesGeoJSON?: any[];
     routeTimeLabels?: Array<{ coordinate: [number, number]; label: string; isPrimary: boolean }>;
-    // a camera move has run on this map, so it needs the stale-stop guard
-    syncCameraStopOnGesture?: boolean;
 }
 
 
@@ -891,7 +889,7 @@ AnimatedNavLayer.displayName = 'AnimatedNavLayer';
 
 
 const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
-    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, isHomeMap, staticInitialCamera, freeCamera, maneuvers, boundingBox, alternativeRoutesGeoJSON, routeTimeLabels, syncCameraStopOnGesture }, ref) => {
+    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, isHomeMap, staticInitialCamera, freeCamera, maneuvers, boundingBox, alternativeRoutesGeoJSON, routeTimeLabels }, ref) => {
         const { isDark } = useTheme();
         const foregroundEpoch = useForegroundEpoch();
         const [mapStyleState, setMapStyleState] = useState<Record<string, unknown> | null>(() =>
@@ -1023,6 +1021,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 animationDuration: 0,
                 animationMode: 'moveTo',
             });
+            neutralizeCameraStopRef.current?.(200);
         }, [center, zoom, isNavigating]);
 
         const neutralizeCameraStopRef = useRef<((afterMs: number) => void) | null>(null);
@@ -1185,6 +1184,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 animationDuration: firstApply ? 0 : 500,
                 animationMode: firstApply ? 'moveTo' : 'easeTo',
             });
+            neutralizeCameraStopRef.current?.(firstApply ? 200 : 900);
         }, [centerLng, centerLat, isNavigating, externalCameraControl, staticInitialCamera]);
 
         useEffect(() => {
@@ -1232,6 +1232,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 animationDuration: 500,
                 animationMode: 'easeTo',
             });
+            neutralizeCameraStopRef.current?.(900);
         }, [userLocation?.lat, userLocation?.lng, isNavigating, externalCameraControl, isHomeMap, freeCamera]);
 
         const applyRecenterFlyTo = useCallback(() => {
@@ -1588,7 +1589,8 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
         ), [hasAlternativeRoutes, alternativeRoutesGeoJSON]);
 
         const neutralizeCameraStop = useCallback((afterMs: number) => {
-            if (!syncCameraStopOnGesture) return;
+            // navigation drives the camera every frame on purpose, so its stop is never stale
+            if (isNavigating) return;
             if (neutralizeStopTimerRef.current) {
                 clearTimeout(neutralizeStopTimerRef.current);
             }
@@ -1598,7 +1600,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                     animationMode: 'moveTo',
                 });
             }, afterMs);
-        }, [syncCameraStopOnGesture]);
+        }, [isNavigating]);
 
         useEffect(() => {
             neutralizeCameraStopRef.current = neutralizeCameraStop;
@@ -1640,6 +1642,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                     animationDuration: 250,
                     animationMode: 'easeTo',
                 });
+                neutralizeCameraStopRef.current?.(500);
             });
         }, [markHomeCommand, center, zoom]);
 
@@ -1828,6 +1831,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                     animationDuration: 0,
                     animationMode: 'moveTo',
                 });
+                neutralizeCameraStopRef.current?.(200);
             }
             pendingStyleRestoreRef.current = false;
         }, [externalCameraControl, markHomeCommand]);
