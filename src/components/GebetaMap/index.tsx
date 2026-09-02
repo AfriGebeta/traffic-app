@@ -814,17 +814,19 @@ const AnimatedNavLayer = memo(({
             )}
             {isNavigating && lineShape && (
                 <MapLibreGL.ShapeSource ref={lineSrcRef} id="route-nav-animated-source" shape={lineShape}>
-                    <MapLibreGL.LineLayer
-                        id="route-nav-casing-layer"
-                        belowLayerID="nav-marker-layer"
-                        style={{
-                            lineColor: '#1e3a8a',
-                            lineWidth: (routeLineStyle.lineWidth ?? 16) + 4,
-                            lineOpacity: 0.5,
-                            lineCap: 'round',
-                            lineJoin: 'round',
-                        }}
-                    />
+                    {!routeLineStyle.lineDasharray && (
+                        <MapLibreGL.LineLayer
+                            id="route-nav-casing-layer"
+                            belowLayerID="nav-marker-layer"
+                            style={{
+                                lineColor: '#1e3a8a',
+                                lineWidth: (routeLineStyle.lineWidth ?? 16) + 4,
+                                lineOpacity: 0.5,
+                                lineCap: 'round',
+                                lineJoin: 'round',
+                            }}
+                        />
+                    )}
                     <MapLibreGL.LineLayer
                         id="route-nav-animated-layer"
                         belowLayerID="nav-marker-layer"
