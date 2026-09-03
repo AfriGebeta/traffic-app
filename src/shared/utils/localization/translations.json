@@ -575,6 +575,11 @@
         "AM": "ለመቀጠል ይመዝገቡ"
     },
     {
+        "key": "register-or-login-to-continue",
+        "EN_US": "Register or login to continue",
+        "AM": "ለመቀጠል ይመዝገቡ ወይም ይግቡ"
+    },
+    {
         "key": "or",
         "EN_US": "Or",
         "AM": "ወይም"
@@ -590,9 +595,24 @@
         "AM": "እባክዎ ይመዝገቡ"
     },
     {
+        "key": "please-register-or-login",
+        "EN_US": "Please Register or Login",
+        "AM": "እባክዎ ይመዝገቡ ወይም ይግቡ"
+    },
+    {
+        "key": "register-or-login",
+        "EN_US": "Register / Login",
+        "AM": "ይመዝገቡ / ይግቡ"
+    },
+    {
         "key": "register-to-access-profile",
         "EN_US": "Register to access your profile and track your contributions",
         "AM": "መገለጫዎን ለማግኘት እና አስተዋፅዖዎን ለመከታተል ይመዝገቡ"
+    },
+    {
+        "key": "register-or-login-to-access-profile",
+        "EN_US": "Register or login to access your profile and track your contributions",
+        "AM": "መገለጫዎን ለማግኘት እና አስተዋፅዖዎን ለመከታተል ይመዝገቡ ወይም ይግቡ"
     },
     {
         "key": "your-points",
@@ -1988,6 +2008,16 @@
         "key": "or-pick-on-map",
         "EN_US": "Or pick on map",
         "AM": "ወይም በካርታ ላይ ይምረጡ"
+    },
+    {
+        "key": "no-station-matches",
+        "EN_US": "No station matches",
+        "AM": "ጣቢያ አልተገኘም"
+    },
+    {
+        "key": "add",
+        "EN_US": "Add",
+        "AM": "ጨምር"
     },
     {
         "key": "find-taxi-route",
@@ -3438,5 +3468,50 @@
         "key": "update",
         "EN_US": "Update",
         "AM": "ያውርዱ"
+    },
+    {
+        "key": "update-now",
+        "EN_US": "Update now",
+        "AM": "አሁን ያውርዱ"
+    },
+    {
+        "key": "later",
+        "EN_US": "Later",
+        "AM": "በኋላ"
+    },
+    {
+        "key": "cafe",
+        "EN_US": "Cafe",
+        "AM": "ካፌ"
+    },
+    {
+        "key": "clinic",
+        "EN_US": "Clinic",
+        "AM": "ክሊኒክ"
+    },
+    {
+        "key": "pharmacy",
+        "EN_US": "Pharmacy",
+        "AM": "ፋርማሲ"
+    },
+    {
+        "key": "school",
+        "EN_US": "School",
+        "AM": "ትምህርት ቤት"
+    },
+    {
+        "key": "place-category",
+        "EN_US": "Category",
+        "AM": "አይነት"
+    },
+    {
+        "key": "place-category-placeholder",
+        "EN_US": "e.g. Car wash, Bakery, Gym",
+        "AM": "ለምሳሌ የመኪና እጥበት፣ ዳቦ ቤት፣ ጂም"
+    },
+    {
+        "key": "place-category-hint",
+        "EN_US": "Tell us what kind of place this is",
+        "AM": "ይህ ቦታ ምን ዓይነት እንደሆነ ይንገሩን"
     }
 ]

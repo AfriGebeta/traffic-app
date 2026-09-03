@@ -12,13 +12,15 @@ import { useTranslation } from 'react-i18next';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { isPunishableRule, NO_PUNISHMENT_VALUE } from '../utils/ruleTranslations';
 
 export default function AddRuleReportScreen() {
     const router = useRouter();
     const { t } = useTranslation();
     const { colors: theme, isDark } = useTheme();
     const params = useLocalSearchParams();
-    const { typeId, typeName, typeDescription, typeImg } = params;
+    const { typeId, typeName, typeRawName, typeDescription, typeImg } = params;
+    const requiresPunishment = isPunishableRule(typeRawName as string);
     const { selectedLocation, setSelectedLocation } = useLocation();
     const { userLocation } = useUserLocation();
 
@@ -35,11 +37,14 @@ export default function AddRuleReportScreen() {
     const [submitting, setSubmitting] = useState(false);
     const [usingCurrentLocation, setUsingCurrentLocation] = useState(isNavigating && !!navCoordinates);
 
+    const autoFilledLocation = React.useRef(false);
+
     React.useEffect(() => {
-        if (!isNavigating || coordinates || !userLocation) return;
+        if (autoFilledLocation.current || coordinates || !userLocation) return;
+        autoFilledLocation.current = true;
         setCoordinates(userLocation);
         setUsingCurrentLocation(true);
-    }, [isNavigating, coordinates, userLocation]);
+    }, [coordinates, userLocation]);
 
     useFocusEffect(
         React.useCallback(() => {
@@ -66,7 +71,7 @@ export default function AddRuleReportScreen() {
     };
 
     const handleSubmit = async () => {
-        if (!punishment.trim()) {
+        if (requiresPunishment && !punishment.trim()) {
             showToast(`${t('punishment-required')}: ${t('enter-punishment-details')}`);
             return;
         }
@@ -82,7 +87,7 @@ export default function AddRuleReportScreen() {
                 lat: coordinates.lat,
                 lng: coordinates.lng,
                 typeId: typeId as string,
-                punishment: punishment.trim(),
+                punishment: requiresPunishment ? punishment.trim() : NO_PUNISHMENT_VALUE,
             });
 
             dashboardEventsService.contribute();
@@ -137,49 +142,89 @@ export default function AddRuleReportScreen() {
 
             <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
                 <View className="gap-5 pb-6">
-                    <View>
-                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
-                            {t('punishment')} <Text style={{ color: theme.primary }}>*</Text>
-                        </Text>
-                        <Input
-                            placeholder={t('punishment-placeholder')}
-                            value={punishment}
-                            onChangeText={setPunishment}
-                            multiline
-                            numberOfLines={3}
-                        />
-                        <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>
-                            {t('punishment-description')}
-                        </Text>
-                    </View>
+                    {requiresPunishment && (
+                        <View>
+                            <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
+                                {t('punishment')} <Text style={{ color: theme.primary }}>*</Text>
+                            </Text>
+                            <Input
+                                placeholder={t('punishment-placeholder')}
+                                value={punishment}
+                                onChangeText={setPunishment}
+                                multiline
+                                numberOfLines={3}
+                            />
+                            <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>
+                                {t('punishment-description')}
+                            </Text>
+                        </View>
+                    )}
 
                     <View>
                         <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
                             {t('location')} <Text style={{ color: theme.primary }}>*</Text>
                         </Text>
                         {coordinates ? (
-                            <View className="rounded-xl p-4" style={{ backgroundColor: isDark ? theme.greenMuted : '#F0FDF4', borderWidth: 1, borderColor: theme.green }}>
-                                <View className="flex-row items-center justify-between">
-                                    <View className="flex-1">
-                                        <Text className="font-semibold" style={{ color: theme.textPrimary }}>
-                                            {usingCurrentLocation ? t('current-location') : t('location-selected')}
-                                        </Text>
-                                        <Text className="text-sm" style={{ color: theme.textSecondary }}>
-                                            {coordinates.lat.toFixed(7)}, {coordinates.lng.toFixed(7)}
-                                        </Text>
+                            <View>
+                                <View className="rounded-xl p-4" style={{ backgroundColor: isDark ? theme.greenMuted : '#F0FDF4', borderWidth: 1, borderColor: theme.green }}>
+                                    <View className="flex-row items-center justify-between">
+                                        <View className="flex-1">
+                                            <Text className="font-semibold" style={{ color: theme.textPrimary }}>
+                                                {usingCurrentLocation ? t('current-location') : t('location-selected')}
+                                            </Text>
+                                            <Text className="text-sm" style={{ color: theme.textSecondary }}>
+                                                {coordinates.lat.toFixed(7)}, {coordinates.lng.toFixed(7)}
+                                            </Text>
+                                        </View>
+                                        {!isNavigating && (
+                                            <TouchableOpacity onPress={() => { setCoordinates(null); setUsingCurrentLocation(false); }}>
+                                                <Ionicons name="close-circle" size={24} color={theme.error} />
+                                            </TouchableOpacity>
+                                        )}
                                     </View>
-                                    {!isNavigating && (
-                                        <TouchableOpacity onPress={() => { setCoordinates(null); setUsingCurrentLocation(false); }}>
-                                            <Ionicons name="close-circle" size={24} color={theme.error} />
-                                        </TouchableOpacity>
-                                    )}
                                 </View>
+                                {!isNavigating && (
+                                    <>
+                                        <View className="flex-row items-center justify-center my-2">
+                                            <View className="flex-1 h-px" style={{ backgroundColor: theme.border }} />
+                                            <Text className="text-sm mx-3" style={{ color: theme.textSecondary }}>{t('or')}</Text>
+                                            <View className="flex-1 h-px" style={{ backgroundColor: theme.border }} />
+                                        </View>
+                                        <TouchableOpacity
+                                            className="rounded-2xl px-4 py-2 flex-row items-center justify-between"
+                                            onPress={handlePickLocation}
+                                            activeOpacity={0.7}
+                                            style={{
+                                                backgroundColor: theme.surface,
+                                                borderWidth: 2,
+                                                borderColor: theme.border,
+                                                shadowColor: '#000',
+                                                shadowOffset: { width: 0, height: 1 },
+                                                shadowOpacity: 0.05,
+                                                shadowRadius: 4,
+                                                elevation: 1,
+                                            }}
+                                        >
+                                            <View className="flex-row items-center flex-1">
+                                                <View className="w-10 h-10 rounded-full items-center justify-center" style={{ backgroundColor: isDark ? theme.background : '#F3F4F6' }}>
+                                                    <Ionicons name="map" size={20} color={theme.textSecondary} />
+                                                </View>
+                                                <View className="ml-3 flex-1">
+                                                    <Text className="text-sm font-medium" style={{ color: theme.textSecondary }}>
+                                                        {t('pick-location-on-map')}
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                            <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+                                        </TouchableOpacity>
+                                    </>
+                                )}
                             </View>
                         ) : (
                             <View>
                                 {!isNavigating && (
                                     <TouchableOpacity
-                                        className="rounded-2xl p-4 flex-row items-center justify-between mb-2"
+                                        className="rounded-2xl px-4 py-2 flex-row items-center justify-between mb-2"
                                         onPress={handlePickLocation}
                                         activeOpacity={0.7}
                                         style={{
@@ -233,7 +278,7 @@ export default function AddRuleReportScreen() {
                 <Button
                     title={submitting ? t('submitting') : t('submit-report')}
                     onPress={handleSubmit}
-                    disabled={submitting || !punishment.trim() || !coordinates}
+                    disabled={submitting || (requiresPunishment && !punishment.trim()) || !coordinates}
                 />
             </View>
         </View>

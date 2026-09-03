@@ -14,6 +14,7 @@ import { showToast } from '../../../shared/utils/toast';
 import type { SavedPlace } from '../../places/types/place.types';
 import { taxiService } from '../../taxi/services/taxi.service';
 import { navigationService } from '../services/navigation.service';
+import { calculateDistance } from '../utils/navigationUtils';
 import type { TaxiNavigationResponse } from '../../taxi/types/taxi.types';
 import LekfelPaySheet from '../../taxi/components/LekfelPaySheet';
 
@@ -25,10 +26,12 @@ interface RoutePreviewProps {
     onSimulateToggle: () => void;
     onStartNavigation: () => void;
     onStartTaxiNavigation?: (taxiRoute: TaxiNavigationResponse) => void;
+    onPreviewTaxiRoute?: (taxiRoute: TaxiNavigationResponse) => void;
     onCancel: () => void;
     destination?: GeocodingPlace | null;
     userLocation?: { lat: number; lng: number } | null;
     onTaxiRouteChange?: (taxiRoute: TaxiNavigationResponse | null) => void;
+    initialTaxiRoute?: TaxiNavigationResponse | null;
     initialMode?: 'driving' | 'taxi' | 'walking';
     onModeChange?: (mode: 'driving' | 'taxi' | 'walking') => void;
     waypoints?: GeocodingPlace[];
@@ -42,6 +45,11 @@ interface RoutePreviewProps {
     onSelectRoute?: (index: number) => void;
     isFetchingRoute?: boolean;
 }
+
+const ORIGIN_REFETCH_METERS = 150;
+
+const metersBetween = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) =>
+    calculateDistance(a.lat, a.lng, b.lat, b.lng);
 
 const formatDistance = (meters: number): string => {
     if (meters < 1000) {
@@ -78,10 +86,12 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
     onSimulateToggle,
     onStartNavigation,
     onStartTaxiNavigation,
+    onPreviewTaxiRoute,
     onCancel,
     destination,
     userLocation,
     onTaxiRouteChange,
+    initialTaxiRoute = null,
     initialMode = 'driving',
     onModeChange,
     waypoints = [],
@@ -103,7 +113,10 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
 
     const [transportMode, setTransportMode] = useState<'driving' | 'taxi' | 'walking'>(initialMode);
     const [showPaySheet, setShowPaySheet] = useState(false);
-    const [taxiRoute, setTaxiRoute] = useState<TaxiNavigationResponse | null>(null);
+    const [taxiRoute, setTaxiRoute] = useState<TaxiNavigationResponse | null>(initialTaxiRoute);
+    const taxiRouteOriginRef = useRef<{ lat: number; lng: number } | null>(
+        initialTaxiRoute?.origin ? { lat: initialTaxiRoute.origin.lat, lng: initialTaxiRoute.origin.lng } : null
+    );
     const [loadingTaxiRoute, setLoadingTaxiRoute] = useState(false);
     const [taxiRouteError, setTaxiRouteError] = useState<string | null>(null);
     const [walkingRoute, setWalkingRoute] = useState<{ distance: number; duration: number } | null>(null);
@@ -217,9 +230,15 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
 
     useEffect(() => {
         const coords = getOriginCoords();
-        if (transportMode === 'taxi' && destination && coords && !taxiRoute) {
+        if (!coords) return;
+
+        const originMoved = taxiRouteOriginRef.current !== null
+            && !isCustomOrigin
+            && metersBetween(taxiRouteOriginRef.current, coords) > ORIGIN_REFETCH_METERS;
+
+        if (transportMode === 'taxi' && destination && (!taxiRoute || originMoved)) {
             fetchTaxiRoute();
-        } else if (transportMode === 'walking' && destination && coords && !walkingRoute) {
+        } else if (transportMode === 'walking' && destination && !walkingRoute) {
             fetchWalkingRoute();
         }
     }, [transportMode, destination, userLocation, origin]);
@@ -228,6 +247,8 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
         const coords = getOriginCoords();
         if (!destination || !coords) return;
 
+        taxiRouteOriginRef.current = coords;
+
         setLoadingTaxiRoute(true);
         setTaxiRouteError(null);
         try {
@@ -235,6 +256,14 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                 origin: [coords.lat, coords.lng],
                 destination: [destination.latitude, destination.longitude],
             });
+
+            if (__DEV__) {
+                console.log('[Taxi] origin sent:', coords,
+                    '| live location:', userLocation,
+                    '| origin echoed back:', result.origin,
+                    '| boarding node:', result.startNode?.name,
+                    '| first segment:', result.segments?.[0]?.type ?? result.segments?.[0]?.mode);
+            }
 
             if (!result.startNode || !result.endNode) {
                 setTaxiRouteError(t('taxi-route-unavailable'));
@@ -327,10 +356,14 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
 
     const handleStartNavigation = () => {
         if (transportMode === 'taxi') {
-            if (taxiRoute && onStartTaxiNavigation) {
-                onStartTaxiNavigation(taxiRoute);
-            } else {
+            if (!taxiRoute) {
                 showToast('No taxi route available');
+                return;
+            }
+            if (isCustomOrigin && onPreviewTaxiRoute) {
+                onPreviewTaxiRoute(taxiRoute);
+            } else if (onStartTaxiNavigation) {
+                onStartTaxiNavigation(taxiRoute);
             }
         } else {
             onStartNavigation();
@@ -581,12 +614,19 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                 zIndex: 20,
                             }}
                         >
-                            <Text
-                                className="text-lg"
-                                style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Bold' }}
-                            >
-                                {t('pay')}
-                            </Text>
+                            <View className="flex-row items-center">
+                                <Text
+                                    className="text-lg"
+                                    style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Bold' }}
+                                >
+                                    {t('pay')}
+                                </Text>
+                                <Image
+                                    source={require('../../../../assets/images/telebirr-logo.png')}
+                                    style={{ width: 24, height: 24, marginLeft: 8 }}
+                                    resizeMode="contain"
+                                />
+                            </View>
                             <View className="flex-row items-baseline">
                                 <Text style={{ color: theme.textSecondary }}>{t('powered-by')} </Text>
                                 <Text style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Bold' }}>
@@ -837,7 +877,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                             }}
                                         >
                                             <Text className="text-white text-xl font-bold">
-                                                {transportMode === 'taxi' || !isCustomOrigin ? t('go') : t('preview')}
+                                                {!isCustomOrigin ? t('go') : t('preview')}
                                             </Text>
                                         </TouchableOpacity>
                                     </View>

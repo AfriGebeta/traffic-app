@@ -9,6 +9,19 @@ export interface ChatStreamRequest {
     originLng?: number;
 }
 
+export const resetChatSession = async (sessionId: string): Promise<void> => {
+    if (!sessionId) return;
+    try {
+        const response = await fetch(`${API_URL}/api/asr/chat/reset`, {
+            method: 'POST',
+            headers: { 'x-session-id': sessionId },
+        });
+        console.log('voicenav: chat reset', sessionId, response.status);
+    } catch (error) {
+        console.log('voicenav: chat reset failed', String(error));
+    }
+};
+
 const DONE = '[DONE]';
 export const streamChat = (
     request: ChatStreamRequest,

@@ -1,9 +1,10 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Platform } from 'react-native';
-import { getRemoteConfig, fetchAndActivate, getString, getValue, setDefaults, setConfigSettings } from '@react-native-firebase/remote-config';
+import { getRemoteConfig, fetchAndActivate, getString, getValue, getAll, setDefaults, setConfigSettings } from '@react-native-firebase/remote-config';
 import semver from 'semver';
 import * as Application from 'expo-application';
 import { buildRemoteConfigDefaults, hydrateAppConfig, getAppConfig, RC_KEYS } from '../config/remoteConfigValues';
+import { initializeAppCheckSingleton, getAppCheckToken } from '../utils/appCheck';
 
 const FALLBACK_API_KEY = process.env.EXPO_PUBLIC_GEBETA_API_KEY ?? '';
 
@@ -77,7 +78,25 @@ export function RemoteConfigProvider({ children }: { children: ReactNode }) {
         ...buildRemoteConfigDefaults(),
       });
       await setConfigSettings(rc, { minimumFetchIntervalMillis: 0 });
-      await fetchAndActivate(rc);
+
+      // Remote Config may be App Check enforced — make sure a token exists before fetching
+      initializeAppCheckSingleton();
+      const appCheckToken = await getAppCheckToken();
+      console.log(`remoteconfig: appcheck token before fetch: ${appCheckToken ? 'present' : 'MISSING'}`);
+
+      try {
+        const activated = await fetchAndActivate(rc);
+        console.log(
+          `remoteconfig: fetchAndActivate activated=${activated}, lastFetchStatus=${rc.lastFetchStatus}, fetchTime=${rc.fetchTimeMillis}`
+        );
+      } catch (e) {
+        console.error('remoteconfig: fetchAndActivate FAILED', e);
+      }
+      const all = getAll(rc);
+      const remoteKeys = Object.keys(all).filter((k) => all[k].getSource() === 'remote');
+      console.log(
+        `remoteconfig: template has ${Object.keys(all).length} keys, ${remoteKeys.length} from remote: ${remoteKeys.join(', ') || '(none)'}`
+      );
 
       hydrateAppConfig(rc);
 
@@ -93,6 +112,9 @@ export function RemoteConfigProvider({ children }: { children: ReactNode }) {
 
       const apiKey = getString(rc, 'gebeta_api_key') || FALLBACK_API_KEY;
       const minVersion = getString(rc, MIN_VERSION_KEY);
+      console.log(
+        `remoteconfig: source ${MIN_VERSION_KEY}=${getValue(rc, MIN_VERSION_KEY).getSource()}, ${LATEST_VERSION_KEY}=${getValue(rc, LATEST_VERSION_KEY).getSource()}`
+      );
       const currentVersion = Application.nativeApplicationVersion ?? '0.0.0';
       const storeUrl = getString(rc, STORE_URL_KEY) || FALLBACK_STORE_URL;
 

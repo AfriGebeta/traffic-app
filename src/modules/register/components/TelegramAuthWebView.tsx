@@ -52,6 +52,7 @@ export function TelegramAuthWebView({
     const webViewRef = useRef<WebView>(null);
     const onboardTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [isCompletingLogin, setIsCompletingLogin] = useState(false);
+    const [attempt, setAttempt] = useState(0);
 
     const startUrl = useMemo(
         () => getTelegramWebViewStartUrl(i18n.language?.slice(0, 2) || 'en'),
@@ -86,6 +87,7 @@ export function TelegramAuthWebView({
     const resetHandledState = () => {
         handledRef.current = false;
         setIsCompletingLogin(false);
+        setAttempt((n) => n + 1);
     };
 
     const finishWithIdToken = (idToken: string, source: string) => {
@@ -308,7 +310,7 @@ export function TelegramAuthWebView({
                 ) : (
                     <WebView
                         ref={webViewRef}
-                        key={startUrl}
+                        key={`${startUrl}-${attempt}`}
                         style={styles.webview}
                         source={{ uri: startUrl }}
                         userAgent={WEBVIEW_USER_AGENT}

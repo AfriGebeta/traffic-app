@@ -1,4 +1,4 @@
-export type PlaceType = 'gas_station' | 'taxi_station' | 'restaurant' | 'parking' | 'hospital' | 'building' | 'company' | 'government' | 'mall' | 'shop' | 'other';
+export type PlaceType = 'gas_station' | 'taxi_station' | 'restaurant' | 'cafe' | 'parking' | 'hospital' | 'clinic' | 'pharmacy' | 'bank' | 'atm' | 'hotel' | 'school' | 'park' | 'building' | 'company' | 'government' | 'mall' | 'shop' | 'other';
 
 export interface Place {
     id: string;
@@ -15,11 +15,12 @@ export interface Place {
 
 export interface PlaceContributionRequest {
     name: string;
-    type: PlaceType;
+    type: PlaceType | (string & {});
     lat: number;
     lng: number;
     description: string;
     images: string[];
+    customType?: string;
 }
 
 export type SavedPlaceType = 'HOME' | 'WORK' | 'FAVORITE' | 'CUSTOM';
@@ -78,8 +79,16 @@ export const PLACE_TYPES = [
     { id: 'gas_station', label: 'Gas Station', icon: 'water' as const, color: '#EF4444' },
     { id: 'taxi_station', label: 'Taxi Station', icon: 'car' as const, color: '#3B82F6' },
     { id: 'restaurant', label: 'Restaurant', icon: 'restaurant' as const, color: '#10B981' },
+    { id: 'cafe', label: 'Cafe', icon: 'cafe' as const, color: '#B45309' },
     { id: 'parking', label: 'Parking', icon: 'car' as const, color: '#8B5CF6' },
     { id: 'hospital', label: 'Hospital', icon: 'medical' as const, color: '#EC4899' },
+    { id: 'clinic', label: 'Clinic', icon: 'medkit' as const, color: '#F472B6' },
+    { id: 'pharmacy', label: 'Pharmacy', icon: 'bandage' as const, color: '#14B8A6' },
+    { id: 'bank', label: 'Bank', icon: 'cash' as const, color: '#0EA5E9' },
+    { id: 'atm', label: 'ATM', icon: 'card' as const, color: '#6366F1' },
+    { id: 'hotel', label: 'Hotel', icon: 'bed' as const, color: '#A855F7' },
+    { id: 'school', label: 'School', icon: 'school' as const, color: '#F97316' },
+    { id: 'park', label: 'Park', icon: 'leaf' as const, color: '#22C55E' },
     { id: 'building', label: 'Building', icon: 'business' as const, color: '#F59E0B' },
     { id: 'company', label: 'Company', icon: 'briefcase' as const, color: '#06B6D4' },
     { id: 'government', label: 'Government Office', icon: 'shield' as const, color: '#8B5CF6' },

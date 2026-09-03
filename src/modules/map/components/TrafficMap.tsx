@@ -47,7 +47,7 @@ import { decodeTaxiSegmentPaths } from '../../navigation/utils/navigationUtils';
 import { exploreService } from '../services/exploreService';
 import type { TaxiNavigationResponse } from '../../taxi/types/taxi.types';
 import { setNavigationPreviewData } from '../../navigation/services/navigationPreviewCache';
-import { buildPreviewSteps } from '../../navigation/utils/navigationPreviewUtils';
+import { buildPreviewSteps, fitBoundsToCoords } from '../../navigation/utils/navigationPreviewUtils';
 
 interface TrafficMapProps {
     sharedLocation?: SharedLocation | null;
@@ -61,6 +61,9 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     const searchMarkerRef = useRef<any>(null);
     const processedSharedLocationRef = useRef<SharedLocation | null>(null);
     const processedVoiceDestRef = useRef<string | null>(null);
+    const processedTaxiDestRef = useRef<string | null>(null);
+    const processedTaxiRouteRef = useRef<number | null>(null);
+    const fittedTaxiRouteRef = useRef<string | null>(null);
     const [voiceNavStarting, setVoiceNavStarting] = useState(false);
     const sharedFlyToTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const router = useRouter();
@@ -218,13 +221,33 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         clearSearchMarker();
     };
 
+    const clearTaxiOverlays = useCallback(() => {
+        setTaxiRouteData(null);
+        setTaxiStations(null);
+        setTaxiWalkRoutes(null);
+        setTaxiRouteSegments(null);
+    }, []);
+
     const handleCancelRoutePreview = useCallback(() => {
         setShowRoutePreview(false);
         setShowPlaceDetail(false);
         handleClearRoute();
         setClickedLocation(null);
-        setTaxiRouteData(null);
+        clearTaxiOverlays();
         setIsFromTaxiSearch(false);
+
+        // the route fit leaves the native camera unable to hold a gesture — panning snaps back
+        // until a real camera move happens. rebuilding in place is not enough (a setCamera to
+        // the current position is a native no-op), so do exactly what the recentre button does
+        // and move to the user, which is also where they expect to land after closing a route.
+        if (userLocation) {
+            (mapRef.current as any)?.recenterOnce?.({
+                center: [userLocation.lng, userLocation.lat],
+                zoom: USER_LOCATION_ZOOM,
+            });
+        } else {
+            (mapRef.current as any)?.refreshCamera?.();
+        }
 
         router.setParams({
             taxiDestLat: undefined,
@@ -232,7 +255,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
             taxiDestName: undefined,
             showTaxiMode: undefined,
         });
-    }, [handleClearRoute, setShowRoutePreview]);
+    }, [handleClearRoute, setShowRoutePreview, clearTaxiOverlays]);
 
     const handleContributeFromPlaceDetail = (location: { lat: number; lng: number }) => {
         setShowPlaceDetail(false);
@@ -658,6 +681,17 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     useEffect(() => {
 
         if (taxiDestination && userLocation) {
+            const globalTaxiRoute = (globalThis as any).__taxiRouteData;
+
+            const key = `${taxiDestination.lat},${taxiDestination.lng}`;
+            const isFreshPayload = !!globalTaxiRoute?.timestamp
+                && globalTaxiRoute.timestamp !== processedTaxiRouteRef.current;
+
+            if (!isFreshPayload && processedTaxiDestRef.current === key) return;
+
+            processedTaxiDestRef.current = key;
+            if (isFreshPayload) processedTaxiRouteRef.current = globalTaxiRoute.timestamp;
+
             const place: GeocodingPlace = {
                 id: `taxi-dest-${taxiDestination.lat}-${taxiDestination.lng}`,
                 name: taxiDestination.name,
@@ -682,14 +716,13 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
             setSelectedDestination(place);
             setIsFromTaxiSearch(true);
 
-
-            const globalTaxiRoute = (globalThis as any).__taxiRouteData;
-
             if (globalTaxiRoute && globalTaxiRoute.timestamp) {
+                setRouteOrigin(globalTaxiRoute.customOrigin ?? null);
                 setTaxiRouteData(globalTaxiRoute);
                 setShowRoutePreview(true);
                 delete (globalThis as any).__taxiRouteData;
             } else {
+                setRouteOrigin(null);
                 setTimeout(() => {
                     handleNavigate(setUserLocation, place);
                 }, 100);
@@ -733,6 +766,35 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         if (navigationMode) setVoiceNavStarting(false);
     }, [navigationMode]);
 
+    // same rebuild after navigation ends: the nav camera leaves the same stuck state behind
+    const wasNavigatingRef = useRef(false);
+    useEffect(() => {
+        if (navigationMode) {
+            wasNavigatingRef.current = true;
+            return;
+        }
+        if (!wasNavigatingRef.current) return;
+        wasNavigatingRef.current = false;
+        if (userLocation) {
+            (mapRef.current as any)?.recenterOnce?.({
+                center: [userLocation.lng, userLocation.lat],
+                zoom: USER_LOCATION_ZOOM,
+            });
+            requestAnimationFrame(() => {
+                mapRef.current?.flyTo({
+                    center: [userLocation.lng, userLocation.lat],
+                    zoom: USER_LOCATION_ZOOM,
+                    pitch: 0,
+                    heading: 0,
+                    duration: 400,
+                } as any);
+            });
+        } else {
+            (mapRef.current as any)?.refreshCamera?.();
+        }
+    }, [navigationMode]);
+
+
     useEffect(() => {
         if (!voiceNavStarting) return;
         const timer = setTimeout(() => setVoiceNavStarting(false), 15000);
@@ -753,6 +815,8 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
             setTaxiRouteSegments(null);
             return;
         }
+
+        let cancelled = false;
 
         const fetchIntermediateNodes = async () => {
             const stations: Array<{ id: number; name: string; lat: number; lng: number; type: 'start' | 'end' | 'intermediate' }> = [
@@ -801,6 +865,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 type: 'end'
             });
 
+            if (cancelled) return;
             setTaxiStations(stations);
         };
 
@@ -879,6 +944,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 }
             }
 
+            if (cancelled) return;
             setTaxiWalkRoutes(walkRoutes);
         };
 
@@ -904,6 +970,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     .filter((leg: any) => leg.coordinates.length >= 2);
 
                 if (legs.length > 0) {
+                    if (cancelled) return;
                     setTaxiRouteSegments(legs);
                     return;
                 }
@@ -916,6 +983,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     destination: [taxiRouteData.endNode.lat, taxiRouteData.endNode.lng]
                 });
 
+                if (cancelled) return;
                 if (routeData?.data?.trip?.legs?.[0]?.shape) {
                     const decodedCoords = decodePolyline(routeData.data.trip.legs[0].shape, 6);
                     const mapCoords: [number, number][] = decodedCoords.map(([lat, lng]) => [lng, lat] as [number, number]);
@@ -940,6 +1008,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 }
             } catch (error) {
                 // console.error('taxi route Error fetching driving route:', error);
+                if (cancelled) return;
                 if (taxiRouteData.startNode && taxiRouteData.endNode && taxiRouteData.summary) {
                     setTaxiRouteSegments([{
                         coordinates: [
@@ -956,32 +1025,35 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
 
         fetchTaxiDrivingRoute();
 
-        if (mapRef.current && isMapLoaded) {
-            const allCoords = [
+        const routeKey = [
+            taxiRouteData.startNode.id,
+            taxiRouteData.endNode.id,
+            taxiRouteData.destination.lat,
+            taxiRouteData.destination.lng,
+        ].join(',');
+
+        if (mapRef.current && isMapLoaded && fittedTaxiRouteRef.current !== routeKey) {
+            fittedTaxiRouteRef.current = routeKey;
+
+            const fit = fitBoundsToCoords([
                 [taxiRouteData.origin.lng, taxiRouteData.origin.lat],
                 [taxiRouteData.startNode.lng, taxiRouteData.startNode.lat],
                 [taxiRouteData.endNode.lng, taxiRouteData.endNode.lat],
                 [taxiRouteData.destination.lng, taxiRouteData.destination.lat],
-            ];
+            ]);
 
-            const lngs = allCoords.map(c => c[0]);
-            const lats = allCoords.map(c => c[1]);
-            const minLng = Math.min(...lngs);
-            const maxLng = Math.max(...lngs);
-            const minLat = Math.min(...lats);
-            const maxLat = Math.max(...lats);
-
-            const centerLng = (minLng + maxLng) / 2;
-            const centerLat = (minLat + maxLat) / 2;
-
-            setTimeout(() => {
-                mapRef.current?.flyTo({
-                    center: [centerLng, centerLat],
-                    zoom: 13,
-                    duration: 1000,
-                });
-            }, 100);
+            if (fit) {
+                setTimeout(() => {
+                    mapRef.current?.flyTo({
+                        center: fit.center,
+                        zoom: Math.max(fit.zoom - 1, 9),
+                        duration: 1000,
+                    });
+                }, 100);
+            }
         }
+
+        return () => { cancelled = true; };
     }, [taxiRouteData, isMapLoaded]);
 
     useEffect(() => {
@@ -1103,7 +1175,9 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 }
                 routeTimeLabels={routeTimeLabels}
                 routeStyle={{
-                    color: navigationMode ? '#3B82F6' : colors.primary.main,
+                    color: navigationMode
+                        ? '#3B82F6'
+                        : (currentCosting === 'pedestrian' ? colors.route.walking : colors.route.main),
                     width: 5,
                     opacity: 0.8,
                     isDotted: currentCosting === 'pedestrian',
@@ -1296,11 +1370,20 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                                 simulateMovement: simulateMovement.toString(),
                             },
                         });
+                        handleCancelRoutePreview();
+                    }}
+                    onPreviewTaxiRoute={(taxiRoute) => {
+                        router.push({
+                            pathname: '/taxi/route-preview',
+                            params: { routeData: JSON.stringify(taxiRoute) },
+                        });
+                        handleCancelRoutePreview();
                     }}
                     onCancel={handleCancelRoutePreview}
                     destination={selectedDestination}
                     userLocation={userLocation}
                     onTaxiRouteChange={(taxiRoute) => setTaxiRouteData(taxiRoute)}
+                    initialTaxiRoute={isFromTaxiSearch ? taxiRouteData : null}
                     onModeChange={(mode) => {
                         if (mode === 'walking') {
                             setCurrentCosting('pedestrian');

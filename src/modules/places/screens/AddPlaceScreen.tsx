@@ -16,29 +16,14 @@ import { dashboardEventsService } from '../../../shared/services/dashboard-event
 import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { getPlaceIcon } from '../utils/placeIcons';
 
-import GasStationLight from '../../../../assets/images/contribute-place-gas-station-light.svg';
-import GasStationDark from '../../../../assets/images/contribute-place-gas-station-dark.svg';
-import TaxiLight from '../../../../assets/images/contribute-place-taxi-light.svg';
-import TaxiDark from '../../../../assets/images/contribute-place-taxi-dark.svg';
-import RestaurantLight from '../../../../assets/images/contribute-place-restaurant-light.svg';
-import RestaurantDark from '../../../../assets/images/contribute-place-restaurant-dark.svg';
-import ParkingLight from '../../../../assets/images/contribute-place-parking-light.svg';
-import ParkingDark from '../../../../assets/images/contribute-place-parking-dark.svg';
-import HospitalLight from '../../../../assets/images/contribute-place-hospital-light.svg';
-import HospitalDark from '../../../../assets/images/contribute-place-hospital-dark.svg';
-import BuildingLight from '../../../../assets/images/contribute-place-building-light.svg';
-import BuildingDark from '../../../../assets/images/contribute-place-building-dark.svg';
-import CompanyLight from '../../../../assets/images/contribute-place-company-light.svg';
-import CompanyDark from '../../../../assets/images/contribute-place-company-dark.svg';
-import GovernmentLight from '../../../../assets/images/contribute-place-government-light.svg';
-import GovernmentDark from '../../../../assets/images/contribute-place-government-dark.svg';
-import MallLight from '../../../../assets/images/contribute-place-mall-light.svg';
-import MallDark from '../../../../assets/images/contribute-place-mall-dark.svg';
-import ShopLight from '../../../../assets/images/contribute-place-shop-light.svg';
-import ShopDark from '../../../../assets/images/contribute-place-shop-dark.svg';
-import MoreLight from '../../../../assets/images/contribute-place-more-light.svg';
-import MoreDark from '../../../../assets/images/contribute-place-more-dark.svg';
+const toCategorySlug = (label: string): string =>
+    label
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_|_$/g, '');
 
 export default function AddPlaceScreen() {
     const { t } = useTranslation();
@@ -53,14 +38,24 @@ export default function AddPlaceScreen() {
     const { userLocation } = useUserLocation();
 
     const [name, setName] = useState('');
+    const [customCategory, setCustomCategory] = useState('');
     const [description, setDescription] = useState('');
     const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
     const [images, setImages] = useState<{ localUri: string; objectName: string }[]>([]);
     const [uploading, setUploading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [usingCurrentLocation, setUsingCurrentLocation] = useState(false);
+    const autoFilledLocation = React.useRef(false);
 
     const placeInfo = PLACE_TYPES.find((p) => p.id === placeType);
+    const needsCustomCategory = placeType === 'other';
+
+    React.useEffect(() => {
+        if (autoFilledLocation.current || coordinates || !userLocation) return;
+        autoFilledLocation.current = true;
+        setCoordinates(userLocation);
+        setUsingCurrentLocation(true);
+    }, [coordinates, userLocation]);
 
     useFocusEffect(
         React.useCallback(() => {
@@ -151,11 +146,16 @@ export default function AddPlaceScreen() {
             return;
         }
 
+        if (needsCustomCategory && !customCategory.trim()) {
+            return;
+        }
+
         setSubmitting(true);
         try {
             await placeService.contributePlace({
                 name: name.trim(),
-                type: placeType,
+                type: needsCustomCategory ? toCategorySlug(customCategory) || 'other' : placeType,
+                customType: needsCustomCategory ? customCategory.trim() : undefined,
                 lat: coordinates.lat,
                 lng: coordinates.lng,
                 description: description.trim(),
@@ -190,28 +190,16 @@ export default function AddPlaceScreen() {
             <View className="mx-6 mt-6 mb-4 rounded-2xl p-4 flex-row items-center" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
                 <View className="w-12 h-12 items-center justify-center mr-4">
                     {(() => {
-                        const placeIconMap: Record<string, React.FC<{ width?: number; height?: number }>> = {
-                            'gas_station': isDark ? GasStationDark : GasStationLight,
-                            'taxi_station': isDark ? TaxiDark : TaxiLight,
-                            'restaurant': isDark ? RestaurantDark : RestaurantLight,
-                            'parking': isDark ? ParkingDark : ParkingLight,
-                            'hospital': isDark ? HospitalDark : HospitalLight,
-                            'building': isDark ? BuildingDark : BuildingLight,
-                            'company': isDark ? CompanyDark : CompanyLight,
-                            'government': isDark ? GovernmentDark : GovernmentLight,
-                            'mall': isDark ? MallDark : MallLight,
-                            'shop': isDark ? ShopDark : ShopLight,
-                            'other': isDark ? MoreDark : MoreLight,
-                        };
-
-                        const Icon = placeIconMap[placeType] ?? (isDark ? MoreDark : MoreLight);
+                        const Icon = getPlaceIcon(placeType, isDark);
 
                         return <Icon width={40} height={40} />;
                     })()}
                 </View>
                 <View className="flex-1">
                     <Text className="text-lg font-bold" style={{ color: theme.textPrimary }}>
-                        {placeType ? t(getPlaceTranslationKey(placeType)) : placeInfo?.label}
+                        {needsCustomCategory && customCategory.trim()
+                            ? customCategory.trim()
+                            : placeType ? t(getPlaceTranslationKey(placeType)) : placeInfo?.label}
                     </Text>
                     <Text className="text-sm" style={{ color: theme.textSecondary }}>{t('fill-in-the-details')}</Text>
                 </View>
@@ -226,6 +214,22 @@ export default function AddPlaceScreen() {
                         </Text>
                         <Input placeholder={t('place-name-placeholder')} value={name} onChangeText={setName} />
                     </View>
+
+                    {needsCustomCategory && (
+                        <View>
+                            <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
+                                {t('place-category')} <Text style={{ color: theme.primary }}>*</Text>
+                            </Text>
+                            <Input
+                                placeholder={t('place-category-placeholder')}
+                                value={customCategory}
+                                onChangeText={setCustomCategory}
+                            />
+                            <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>
+                                {t('place-category-hint')}
+                            </Text>
+                        </View>
+                    )}
 
                     <View>
                         <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('description')}</Text>
@@ -243,25 +247,59 @@ export default function AddPlaceScreen() {
                             {t('location')} <Text style={{ color: theme.primary }}>*</Text>
                         </Text>
                         {coordinates ? (
-                            <View className="rounded-xl p-4" style={{ backgroundColor: isDark ? theme.greenMuted : '#F0FDF4', borderWidth: 1, borderColor: theme.green }}>
-                                <View className="flex-row items-center justify-between">
-                                    <View className="flex-1">
-                                        <Text className="font-semibold" style={{ color: theme.textPrimary }}>
-                                            {usingCurrentLocation ? t('current-location') : t('location-selected')}
-                                        </Text>
-                                        <Text className="text-sm" style={{ color: theme.textSecondary }}>
-                                            {coordinates.lat.toFixed(7)}, {coordinates.lng.toFixed(7)}
-                                        </Text>
+                            <View>
+                                <View className="rounded-xl p-4" style={{ backgroundColor: isDark ? theme.greenMuted : '#F0FDF4', borderWidth: 1, borderColor: theme.green }}>
+                                    <View className="flex-row items-center justify-between">
+                                        <View className="flex-1">
+                                            <Text className="font-semibold" style={{ color: theme.textPrimary }}>
+                                                {usingCurrentLocation ? t('current-location') : t('location-selected')}
+                                            </Text>
+                                            <Text className="text-sm" style={{ color: theme.textSecondary }}>
+                                                {coordinates.lat.toFixed(7)}, {coordinates.lng.toFixed(7)}
+                                            </Text>
+                                        </View>
+                                        <TouchableOpacity onPress={() => { setCoordinates(null); setUsingCurrentLocation(false); }}>
+                                            <Ionicons name="close-circle" size={24} color={theme.error} />
+                                        </TouchableOpacity>
                                     </View>
-                                    <TouchableOpacity onPress={() => { setCoordinates(null); setUsingCurrentLocation(false); }}>
-                                        <Ionicons name="close-circle" size={24} color={theme.error} />
-                                    </TouchableOpacity>
                                 </View>
+                                <View className="flex-row items-center justify-center my-2">
+                                    <View className="flex-1 h-px" style={{ backgroundColor: theme.border }} />
+                                    <Text className="text-sm mx-3" style={{ color: theme.textSecondary }}>{t('or')}</Text>
+                                    <View className="flex-1 h-px" style={{ backgroundColor: theme.border }} />
+                                </View>
+                                <TouchableOpacity
+                                    className="rounded-2xl px-4 py-2 flex-row items-center justify-between"
+                                    onPress={handlePickLocation}
+                                    activeOpacity={0.7}
+                                    style={{
+                                        backgroundColor: theme.surface,
+                                        borderWidth: 2,
+                                        borderColor: theme.border,
+                                        shadowColor: '#000',
+                                        shadowOffset: { width: 0, height: 1 },
+                                        shadowOpacity: 0.05,
+                                        shadowRadius: 4,
+                                        elevation: 1,
+                                    }}
+                                >
+                                    <View className="flex-row items-center flex-1">
+                                        <View className="w-10 h-10 rounded-full items-center justify-center" style={{ backgroundColor: isDark ? theme.background : '#F3F4F6' }}>
+                                            <Ionicons name="map" size={20} color={theme.textSecondary} />
+                                        </View>
+                                        <View className="ml-3 flex-1">
+                                            <Text className="text-sm font-medium" style={{ color: theme.textSecondary }}>
+                                                {t('pick-location-on-map')}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                    <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+                                </TouchableOpacity>
                             </View>
                         ) : (
                             <View>
                                 <TouchableOpacity
-                                    className="rounded-2xl p-4 flex-row items-center justify-between mb-2"
+                                    className="rounded-2xl px-4 py-2 flex-row items-center justify-between mb-2"
                                     onPress={handlePickLocation}
                                     activeOpacity={0.7}
                                     style={{
@@ -368,7 +406,7 @@ export default function AddPlaceScreen() {
                 <Button
                     title={submitting ? t('submitting') : t('submit-contribution')}
                     onPress={handleSubmit}
-                    disabled={submitting || !name.trim() || !coordinates}
+                    disabled={submitting || !name.trim() || !coordinates || (needsCustomCategory && !customCategory.trim())}
                 />
             </View>
         </View>

@@ -14,6 +14,7 @@ import { BottomNavigation } from './BottomNavigation';
 import { MapThemeSelector } from './MapThemeSelector';
 import { RoutePointsBar } from '../../navigation/components/RoutePointsBar';
 import { showToast } from '../../../shared/utils/toast';
+import { useAuthGate } from '../../register/hooks/useAuthGate';
 import { colors } from '../../../shared/theme/colors';
 import type { RecentSearch } from '../../navigation/services/recentSearch.service';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
@@ -124,6 +125,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
     const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { requireAuth } = useAuthGate();
     const [showThemeSelector, setShowThemeSelector] = useState(false);
     const [layersButtonTop, setLayersButtonTop] = useState(0);
 
@@ -238,19 +240,23 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
 
             <BottomNavigation
                 onTabPress={(tabId) => {
-                    if (tabId === 'report') {
-                        onReportPress();
-                    } else if (tabId === 'explore') {
-                        onExplorePress();
-                    } else if (tabId === 'saved') {
-                        router.push('/saved-places');
-                    } else if (tabId === 'ai') {
-                        router.push('/ai-assistant');
-                    } else {
-                        showToast(`${t('coming-soon')}: ${tabId}`);
-                    }
+                    void requireAuth(() => {
+                        if (tabId === 'report') {
+                            onReportPress();
+                        } else if (tabId === 'explore') {
+                            onExplorePress();
+                        } else if (tabId === 'saved') {
+                            router.push('/saved-places');
+                        } else if (tabId === 'ai') {
+                            router.push('/ai-assistant');
+                        } else {
+                            showToast(`${t('coming-soon')}: ${tabId}`);
+                        }
+                    });
                 }}
-                onAddPress={onAddPlacePress}
+                onAddPress={() => {
+                    void requireAuth(onAddPlacePress);
+                }}
             />
 
             <MapThemeSelector

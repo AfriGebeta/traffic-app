@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
+    BackHandler,
     View,
     Text,
     TextInput,
@@ -11,7 +12,7 @@ import {
     Platform,
     StatusBar,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../../../shared/theme/colors';
 import { showToast } from '../../../shared/utils/toast';
@@ -62,6 +63,11 @@ export default function CompleteProfileScreen() {
             cancelled = true;
         };
     }, [router]);
+
+    useEffect(() => {
+        const subscription = BackHandler.addEventListener('hardwareBackPress', () => true);
+        return () => subscription.remove();
+    }, []);
 
     const continueToApp = async () => {
         const route = await getPostAuthRoute();
@@ -140,6 +146,7 @@ export default function CompleteProfileScreen() {
             behavior="padding"
             keyboardVerticalOffset={0}
         >
+            <Stack.Screen options={{ gestureEnabled: false, headerBackVisible: false }} />
             <StatusBar barStyle="dark-content" backgroundColor="#ffffff" translucent={false} />
 
             <ScrollView

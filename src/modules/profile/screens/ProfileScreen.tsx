@@ -217,17 +217,17 @@ export const ProfileScreen = () => {
                         <Ionicons name="person-outline" size={48} color="#fff" />
                     </View>
                     <Text className="text-2xl font-bold mb-3" style={{ color: theme.textPrimary }}>
-                        {t('please-register')}
+                        {t('please-register-or-login')}
                     </Text>
                     <Text className="text-center mb-8 text-base" style={{ color: theme.textSecondary }}>
-                        {t('register-to-access-profile')}
+                        {t('register-or-login-to-access-profile')}
                     </Text>
                     <TouchableOpacity
                         onPress={() => router.push('/telegram-login')}
                         className="px-12 py-4 rounded-full"
                         style={{ minWidth: 160, backgroundColor: colors.primary.main, elevation: 3 }}
                     >
-                        <Text className="text-white font-semibold text-base text-center">{t('register')}</Text>
+                        <Text className="text-white font-semibold text-base text-center">{t('register-or-login')}</Text>
                     </TouchableOpacity>
                 </View>
             </View>
