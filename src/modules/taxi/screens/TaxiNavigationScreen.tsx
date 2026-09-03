@@ -16,9 +16,11 @@ import { TaxiNavigationResponse } from '../types/taxi.types';
 import { useTaxiNavigation } from '../../navigation/hooks/useTaxiNavigation';
 import { useTaxiSimulation } from '../../navigation/hooks/useTaxiSimulation';
 import { useLocationTracking } from '../../navigation/hooks/useLocationTracking';
+import { useTaxiRecalculation } from '../../navigation/hooks/useTaxiRecalculation';
 import { SegmentProgressBar } from '../../navigation/components/SegmentProgressBar';
 import { ArrivalModal } from '../../navigation/components/ArrivalModal';
 import { decodeTaxiSegmentPaths } from '../../navigation/utils/navigationUtils';
+import { segmentStartIndex } from '../../navigation/utils/taxiRecalcRules';
 import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
 import LekfelPaySheet from '../components/LekfelPaySheet';
 
@@ -55,7 +57,9 @@ export default function TaxiNavigationScreen() {
     const [mapReady, setMapReady] = useState(false);
     const [showArrivalModal, setShowArrivalModal] = useState(false);
     const [isNavigating, setIsNavigating] = useState(true);
-    const [currentRoute, setCurrentRoute] = useState<TaxiNavigationResponse | null>(routeData);
+    const [currentRoute, setCurrentRoute] = useState<TaxiNavigationResponse | null>(
+        () => ({ ...routeData, planId: routeData.planId ?? Date.now() })
+    );
     const [simulateMovement, setSimulateMovement] = useState(params.simulateMovement === 'true');
     const [routeGeoJSON, setRouteGeoJSON] = useState<any>(null);
     const [userHeading, setUserHeading] = useState(0);
@@ -65,6 +69,7 @@ export default function TaxiNavigationScreen() {
     const [isRecalculating, setIsRecalculating] = useState(false);
     const [hasUserZoomedOut, setHasUserZoomedOut] = useState(false);
     const [showPaySheet, setShowPaySheet] = useState(false);
+    const [routeEpoch, setRouteEpoch] = useState(0);
 
 
     const [navigationState, setNavigationState] = useState<{
@@ -162,6 +167,11 @@ export default function TaxiNavigationScreen() {
         totalDistance.current = distance;
         totalDuration.current = duration;
 
+        if (pendingClosestIndex.current !== null) {
+            setClosestIndexRef.current(pendingClosestIndex.current);
+            pendingClosestIndex.current = null;
+        }
+
         if (coords.length > 0) {
             setRouteGeoJSON({
                 type: 'Feature',
@@ -238,9 +248,45 @@ export default function TaxiNavigationScreen() {
         updateNavigationState,
     });
 
-    const resetClosestIndexRef = useRef<() => void>(() => { });
+    const setClosestIndexRef = useRef<(index: number) => void>(() => { });
+    const currentSegmentIndexRef = useRef(0);
+    const pendingClosestIndex = useRef<number | null>(null);
 
-    const { startLocationTracking, stopLocationTracking, resetClosestIndex } = useLocationTracking({
+    const {
+        recalculateRoute,
+        observeFix,
+        offRouteProfileRef,
+        suggestion,
+        isReplanning,
+        acceptSuggestion,
+        dismissSuggestion,
+    } = useTaxiRecalculation({
+        route: activeRoute,
+        currentSegmentIndexRef,
+        isNavigatingRef,
+        setIsRecalculating,
+        onRoutePatched: (patchedRoute, segmentIndex) => {
+            const paths = decodeTaxiSegmentPaths(patchedRoute.segments ?? []);
+            pendingClosestIndex.current = segmentStartIndex(
+                paths.map((path) => path.length),
+                segmentIndex
+            );
+
+            setCurrentRoute(patchedRoute);
+            setRouteEpoch((epoch) => epoch + 1);
+        },
+        onReplanned: (newRoute) => {
+            pendingClosestIndex.current = 0;
+            setCurrentRoute(newRoute);
+            setRouteEpoch((epoch) => epoch + 1);
+            const boardingName = newRoute.segments?.find(
+                (seg) => seg.mode === 'auto' || seg.type === 'taxi'
+            )?.fromNode?.name;
+            showToast(boardingName ? `New route: board at ${boardingName}` : 'New route calculated');
+        },
+    });
+
+    const { startLocationTracking, stopLocationTracking, setClosestIndex } = useLocationTracking({
         routeCoordinates: allRouteCoordinates,
         isNavigatingRef,
         mapRef,
@@ -253,53 +299,8 @@ export default function TaxiNavigationScreen() {
         setIsOffRoute,
         setIsRecalculating,
         updateInstructionBasedOnPosition: () => { },
-        recalculateRoute: async (fromLocation) => {
-            if (!fromLocation) return;
-
-            setIsRecalculating(true);
-            showToast('Recalculating: Finding new route...');
-
-            try {
-                const { taxiService } = await import('../../taxi/services/taxi.service');
-                const newRoute = await taxiService.requestTaxiNavigation({
-                    origin: [fromLocation.lat, fromLocation.lng],
-                    destination: [
-                        activeRoute.destination.lat,
-                        activeRoute.destination.lng,
-                    ],
-                });
-
-                if (newRoute.success && newRoute.segments) {
-                    const coords: [number, number][] = [];
-                    let distance = 0;
-                    let duration = 0;
-
-                    const paths = decodeTaxiSegmentPaths(newRoute.segments ?? []);
-                    newRoute.segments?.forEach((segment, idx) => {
-                        paths[idx].forEach(([lat, lng]: [number, number]) => {
-                            coords.push([lng, lat]);
-                        });
-                        distance += segment.distance * 1000;
-                        duration += segment.time;
-                    });
-
-                    resetClosestIndexRef.current();
-                    allRouteCoordinates.current = coords;
-                    totalDistance.current = distance;
-                    totalDuration.current = duration;
-                    setCurrentRoute(newRoute);
-
-                    showToast('Route Updated: New route calculated');
-                } else {
-                    showToast('Recalculation Failed: Could not find alternative route');
-                }
-            } catch (error) {
-                console.error('Recalculation error:', error);
-                showToast('Failed to recalculate route');
-            } finally {
-                setIsRecalculating(false);
-            }
-        },
+        recalculateRoute,
+        offRouteProfileRef,
         rerouteTimeout,
         totalRouteDistance: totalDistance.current,
         totalRouteDuration: totalDuration.current,
@@ -308,7 +309,7 @@ export default function TaxiNavigationScreen() {
         updateNavigationState,
     });
 
-    resetClosestIndexRef.current = resetClosestIndex;
+    setClosestIndexRef.current = setClosestIndex;
 
     const {
         currentSegmentIndex,
@@ -331,6 +332,13 @@ export default function TaxiNavigationScreen() {
             setCurrentRoute(newRoute);
         },
     });
+
+    currentSegmentIndexRef.current = currentSegmentIndex;
+
+    useEffect(() => {
+        if (!userLocation) return;
+        observeFix({ lat: userLocation.lat, lng: userLocation.lng }, isOffRoute);
+    }, [userLocation, isOffRoute, observeFix]);
 
     const progressSegments = activeRoute.segments?.map((seg, idx) => ({
         type: (seg.mode === 'pedestrian' || seg.type === 'walk' ? 'walk' : 'taxi') as 'walk' | 'taxi',
@@ -417,6 +425,7 @@ export default function TaxiNavigationScreen() {
                     userHeading={userHeading}
                     showUserLocationMarker={true}
                     segmentedRoutes={segmentedRoutes}
+                    routeEpoch={routeEpoch}
                     taxiStations={taxiStations.length > 0 ? taxiStations : undefined}
                     onUserInteraction={() => setHasUserZoomedOut(true)}
                 />
@@ -491,6 +500,56 @@ export default function TaxiNavigationScreen() {
                     className="absolute left-4 right-4"
                     style={{ bottom: insets.bottom + 24 }}
                 >
+                    {suggestion && (
+                        <View
+                            className="flex-row items-center rounded-2xl mb-3 px-3 py-2.5"
+                            style={{
+                                backgroundColor: isDark ? theme.surface : 'rgba(255, 255, 255, 0.97)',
+                                borderWidth: 1,
+                                borderColor: colors.primary.main,
+                                shadowColor: '#000',
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.12,
+                                shadowRadius: 8,
+                                elevation: 4,
+                            }}
+                        >
+                            <Ionicons name="alert-circle" size={20} color={colors.primary.main} />
+                            <Text
+                                className="flex-1 ml-2 text-sm"
+                                style={{ color: theme.textPrimary }}
+                                numberOfLines={2}
+                            >
+                                {suggestion.reason === 'unreachable'
+                                    ? `Can't reach ${suggestion.targetName} from here`
+                                    : `You've moved away from ${suggestion.targetName}`}
+                            </Text>
+                            <TouchableOpacity
+                                activeOpacity={0.85}
+                                onPress={acceptSuggestion}
+                                disabled={isReplanning}
+                                className="rounded-full px-3 py-1.5 ml-2"
+                                style={{ backgroundColor: colors.primary.main, opacity: isReplanning ? 0.6 : 1 }}
+                            >
+                                {isReplanning ? (
+                                    <ActivityIndicator size="small" color="#fff" />
+                                ) : (
+                                    <Text className="text-white text-xs font-semibold">
+                                        {suggestion.reason === 'unreachable' ? 'New route' : 'New station'}
+                                    </Text>
+                                )}
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                activeOpacity={0.85}
+                                onPress={dismissSuggestion}
+                                className="ml-1 p-1"
+                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            >
+                                <Ionicons name="close" size={18} color={theme.textSecondary} />
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
                     <View className="flex-row mb-3">
                         <TouchableOpacity
                             activeOpacity={0.85}

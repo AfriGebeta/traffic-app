@@ -18,10 +18,27 @@ export interface AppConfigValues {
   // off route/heading
   offRouteThresholdM: number;
   offRouteDelayMs: number;
+  taxiWalkOffRouteDelayMs: number;
+  taxiAutoOffRouteThresholdM: number;
+  taxiAutoOffRouteDelayMs: number;
   headingDivergeAngleDeg: number;
   headingDivergeTimeMs: number;
   headingMinSpeed: number;
   headingMinDistanceM: number;
+
+  // taxi in-leg reroute + new-station suggestion
+  taxiRerouteCooldownMs: number;
+  taxiReplanFloorWalkM: number;
+  taxiReplanFloorAutoM: number;
+  taxiReplanRatioWalk: number;
+  taxiReplanRatioAuto: number;
+  taxiReplanGateStreak: number;
+  taxiRerouteFailStreak: number;
+  taxiAwayFixCount: number;
+  taxiAwayNetGainWalkM: number;
+  taxiAwayNetGainAutoM: number;
+  taxiSuggestSnoozeMs: number;
+  taxiSuggestRearmGrowth: number;
 
   // proxiimity alerts
   incidentAlertDistanceKm: number;
@@ -62,10 +79,26 @@ export const APP_CONFIG_DEFAULTS: AppConfigValues = {
 
   offRouteThresholdM: 30,
   offRouteDelayMs: 2000,
+  taxiWalkOffRouteDelayMs: 2000,
+  taxiAutoOffRouteThresholdM: 70,
+  taxiAutoOffRouteDelayMs: 15000,
   headingDivergeAngleDeg: 50,
   headingDivergeTimeMs: 3000,
   headingMinSpeed: 3,
   headingMinDistanceM: 20,
+
+  taxiRerouteCooldownMs: 8000,
+  taxiReplanFloorWalkM: 500,
+  taxiReplanFloorAutoM: 1500,
+  taxiReplanRatioWalk: 2.5,
+  taxiReplanRatioAuto: 2,
+  taxiReplanGateStreak: 2,
+  taxiRerouteFailStreak: 2,
+  taxiAwayFixCount: 10,
+  taxiAwayNetGainWalkM: 150,
+  taxiAwayNetGainAutoM: 600,
+  taxiSuggestSnoozeMs: 180000,
+  taxiSuggestRearmGrowth: 1.5,
 
   incidentAlertDistanceKm: 1,
   incidentClearDistanceKm: 0.2,
@@ -102,10 +135,26 @@ export const RC_KEYS: Record<keyof AppConfigValues, string> = {
 
   offRouteThresholdM: 'off_route_threshold_m',
   offRouteDelayMs: 'off_route_delay_ms',
+  taxiWalkOffRouteDelayMs: 'taxi_walk_off_route_delay_ms',
+  taxiAutoOffRouteThresholdM: 'taxi_auto_off_route_threshold_m',
+  taxiAutoOffRouteDelayMs: 'taxi_auto_off_route_delay_ms',
   headingDivergeAngleDeg: 'heading_diverge_angle_deg',
   headingDivergeTimeMs: 'heading_diverge_time_ms',
   headingMinSpeed: 'heading_min_speed',
   headingMinDistanceM: 'heading_min_distance_m',
+
+  taxiRerouteCooldownMs: 'taxi_reroute_cooldown_ms',
+  taxiReplanFloorWalkM: 'taxi_replan_floor_walk_m',
+  taxiReplanFloorAutoM: 'taxi_replan_floor_auto_m',
+  taxiReplanRatioWalk: 'taxi_replan_ratio_walk',
+  taxiReplanRatioAuto: 'taxi_replan_ratio_auto',
+  taxiReplanGateStreak: 'taxi_replan_gate_streak',
+  taxiRerouteFailStreak: 'taxi_reroute_fail_streak',
+  taxiAwayFixCount: 'taxi_away_fix_count',
+  taxiAwayNetGainWalkM: 'taxi_away_net_gain_walk_m',
+  taxiAwayNetGainAutoM: 'taxi_away_net_gain_auto_m',
+  taxiSuggestSnoozeMs: 'taxi_suggest_snooze_ms',
+  taxiSuggestRearmGrowth: 'taxi_suggest_rearm_growth',
 
   incidentAlertDistanceKm: 'incident_alert_distance_km',
   incidentClearDistanceKm: 'incident_clear_distance_km',

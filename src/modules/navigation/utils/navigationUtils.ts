@@ -4,9 +4,13 @@ export type TaxiSegmentInput = {
     polyline: string;
     type: string;
     mode: string;
+    overrideCoords?: [number, number][];
 };
 
 const decodeSegmentPolyline = (segment: TaxiSegmentInput): [number, number][] => {
+    if (segment.overrideCoords && segment.overrideCoords.length > 0) {
+        return segment.overrideCoords;
+    }
     try {
         return segment.polyline ? decodePolyline(segment.polyline, 6) : [];
     } catch (error) {

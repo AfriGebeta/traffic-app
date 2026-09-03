@@ -34,14 +34,21 @@ export const useTaxiNavigation = ({
     const currentRouteRef = useRef(taxiRoute);
 
     const isFirstRouteRef = useRef(true);
+    const lastPlanIdRef = useRef(taxiRoute.planId);
 
     useEffect(() => {
         currentRouteRef.current = taxiRoute;
 
         if (isFirstRouteRef.current) {
             isFirstRouteRef.current = false;
+            lastPlanIdRef.current = taxiRoute.planId;
             return;
         }
+
+        if (taxiRoute.planId === lastPlanIdRef.current) {
+            return;
+        }
+        lastPlanIdRef.current = taxiRoute.planId;
 
         setCurrentSegmentIndex(0);
         const firstSegment = taxiRoute.segments?.[0];

@@ -220,6 +220,7 @@ interface ExtendedGebetaMapProps extends Omit<GebetaMapProps, 'center'> {
         isWalking: boolean;
         segmentIndex: number;
     }>;
+    routeEpoch?: number;
     waypointMarkers?: Array<{ latitude: number; longitude: number; name: string }>;
     activeSegmentGeoJSON?: any;
     previewStepLocation?: { lng: number; lat: number } | null;
@@ -298,6 +299,9 @@ NavigationMarker.displayName = 'NavigationMarker';
 
 const WALK_DASH_PATTERN = [0.1, 2];
 
+/** ~110 m near the equator; past this the puck is not on the route any more. */
+const PUCK_JOIN_MAX_DEGREES = 0.001;
+
 // small enough to read as a settle rather than a jump, large enough that the native
 // camera treats it as a real move instead of collapsing it into a no-op
 const PREVIEW_CAMERA_WAKE_ZOOM_NUDGE = 0.4;
@@ -320,17 +324,26 @@ const AnimatedSegmentedRoutes = memo(({
     animatedLat,
     animatedLng,
     currentTaxiSegmentIndex,
+    routeEpoch = 0,
 }: {
     segmentedRoutes: Array<{ geoJSON: any; isWalking: boolean; segmentIndex: number }>;
     animatedLat: number;
     animatedLng: number;
     currentTaxiSegmentIndex?: number;
+    routeEpoch?: number;
 }) => {
     const animatedSegments = useMemo(() => {
         return segmentedRoutes.map((seg) => {
             if (seg.segmentIndex !== currentTaxiSegmentIndex) return seg;
             const coords = seg.geoJSON.geometry.coordinates;
             if (coords.length === 0) return seg;
+            const [headLng, headLat] = coords[0];
+            if (
+                Math.abs(headLng - animatedLng) > PUCK_JOIN_MAX_DEGREES ||
+                Math.abs(headLat - animatedLat) > PUCK_JOIN_MAX_DEGREES
+            ) {
+                return seg;
+            }
             return {
                 ...seg,
                 geoJSON: {
@@ -365,7 +378,7 @@ const AnimatedSegmentedRoutes = memo(({
 
                 return (
                     <MapLibreGL.ShapeSource
-                        key={`segment-${route.segmentIndex}-source-${route.isWalking ? foregroundEpoch : 0}`}
+                        key={`segment-${routeEpoch}-${route.segmentIndex}-source-${route.isWalking ? foregroundEpoch : 0}`}
                         id={`segment-${route.segmentIndex}-source`}
                         shape={route.geoJSON}
                     >
@@ -400,6 +413,7 @@ interface AnimatedNavLayerProps {
     routeGeoJSON: any;
     routeLineStyle: any;
     segmentedRoutes?: Array<{ geoJSON: any; isWalking: boolean; segmentIndex: number }>;
+    routeEpoch?: number;
     isTaxiNavigation?: boolean;
     currentTaxiSegmentIndex?: number;
     imagesLoaded: boolean;
@@ -438,6 +452,7 @@ const NAV_DT_CLAMP_S = 0.1;
 const NAV_HEADING_LOOKAHEAD = 25;
 
 const NAV_SNAP_BACK_TOLERANCE_M = 2;
+const NAV_BACKTRACK_MIN_M = 10;
 const NAV_UNSNAP_M = 14;
 const NAV_RESNAP_M = 12;
 
@@ -459,6 +474,7 @@ const AnimatedNavLayer = memo(({
     routeGeoJSON,
     routeLineStyle,
     segmentedRoutes,
+    routeEpoch,
     isTaxiNavigation,
     currentTaxiSegmentIndex,
     imagesLoaded,
@@ -616,11 +632,17 @@ const AnimatedNavLayer = memo(({
             unsnapStartRef.current = null;
             const prev = lastFixRef.current!;
             const dtFix = Math.max(0.001, (now - prev.t) / 1000);
-            let measured = (routeS - prev.s) / dtFix;
+            const alongRate = (routeS - prev.s) / dtFix;
+            let measured = alongRate;
             if (measured < 0) measured = 0;
             if (measured > 60) measured = 60;
-            const sample = userLocation.speed != null && userLocation.speed >= 0 ? userLocation.speed : measured;
-            if (sample <= NAV_STOP_SPEED) {
+            const goingBackward = alongRate < -NAV_STOP_SPEED;
+            const sample = !goingBackward && userLocation.speed != null && userLocation.speed >= 0
+                ? userLocation.speed
+                : measured;
+            if (goingBackward) {
+                vRef.current = 0;
+            } else if (sample <= NAV_STOP_SPEED) {
                 vRef.current = 0;
             } else if (sample < vRef.current) {
                 vRef.current = sample;
@@ -695,7 +717,8 @@ const AnimatedNavLayer = memo(({
 
                 const corrAlpha = 1 - Math.exp(-dt / NAV_CORR_TAU);
                 let newS = renderedSRef.current + (targetS - renderedSRef.current) * corrAlpha;
-                if (newS < renderedSRef.current) newS = renderedSRef.current;   // never step backward
+                const fixBehind = fix != null && fix.s < renderedSRef.current - NAV_BACKTRACK_MIN_M;
+                if (!fixBehind && newS < renderedSRef.current) newS = renderedSRef.current;
                 if (newS > total) newS = total;
                 s = newS;
                 renderedSRef.current = s;
@@ -810,6 +833,7 @@ const AnimatedNavLayer = memo(({
                     animatedLat={render.lat}
                     animatedLng={render.lng}
                     currentTaxiSegmentIndex={currentTaxiSegmentIndex}
+                    routeEpoch={routeEpoch}
                 />
             )}
             {isNavigating && lineShape && (
@@ -891,7 +915,7 @@ AnimatedNavLayer.displayName = 'AnimatedNavLayer';
 
 
 const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
-    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, isHomeMap, staticInitialCamera, freeCamera, maneuvers, boundingBox, alternativeRoutesGeoJSON, routeTimeLabels }, ref) => {
+    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, routeEpoch, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, isHomeMap, staticInitialCamera, freeCamera, maneuvers, boundingBox, alternativeRoutesGeoJSON, routeTimeLabels }, ref) => {
         const { isDark } = useTheme();
         const foregroundEpoch = useForegroundEpoch();
         const [mapStyleState, setMapStyleState] = useState<Record<string, unknown> | null>(() =>
@@ -2102,7 +2126,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             }
                             return (
                                 <MapLibreGL.ShapeSource
-                                    key={`segment-static-${route.segmentIndex}-${route.isWalking ? foregroundEpoch : 0}`}
+                                    key={`segment-static-${routeEpoch}-${route.segmentIndex}-${route.isWalking ? foregroundEpoch : 0}`}
                                     id={`segment-${route.segmentIndex}-source`}
                                     shape={route.geoJSON}
                                 >
@@ -2408,6 +2432,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                 ...(routeStyle?.isDotted && { lineDasharray: WALK_DASH_PATTERN }),
                             }}
                             segmentedRoutes={segmentedRoutes}
+                            routeEpoch={routeEpoch}
                             isTaxiNavigation={!!isTaxiNavigation}
                             currentTaxiSegmentIndex={currentTaxiSegmentIndex}
                             imagesLoaded={!!imagesLoaded}

@@ -46,10 +46,17 @@ interface UseLocationTrackingProps {
     ) => void;
     onArrival?: () => void;
     onDestinationReached?: () => void;
+    offRouteProfileRef?: React.MutableRefObject<{
+        thresholdM: number;
+        delayMs: number;
+        headingDiverge: boolean;
+        minRetriggerMs: number;
+    } | null>;
 }
 
 const ARRIVAL_DISTANCE_METERS = 80;
 const TRUE_ARRIVAL_DISTANCE_METERS = 12;
+const BACKTRACK_MARGIN_METERS = 25;
 
 export const useLocationTracking = ({
     routeCoordinates,
@@ -78,6 +85,7 @@ export const useLocationTracking = ({
     updateNavigationState,
     onArrival,
     onDestinationReached,
+    offRouteProfileRef,
 }: UseLocationTrackingProps) => {
     const locationSubscription = useRef<Location.LocationSubscription | null>(null);
     const lastClosestIndex = useRef<number>(0);
@@ -93,6 +101,8 @@ export const useLocationTracking = ({
     const lastRenderedMarkerRef = useRef<{ lat: number; lng: number } | null>(null);
     const hasArrivedRef = useRef<boolean>(false);
     const hasReachedRef = useRef<boolean>(false);
+    const lastRerouteRequestRef = useRef<number>(0);
+    const offRouteEntryIndex = useRef<number>(0);
 
     const taxiSegmentsRef = useRef(taxiSegments);
     taxiSegmentsRef.current = taxiSegments;
@@ -115,6 +125,7 @@ export const useLocationTracking = ({
         locationCallbackRef.current = null;
         hasArrivedRef.current = false;
         hasReachedRef.current = false;
+        lastRerouteRequestRef.current = 0;
     }, []);
 
     const startLocationTracking = useCallback(async () => {
@@ -237,8 +248,21 @@ export const useLocationTracking = ({
                     if (closestIndex >= lastClosestIndex.current) {
                         lastClosestIndex.current = closestIndex;
                     } else {
+                        const held = routeCoordinates.current[lastClosestIndex.current];
+                        const heldDistance = held
+                            ? calculateDistance(latitude, longitude, held[1], held[0])
+                            : Infinity;
 
-                        closestIndex = lastClosestIndex.current;
+                        if (heldDistance - minDistance > BACKTRACK_MARGIN_METERS) {
+                            lastClosestIndex.current = closestIndex;
+                        } else {
+                            closestIndex = lastClosestIndex.current;
+                            if (held) {
+                                snappedLng = held[0];
+                                snappedLat = held[1];
+                                minDistance = heldDistance;
+                            }
+                        }
                     }
 
                     distanceFromRoute = minDistance;
@@ -247,8 +271,11 @@ export const useLocationTracking = ({
                     displayLng = snappedLng;
 
                     const cfg = getAppConfig();
-                    const OFF_ROUTE_THRESHOLD = cfg.offRouteThresholdM;
-                    const OFF_ROUTE_DELAY = cfg.offRouteDelayMs;
+                    const profile = offRouteProfileRef?.current ?? null;
+                    const OFF_ROUTE_THRESHOLD = profile?.thresholdM ?? cfg.offRouteThresholdM;
+                    const OFF_ROUTE_DELAY = profile?.delayMs ?? cfg.offRouteDelayMs;
+                    const RETRIGGER_MS = profile?.minRetriggerMs ?? 0;
+                    const HEADING_DIVERGE_ENABLED = profile ? profile.headingDiverge : true;
 
                     const HEADING_DIVERGE_ANGLE = cfg.headingDivergeAngleDeg;
                     const HEADING_DIVERGE_TIME = cfg.headingDivergeTimeMs;
@@ -256,6 +283,7 @@ export const useLocationTracking = ({
                     const HEADING_MIN_DISTANCE = cfg.headingMinDistanceM;
                     let divergedByHeading = false;
                     if (
+                        HEADING_DIVERGE_ENABLED &&
                         (speed ?? 0) > HEADING_MIN_SPEED &&
                         heading !== null && heading !== undefined &&
                         distanceFromRoute > HEADING_MIN_DISTANCE &&
@@ -292,6 +320,7 @@ export const useLocationTracking = ({
 
                             isOffRouteRef.current = true;
                             offRouteStartTime.current = Date.now();
+                            offRouteEntryIndex.current = lastClosestIndex.current;
                             setIsOffRoute(true);
                             showToast(`Off Route: You are ${distanceFromRoute.toFixed(0)}m off the planned route`);
 
@@ -301,11 +330,18 @@ export const useLocationTracking = ({
                             }
                         } else {
 
-                            const timeOffRoute = Date.now() - (offRouteStartTime.current || 0);
+                            const now = Date.now();
+                            const timeOffRoute = now - (offRouteStartTime.current || 0);
+                            const sinceLastRequest = now - lastRerouteRequestRef.current;
 
-                            if (timeOffRoute >= OFF_ROUTE_DELAY && !rerouteTimeout.current) {
+                            if (
+                                timeOffRoute >= OFF_ROUTE_DELAY &&
+                                !rerouteTimeout.current &&
+                                sinceLastRequest >= RETRIGGER_MS
+                            ) {
 
                                 console.log('triggering recalculation - offroute for', timeOffRoute, 'ms');
+                                lastRerouteRequestRef.current = now;
                                 setIsRecalculating(true);
 
                                 rerouteTimeout.current = setTimeout(() => {
@@ -322,6 +358,7 @@ export const useLocationTracking = ({
                             isOffRouteRef.current = false;
                             offRouteStartTime.current = null;
                             lastOffRoutePosition.current = null;
+                            lastRerouteRequestRef.current = 0;
                             setIsOffRoute(false);
                             setIsRecalculating(false);
 
@@ -330,7 +367,9 @@ export const useLocationTracking = ({
                                 rerouteTimeout.current = null;
                             }
 
-                            showToast('back on Route: you are back on the planned route');
+                            if (lastClosestIndex.current > offRouteEntryIndex.current) {
+                                showToast('back on Route: you are back on the planned route');
+                            }
                         }
                     }
 
@@ -523,6 +562,9 @@ export const useLocationTracking = ({
         stopLocationTracking,
         resetClosestIndex: () => {
             lastClosestIndex.current = 0;
+        },
+        setClosestIndex: (index: number) => {
+            lastClosestIndex.current = Math.max(0, index);
         },
     };
 };
