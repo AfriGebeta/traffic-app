@@ -1946,7 +1946,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         rotateEnabled={true}
                         pitchEnabled={true}
                         compassViewPosition={1}
-                        compassViewMargins={{ x: isHomeMap ? 10 : 16, y: isHomeMap ? 240 : 130 }}
+                        compassViewMargins={{ x: isHomeMap ? 10 : 16, y: isHomeMap ? 260 : 130 }}
                         {...({ onTouchStart: handleMapTouchForUnlock } as Record<string, unknown>)}
                         onRegionWillChange={handleRegionWillChange}
                         onPress={async (e) => {
