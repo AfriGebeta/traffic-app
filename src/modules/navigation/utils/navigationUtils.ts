@@ -60,7 +60,8 @@ export const buildSegmentedRoutesFromPosition = (
     closestIndex: number,
     displayLat: number,
     displayLng: number,
-    includeMarkerInProps = false
+    includeMarkerInProps = false,
+    activeSegmentIndex?: number
 ): SegmentedRouteOutput[] => {
     const paths = decodeTaxiSegmentPaths(taxiSegments);
 
@@ -68,20 +69,27 @@ export const buildSegmentedRoutesFromPosition = (
     let currentSegIdx = 0;
     let positionInSegment = closestIndex;
 
-    for (let i = 0; i < paths.length; i++) {
-        if (closestIndex < coordCount + paths[i].length) {
-            currentSegIdx = i;
-            positionInSegment = closestIndex - coordCount;
-            break;
+    if (activeSegmentIndex != null && paths[activeSegmentIndex]) {
+        currentSegIdx = activeSegmentIndex;
+        let offset = 0;
+        for (let i = 0; i < activeSegmentIndex; i++) offset += paths[i].length;
+        const local = closestIndex - offset;
+        positionInSegment = local >= 0 && local < paths[activeSegmentIndex].length ? local : -1;
+    } else {
+        for (let i = 0; i < paths.length; i++) {
+            if (closestIndex < coordCount + paths[i].length) {
+                currentSegIdx = i;
+                positionInSegment = closestIndex - coordCount;
+                break;
+            }
+            coordCount += paths[i].length;
         }
-        coordCount += paths[i].length;
     }
 
     return taxiSegments.map((seg, idx) => {
         let coordinates = paths[idx].map(([lat, lng]: [number, number]) => [lng, lat] as [number, number]);
 
         if (idx === currentSegIdx) {
-            // Start from the next point on the route, not from user's off-road position
             coordinates = coordinates.slice(positionInSegment + 1);
         } else if (idx < currentSegIdx) {
             coordinates = [];
@@ -110,12 +118,7 @@ export const buildSegmentedRoutesFromPosition = (
     });
 };
 
-/**
 
- * @param from - Starting coordinate [longitude, latitude]
- * @param to - Ending coordinate [longitude, latitude]
- * @returns Bearing in degrees (0-360)
- */
 export const calculateBearing = (from: [number, number], to: [number, number]): number => {
     const [fromLng, fromLat] = from;
     const [toLng, toLat] = to;

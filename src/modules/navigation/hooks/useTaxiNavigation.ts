@@ -151,6 +151,7 @@ export const useTaxiNavigation = ({
 
     useEffect(() => {
         if (currentSegment) {
+            setIsOnTaxi(currentSegment.mode === 'auto' || currentSegment.type === 'taxi');
             announceSegmentTransition(currentSegment);
         }
     }, []);

@@ -52,6 +52,7 @@ interface UseLocationTrackingProps {
         headingDiverge: boolean;
         minRetriggerMs: number;
     } | null>;
+    activeSegmentIndexRef?: React.MutableRefObject<number>;
 }
 
 const ARRIVAL_DISTANCE_METERS = 80;
@@ -86,6 +87,7 @@ export const useLocationTracking = ({
     onArrival,
     onDestinationReached,
     offRouteProfileRef,
+    activeSegmentIndexRef,
 }: UseLocationTrackingProps) => {
     const locationSubscription = useRef<Location.LocationSubscription | null>(null);
     const lastClosestIndex = useRef<number>(0);
@@ -407,7 +409,8 @@ export const useLocationTracking = ({
                                 closestIndex,
                                 displayLat,
                                 displayLng,
-                                true
+                                true,
+                                activeSegmentIndexRef?.current
                             );
 
                             lastRenderedMarkerRef.current = { lat: displayLat, lng: displayLng };

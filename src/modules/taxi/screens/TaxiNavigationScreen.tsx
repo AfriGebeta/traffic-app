@@ -84,7 +84,14 @@ export default function TaxiNavigationScreen() {
         segmentedRoutes: []
     });
 
-    const { userLocation: bgUserLocation, setUserLocation: setBgUserLocation, stopLocationTracking: stopBackgroundTracking } = useUserLocation();
+    const {
+        userLocation: bgUserLocation,
+        setUserLocation: setBgUserLocation,
+        stopLocationTracking: stopBackgroundTracking,
+        startLocationTracking: startBackgroundTracking,
+    } = useUserLocation();
+
+    const latestNavLocationRef = useRef<{ lat: number; lng: number } | null>(null);
 
     const updateNavigationState = useCallback((
         location: { lat: number; lng: number; accuracy?: number; speed?: number },
@@ -120,6 +127,12 @@ export default function TaxiNavigationScreen() {
 
     const userLocation = navigationState.userLocation;
     const segmentedRoutes = navigationState.segmentedRoutes;
+
+    useEffect(() => {
+        if (userLocation) {
+            latestNavLocationRef.current = { lat: userLocation.lat, lng: userLocation.lng };
+        }
+    }, [userLocation]);
 
     const [initialCenter] = useState<[number, number]>([routeData.origin.lng, routeData.origin.lat]);
     const [initialZoom] = useState(15);
@@ -301,6 +314,7 @@ export default function TaxiNavigationScreen() {
         updateInstructionBasedOnPosition: () => { },
         recalculateRoute,
         offRouteProfileRef,
+        activeSegmentIndexRef: currentSegmentIndexRef,
         rerouteTimeout,
         totalRouteDistance: totalDistance.current,
         totalRouteDuration: totalDuration.current,
@@ -362,6 +376,11 @@ export default function TaxiNavigationScreen() {
             console.log('[Taxi Nav] Cleaning up navigation');
             stopLocationTracking();
             stopSimulation();
+
+            if (!simulateMovement && latestNavLocationRef.current) {
+                setBgUserLocation(latestNavLocationRef.current);
+            }
+            void startBackgroundTracking();
         };
     }, [simulateMovement]);
 
