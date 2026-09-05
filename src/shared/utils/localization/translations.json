@@ -3768,5 +3768,25 @@
         "key": "taxi-journey-dropoff-failed",
         "EN_US": "Could not update this trip. Try again or choose another drop-off.",
         "AM": "ጉዞውን ማሻሻል አልተቻለም። እንደገና ይሞክሩ ወይም ሌላ መውረጃ ይምረጡ።"
+    },
+    {
+        "key": "taxi-route-retry-label",
+        "EN_US": "Retry route calculation",
+        "AM": "መንገዱን እንደገና ለመፈለግ ይሞክሩ"
+    },
+    {
+        "key": "taxi-route-recalculate-label",
+        "EN_US": "Recalculate route",
+        "AM": "መንገዱን እንደገና ያግኝ"
+    },
+    {
+        "key": "taxi-route-recalculating",
+        "EN_US": "Recalculating...",
+        "AM": "መንገዱን እንደገና በመፈለግ ላይ…"
+    },
+    {
+        "key": "taxi-route-unavailable-retry",
+        "EN_US": "Route unavailable · Retry",
+        "AM": "መንገድ አልተገኘም · እንደገና ይሞክሩ"
     }
 ]

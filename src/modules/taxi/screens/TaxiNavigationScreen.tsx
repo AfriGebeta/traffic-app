@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import GebetaMap from '../../../components/GebetaMap';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 import { colors } from '../../../shared/theme/colors';
+
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { showToast } from '../../../shared/utils/toast';
 import { useMapTheme } from '../../map/context/MapThemeContext';
@@ -21,6 +22,7 @@ import { useTaxiRecalculation } from '../../navigation/hooks/useTaxiRecalculatio
 import { SegmentProgressBar } from '../../navigation/components/SegmentProgressBar';
 import { ArrivalModal } from '../../navigation/components/ArrivalModal';
 import { decodeTaxiSegmentPaths } from '../../navigation/utils/navigationUtils';
+
 import { createTaxiRoad, projectTaxiPosition } from '../../navigation/utils/taxiRoadGeometry';
 import { segmentStartIndex } from '../../navigation/utils/taxiRecalcRules';
 import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
@@ -206,8 +208,6 @@ function TaxiNavigationContent({ routeData, simulateMovementParam }: {
         });
     }, [activeRoute]);
 
-    // Publish geometry in the same render as the new journey. GPS updates only
-    // position the puck; they must not delay or overwrite the new map sources.
     const segmentedRoutes = useMemo(() => {
         if (!activeRoute.segments) return [];
 
@@ -255,8 +255,7 @@ function TaxiNavigationContent({ routeData, simulateMovementParam }: {
         setRemainingDistance,
         setRemainingTime,
         updateInstructionBasedOnPosition: () => { },
-        // Completion is owned by the confirmed journey, including in simulation.
-        onArrival: () => {},
+        onArrival: () => { },
         totalRouteDistance: totalDistance.current,
         totalRouteDuration: totalDuration.current,
         taxiSegments: activeRoute.segments,
@@ -563,34 +562,34 @@ function TaxiNavigationContent({ routeData, simulateMovementParam }: {
                     className="absolute left-4 right-4"
                     style={{ bottom: insets.bottom + 12 }}
                 >
-                {(isOffRoute || isRecalculating || routeError) && (
-                    <TouchableOpacity
-                        accessibilityRole="button"
-                        accessibilityLabel={routeError ? "Retry route calculation" : "Recalculate route"}
-                        disabled={isRecalculating}
-                        onPress={() => {
-                            const fix = simulateMovement ? userLocation : rawLocation;
-                            if (fix) void recalculateRoute(fix, true);
-                        }}
-                        className="rounded-2xl px-4 py-2 mb-2 flex-row items-center"
-                        style={{
-                            alignSelf: 'flex-end',
-                            backgroundColor: isDark ? theme.surface : 'rgba(255, 255, 255, 0.95)',
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.1,
-                            shadowRadius: 8,
-                            elevation: 4,
-                        }}
-                    >
-                        {isRecalculating && (
-                            <ActivityIndicator size="small" color={colors.primary.main} style={{ marginRight: 8 }} />
-                        )}
-                        <Text className="font-semibold" style={{ color: colors.primary.main }}>
-                            {isRecalculating ? 'Recalculating...' : routeError ? 'Route unavailable · Retry' : 'Off Route'}
-                        </Text>
-                    </TouchableOpacity>
-                )}
+                    {(isOffRoute || isRecalculating || routeError) && (
+                        <TouchableOpacity
+                            accessibilityRole="button"
+                            accessibilityLabel={routeError ? t('taxi-route-retry-label') : t('taxi-route-recalculate-label')}
+                            disabled={isRecalculating}
+                            onPress={() => {
+                                const fix = simulateMovement ? userLocation : rawLocation;
+                                if (fix) void recalculateRoute(fix, true);
+                            }}
+                            className="rounded-2xl px-4 py-2 mb-2 flex-row items-center"
+                            style={{
+                                alignSelf: 'flex-end',
+                                backgroundColor: isDark ? theme.surface : 'rgba(255, 255, 255, 0.95)',
+                                shadowColor: '#000',
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.1,
+                                shadowRadius: 8,
+                                elevation: 4,
+                            }}
+                        >
+                            {isRecalculating && (
+                                <ActivityIndicator size="small" color={colors.primary.main} style={{ marginRight: 8 }} />
+                            )}
+                            <Text className="font-semibold" style={{ color: colors.primary.main }}>
+                                {isRecalculating ? t('taxi-route-recalculating') : routeError ? t('taxi-route-unavailable-retry') : t('off-route')}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
 
 
                     <View className="flex-row mb-3">
@@ -621,11 +620,13 @@ function TaxiNavigationContent({ routeData, simulateMovementParam }: {
                     {hasUserZoomedOut && <View className="items-center mb-3">
                         <TouchableOpacity accessibilityRole="button" accessibilityLabel="Re-center map"
                             onPress={handleRecenter} activeOpacity={0.85}
-                            style={{ minHeight: 48, paddingHorizontal: 24, borderRadius: 28,
+                            style={{
+                                minHeight: 48, paddingHorizontal: 24, borderRadius: 28,
                                 flexDirection: 'row', alignItems: 'center', gap: 10,
                                 backgroundColor: theme.surface, elevation: 4,
                                 shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-                                shadowOpacity: 0.12, shadowRadius: 8 }}>
+                                shadowOpacity: 0.12, shadowRadius: 8
+                            }}>
                             <Ionicons name="navigate" size={24} color={NAV_GREEN} />
                             <Text style={{ color: theme.textPrimary, fontSize: 17, fontWeight: '600' }}>Re-center</Text>
                         </TouchableOpacity>
