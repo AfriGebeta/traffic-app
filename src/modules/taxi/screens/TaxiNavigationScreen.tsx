@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
 import { Ionicons } from '@expo/vector-icons';
@@ -342,9 +342,10 @@ function TaxiNavigationContent({ routeData, simulateMovementParam }: {
         endNode,
         totalFare,
         currency, prompt, boardingTarget, requestConfirmation, dismissPrompt,
-        confirmTransition, undoTransition, canUndo, commitJourney,
+        confirmTransition, undoTransition, canUndo, commitJourney, journeySegments, journeySegmentIndex,
     } = useTaxiNavigation({
         taxiRoute: activeRoute,
+        previewSegments: routeData.segments,
         userLocation: simulateMovement && userLocation ? { ...userLocation, accuracy: 5 } : rawLocation,
         isOffRoute, isNavigatingRef, currentSegmentIndexRef, pauseReroutingRef,
         onNavigationComplete: () => {
@@ -415,11 +416,11 @@ function TaxiNavigationContent({ routeData, simulateMovementParam }: {
         }
     };
 
-    const progressSegments = activeRoute.segments?.map((seg, idx) => ({
+    const progressSegments = journeySegments.map((seg) => ({
         type: (seg.mode === 'pedestrian' || seg.type === 'walk' ? 'walk' : 'taxi') as 'walk' | 'taxi',
         label: seg.mode === 'pedestrian' || seg.type === 'walk'
-            ? idx === 0 ? 'Walk' : 'Walk'
-            : 'Taxi',
+            ? t('walk')
+            : t('taxi'),
     })) || [];
 
     useEffect(() => {
@@ -671,11 +672,15 @@ function TaxiNavigationContent({ routeData, simulateMovementParam }: {
                             </TouchableOpacity>
                         </View>
 
-                        <SegmentProgressBar
-                            compact
-                            segments={progressSegments}
-                            currentIndex={currentSegmentIndex}
-                        />
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={{ flexGrow: 1 }}>
+                            <View style={{ flex: 1, minWidth: progressSegments.length * 64 }}>
+                                <SegmentProgressBar
+                                    segments={progressSegments}
+                                    currentIndex={journeySegmentIndex}
+                                />
+                            </View>
+                        </ScrollView>
                         {suggestion && !prompt && (
                             <View
                                 className="flex-row items-center rounded-2xl mb-3 px-3 py-2.5"

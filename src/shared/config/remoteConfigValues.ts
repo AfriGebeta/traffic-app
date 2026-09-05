@@ -43,6 +43,9 @@ export interface AppConfigValues {
   taxiSuggestSnoozeMs: number;
   taxiSuggestRearmGrowth: number;
 
+  // incident refresh
+  incidentPollIntervalMs: number;
+
   // proxiimity alerts
   incidentAlertDistanceKm: number;
   incidentClearDistanceKm: number;
@@ -106,6 +109,8 @@ export const APP_CONFIG_DEFAULTS: AppConfigValues = {
   taxiSuggestSnoozeMs: 180000,
   taxiSuggestRearmGrowth: 1.5,
 
+  incidentPollIntervalMs: 45000,
+
   incidentAlertDistanceKm: 1,
   incidentClearDistanceKm: 0.2,
   ruleAlertDistanceKm: 0.2,
@@ -164,6 +169,8 @@ export const RC_KEYS: Record<keyof AppConfigValues, string> = {
   taxiAwayNetGainAutoM: 'taxi_away_net_gain_auto_m',
   taxiSuggestSnoozeMs: 'taxi_suggest_snooze_ms',
   taxiSuggestRearmGrowth: 'taxi_suggest_rearm_growth',
+
+  incidentPollIntervalMs: 'incident_poll_interval_ms',
 
   incidentAlertDistanceKm: 'incident_alert_distance_km',
   incidentClearDistanceKm: 'incident_clear_distance_km',

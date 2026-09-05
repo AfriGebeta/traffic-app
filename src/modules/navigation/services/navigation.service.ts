@@ -44,7 +44,7 @@ export const navigationService = {
             const response = await apiService.post<{ response: { results: any[] } }>('/api/navigation/request-revgeocoding', {
                 coordinate: { lat, lng },
                 cursor: 0,
-                size: 10
+                size: 5
             });
 
             const results = response.data?.response?.results || response.data?.response || [];

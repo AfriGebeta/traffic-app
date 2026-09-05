@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import type { TaxiNavigationResponse } from '../../taxi/types/taxi.types';
+import type { RouteSegment, TaxiNavigationResponse } from '../../taxi/types/taxi.types';
 import { calculateDistance } from '../utils/navigationUtils';
 import { voiceNavigationService } from '../services/voice-navigation.service';
 import { getAppConfig } from '../../../shared/config/remoteConfigValues';
@@ -10,6 +10,7 @@ import {
 
 interface Props {
     taxiRoute: TaxiNavigationResponse;
+    previewSegments?: RouteSegment[];
     userLocation: TaxiFix | null;
     isOffRoute: boolean;
     isNavigatingRef: React.MutableRefObject<boolean>;
@@ -19,11 +20,15 @@ interface Props {
     onRouteUpdate: (route: TaxiNavigationResponse) => void;
 }
 
-export const useTaxiNavigation = ({ taxiRoute, userLocation, isOffRoute, isNavigatingRef,
+export const useTaxiNavigation = ({ taxiRoute, previewSegments, userLocation, isOffRoute, isNavigatingRef,
     currentSegmentIndexRef, pauseReroutingRef, onNavigationComplete, onRouteUpdate }: Props) => {
     const [currentSegmentIndex, setCurrentSegmentIndex] = useState(0);
     const [prompt, setPrompt] = useState<JourneyPrompt | null>(null);
     const [undoRoute, setUndoRoute] = useState<TaxiNavigationResponse | null>(null);
+    // Keep exactly the preview itinerary, independent of reroutes and confirmations.
+    const journeySegments = useRef(previewSegments ?? taxiRoute.segments ?? []).current;
+    const [journeySegmentIndex, setJourneySegmentIndex] = useState(0);
+    const [undoJourneyIndex, setUndoJourneyIndex] = useState(0);
     const evidence = useRef(emptyPromptEvidence());
     const snoozeUntil = useRef(0);
     const lastPlan = useRef(taxiRoute.planId);
@@ -34,6 +39,23 @@ export const useTaxiNavigation = ({ taxiRoute, userLocation, isOffRoute, isNavig
     currentSegmentIndexRef.current = index;
     const currentSegment = taxiRoute.segments?.[index];
     const isOnTaxi = isTaxiRide(currentSegment);
+    useEffect(() => {
+        if (!currentSegment) return;
+        setJourneySegmentIndex(previous => {
+            const sameMode = (segment: RouteSegment) => isTaxiRide(segment) === isTaxiRide(currentSegment);
+            const target = currentSegment.toNode?.id;
+            const exact = target == null ? -1 : journeySegments.findIndex((segment, i) =>
+                i >= previous && sameMode(segment) && segment.toNode?.id === target);
+            if (exact >= 0) return exact;
+            const next = journeySegments.findIndex((segment, i) => i >= previous && sameMode(segment));
+            if (next >= 0) return next;
+            // Switching again after the final preview step reuses an existing step.
+            for (let i = journeySegments.length - 1; i >= 0; i--) {
+                if (sameMode(journeySegments[i])) return i;
+            }
+            return previous;
+        });
+    }, [currentSegment, journeySegments]);
     const nextRide = taxiRoute.segments?.find((segment, i) => i >= index && isTaxiRide(segment));
     const boardingTarget = nextRide?.toNode?.name ?? 'your destination';
     const targetName = currentSegment?.toNode?.name ?? 'your destination';
@@ -109,6 +131,7 @@ export const useTaxiNavigation = ({ taxiRoute, userLocation, isOffRoute, isNavig
     };
     const commitJourney = (route: TaxiNavigationResponse) => {
         setUndoRoute({ ...taxiRoute, segments: taxiRoute.segments?.slice(index) });
+        setUndoJourneyIndex(journeySegmentIndex);
         currentSegmentIndexRef.current = 0;
         setCurrentSegmentIndex(0);
         pauseReroutingRef.current = false;
@@ -126,6 +149,7 @@ export const useTaxiNavigation = ({ taxiRoute, userLocation, isOffRoute, isNavig
         setCurrentSegmentIndex(0);
         setPrompt(null);
         pauseReroutingRef.current = false;
+        setJourneySegmentIndex(undoJourneyIndex);
         onRouteUpdate({ ...undoRoute, planId: nextTaxiPlanId() });
         setUndoRoute(null);
     };
@@ -136,5 +160,6 @@ export const useTaxiNavigation = ({ taxiRoute, userLocation, isOffRoute, isNavig
         currency: taxiRoute.summary.currency, prompt, boardingTarget,
         requestConfirmation, dismissPrompt, confirmTransition, undoTransition,
         canUndo: !!undoRoute, commitJourney,
+        journeySegments, journeySegmentIndex,
     };
 };

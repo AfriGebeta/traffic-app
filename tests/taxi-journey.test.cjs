@@ -203,3 +203,38 @@ test('confirmation gets a quiet period before the next leg can ask a new questio
         assert.equal(output.prompt.kind, 'alight');
     } finally { Date.now = originalNow; }
 });
+test('progress retains completed steps through boarding, alighting, and undo', () => {
+    const h = hookSetup();
+    let hook = h.render();
+    const modes = hook => hook.journeySegments.map(segment => segment.type);
+    assert.deepEqual(modes(hook), ['walk', 'taxi', 'walk', 'taxi', 'walk']);
+    hook.confirmTransition();
+    hook = h.render();
+    assert.equal(hook.journeySegmentIndex, 1);
+    assert.deepEqual(modes(hook), ['walk', 'taxi', 'walk', 'taxi', 'walk']);
+    hook.confirmTransition();
+    hook = h.render();
+    assert.equal(hook.journeySegmentIndex, 2);
+    assert.deepEqual(modes(hook), ['walk', 'taxi', 'walk', 'taxi', 'walk']);
+    hook.undoTransition();
+    hook = h.render();
+    assert.equal(hook.journeySegmentIndex, 1);
+    assert.deepEqual(modes(hook), ['walk', 'taxi', 'walk', 'taxi', 'walk']);
+    h.props.taxiRoute = { ...h.props.taxiRoute, segments: h.props.taxiRoute.segments.map(s => ({ ...s, time: 80 })) };
+    hook = h.render();
+    assert.equal(hook.journeySegmentIndex, 1);
+    assert.equal(hook.journeySegments.length, 5, 'geometry patches do not duplicate history');
+});
+test('repeated mode confirmations never add steps to the original preview itinerary', () => {
+    const original = { ...trip(), segments: [leg(origin, A), leg(A, B, true), leg(B, destination)] };
+    const h = hookSetup(original);
+    h.props.previewSegments = original.segments;
+    let hook = h.render();
+    for (const expected of [1, 2, 1, 2, 1, 2]) {
+        hook.confirmTransition();
+        hook = h.render();
+        assert.equal(hook.journeySegments, original.segments);
+        assert.deepEqual(hook.journeySegments.map(segment => segment.type), ['walk', 'taxi', 'walk']);
+        assert.equal(hook.journeySegmentIndex, expected);
+    }
+});

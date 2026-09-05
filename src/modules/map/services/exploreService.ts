@@ -114,7 +114,7 @@ export const exploreService = {
             body: JSON.stringify({
                 coordinate: { lat, lng },
                 cursor: 0,
-                size: 10,
+                size: 5,
             }),
         });
 
