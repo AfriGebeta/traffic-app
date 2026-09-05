@@ -45,6 +45,16 @@
         "AM": "?"
     },
     {
+        "key": "beta",
+        "EN_US": "Beta",
+        "AM": "ሙከራ "
+    },
+    {
+        "key": "ai-beta-notice",
+        "EN_US": "This assistant is in beta testing. It can make mistakes , please double check important results.",
+        "AM": "ይህ ረዳት በሙከራ (ቤታ) ላይ ነው። ስህተት ሊሠራ ይችላል። አስፈላጊ ውጤቶችን እባክዎ ያረጋግጡ።"
+    },
+    {
         "key": "ai-suggestion-last-place",
         "EN_US": "Take me to the last place I travelled to via the fastest route. And other preset message here.",
         "AM": "ባለፈ ጊዜ ወደ ሄድኩበት ቦታ በፈጣኑ መንገድ ውሰደኝ።"

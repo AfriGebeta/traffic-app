@@ -345,6 +345,15 @@ export default function AIAssistantScreen() {
                     <Ionicons name="chevron-back" size={22} color={theme.textPrimary} />
                     <Text className="text-base ml-1" style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Medium' }}>{t('welcome')}</Text>
                 </TouchableOpacity>
+
+                <View
+                    className="ml-2 px-2 py-0.5 rounded-full"
+                    style={{ backgroundColor: 'rgba(255,165,0,0.15)', borderWidth: 1, borderColor: 'rgba(255,165,0,0.4)' }}
+                >
+                    <Text className="text-xs" style={{ color: '#FFA500', fontFamily: 'PlusJakartaSans-Medium' }}>
+                        {t('beta')}
+                    </Text>
+                </View>
             </View>
 
             {isRecordingBlank ? (
@@ -365,6 +374,19 @@ export default function AIAssistantScreen() {
                         <Text style={{ color: '#FFA500' }}>{t('ai-greeting-highlight2')}</Text>
                         <Text style={{ color: theme.textPrimary }}>{t('ai-greeting-part3')}</Text>
                     </Text>
+
+                    <View
+                        className="flex-row items-start mt-6 px-4 py-3 rounded-2xl"
+                        style={{ backgroundColor: 'rgba(255,165,0,0.12)' }}
+                    >
+                        <Ionicons name="information-circle-outline" size={18} color="#FFA500" style={{ marginTop: 1 }} />
+                        <Text
+                            className="flex-1 text-xs ml-2 leading-5"
+                            style={{ color: theme.textSecondary, fontFamily: 'PlusJakartaSans-Regular' }}
+                        >
+                            {t('ai-beta-notice')}
+                        </Text>
+                    </View>
                 </View>
             ) : (
                 <ScrollView
