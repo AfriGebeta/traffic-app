@@ -630,7 +630,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                             <View className="flex-row items-baseline">
                                 <Text style={{ color: theme.textSecondary }}>{t('powered-by')} </Text>
                                 <Text style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Bold' }}>
-                                    Lekefel
+                                    Lekfel
                                 </Text>
                             </View>
                         </TouchableOpacity>
