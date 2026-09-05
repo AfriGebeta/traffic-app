@@ -1,12 +1,18 @@
-import React, { useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Pressable, Image } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Pressable, Image, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { useDriverLookup } from '../hooks/useDriverLookup';
+import DriverQrScanner from './DriverQrScanner';
+
+import QrCodeIcon from '../../../../assets/images/qr-code.svg';
 
 interface PayFieldProps {
-    icon: 'person' | 'car';
+    icon: 'person' | 'car' | 'call';
+    keyboardType?: 'phone-pad' | 'number-pad';
+    footer?: React.ReactNode;
     label: string;
     value: string;
     onChangeText: (text: string) => void;
@@ -14,6 +20,7 @@ interface PayFieldProps {
     theme: ReturnType<typeof useTheme>['colors'];
     disabled?: boolean;
     showEditIcon?: boolean;
+    rightAccessory?: React.ReactNode;
 }
 
 const TELEBIRR_LOGO = require('../../../../assets/images/telebirr-logo.png');
@@ -21,12 +28,24 @@ const TELEBIRR_LOGO = require('../../../../assets/images/telebirr-logo.png');
 const ACCENT = '#F97316';
 const ICON_ACCENT = colors.primary.main;
 
-function PayField({ icon, label, value, onChangeText, placeholder, theme, disabled, showEditIcon }: PayFieldProps) {
+function PayField({
+    icon,
+    label,
+    value,
+    onChangeText,
+    placeholder,
+    theme,
+    disabled,
+    showEditIcon,
+    keyboardType = 'phone-pad',
+    footer,
+    rightAccessory,
+}: PayFieldProps) {
     const iconColor = disabled ? theme.textSecondary : ICON_ACCENT;
     const inputRef = useRef<TextInput>(null);
 
     return (
-        <View className="flex-row items-center mb-4">
+        <View className="flex-row items-start mb-4">
             <View
                 className="w-9 h-9 rounded-full items-center justify-center mr-3"
                 style={{ borderWidth: 1.5, borderColor: iconColor }}
@@ -43,7 +62,7 @@ function PayField({ icon, label, value, onChangeText, placeholder, theme, disabl
                         value={value}
                         onChangeText={onChangeText}
                         editable={!disabled}
-                        keyboardType="phone-pad"
+                        keyboardType={keyboardType}
                         placeholder={placeholder}
                         placeholderTextColor={theme.textSecondary}
                         className="flex-1 text-base p-0 pb-1"
@@ -63,7 +82,9 @@ function PayField({ icon, label, value, onChangeText, placeholder, theme, disabl
                         </TouchableOpacity>
                     )}
                 </View>
+                {footer}
             </View>
+            {rightAccessory}
         </View>
     );
 }
@@ -99,6 +120,10 @@ export default function LekfelPayCard({
     const { colors: theme } = useTheme();
     const amountInputRef = useRef<TextInput>(null);
 
+    const [driverCode, setDriverCode] = useState('');
+    const [showScanner, setShowScanner] = useState(false);
+    const { status: lookupStatus, driver } = useDriverLookup(driverCode, onReceiverPhoneChange);
+
     return (
         <View
             className="rounded-2xl p-5 mt-4"
@@ -123,10 +148,100 @@ export default function LekfelPayCard({
                 <View className="flex-row items-baseline">
                     <Text style={{ color: theme.textSecondary }}>{t('powered-by')} </Text>
                     <Text style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Bold' }}>
-                        Lekefel
+                        Lekfel
                     </Text>
                 </View>
             </View>
+
+            <View className="flex-row items-center">
+                <TouchableOpacity
+                    onPress={() => setShowScanner(true)}
+                    disabled={disabled}
+                    activeOpacity={0.7}
+                    className="flex-row items-center rounded-xl"
+                    style={{
+                        backgroundColor: theme.background,
+                        borderWidth: 1,
+                        borderColor: theme.border,
+                        paddingHorizontal: 12,
+                        paddingVertical: 11,
+                        opacity: disabled ? 0.5 : 1,
+                    }}
+                >
+                    <QrCodeIcon width={22} height={21} />
+                    <Text
+                        className="ml-2 text-sm"
+                        style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Bold' }}
+                    >
+                        {t('scan-qr')}
+                    </Text>
+                </TouchableOpacity>
+
+                <TextInput
+                    value={driverCode}
+                    onChangeText={setDriverCode}
+                    editable={!disabled}
+                    keyboardType="number-pad"
+                    placeholder={t('driver-code-placeholder')}
+                    placeholderTextColor={theme.textSecondary}
+                    className="flex-1 ml-2 rounded-xl px-4"
+                    style={{
+                        backgroundColor: theme.background,
+                        borderWidth: 1,
+                        borderColor: theme.border,
+                        color: disabled ? theme.textSecondary : theme.textPrimary,
+                        fontFamily: 'PlusJakartaSans-Bold',
+                        paddingVertical: 10,
+                    }}
+                />
+            </View>
+
+            {lookupStatus !== 'idle' && (
+                <View className="flex-row items-center mt-2">
+                    {lookupStatus === 'loading' && (
+                        <>
+                            <ActivityIndicator size="small" color={theme.textSecondary} />
+                            <Text className="text-xs ml-2" style={{ color: theme.textSecondary }}>
+                                {t('looking-up-driver')}
+                            </Text>
+                        </>
+                    )}
+                    {lookupStatus === 'found' && !!driver && (
+                        <>
+                            <Ionicons name="checkmark-circle" size={14} color={theme.green} />
+                            <Text className="text-xs ml-1" style={{ color: theme.green }}>
+                                {driver.fullName}
+                            </Text>
+                        </>
+                    )}
+                    {lookupStatus === 'error' && (
+                        <>
+                            <Ionicons name="alert-circle" size={14} color={colors.error.main} />
+                            <Text className="text-xs ml-1" style={{ color: colors.error.main }}>
+                                {t('driver-not-found')}
+                            </Text>
+                        </>
+                    )}
+                </View>
+            )}
+
+            <View className="flex-row items-center my-2">
+                <View className="flex-1" style={{ height: 1, backgroundColor: theme.border }} />
+                <Text className="text-xs mx-3" style={{ color: theme.textSecondary }}>
+                    {t('or')}
+                </Text>
+                <View className="flex-1" style={{ height: 1, backgroundColor: theme.border }} />
+            </View>
+
+            <PayField
+                icon="call"
+                label={t('driver-phone-number')}
+                value={receiverPhone}
+                onChangeText={onReceiverPhoneChange}
+                placeholder="09XXXXXXXX"
+                theme={theme}
+                disabled={disabled}
+            />
 
             <PayField
                 icon="person"
@@ -137,16 +252,6 @@ export default function LekfelPayCard({
                 theme={theme}
                 disabled={disabled}
                 showEditIcon
-            />
-
-            <PayField
-                icon="car"
-                label={t('driver-phone-number')}
-                value={receiverPhone}
-                onChangeText={onReceiverPhoneChange}
-                placeholder="09XXXXXXXX"
-                theme={theme}
-                disabled={disabled}
             />
 
             <Pressable
@@ -203,6 +308,12 @@ export default function LekfelPayCard({
                     {t('pay')}
                 </Text>
             </TouchableOpacity>
+
+            <DriverQrScanner
+                visible={showScanner}
+                onClose={() => setShowScanner(false)}
+                onScanned={setDriverCode}
+            />
         </View>
     );
 }

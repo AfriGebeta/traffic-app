@@ -8,6 +8,8 @@ import { useTheme } from '../../shared/theme/ThemeContext';
 import { getAppConfig } from '../../shared/config/remoteConfigValues';
 import { showToast } from '../../shared/utils/toast';
 import { decodePolyline } from '../../shared/utils/polyline';
+import { createTaxiRoad, taxiRoadCoordinates, type TaxiRoad } from '../../modules/navigation/utils/taxiRoadGeometry';
+import { retargetTaxiMotion, sampleTaxiMotion, type TaxiMotion } from '../../modules/navigation/utils/taxiAnimation';
 import {
     buildCumulativeDistances,
     pointAtDistance,
@@ -41,6 +43,8 @@ import RadarDarkIcon from '../../../assets/images/radar-dark.svg';
 
 import TrafficJamLightIcon from '../../../assets/images/traffic-jam-light.svg';
 import TrafficJamDarkIcon from '../../../assets/images/traffic-jam-dark.svg';
+import FloodLightIcon from '../../../assets/images/flood-light.svg';
+import FloodDarkIcon from '../../../assets/images/flood-dark.svg';
 
 const MAPPIN_IMAGE = require('../../../assets/images/Mappin.png');
 const NAV_ARROWHEAD_IMAGE = require('../../../assets/images/nav-arrowhead.png');
@@ -119,6 +123,7 @@ const INCIDENT_SVG_ICONS: Record<string, { light: React.FC<{ width?: number; hei
     GATED_COMMUNITY: { light: GatedCommunityLightIcon, dark: GatedCommunityDarkIcon },
     BROKEN_ROAD: { light: BrokenRoadLightIcon, dark: BrokenRoadDarkIcon },
     RADAR: { light: RadarLightIcon, dark: RadarDarkIcon },
+    FLOOD: { light: FloodLightIcon, dark: FloodDarkIcon },
     OTHER: { light: OtherLightIcon, dark: OtherDarkIcon },
 };
 
@@ -220,6 +225,8 @@ interface ExtendedGebetaMapProps extends Omit<GebetaMapProps, 'center'> {
         isWalking: boolean;
         segmentIndex: number;
     }>;
+    routeEpoch?: number;
+    taxiActiveRouteGeoJSON?: any;
     waypointMarkers?: Array<{ latitude: number; longitude: number; name: string }>;
     activeSegmentGeoJSON?: any;
     previewStepLocation?: { lng: number; lat: number } | null;
@@ -298,6 +305,7 @@ NavigationMarker.displayName = 'NavigationMarker';
 
 const WALK_DASH_PATTERN = [0.1, 2];
 
+
 // small enough to read as a settle rather than a jump, large enough that the native
 // camera treats it as a real move instead of collapsing it into a no-op
 const PREVIEW_CAMERA_WAKE_ZOOM_NUDGE = 0.4;
@@ -315,42 +323,56 @@ const useForegroundEpoch = () => {
     return epoch;
 };
 
+const taxiLineAtPosition = (geoJSON: any, road: TaxiRoad | null, lat: number, lng: number) => ({
+    ...geoJSON,
+    geometry: { ...geoJSON.geometry, coordinates: taxiRoadCoordinates(road, lat, lng) },
+});
+
 const AnimatedSegmentedRoutes = memo(({
     segmentedRoutes,
     animatedLat,
     animatedLng,
     currentTaxiSegmentIndex,
+    routeEpoch = 0,
+    taxiActiveRouteGeoJSON,
+    updatePositionRef,
 }: {
     segmentedRoutes: Array<{ geoJSON: any; isWalking: boolean; segmentIndex: number }>;
     animatedLat: number;
     animatedLng: number;
     currentTaxiSegmentIndex?: number;
+    routeEpoch?: number;
+    taxiActiveRouteGeoJSON?: any;
+    updatePositionRef: React.MutableRefObject<((lat: number, lng: number) => void) | null>;
 }) => {
+    const activeSourceRef = useRef<any>(null);
+    const activeRoad = useMemo(() => createTaxiRoad(taxiActiveRouteGeoJSON?.geometry?.coordinates),
+        [taxiActiveRouteGeoJSON]);
+    useLayoutEffect(() => {
+        const active = segmentedRoutes.find(seg => seg.segmentIndex === currentTaxiSegmentIndex);
+        updatePositionRef.current = active ? (lat, lng) => {
+            activeSourceRef.current?.setNativeProps({
+                shape: JSON.stringify(taxiLineAtPosition(active.geoJSON, activeRoad, lat, lng)),
+            });
+        } : null;
+        return () => { updatePositionRef.current = null; };
+    }, [segmentedRoutes, currentTaxiSegmentIndex, updatePositionRef, activeRoad]);
+
     const animatedSegments = useMemo(() => {
         return segmentedRoutes.map((seg) => {
+            if (currentTaxiSegmentIndex != null && seg.segmentIndex < currentTaxiSegmentIndex) {
+                return { ...seg, geoJSON: { ...seg.geoJSON, geometry: { ...seg.geoJSON.geometry, coordinates: [] } } };
+            }
             if (seg.segmentIndex !== currentTaxiSegmentIndex) return seg;
-            const coords = seg.geoJSON.geometry.coordinates;
-            if (coords.length === 0) return seg;
-            return {
-                ...seg,
-                geoJSON: {
-                    ...seg.geoJSON,
-                    geometry: {
-                        ...seg.geoJSON.geometry,
-                        coordinates: [[animatedLng, animatedLat], ...coords],
-                    },
-                },
-            };
+            return { ...seg, geoJSON: taxiLineAtPosition(seg.geoJSON, activeRoad, animatedLat, animatedLng) };
         });
-    }, [segmentedRoutes, animatedLat, animatedLng, currentTaxiSegmentIndex]);
+    }, [segmentedRoutes, animatedLat, animatedLng, currentTaxiSegmentIndex, activeRoad]);
 
     const foregroundEpoch = useForegroundEpoch();
 
     return (
         <>
             {animatedSegments.map((route) => {
-                if (route.geoJSON.geometry.coordinates.length === 0) return null;
-
                 const lineWidth = route.isWalking ? 10 : 16;
                 const lineStyle: any = {
                     lineColor: route.isWalking ? '#EF4444' : '#3B82F6',
@@ -365,25 +387,39 @@ const AnimatedSegmentedRoutes = memo(({
 
                 return (
                     <MapLibreGL.ShapeSource
-                        key={`segment-${route.segmentIndex}-source-${route.isWalking ? foregroundEpoch : 0}`}
-                        id={`segment-${route.segmentIndex}-source`}
+                        key={`taxi-${routeEpoch}-${route.segmentIndex}-${foregroundEpoch}`}
+                        id={`taxi-${routeEpoch}-${route.segmentIndex}-${foregroundEpoch}-source`}
+                        ref={route.segmentIndex === currentTaxiSegmentIndex ? activeSourceRef : undefined}
                         shape={route.geoJSON}
                     >
-                        {!route.isWalking && (
-                            <MapLibreGL.LineLayer
-                                id={`segment-${route.segmentIndex}-casing-layer`}
-                                style={{
-                                    lineColor: '#1e3a8a',
-                                    lineWidth: lineWidth + 4,
-                                    lineOpacity: 0.5,
-                                    lineCap: 'round',
-                                    lineJoin: 'round',
-                                }}
-                            />
-                        )}
                         <MapLibreGL.LineLayer
-                            id={`segment-${route.segmentIndex}-layer`}
-                            style={lineStyle}
+                            id={`taxi-${routeEpoch}-${route.segmentIndex}-${foregroundEpoch}-casing-layer`}
+                            belowLayerID="nav-marker-layer"
+                            style={{
+                                lineColor: '#1e3a8a', lineWidth: 20,
+                                lineOpacity: route.isWalking ? 0 : 0.5,
+                                lineCap: 'round', lineJoin: 'round'
+                            }}
+                        />
+                        <MapLibreGL.LineLayer
+                            key="walk"
+                            id={`taxi-${routeEpoch}-${route.segmentIndex}-${foregroundEpoch}-walk-layer`}
+                            belowLayerID="nav-marker-layer"
+                            style={{
+                                ...lineStyle, lineColor: '#EF4444', lineWidth: 10,
+                                lineDasharray: WALK_DASH_PATTERN,
+                                lineOpacity: route.isWalking ? lineStyle.lineOpacity : 0
+                            }}
+                        />
+                        <MapLibreGL.LineLayer
+                            key="taxi"
+                            id={`taxi-${routeEpoch}-${route.segmentIndex}-${foregroundEpoch}-taxi-layer`}
+                            belowLayerID="nav-marker-layer"
+                            style={{
+                                lineColor: '#3B82F6', lineWidth: 16,
+                                lineCap: 'round', lineJoin: 'round',
+                                lineOpacity: route.isWalking ? 0 : lineStyle.lineOpacity
+                            }}
                         />
                     </MapLibreGL.ShapeSource>
                 );
@@ -400,6 +436,8 @@ interface AnimatedNavLayerProps {
     routeGeoJSON: any;
     routeLineStyle: any;
     segmentedRoutes?: Array<{ geoJSON: any; isWalking: boolean; segmentIndex: number }>;
+    routeEpoch?: number;
+    taxiActiveRouteGeoJSON?: any;
     isTaxiNavigation?: boolean;
     currentTaxiSegmentIndex?: number;
     imagesLoaded: boolean;
@@ -412,7 +450,6 @@ interface AnimatedNavLayerProps {
 const NAV_LINE_MS = 33;
 const NAV_LINE_TRIM_AHEAD_M = 0;
 const NAV_LINE_LAG_COMP_S = 0.15;
-const NAV_TAXI_RENDER_MS = NAV_LINE_MS;
 const NAV_CAMERA_MS = 0;
 
 const NAV_ARROW_SHOW_M = 300;
@@ -424,8 +461,8 @@ const NAV_ARROW_TURN_TYPES = new Set([9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 20,
 const NAV_PUCK_SCREEN_FRACTION = 0.68;
 const NAV_PUCK_OVERLAY_SIZE = 48;
 const NAV_PUCK_FORWARD_PX = 4;
-const navCameraPaddingTop = (mapHeight: number) => {
-    const desiredDp = (2 * NAV_PUCK_SCREEN_FRACTION - 1) * mapHeight;
+const navCameraPaddingTop = (mapHeight: number, fraction = NAV_PUCK_SCREEN_FRACTION) => {
+    const desiredDp = (2 * fraction - 1) * mapHeight;
     return Math.max(0, Math.round(desiredDp / PixelRatio.getFontScale()));
 };
 
@@ -438,6 +475,7 @@ const NAV_DT_CLAMP_S = 0.1;
 const NAV_HEADING_LOOKAHEAD = 25;
 
 const NAV_SNAP_BACK_TOLERANCE_M = 2;
+const NAV_BACKTRACK_MIN_M = 10;
 const NAV_UNSNAP_M = 14;
 const NAV_RESNAP_M = 12;
 
@@ -459,6 +497,8 @@ const AnimatedNavLayer = memo(({
     routeGeoJSON,
     routeLineStyle,
     segmentedRoutes,
+    routeEpoch,
+    taxiActiveRouteGeoJSON,
     isTaxiNavigation,
     currentTaxiSegmentIndex,
     imagesLoaded,
@@ -466,12 +506,14 @@ const AnimatedNavLayer = memo(({
     cameraLocked,
     maneuvers,
 }: AnimatedNavLayerProps) => {
+    const taxiRoad = useMemo(() => createTaxiRoad(taxiActiveRouteGeoJSON?.geometry?.coordinates),
+        [taxiActiveRouteGeoJSON]);
     const rawCoords: [number, number][] | undefined = routeGeoJSON?.geometry?.coordinates;
     const coords = useMemo(
         () => (!isTaxiNavigation && rawCoords && rawCoords.length > 2 ? smoothRouteCorners(rawCoords) : rawCoords),
         [rawCoords, isTaxiNavigation]
     );
-    const useRouteModel = !!coords && coords.length > 1;
+    const useRouteModel = !isTaxiNavigation && !!coords && coords.length > 1;
 
     const cum = useMemo(
         () => (coords && coords.length > 1 ? buildCumulativeDistances(coords) : null),
@@ -497,6 +539,7 @@ const AnimatedNavLayer = memo(({
 
     const puckSrcRef = useRef<any>(null);
     const lineSrcRef = useRef<any>(null);
+    const taxiLineFrameRef = useRef<((lat: number, lng: number) => void) | null>(null);
 
     const renderedSRef = useRef(0);
     const vRef = useRef(0);
@@ -513,9 +556,11 @@ const AnimatedNavLayer = memo(({
     const prevRawRef = useRef<{ lat: number; lng: number } | null>(null);
     const taxiCurRef = useRef({ lat: 0, lng: 0 });
     const taxiToRef = useRef({ lat: 0, lng: 0 });
+    const taxiMotionRef = useRef<TaxiMotion | null>(null);
 
     useEffect(() => {
         firstRef.current = true;
+        taxiMotionRef.current = null;
         lastFixRef.current = null;
         renderedSRef.current = 0;
         vRef.current = 0;
@@ -530,6 +575,19 @@ const AnimatedNavLayer = memo(({
 
     useEffect(() => {
         if (!isNavigating || !userLocation) return;
+
+        if (isTaxiNavigation) {
+            const target = { lat: userLocation.lat, lng: userLocation.lng };
+            taxiMotionRef.current = retargetTaxiMotion(
+                taxiMotionRef.current, target, Date.now(), getAppConfig().navGpsIntervalMs, taxiRoad
+            );
+            if (firstRef.current) {
+                firstRef.current = false;
+                taxiCurRef.current = target;
+                setRender({ ...target, heading: headingRef.current });
+            }
+            return;
+        }
 
         if (!useRouteModel || !coords || !cum) {
             if (firstRef.current) {
@@ -616,11 +674,17 @@ const AnimatedNavLayer = memo(({
             unsnapStartRef.current = null;
             const prev = lastFixRef.current!;
             const dtFix = Math.max(0.001, (now - prev.t) / 1000);
-            let measured = (routeS - prev.s) / dtFix;
+            const alongRate = (routeS - prev.s) / dtFix;
+            let measured = alongRate;
             if (measured < 0) measured = 0;
             if (measured > 60) measured = 60;
-            const sample = userLocation.speed != null && userLocation.speed >= 0 ? userLocation.speed : measured;
-            if (sample <= NAV_STOP_SPEED) {
+            const goingBackward = alongRate < -NAV_STOP_SPEED;
+            const sample = !goingBackward && userLocation.speed != null && userLocation.speed >= 0
+                ? userLocation.speed
+                : measured;
+            if (goingBackward) {
+                vRef.current = 0;
+            } else if (sample <= NAV_STOP_SPEED) {
                 vRef.current = 0;
             } else if (sample < vRef.current) {
                 vRef.current = sample;
@@ -633,17 +697,17 @@ const AnimatedNavLayer = memo(({
         }
 
         prevRawRef.current = { lat: userLocation.lat, lng: userLocation.lng };
-    }, [userLocation?.lat, userLocation?.lng, userLocation?.speed, isNavigating, useRouteModel, coords, cum]);
+    }, [userLocation?.lat, userLocation?.lng, userLocation?.speed, isNavigating, useRouteModel, coords, cum, isTaxiNavigation, taxiRoad]);
 
     useEffect(() => {
         if (!isNavigating) {
             firstRef.current = true;
+            taxiMotionRef.current = null;
             return;
         }
 
         let rafId: number;
         let lastLine = 0;
-        let lastRender = 0;
         let lastCam = 0;
         let lastTick = 0;
 
@@ -656,7 +720,22 @@ const AnimatedNavLayer = memo(({
 
             let lat: number, lng: number, heading: number, s: number;
 
-            if (!useRouteModel || !coords || !cum) {
+            if (isTaxiNavigation && taxiMotionRef.current) {
+                const position = sampleTaxiMotion(taxiMotionRef.current, now);
+                lat = position.lat;
+                lng = position.lng;
+                const cur = taxiCurRef.current;
+                if (Math.abs(lng - cur.lng) > 1e-8 || Math.abs(lat - cur.lat) > 1e-8) {
+                    const raw = calcBearing(cur, position);
+                    let diff = raw - headingRef.current;
+                    if (diff > 180) diff -= 360;
+                    if (diff < -180) diff += 360;
+                    headingRef.current += diff * headAlpha;
+                }
+                taxiCurRef.current = position;
+                heading = headingRef.current;
+                s = 0;
+            } else if (!useRouteModel || !coords || !cum) {
                 const cur = taxiCurRef.current;
                 const to = taxiToRef.current;
                 lat = cur.lat + (to.lat - cur.lat) * freeAlpha;
@@ -695,7 +774,8 @@ const AnimatedNavLayer = memo(({
 
                 const corrAlpha = 1 - Math.exp(-dt / NAV_CORR_TAU);
                 let newS = renderedSRef.current + (targetS - renderedSRef.current) * corrAlpha;
-                if (newS < renderedSRef.current) newS = renderedSRef.current;   // never step backward
+                const fixBehind = fix != null && fix.s < renderedSRef.current - NAV_BACKTRACK_MIN_M;
+                if (!fixBehind && newS < renderedSRef.current) newS = renderedSRef.current;
                 if (newS > total) newS = total;
                 s = newS;
                 renderedSRef.current = s;
@@ -713,6 +793,7 @@ const AnimatedNavLayer = memo(({
                 heading = headingRef.current;
             }
 
+            if (isTaxiNavigation) taxiLineFrameRef.current?.(lat, lng);
             puckSrcRef.current?.setNativeProps({
                 shape: JSON.stringify({
                     type: 'Feature',
@@ -720,11 +801,6 @@ const AnimatedNavLayer = memo(({
                     geometry: { type: 'Point', coordinates: [lng, lat] },
                 }),
             });
-
-            if (isTaxiNavigation && now - lastRender >= NAV_TAXI_RENDER_MS) {
-                lastRender = now;
-                setRender({ lat, lng, heading });
-            }
 
             if (useRouteModel && !isTaxiNavigation && coords && cum && now - lastLine >= NAV_LINE_MS) {
                 lastLine = now;
@@ -807,9 +883,12 @@ const AnimatedNavLayer = memo(({
             {isNavigating && isTaxiNavigation && segmentedRoutes && segmentedRoutes.length > 0 && (
                 <AnimatedSegmentedRoutes
                     segmentedRoutes={segmentedRoutes}
-                    animatedLat={render.lat}
-                    animatedLng={render.lng}
+                    animatedLat={taxiCurRef.current.lat}
+                    animatedLng={taxiCurRef.current.lng}
+                    updatePositionRef={taxiLineFrameRef}
                     currentTaxiSegmentIndex={currentTaxiSegmentIndex}
+                    routeEpoch={routeEpoch}
+                    taxiActiveRouteGeoJSON={taxiActiveRouteGeoJSON}
                 />
             )}
             {isNavigating && lineShape && (
@@ -891,7 +970,8 @@ AnimatedNavLayer.displayName = 'AnimatedNavLayer';
 
 
 const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
-    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, isHomeMap, staticInitialCamera, freeCamera, maneuvers, boundingBox, alternativeRoutesGeoJSON, routeTimeLabels }, ref) => {
+    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, routeEpoch, taxiActiveRouteGeoJSON, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, isHomeMap, staticInitialCamera, freeCamera, maneuvers, boundingBox, alternativeRoutesGeoJSON, routeTimeLabels }, ref) => {
+        const navPuckFraction = isTaxiNavigation ? 0.52 : NAV_PUCK_SCREEN_FRACTION;
         const { isDark } = useTheme();
         const foregroundEpoch = useForegroundEpoch();
         const [mapStyleState, setMapStyleState] = useState<Record<string, unknown> | null>(() =>
@@ -1242,7 +1322,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
             cameraRef.current.setCamera({
                 centerCoordinate: [userLocation.lng, userLocation.lat],
-                padding: { paddingTop: navCameraPaddingTop(mapHeightRef.current) },
+                padding: { paddingTop: navCameraPaddingTop(mapHeightRef.current, navPuckFraction) },
                 zoomLevel: NAV_ZOOM,
                 heading: userHeading || 0,
                 pitch: 60,
@@ -1256,7 +1336,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
 
             lastRegionSnapshotRef.current = null;
             return true;
-        }, [userLocation, userHeading, markAnimatedProgrammaticCamera]);
+        }, [userLocation, userHeading, markAnimatedProgrammaticCamera, navPuckFraction]);
 
         const moveCamera = useCallback((center: [number, number], heading: number) => {
             if (userHasZoomedOut.current) {
@@ -1275,7 +1355,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 cameraResumeUntilRef.current = now + 600;
                 cameraRef.current.setCamera({
                     centerCoordinate: center,
-                    padding: { paddingTop: navCameraPaddingTop(mapHeightRef.current) },
+                    padding: { paddingTop: navCameraPaddingTop(mapHeightRef.current, navPuckFraction) },
                     heading,
                     pitch: 60,
                     zoomLevel: NAV_ZOOM,
@@ -1288,13 +1368,13 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             }
             cameraRef.current.setCamera({
                 centerCoordinate: center,
-                padding: { paddingTop: navCameraPaddingTop(mapHeightRef.current) },
+                padding: { paddingTop: navCameraPaddingTop(mapHeightRef.current, navPuckFraction) },
                 heading,
                 pitch: 60,
                 animationDuration: 0,
                 animationMode: 'moveTo',
             });
-        }, [markAnimatedProgrammaticCamera]);
+        }, [markAnimatedProgrammaticCamera, navPuckFraction]);
 
         useEffect(() => {
             if (!mapStyleState || !pendingFlyTo.current) return;
@@ -1472,7 +1552,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 if (cameraRef.current && userLocation) {
                     cameraRef.current.setCamera({
                         centerCoordinate: [userLocation.lng, userLocation.lat],
-                        padding: { paddingTop: navCameraPaddingTop(mapHeightRef.current) },
+                        padding: { paddingTop: navCameraPaddingTop(mapHeightRef.current, navPuckFraction) },
                         zoomLevel: NAV_ZOOM,
                         animationDuration: 500,
                         pitch: 60,
@@ -1499,7 +1579,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 navGraceUntilRef.current = 0;
                 lastRegionSnapshotRef.current = null;
             }
-        }, [isNavigating, userLocation, userHeading, markAnimatedProgrammaticCamera]);
+        }, [isNavigating, userLocation, userHeading, markAnimatedProgrammaticCamera, navPuckFraction]);
 
         useEffect(() => {
             if (!pendingHomeResetRef.current) return;
@@ -2102,7 +2182,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             }
                             return (
                                 <MapLibreGL.ShapeSource
-                                    key={`segment-static-${route.segmentIndex}-${route.isWalking ? foregroundEpoch : 0}`}
+                                    key={`segment-static-${routeEpoch}-${route.segmentIndex}-${route.isWalking ? foregroundEpoch : 0}`}
                                     id={`segment-${route.segmentIndex}-source`}
                                     shape={route.geoJSON}
                                 >
@@ -2408,6 +2488,8 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                                 ...(routeStyle?.isDotted && { lineDasharray: WALK_DASH_PATTERN }),
                             }}
                             segmentedRoutes={segmentedRoutes}
+                            routeEpoch={routeEpoch}
+                            taxiActiveRouteGeoJSON={taxiActiveRouteGeoJSON}
                             isTaxiNavigation={!!isTaxiNavigation}
                             currentTaxiSegmentIndex={currentTaxiSegmentIndex}
                             imagesLoaded={!!imagesLoaded}
@@ -2680,7 +2762,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             pointerEvents="none"
                             style={[
                                 styles.navPuckOverlay,
-                                { top: mapHeight * NAV_PUCK_SCREEN_FRACTION - NAV_PUCK_OVERLAY_SIZE / 2 - NAV_PUCK_FORWARD_PX },
+                                { top: mapHeight * navPuckFraction - NAV_PUCK_OVERLAY_SIZE / 2 - NAV_PUCK_FORWARD_PX },
                             ]}
                         >
                             <Image

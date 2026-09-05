@@ -145,6 +145,12 @@
           "isAndroidForegroundServiceEnabled": true
         }
       ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Gebeta Maps uses your camera to scan the driver's QR code so you can identify them."
+        }
+      ],
       "expo-secure-store",
       "@react-native-firebase/app",
       "@react-native-firebase/app-check",

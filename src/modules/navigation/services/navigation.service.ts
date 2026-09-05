@@ -44,7 +44,7 @@ export const navigationService = {
             const response = await apiService.post<{ response: { results: any[] } }>('/api/navigation/request-revgeocoding', {
                 coordinate: { lat, lng },
                 cursor: 0,
-                size: 10
+                size: 5
             });
 
             const results = response.data?.response?.results || response.data?.response || [];
@@ -114,7 +114,7 @@ export const navigationService = {
         };
     },
 
-    async getNavigation(request: NavigationRequest): Promise<NavigationResponse | null> {
+    async getNavigation(request: NavigationRequest, options?: { timeoutMs: number; signal?: AbortSignal }): Promise<NavigationResponse | null> {
         const payload: Record<string, any> = {
             origin: request.origin,
             destination: request.destination,
@@ -136,27 +136,46 @@ export const navigationService = {
             return cached.data;
         }
 
-        const inFlight = navigationInFlight.get(cacheKey);
+        const inFlight = options ? undefined : navigationInFlight.get(cacheKey);
         if (inFlight) {
             return inFlight;
         }
 
         const requestPromise = (async () => {
-            const response = await apiService.post<NavigationResponse>('/api/navigation/request-navigation', payload);
+            const controller = options ? new AbortController() : null;
+            let timer: ReturnType<typeof setTimeout> | undefined;
+            let cancel: (() => void) | undefined;
+            const deadline = options ? new Promise<never>((_, reject) => {
+                cancel = () => { controller!.abort(); reject(new Error('Taxi route request cancelled')); };
+                if (options.signal?.aborted) { cancel(); return; }
+                options.signal?.addEventListener('abort', cancel, { once: true });
+                timer = setTimeout(() => {
+                    controller!.abort();
+                    reject(new Error('Taxi route request timed out'));
+                }, options.timeoutMs);
+            }) : null;
+            try {
+                const pending = apiService.post<NavigationResponse>('/api/navigation/request-navigation', payload,
+                    undefined, controller?.signal);
+                const response = await (deadline ? Promise.race([pending, deadline]) : pending);
 
-            if (response.error || !response.data) {
-                return null;
+                if (response.error || !response.data) {
+                    return null;
+                }
+
+                navigationCache.set(cacheKey, { timestamp: Date.now(), data: response.data });
+                return response.data;
+            } finally {
+                if (timer) clearTimeout(timer);
+                if (cancel) options?.signal?.removeEventListener('abort', cancel);
             }
-
-            navigationCache.set(cacheKey, { timestamp: Date.now(), data: response.data });
-            return response.data;
         })();
 
-        navigationInFlight.set(cacheKey, requestPromise);
+        if (!options) navigationInFlight.set(cacheKey, requestPromise);
         try {
             return await requestPromise;
         } finally {
-            navigationInFlight.delete(cacheKey);
+            if (!options) navigationInFlight.delete(cacheKey);
         }
     },
 

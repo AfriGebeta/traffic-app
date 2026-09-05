@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, BackHandler } from 'react-native';
+
 import AccidentLightIcon from '../../../../assets/images/accident-light.svg';
 import AccidentDarkIcon from '../../../../assets/images/accident-dark.svg';
 import BadWeatherLightIcon from '../../../../assets/images/bad-weather-light.svg';
@@ -13,6 +14,7 @@ import CrashDarkIcon from '../../../../assets/images/crash-dark.svg';
 import GatedCommunityLightIcon from '../../../../assets/images/gated-community-light.svg';
 import GatedCommunityDarkIcon from '../../../../assets/images/gated-community-dark.svg';
 import HazardLightIcon from '../../../../assets/images/hazard-light.svg';
+
 import HazardDarkIcon from '../../../../assets/images/hazard-dark.svg';
 import OtherLightIcon from '../../../../assets/images/other-light.svg';
 import OtherDarkIcon from '../../../../assets/images/other-dark.svg';
@@ -20,10 +22,13 @@ import RadarLightIcon from '../../../../assets/images/radar-light.svg';
 import RadarDarkIcon from '../../../../assets/images/radar-dark.svg';
 import TrafficJamLightIcon from '../../../../assets/images/traffic-jam-light.svg';
 import TrafficJamDarkIcon from '../../../../assets/images/traffic-jam-dark.svg';
+import FloodLightIcon from '../../../../assets/images/flood-light.svg';
+import FloodDarkIcon from '../../../../assets/images/flood-dark.svg';
 import DangerTriangleIcon from '../../../../assets/images/Danger Triangle.svg';
 import DarkDangerTriangleIcon from '../../../../assets/images/dark-report.svg';
 import TrafficLightIcon from '../../../../assets/images/contribute-traffic-light.svg';
 import TrafficDarkIcon from '../../../../assets/images/contribute-traffic-dark.svg';
+
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
@@ -45,6 +50,7 @@ const INCIDENT_ICON_MAP: Record<string, { light: IncidentIcon; dark: IncidentIco
     'GATED_COMMUNITY': { light: GatedCommunityLightIcon, dark: GatedCommunityDarkIcon },
     'BROKEN_ROAD': { light: BrokenRoadLightIcon, dark: BrokenRoadDarkIcon },
     'RADAR': { light: RadarLightIcon, dark: RadarDarkIcon },
+    'FLOOD': { light: FloodLightIcon, dark: FloodDarkIcon },
     'OTHER': { light: OtherLightIcon, dark: OtherDarkIcon },
 };
 
@@ -101,15 +107,17 @@ export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
                 if (response.ok) {
                     const types = await response.json();
 
-                    const mappedTypes = types.map((type: any) => {
-                        return {
-                            id: type.id,
-                            name: type.name,
-                            label: type.label,
-                            icon: INCIDENT_TYPES.find(t => t.name === type.name)?.icon || 'alert-circle',
-                            color: INCIDENT_TYPES.find(t => t.name === type.name)?.color || '#F97316',
-                        };
-                    });
+                    const mappedTypes = types
+                        .filter((type: any) => INCIDENT_ICON_MAP[type.name])
+                        .map((type: any) => {
+                            return {
+                                id: type.id,
+                                name: type.name,
+                                label: type.label,
+                                icon: INCIDENT_TYPES.find(t => t.name === type.name)?.icon || 'alert-circle',
+                                color: INCIDENT_TYPES.find(t => t.name === type.name)?.color || '#F97316',
+                            };
+                        });
                     const sortedTypes = mappedTypes.sort((a: any, b: any) => {
                         if (a.name === 'OTHER') return 1;
                         if (b.name === 'OTHER') return -1;
@@ -229,7 +237,7 @@ export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
 
     return (
         <BottomSheet expandWhenOpen={true}>
-            <View className="pb-4">
+            <View className="flex-1 pb-4">
                 <View className="flex-row items-center mb-6">
                     <TouchableOpacity
                         onPress={() => (isNavigating ? setStep('choose') : onClose())}

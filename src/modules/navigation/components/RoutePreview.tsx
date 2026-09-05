@@ -411,7 +411,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
     return (
         <View
             className="absolute left-4 right-4 rounded-3xl shadow-2xl overflow-hidden"
-            style={{ bottom: insets.bottom > 0 ? insets.bottom + 8 : 36 }}
+            style={{ bottom: insets.bottom > 0 ? insets.bottom + 4 : 34 }}
         >
             <BlurView intensity={100} tint={isDark ? 'dark' : 'light'} style={{ flex: 1, borderRadius: 24 }}>
                 <View style={{ backgroundColor: isDark ? 'rgba(30, 30, 30, 0.6)' : 'rgba(255, 255, 255, 0.4)', borderRadius: 24 }}>
@@ -630,7 +630,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                             <View className="flex-row items-baseline">
                                 <Text style={{ color: theme.textSecondary }}>{t('powered-by')} </Text>
                                 <Text style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Bold' }}>
-                                    Lekefel
+                                    Lekfel
                                 </Text>
                             </View>
                         </TouchableOpacity>

@@ -12,6 +12,7 @@ import { useUserRegistration } from '../../register/hooks/useUserRegistration';
 import LekfelPaymentModal from '../components/LekfelPaymentModal';
 import LekfelPayCard from '../components/LekfelPayCard';
 import { useLekfelPayment } from '../hooks/useLekfelPayment';
+import { toE164 } from '../utils/phone';
 
 export default function TaxiSearchScreen() {
     const router = useRouter();
@@ -255,19 +256,22 @@ export default function TaxiSearchScreen() {
         && !hasValidDestination
         && filteredStations.length === 0;
 
-    const canPay = payerPhone.trim().length > 0
-        && receiverPhone.trim().length > 0
-        && Number(payAmount.trim()) > 0;
+    const payerE164 = toE164(payerPhone);
+    const receiverE164 = toE164(receiverPhone);
+
+    const canPay = !!payerE164 && !!receiverE164 && Number(payAmount.trim()) > 0;
 
     const handlePay = () => {
+        if (!payerE164 || !receiverE164) return;
+
         const now = new Date();
         const originCoords = selectedOriginCoords
             || (userLocation ? { lat: userLocation.lat, lng: userLocation.lng } : null);
         const resolvedOriginName = originName.trim() || t('current-location');
 
         pay({
-            payerPhone: payerPhone.trim(),
-            receiverPhone: receiverPhone.trim(),
+            payerPhone: payerE164,
+            receiverPhone: receiverE164,
             amount: Number(payAmount.trim()),
             description: `${t('taxi-ride')} ${resolvedOriginName} -> ${destinationName.trim()}`,
             originName: resolvedOriginName,
@@ -339,12 +343,12 @@ export default function TaxiSearchScreen() {
             </View>
 
             <ScrollView
-                className="flex-1 p-4"
+                className="flex-1"
                 keyboardShouldPersistTaps="handled"
                 keyboardDismissMode="interactive"
-                contentContainerStyle={{ flexGrow: 1, paddingBottom: insets.bottom + 40 }}
+                contentContainerStyle={{ flexGrow: 1, padding: 16, paddingBottom: insets.bottom + 40 }}
             >
-                <View className="rounded-2xl p-6 shadow-sm" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
+                <View className="rounded-2xl px-6 pt-3 pb-6 shadow-sm" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
                     <View className="mb-4">
                         <Text className="font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('from')}</Text>
 
@@ -428,19 +432,38 @@ export default function TaxiSearchScreen() {
 
                     <View className="mb-4">
                         <Text className="font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('to')} *</Text>
-                        <TextInput
-                            className="rounded-xl px-4 py-3"
-                            style={{ backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border, color: theme.textPrimary }}
-                            placeholderTextColor={theme.textSecondary}
-                            placeholder={t('enter-destination-name')}
-                            value={destinationName}
-                            onChangeText={(text) => {
-                                setDestinationName(text);
-                                setSelectedCoords(null);
-                                setIsSelectingOrigin(false);
-                            }}
-                            onFocus={() => setIsSelectingOrigin(false)}
-                        />
+                        <View className="flex-row items-center">
+                            <TextInput
+                                className="flex-1 rounded-xl px-4 py-3"
+                                style={{ backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border, color: theme.textPrimary }}
+                                placeholderTextColor={theme.textSecondary}
+                                placeholder={t('enter-destination-name')}
+                                value={destinationName}
+                                onChangeText={(text) => {
+                                    setDestinationName(text);
+                                    setSelectedCoords(null);
+                                    setIsSelectingOrigin(false);
+                                }}
+                                onFocus={() => setIsSelectingOrigin(false)}
+                            />
+
+                            <TouchableOpacity
+                                className="ml-2 rounded-xl items-center justify-center"
+                                style={{
+                                    backgroundColor: theme.surface,
+                                    borderWidth: 2,
+                                    borderStyle: 'dashed',
+                                    borderColor: theme.border,
+                                    paddingHorizontal: 10,
+                                    paddingVertical: 7,
+                                }}
+                                onPress={handleMapPicker}
+                                activeOpacity={0.7}
+                                accessibilityLabel={t('or-pick-on-map')}
+                            >
+                                <Ionicons name="map" size={22} color="#FFA500" />
+                            </TouchableOpacity>
+                        </View>
 
                         {filteredStations.length > 0 && !isSelectingOrigin && (
                             <View className="mt-2 rounded-xl overflow-hidden" style={{ backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border }}>
@@ -491,17 +514,7 @@ export default function TaxiSearchScreen() {
                     </View>
 
                     <TouchableOpacity
-                        className="rounded-xl p-4 flex-row items-center justify-center mb-6"
-                        style={{ backgroundColor: theme.surface, borderWidth: 2, borderStyle: 'dashed', borderColor: theme.border }}
-                        onPress={handleMapPicker}
-                        activeOpacity={0.7}
-                    >
-                        <Ionicons name="map" size={24} color="#FFA500" />
-                        <Text className="ml-2" style={{ color: theme.textSecondary }}>{t('or-pick-on-map')}</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        className="py-4 rounded-xl"
+                        className="py-4 rounded-xl mt-2"
                         style={{ backgroundColor: canSearch ? '#F97316' : theme.border }}
                         onPress={handleSearch}
                         disabled={!canSearch}

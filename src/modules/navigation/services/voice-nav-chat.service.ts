@@ -11,14 +11,27 @@ export interface ChatStreamRequest {
 
 export const resetChatSession = async (sessionId: string): Promise<void> => {
     if (!sessionId) return;
+    const url = `${API_URL}/api/asr/chat/reset`;
+    const headers = { 'x-session-id': sessionId };
+    console.log('voicenav: chat reset request', JSON.stringify({ url, method: 'POST', headers }));
+    const startedAt = Date.now();
     try {
-        const response = await fetch(`${API_URL}/api/asr/chat/reset`, {
-            method: 'POST',
-            headers: { 'x-session-id': sessionId },
-        });
-        console.log('voicenav: chat reset', sessionId, response.status);
+        const response = await fetch(url, { method: 'POST', headers });
+        const body = await response.text();
+        console.log(
+            'voicenav: chat reset response',
+            JSON.stringify({
+                status: response.status,
+                ok: response.ok,
+                ms: Date.now() - startedAt,
+                body: body.slice(0, 500),
+            }),
+        );
     } catch (error) {
-        console.log('voicenav: chat reset failed', String(error));
+        console.log(
+            'voicenav: chat reset failed',
+            JSON.stringify({ url, sessionId, ms: Date.now() - startedAt, error: String(error) }),
+        );
     }
 };
 
@@ -60,15 +73,53 @@ export const streamChat = (
             }
         };
 
-        xhr.open('POST', `${API_URL}/api/asr/chat/stream`);
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.setRequestHeader('Accept', 'text/event-stream');
+        const url = `${API_URL}/api/asr/chat/stream`;
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            Accept: 'text/event-stream',
+            ...(request.sessionId ? { 'x-session-id': request.sessionId } : {}),
+        };
+        const body = JSON.stringify(request);
+        const startedAt = Date.now();
+
+        xhr.open('POST', url);
+        for (const [key, value] of Object.entries(headers)) xhr.setRequestHeader(key, value);
+
+        console.log(
+            'voicenav: chat stream request',
+            JSON.stringify({ url, method: 'POST', headers, sessionId: request.sessionId, body }),
+        );
 
         xhr.onprogress = () => drain(false);
-        xhr.onerror = () => reject(new Error('chat stream request failed'));
-        xhr.ontimeout = () => reject(new Error('chat stream timed out'));
+        xhr.onerror = () => {
+            console.log(
+                'voicenav: chat stream failed',
+                JSON.stringify({ url, sessionId: request.sessionId, ms: Date.now() - startedAt }),
+            );
+            reject(new Error('chat stream request failed'));
+        };
+        xhr.ontimeout = () => {
+            console.log(
+                'voicenav: chat stream timeout',
+                JSON.stringify({ url, sessionId: request.sessionId, ms: Date.now() - startedAt }),
+            );
+            reject(new Error('chat stream timed out'));
+        };
         xhr.onload = () => {
+            console.log(
+                'voicenav: chat stream response',
+                JSON.stringify({
+                    status: xhr.status,
+                    ms: Date.now() - startedAt,
+                    sessionId: request.sessionId,
+                    bytes: String(xhr.responseText ?? '').length,
+                }),
+            );
             if (xhr.status < 200 || xhr.status >= 300) {
+                console.log(
+                    'voicenav: chat stream error body',
+                    String(xhr.responseText).slice(0, 500),
+                );
                 reject(new Error(`chat stream ${xhr.status}: ${String(xhr.responseText).slice(0, 200)}`));
                 return;
             }
@@ -76,5 +127,5 @@ export const streamChat = (
             resolve();
         };
 
-        xhr.send(JSON.stringify(request));
+        xhr.send(body);
     });

@@ -4,9 +4,13 @@ export type TaxiSegmentInput = {
     polyline: string;
     type: string;
     mode: string;
+    overrideCoords?: [number, number][];
 };
 
 const decodeSegmentPolyline = (segment: TaxiSegmentInput): [number, number][] => {
+    if (segment.overrideCoords && segment.overrideCoords.length > 0) {
+        return segment.overrideCoords;
+    }
     try {
         return segment.polyline ? decodePolyline(segment.polyline, 6) : [];
     } catch (error) {
@@ -41,6 +45,33 @@ export const decodeTaxiSegmentPaths = (segments: TaxiSegmentInput[]): [number, n
 export const decodeTaxiSegmentCoordinates = (segment: TaxiSegmentInput): [number, number][] =>
     decodeTaxiSegmentPaths([segment])[0];
 
+export const matchTaxiPosition = (
+    segments: TaxiSegmentInput[],
+    activeIndex: number,
+    lat: number,
+    lng: number,
+) => {
+    const paths = decodeTaxiSegmentPaths(segments);
+    const path = paths[activeIndex] ?? [];
+    const offset = paths.slice(0, activeIndex).reduce((sum, points) => sum + points.length, 0);
+    let best = { lat, lng, distance: Infinity, index: offset };
+    for (let i = 0; i < path.length - 1; i++) {
+        const [lat1, lng1] = path[i];
+        const [lat2, lng2] = path[i + 1];
+        const dx = lng2 - lng1;
+        const dy = lat2 - lat1;
+        const t = dx === 0 && dy === 0 ? 0 : Math.max(0, Math.min(1,
+            ((lng - lng1) * dx + (lat - lat1) * dy) / (dx * dx + dy * dy)));
+        const projectedLat = lat1 + t * dy;
+        const projectedLng = lng1 + t * dx;
+        const distance = calculateDistance(lat, lng, projectedLat, projectedLng);
+        if (distance < best.distance) {
+            best = { lat: projectedLat, lng: projectedLng, distance, index: offset + i };
+        }
+    }
+    return best;
+};
+
 export type SegmentedRouteOutput = {
     geoJSON: {
         type: 'Feature';
@@ -56,7 +87,8 @@ export const buildSegmentedRoutesFromPosition = (
     closestIndex: number,
     displayLat: number,
     displayLng: number,
-    includeMarkerInProps = false
+    includeMarkerInProps = false,
+    activeSegmentIndex?: number
 ): SegmentedRouteOutput[] => {
     const paths = decodeTaxiSegmentPaths(taxiSegments);
 
@@ -64,20 +96,27 @@ export const buildSegmentedRoutesFromPosition = (
     let currentSegIdx = 0;
     let positionInSegment = closestIndex;
 
-    for (let i = 0; i < paths.length; i++) {
-        if (closestIndex < coordCount + paths[i].length) {
-            currentSegIdx = i;
-            positionInSegment = closestIndex - coordCount;
-            break;
+    if (activeSegmentIndex != null && paths[activeSegmentIndex]) {
+        currentSegIdx = activeSegmentIndex;
+        let offset = 0;
+        for (let i = 0; i < activeSegmentIndex; i++) offset += paths[i].length;
+        const local = closestIndex - offset;
+        positionInSegment = local >= 0 && local < paths[activeSegmentIndex].length ? local : -1;
+    } else {
+        for (let i = 0; i < paths.length; i++) {
+            if (closestIndex < coordCount + paths[i].length) {
+                currentSegIdx = i;
+                positionInSegment = closestIndex - coordCount;
+                break;
+            }
+            coordCount += paths[i].length;
         }
-        coordCount += paths[i].length;
     }
 
     return taxiSegments.map((seg, idx) => {
         let coordinates = paths[idx].map(([lat, lng]: [number, number]) => [lng, lat] as [number, number]);
 
         if (idx === currentSegIdx) {
-            // Start from the next point on the route, not from user's off-road position
             coordinates = coordinates.slice(positionInSegment + 1);
         } else if (idx < currentSegIdx) {
             coordinates = [];
@@ -106,12 +145,7 @@ export const buildSegmentedRoutesFromPosition = (
     });
 };
 
-/**
 
- * @param from - Starting coordinate [longitude, latitude]
- * @param to - Ending coordinate [longitude, latitude]
- * @returns Bearing in degrees (0-360)
- */
 export const calculateBearing = (from: [number, number], to: [number, number]): number => {
     const [fromLng, fromLat] = from;
     const [toLng, toLat] = to;
@@ -345,4 +379,3 @@ export const findCorners = (
     }
     return corners;
 };
-

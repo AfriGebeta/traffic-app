@@ -47,6 +47,7 @@ import { decodeTaxiSegmentPaths } from '../../navigation/utils/navigationUtils';
 import { exploreService } from '../services/exploreService';
 import type { TaxiNavigationResponse } from '../../taxi/types/taxi.types';
 import { setNavigationPreviewData } from '../../navigation/services/navigationPreviewCache';
+import { resolvePlaceType } from '../../places/utils/placeTypeMapping';
 import { buildPreviewSteps, fitBoundsToCoords } from '../../navigation/utils/navigationPreviewUtils';
 
 interface TrafficMapProps {
@@ -236,10 +237,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         clearTaxiOverlays();
         setIsFromTaxiSearch(false);
 
-        // the route fit leaves the native camera unable to hold a gesture — panning snaps back
-        // until a real camera move happens. rebuilding in place is not enough (a setCamera to
-        // the current position is a native no-op), so do exactly what the recentre button does
-        // and move to the user, which is also where they expect to land after closing a route.
         if (userLocation) {
             (mapRef.current as any)?.recenterOnce?.({
                 center: [userLocation.lng, userLocation.lat],
@@ -257,10 +254,26 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         });
     }, [handleClearRoute, setShowRoutePreview, clearTaxiOverlays]);
 
-    const handleContributeFromPlaceDetail = (location: { lat: number; lng: number }) => {
+    const handleContributeFromPlaceDetail = (place: GeocodingPlace) => {
         setShowPlaceDetail(false);
-        setIncidentReportLocation(location);
-        setShowReportOptions(true);
+
+        const resolvedType = resolvePlaceType(place.type, place.category);
+        const isCoordinateOnly = (place.type || '').toLowerCase() === 'coordinates';
+        const prefillParams: Record<string, string> = {
+            prefillLat: String(place.latitude),
+            prefillLng: String(place.longitude),
+        };
+
+        if (!isCoordinateOnly && place.name) prefillParams.prefillName = place.name;
+
+        if (!resolvedType && !isCoordinateOnly && (place.type || place.category)) {
+            prefillParams.prefillCategory = place.type || place.category;
+        }
+
+        router.push({
+            pathname: resolvedType ? '/places/add' : '/places/contribute',
+            params: resolvedType ? { ...prefillParams, type: resolvedType } : prefillParams,
+        } as any);
     };
 
     const handleDirectionsFromPlaceDetail = () => {

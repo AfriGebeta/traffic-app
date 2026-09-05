@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { PLACE_TYPES } from '../types/place.types';
 import { useTranslation } from 'react-i18next';
@@ -14,11 +14,16 @@ export default function PlaceContributionScreen() {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors: theme, isDark } = useTheme();
+    const params = useLocalSearchParams();
+
+    const prefillParams = Object.fromEntries(
+        Object.entries(params).filter(([key, value]) => key.startsWith('prefill') && typeof value === 'string')
+    );
 
     const handlePlaceTypeSelect = (placeType: string) => {
         router.push({
             pathname: '/places/add',
-            params: { type: placeType },
+            params: { ...prefillParams, type: placeType, backSteps: '2' },
         });
     };
 
