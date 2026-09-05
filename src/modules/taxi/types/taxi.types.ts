@@ -120,11 +120,13 @@ export interface WalkRoute {
 }
 
 export interface RouteSegment {
+    routeId?: number;
     type: 'walk' | 'taxi';
     mode: 'pedestrian' | 'auto';
     distance: number;
     time: number;
     polyline: string;
+    overrideCoords?: [number, number][];
     fare?: number;
     from: {
         lat: number;
@@ -142,6 +144,7 @@ export interface RouteSegment {
 export interface TaxiNavigationResponse {
     success: boolean;
     timestamp: string;
+    planId?: number;
     origin: {
         lat: number;
         lng: number;

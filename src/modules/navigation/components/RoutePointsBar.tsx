@@ -217,7 +217,9 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
                         )}
 
                         <View className="flex-row items-center">
-                            <Ionicons name="location" size={20} color={colors.primary.main} className="mr-3" />
+                            <View style={{ width: 20, marginLeft: -2, marginRight: 10, alignItems: 'center' }}>
+                                <Ionicons name="location" size={20} color={colors.primary.main} />
+                            </View>
                             <Text className="font-semibold flex-1" style={{ color: theme.textPrimary }} numberOfLines={1}>
                                 {destination?.name || t('choose-destination')}
                             </Text>

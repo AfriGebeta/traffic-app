@@ -42,6 +42,7 @@ export const INCIDENT_TYPES = [
     { name: 'GATED_COMMUNITY', label: 'Gated Community', icon: 'home' as const, color: '#10B981' },
     { name: 'BROKEN_ROAD', label: 'Broken Road', icon: 'alert-circle' as const, color: '#EF4444' },
     { name: 'RADAR', label: 'Radar', icon: 'radio' as const, color: '#06B6D4' },
+    { name: 'FLOOD', label: 'Flood', icon: 'water' as const, color: '#0EA5E9' },
     { name: 'OTHER', label: 'Other', icon: 'apps-outline' as const, color: '#F97316' },
 ] as const;
 
@@ -56,6 +57,7 @@ export const INCIDENT_ICON_MAP: Record<string, keyof typeof import('@expo/vector
     'GATED_COMMUNITY': 'home',
     'BROKEN_ROAD': 'alert-circle',
     'RADAR': 'radio',
+    'FLOOD': 'water',
     'OTHER': 'apps-outline',
 };
 
@@ -69,5 +71,6 @@ export const INCIDENT_COLOR_MAP: Record<string, string> = {
     'GATED_COMMUNITY': '#10B981',
     'BROKEN_ROAD': '#EF4444',
     'RADAR': '#06B6D4',
+    'FLOOD': '#0EA5E9',
     'OTHER': '#F97316',
 };

@@ -17,6 +17,7 @@ import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { getPlaceIcon } from '../utils/placeIcons';
+import { toE164 } from '../../../shared/utils/phone';
 
 const toCategorySlug = (label: string): string =>
     label
@@ -37,18 +38,34 @@ export default function AddPlaceScreen() {
     const { selectedLocation, setSelectedLocation } = useLocation();
     const { userLocation } = useUserLocation();
 
-    const [name, setName] = useState('');
-    const [customCategory, setCustomCategory] = useState('');
-    const [description, setDescription] = useState('');
-    const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
+    const prefillName = typeof params.prefillName === 'string' ? params.prefillName : '';
+    const prefillCategory = typeof params.prefillCategory === 'string' ? params.prefillCategory : '';
+    const prefillDescription = typeof params.prefillDescription === 'string' ? params.prefillDescription : '';
+    const prefillPhone = typeof params.prefillPhone === 'string' ? params.prefillPhone : '';
+    const backSteps = Math.max(1, Number(params.backSteps) || 1);
+    const prefillLat = Number(params.prefillLat);
+    const prefillLng = Number(params.prefillLng);
+    const prefillCoordinates =
+        Number.isFinite(prefillLat) && Number.isFinite(prefillLng) && params.prefillLat !== undefined
+            ? { lat: prefillLat, lng: prefillLng }
+            : null;
+
+    const [name, setName] = useState(prefillName);
+    const [customCategory, setCustomCategory] = useState(prefillCategory);
+    const [description, setDescription] = useState(prefillDescription);
+    const [phone, setPhone] = useState(prefillPhone);
+    const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(prefillCoordinates);
     const [images, setImages] = useState<{ localUri: string; objectName: string }[]>([]);
     const [uploading, setUploading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [usingCurrentLocation, setUsingCurrentLocation] = useState(false);
-    const autoFilledLocation = React.useRef(false);
+    const autoFilledLocation = React.useRef(Boolean(prefillCoordinates));
 
     const placeInfo = PLACE_TYPES.find((p) => p.id === placeType);
     const needsCustomCategory = placeType === 'other';
+    const trimmedPhone = phone.trim();
+    const phoneE164 = trimmedPhone ? toE164(trimmedPhone) : null;
+    const phoneInvalid = trimmedPhone.length > 0 && !phoneE164;
 
     React.useEffect(() => {
         if (autoFilledLocation.current || coordinates || !userLocation) return;
@@ -71,7 +88,7 @@ export default function AddPlaceScreen() {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
         if (status !== 'granted') {
-            showToast('Camera roll permission required');
+            showToast(`${t('permission-denied')}: ${t('camera-roll-permission-required')}`);
             return;
         }
 
@@ -91,7 +108,7 @@ export default function AddPlaceScreen() {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
 
         if (status !== 'granted') {
-            showToast('Camera permission required');
+            showToast(`${t('permission-denied')}: ${t('camera-permission-required')}`);
             return;
         }
 
@@ -111,9 +128,9 @@ export default function AddPlaceScreen() {
                 uris.map(async (uri) => ({ localUri: uri, objectName: await uploadToMinio(uri, 'places') }))
             );
             setImages((prev) => [...prev, ...uploaded]);
-            showToast('Photo added successfully');
+            showToast(t('photo-added-successfully'));
         } catch (error) {
-            showToast('Could not upload image');
+            showToast(`${t('upload-failed')}: ${t('could-not-upload-image')}`);
         } finally {
             setUploading(false);
         }
@@ -139,14 +156,22 @@ export default function AddPlaceScreen() {
 
     const handleSubmit = async () => {
         if (!name.trim()) {
+            showToast(`${t('name-required')}: ${t('please-enter-place-name')}`);
             return;
         }
 
         if (!coordinates) {
+            showToast(`${t('location-required')}: ${t('please-pick-location')}`);
             return;
         }
 
         if (needsCustomCategory && !customCategory.trim()) {
+            showToast(`${t('category-required')}: ${t('please-enter-place-category')}`);
+            return;
+        }
+
+        if (phoneInvalid) {
+            showToast(t('invalid-phone-number'));
             return;
         }
 
@@ -159,14 +184,20 @@ export default function AddPlaceScreen() {
                 lat: coordinates.lat,
                 lng: coordinates.lng,
                 description: description.trim(),
+                phone: phoneE164 ?? undefined,
                 images: images.map((img) => img.objectName),
             });
 
             dashboardEventsService.contribute();
-            router.back();
-            router.back();
+            showToast(t('place-contribution-submitted'));
+
+            for (let i = 0; i < backSteps && router.canGoBack(); i += 1) {
+                router.back();
+            }
         } catch (error) {
             console.error('Submit error:', error);
+            const errorMessage = error instanceof Error ? error.message : t('could-not-submit-contribution');
+            showToast(errorMessage);
         } finally {
             setSubmitting(false);
         }
@@ -230,6 +261,20 @@ export default function AddPlaceScreen() {
                             </Text>
                         </View>
                     )}
+
+                    <View>
+                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
+                            {t('phone-number')} <Text style={{ color: theme.textSecondary }}>({t('optional')})</Text>
+                        </Text>
+                        <Input
+                            placeholder={t('place-phone-placeholder')}
+                            value={phone}
+                            onChangeText={setPhone}
+                            keyboardType="phone-pad"
+                            autoComplete="tel"
+                            error={phoneInvalid ? t('invalid-phone-number') : undefined}
+                        />
+                    </View>
 
                     <View>
                         <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('description')}</Text>
@@ -406,7 +451,7 @@ export default function AddPlaceScreen() {
                 <Button
                     title={submitting ? t('submitting') : t('submit-contribution')}
                     onPress={handleSubmit}
-                    disabled={submitting || !name.trim() || !coordinates || (needsCustomCategory && !customCategory.trim())}
+                    disabled={submitting || !name.trim() || !coordinates || phoneInvalid || (needsCustomCategory && !customCategory.trim())}
                 />
             </View>
         </View>

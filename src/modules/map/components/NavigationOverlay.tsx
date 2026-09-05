@@ -279,6 +279,41 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                 </View>
             </View>
 
+            {/* Floats above the destination pill without taking layout space, so the
+                speed / rule / report row stays put when the button appears. */}
+            {showRecenterButton && onRecenter && (
+                <View style={{ height: 0 }} pointerEvents="box-none">
+                    <View
+                        style={{ position: 'absolute', bottom: 10, left: 0, right: 0, alignItems: 'center' }}
+                        pointerEvents="box-none"
+                    >
+                        <TouchableOpacity
+                            activeOpacity={0.85}
+                            onPress={onRecenter}
+                            className="flex-row items-center rounded-full"
+                            style={{
+                                backgroundColor: theme.surface,
+                                paddingVertical: 12,
+                                paddingHorizontal: 22,
+                                shadowColor: '#000',
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.18,
+                                shadowRadius: 6,
+                                elevation: 5,
+                            }}
+                        >
+                            <Ionicons name="navigate" size={20} color="#0F9D58" />
+                            <Text
+                                className="font-semibold ml-2"
+                                style={{ color: theme.textPrimary, fontSize: 16 }}
+                            >
+                                Re-center
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            )}
+
             {destination && (
                 <View style={{ alignItems: 'center', marginBottom: 8 }}>
                     <View
@@ -298,34 +333,6 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
                             {destination}
                         </Text>
                     </View>
-                </View>
-            )}
-
-            {showRecenterButton && onRecenter && (
-                <View className="items-center mb-3">
-                    <TouchableOpacity
-                        activeOpacity={0.85}
-                        onPress={onRecenter}
-                        className="flex-row items-center rounded-full"
-                        style={{
-                            backgroundColor: theme.surface,
-                            paddingVertical: 12,
-                            paddingHorizontal: 22,
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.18,
-                            shadowRadius: 6,
-                            elevation: 5,
-                        }}
-                    >
-                        <Ionicons name="navigate" size={20} color="#0F9D58" />
-                        <Text
-                            className="font-semibold ml-2"
-                            style={{ color: theme.textPrimary, fontSize: 16 }}
-                        >
-                            Re-center
-                        </Text>
-                    </TouchableOpacity>
                 </View>
             )}
 
