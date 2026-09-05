@@ -134,7 +134,7 @@ export default function LekfelPayCard({
                 opacity: disabled ? 0.6 : 1,
             }}
         >
-            <View className="flex-row items-center justify-between mb-3">
+            <View className="flex-row items-center justify-between mb-5">
                 <View className="flex-row items-center">
                     <Text className="text-xl" style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Bold' }}>
                         {t('pay')}
@@ -225,9 +225,7 @@ export default function LekfelPayCard({
                 </View>
             )}
 
-            <View className="mt-4" />
-
-            <View className="flex-row items-center mb-4">
+            <View className="flex-row items-center my-2">
                 <View className="flex-1" style={{ height: 1, backgroundColor: theme.border }} />
                 <Text className="text-xs mx-3" style={{ color: theme.textSecondary }}>
                     {t('or')}
