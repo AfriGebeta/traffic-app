@@ -156,7 +156,7 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
         if (placeType.includes('coffee') || placeType.includes('cafe') || placeType.includes('teahouse')) {
             return require('../../../../assets/images/coffee-shop-place-detail.png');
         }
-        if (placeType.includes('restaurant') || placeType.includes('hotel') || placeType.includes('food') ) {
+        if (placeType.includes('restaurant') || placeType.includes('hotel') || placeType.includes('food')) {
             return require('../../../../assets/images/restaurant-place-detail.png');
         }
         if (placeType.includes('bank')) {
@@ -194,7 +194,7 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
         <View
             className="absolute rounded-3xl shadow-2xl overflow-hidden self-center"
             style={{
-                bottom: insets.bottom > 0 ? insets.bottom + 8 : 36,
+                bottom: insets.bottom > 0 ? insets.bottom + 4 : 34,
                 width: '92%',
                 maxWidth: 480,
                 alignSelf: 'center',
