@@ -12,6 +12,7 @@ import { useUserRegistration } from '../../register/hooks/useUserRegistration';
 import LekfelPaymentModal from '../components/LekfelPaymentModal';
 import LekfelPayCard from '../components/LekfelPayCard';
 import { useLekfelPayment } from '../hooks/useLekfelPayment';
+import { toE164 } from '../utils/phone';
 
 export default function TaxiSearchScreen() {
     const router = useRouter();
@@ -255,19 +256,22 @@ export default function TaxiSearchScreen() {
         && !hasValidDestination
         && filteredStations.length === 0;
 
-    const canPay = payerPhone.trim().length > 0
-        && receiverPhone.trim().length > 0
-        && Number(payAmount.trim()) > 0;
+    const payerE164 = toE164(payerPhone);
+    const receiverE164 = toE164(receiverPhone);
+
+    const canPay = !!payerE164 && !!receiverE164 && Number(payAmount.trim()) > 0;
 
     const handlePay = () => {
+        if (!payerE164 || !receiverE164) return;
+
         const now = new Date();
         const originCoords = selectedOriginCoords
             || (userLocation ? { lat: userLocation.lat, lng: userLocation.lng } : null);
         const resolvedOriginName = originName.trim() || t('current-location');
 
         pay({
-            payerPhone: payerPhone.trim(),
-            receiverPhone: receiverPhone.trim(),
+            payerPhone: payerE164,
+            receiverPhone: receiverE164,
             amount: Number(payAmount.trim()),
             description: `${t('taxi-ride')} ${resolvedOriginName} -> ${destinationName.trim()}`,
             originName: resolvedOriginName,

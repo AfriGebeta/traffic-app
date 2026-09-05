@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { useUserRegistration } from '../../register/hooks/useUserRegistration';
 import { useLekfelPayment } from '../hooks/useLekfelPayment';
+import { toE164 } from '../utils/phone';
 import LekfelPayCard from './LekfelPayCard';
 import LekfelPaymentModal from './LekfelPaymentModal';
 
@@ -62,15 +63,18 @@ export default function LekfelPaySheet({
         });
     }, []);
 
-    const canPay = payerPhone.trim().length > 0
-        && receiverPhone.trim().length > 0
-        && Number(amount.trim()) > 0;
+    const payerE164 = toE164(payerPhone);
+    const receiverE164 = toE164(receiverPhone);
+
+    const canPay = !!payerE164 && !!receiverE164 && Number(amount.trim()) > 0;
 
     const handlePay = () => {
+        if (!payerE164 || !receiverE164) return;
+
         const now = new Date();
         pay({
-            payerPhone: payerPhone.trim(),
-            receiverPhone: receiverPhone.trim(),
+            payerPhone: payerE164,
+            receiverPhone: receiverE164,
             amount: Number(amount.trim()),
             description: `${t('taxi-ride')} ${originName ?? ''} -> ${destinationName ?? ''}`.trim(),
             originName,
