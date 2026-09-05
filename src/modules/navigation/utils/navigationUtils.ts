@@ -45,6 +45,33 @@ export const decodeTaxiSegmentPaths = (segments: TaxiSegmentInput[]): [number, n
 export const decodeTaxiSegmentCoordinates = (segment: TaxiSegmentInput): [number, number][] =>
     decodeTaxiSegmentPaths([segment])[0];
 
+export const matchTaxiPosition = (
+    segments: TaxiSegmentInput[],
+    activeIndex: number,
+    lat: number,
+    lng: number,
+) => {
+    const paths = decodeTaxiSegmentPaths(segments);
+    const path = paths[activeIndex] ?? [];
+    const offset = paths.slice(0, activeIndex).reduce((sum, points) => sum + points.length, 0);
+    let best = { lat, lng, distance: Infinity, index: offset };
+    for (let i = 0; i < path.length - 1; i++) {
+        const [lat1, lng1] = path[i];
+        const [lat2, lng2] = path[i + 1];
+        const dx = lng2 - lng1;
+        const dy = lat2 - lat1;
+        const t = dx === 0 && dy === 0 ? 0 : Math.max(0, Math.min(1,
+            ((lng - lng1) * dx + (lat - lat1) * dy) / (dx * dx + dy * dy)));
+        const projectedLat = lat1 + t * dy;
+        const projectedLng = lng1 + t * dx;
+        const distance = calculateDistance(lat, lng, projectedLat, projectedLng);
+        if (distance < best.distance) {
+            best = { lat: projectedLat, lng: projectedLng, distance, index: offset + i };
+        }
+    }
+    return best;
+};
+
 export type SegmentedRouteOutput = {
     geoJSON: {
         type: 'Feature';
@@ -352,4 +379,3 @@ export const findCorners = (
     }
     return corners;
 };
-

@@ -155,6 +155,11 @@
         "AM": "የተሰባበረ መንገድ"
     },
     {
+        "key": "flood",
+        "EN_US": "Flood",
+        "AM": "ጎርፍ"
+    },
+    {
         "key": "gated-community",
         "EN_US": "Gated Community",
         "AM": "መንገዱ ታጥሯል"
@@ -433,6 +438,41 @@
         "key": "place-name-placeholder",
         "EN_US": "e.g., Total Gas Station",
         "AM": "ለምሳሌ፣ ቶታል ነዳጅ ማደያ"
+    },
+    {
+        "key": "place-phone-placeholder",
+        "EN_US": "e.g., 0911234567",
+        "AM": "ለምሳሌ፣ 0911234567"
+    },
+    {
+        "key": "place-contribution-submitted",
+        "EN_US": "Place submitted successfully",
+        "AM": "ቦታው በተሳካ ሁኔታ ተልኳል"
+    },
+    {
+        "key": "please-enter-place-name",
+        "EN_US": "Please enter the place name",
+        "AM": "እባክዎ የቦታውን ስም ያስገቡ"
+    },
+    {
+        "key": "category-required",
+        "EN_US": "Category required",
+        "AM": "ምድብ ያስፈልጋል"
+    },
+    {
+        "key": "please-enter-place-category",
+        "EN_US": "Please enter the place category",
+        "AM": "እባክዎ የቦታውን ምድብ ያስገቡ"
+    },
+    {
+        "key": "camera-roll-permission-required",
+        "EN_US": "Camera roll permission required",
+        "AM": "የፎቶ ማከማቻ ፈቃድ ያስፈልጋል"
+    },
+    {
+        "key": "photo-added-successfully",
+        "EN_US": "Photo added successfully",
+        "AM": "ፎቶ በተሳካ ሁኔታ ተጨምሯል"
     },
     {
         "key": "add-details-about-place",
@@ -3563,5 +3603,170 @@
         "key": "place-category-hint",
         "EN_US": "Tell us what kind of place this is",
         "AM": "ይህ ቦታ ምን ዓይነት እንደሆነ ይንገሩን"
+    },
+    {
+        "key": "taxi-journey-no-places",
+        "EN_US": "No places found. Try a station or nearby landmark.",
+        "AM": "ቦታ አልተገኘም። በስቴሽን ወይም በአቅራቢያ ባለ የታወቀ ቦታ ይፈልጉ።"
+    },
+    {
+        "key": "taxi-journey-search-failed",
+        "EN_US": "Search failed. Please try again.",
+        "AM": "ፍለጋው አልተሳካም። እንደገና ይሞክሩ።"
+    },
+    {
+        "key": "taxi-journey-got-off-question",
+        "EN_US": "Got off the taxi?",
+        "AM": "ከታክሲው ወርደዋል?"
+    },
+    {
+        "key": "taxi-journey-dismiss",
+        "EN_US": "Dismiss question for now",
+        "AM": "ጥያቄውን ለጊዜው ዝጋ"
+    },
+    {
+        "key": "taxi-journey-yes-riding",
+        "EN_US": "Yes, still riding",
+        "AM": "አዎ፣ ገና በታክሲ ላይ ነኝ"
+    },
+    {
+        "key": "taxi-journey-yes-off",
+        "EN_US": "Yes, got off",
+        "AM": "አዎ፣ ወርጃለሁ"
+    },
+    {
+        "key": "taxi-journey-yes-boarded",
+        "EN_US": "Yes, boarded",
+        "AM": "አዎ፣ ተሳፍሬያለሁ"
+    },
+    {
+        "key": "taxi-journey-i-got-off",
+        "EN_US": "I got off",
+        "AM": "ወርጃለሁ"
+    },
+    {
+        "key": "taxi-journey-still-riding",
+        "EN_US": "Still riding",
+        "AM": "ገና በታክሲ ላይ ነኝ"
+    },
+    {
+        "key": "taxi-journey-not-yet",
+        "EN_US": "Not yet",
+        "AM": "ገና አልተሳፈርኩም"
+    },
+    {
+        "key": "taxi-journey-confirm-off",
+        "EN_US": "Confirm getting off the taxi",
+        "AM": "ከታክሲው መውረድዎን ያረጋግጡ"
+    },
+    {
+        "key": "taxi-journey-confirm-board",
+        "EN_US": "Confirm boarding a taxi",
+        "AM": "ታክሲ መሳፈርዎን ያረጋግጡ"
+    },
+    {
+        "key": "taxi-journey-off-short",
+        "EN_US": "Got off?",
+        "AM": "ወርደዋል?"
+    },
+    {
+        "key": "taxi-journey-board-short",
+        "EN_US": "Boarded?",
+        "AM": "ተሳፍረዋል?"
+    },
+    {
+        "key": "taxi-journey-options",
+        "EN_US": "Trip options",
+        "AM": "የጉዞ አማራጮች"
+    },
+    {
+        "key": "taxi-journey-waiting-location",
+        "EN_US": "Waiting for your location…",
+        "AM": "አካባቢዎን በመጠባበቅ ላይ…"
+    },
+    {
+        "key": "taxi-journey-close-options",
+        "EN_US": "Close trip options",
+        "AM": "የጉዞ አማራጮችን ዝጋ"
+    },
+    {
+        "key": "taxi-journey-change-dropoff",
+        "EN_US": "Change drop-off",
+        "AM": "መውረጃ ቦታ ቀይር"
+    },
+    {
+        "key": "taxi-journey-off-this-taxi",
+        "EN_US": "I got off this taxi",
+        "AM": "ከዚህ ታክሲ ወርጃለሁ"
+    },
+    {
+        "key": "taxi-journey-elsewhere",
+        "EN_US": "My taxi goes somewhere else",
+        "AM": "ታክሲዬ ወደ ሌላ ቦታ ይሄዳል"
+    },
+    {
+        "key": "taxi-journey-undo",
+        "EN_US": "Undo last change",
+        "AM": "የመጨረሻውን ለውጥ መልስ"
+    },
+    {
+        "key": "taxi-journey-dropoff-help",
+        "EN_US": "Where will you get off? Your final destination stays the same.",
+        "AM": "የት ይወርዳሉ? የመጨረሻ መድረሻዎ አይቀየርም።"
+    },
+    {
+        "key": "taxi-journey-station",
+        "EN_US": "Station or landmark",
+        "AM": "ስቴሽን ወይም የታወቀ ቦታ"
+    },
+    {
+        "key": "taxi-journey-dropoff-label",
+        "EN_US": "Taxi drop-off station or landmark",
+        "AM": "የታክሲ መውረጃ ስቴሽን ወይም የታወቀ ቦታ"
+    },
+    {
+        "key": "taxi-journey-searching",
+        "EN_US": "Searching…",
+        "AM": "በመፈለግ ላይ…"
+    },
+    {
+        "key": "taxi-journey-search",
+        "EN_US": "Search",
+        "AM": "ፈልግ"
+    },
+    {
+        "key": "taxi-journey-back",
+        "EN_US": "Back",
+        "AM": "ተመለስ"
+    },
+    {
+        "key": "taxi-journey-still-going",
+        "EN_US": "Still going to {{target}}?",
+        "AM": "አሁንም ወደ {{target}} እየሄዱ ነው?"
+    },
+    {
+        "key": "taxi-journey-off-at",
+        "EN_US": "Got off at {{target}}?",
+        "AM": "{{target}} ላይ ወርደዋል?"
+    },
+    {
+        "key": "taxi-journey-on-taxi",
+        "EN_US": "On a taxi to {{target}}?",
+        "AM": "ወደ {{target}} በሚሄድ ታክሲ ተሳፍረዋል?"
+    },
+    {
+        "key": "taxi-journey-boarded-toward",
+        "EN_US": "I boarded toward {{target}}",
+        "AM": "ወደ {{target}} የሚሄድ ታክሲ ተሳፍሬያለሁ"
+    },
+    {
+        "key": "taxi-journey-destination",
+        "EN_US": "your destination",
+        "AM": "መድረሻዎ"
+    },
+    {
+        "key": "taxi-journey-dropoff-failed",
+        "EN_US": "Could not update this trip. Try again or choose another drop-off.",
+        "AM": "ጉዞውን ማሻሻል አልተቻለም። እንደገና ይሞክሩ ወይም ሌላ መውረጃ ይምረጡ።"
     }
 ]

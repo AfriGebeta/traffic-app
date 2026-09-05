@@ -120,6 +120,7 @@ export interface WalkRoute {
 }
 
 export interface RouteSegment {
+    routeId?: number;
     type: 'walk' | 'taxi';
     mode: 'pedestrian' | 'auto';
     distance: number;

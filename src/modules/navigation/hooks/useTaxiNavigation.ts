@@ -1,173 +1,140 @@
 import { useState, useRef, useEffect } from 'react';
-import type { GebetaMapRef } from '@gebeta/tiles-react-native';
-import { TaxiNavigationResponse, RouteSegment, SegmentMode } from '../../taxi/types/taxi.types';
+import type { TaxiNavigationResponse } from '../../taxi/types/taxi.types';
 import { calculateDistance } from '../utils/navigationUtils';
-import { showToast } from '../../../shared/utils/toast';
 import { voiceNavigationService } from '../services/voice-navigation.service';
-import { decodePolyline } from '../../../shared/utils/polyline';
-import { taxiService } from '../../taxi/services/taxi.service';
 import { getAppConfig } from '../../../shared/config/remoteConfigValues';
+import {
+    alightTaxiJourney, boardTaxiJourney, emptyPromptEvidence, isTaxiRide,
+    nextTaxiPlanId, observeTaxiJourney, type JourneyPrompt, type TaxiFix,
+} from '../utils/taxiJourney';
 
-interface UseTaxiNavigationProps {
+interface Props {
     taxiRoute: TaxiNavigationResponse;
-    mapRef: React.RefObject<GebetaMapRef | null>;
-    userLocation: { lat: number; lng: number } | null;
-    setUserLocation?: (location: { lat: number; lng: number }) => void;
+    userLocation: TaxiFix | null;
+    isOffRoute: boolean;
+    isNavigatingRef: React.MutableRefObject<boolean>;
+    currentSegmentIndexRef: React.MutableRefObject<number>;
+    pauseReroutingRef: React.MutableRefObject<boolean>;
     onNavigationComplete: () => void;
-    onRouteUpdate?: (newRoute: TaxiNavigationResponse) => void;
+    onRouteUpdate: (route: TaxiNavigationResponse) => void;
 }
 
-export const useTaxiNavigation = ({
-    taxiRoute,
-    mapRef,
-    userLocation,
-    setUserLocation,
-    onNavigationComplete,
-    onRouteUpdate,
-}: UseTaxiNavigationProps) => {
+export const useTaxiNavigation = ({ taxiRoute, userLocation, isOffRoute, isNavigatingRef,
+    currentSegmentIndexRef, pauseReroutingRef, onNavigationComplete, onRouteUpdate }: Props) => {
     const [currentSegmentIndex, setCurrentSegmentIndex] = useState(0);
-    const [currentInstruction, setCurrentInstruction] = useState<string>('');
-    const [remainingDistance, setRemainingDistance] = useState<number>(0);
-    const [remainingTime, setRemainingTime] = useState<number>(0);
-    const [isOnTaxi, setIsOnTaxi] = useState(false);
-
-    const currentRouteRef = useRef(taxiRoute);
-
-    const isFirstRouteRef = useRef(true);
-    const lastPlanIdRef = useRef(taxiRoute.planId);
+    const [prompt, setPrompt] = useState<JourneyPrompt | null>(null);
+    const [undoRoute, setUndoRoute] = useState<TaxiNavigationResponse | null>(null);
+    const evidence = useRef(emptyPromptEvidence());
+    const snoozeUntil = useRef(0);
+    const lastPlan = useRef(taxiRoute.planId);
+    const completed = useRef(false);
+    const asked = useRef(new Set<string>());
+    const promptStage = useRef(`${taxiRoute.planId}:0`);
+    const index = taxiRoute.planId === lastPlan.current ? currentSegmentIndex : 0;
+    currentSegmentIndexRef.current = index;
+    const currentSegment = taxiRoute.segments?.[index];
+    const isOnTaxi = isTaxiRide(currentSegment);
+    const nextRide = taxiRoute.segments?.find((segment, i) => i >= index && isTaxiRide(segment));
+    const boardingTarget = nextRide?.toNode?.name ?? 'your destination';
+    const targetName = currentSegment?.toNode?.name ?? 'your destination';
+    const currentInstruction = isOnTaxi ? `Stay on taxi toward ${targetName}`
+        : `Walk to ${targetName}`;
 
     useEffect(() => {
-        currentRouteRef.current = taxiRoute;
-
-        if (isFirstRouteRef.current) {
-            isFirstRouteRef.current = false;
-            lastPlanIdRef.current = taxiRoute.planId;
-            return;
+        if (lastPlan.current !== taxiRoute.planId) {
+            lastPlan.current = taxiRoute.planId;
+            setCurrentSegmentIndex(0);
+            evidence.current = emptyPromptEvidence();
+            snoozeUntil.current = Date.now() + 30000;
+            completed.current = false;
+            setPrompt(null);
+            pauseReroutingRef.current = false;
         }
+    }, [taxiRoute.planId, pauseReroutingRef]);
 
-        if (taxiRoute.planId === lastPlanIdRef.current) {
-            return;
+    useEffect(() => {
+        const stage = `${taxiRoute.planId}:${index}`;
+        if (promptStage.current !== stage) {
+            promptStage.current = stage;
+            asked.current.clear();
         }
-        lastPlanIdRef.current = taxiRoute.planId;
+    }, [taxiRoute.planId, index]);
 
-        setCurrentSegmentIndex(0);
-        const firstSegment = taxiRoute.segments?.[0];
-        if (firstSegment) {
-            setIsOnTaxi(firstSegment.mode === 'auto' || firstSegment.type === 'taxi');
-            announceSegmentTransition(firstSegment);
-        }
-    }, [taxiRoute]);
+    useEffect(() => {
+        if (isNavigatingRef.current) void voiceNavigationService.speakInstruction(currentInstruction);
+    }, [currentInstruction, isNavigatingRef]);
 
-    const currentSegment = currentRouteRef.current.segments?.[currentSegmentIndex];
-    const nextSegment = currentRouteRef.current.segments?.[currentSegmentIndex + 1];
-
-    const checkSegmentTransition = () => {
-        if (!userLocation || !currentSegment) return false;
-
-        const endPoint = currentSegment.toNode || currentSegment.to;
-        const distance = calculateDistance(
-            userLocation.lat,
-            userLocation.lng,
-            endPoint.lat,
-            endPoint.lng
-        );
-
+    useEffect(() => {
+        if (!userLocation || !currentSegment || !isNavigatingRef.current || completed.current) return;
+        const target = currentSegment.toNode ?? currentSegment.to;
         const cfg = getAppConfig();
-        const threshold = currentSegment.mode === 'pedestrian' || currentSegment.type === 'walk'
-            ? cfg.taxiWalkingEndThresholdM
-            : cfg.taxiStationArrivalThresholdM;
-
-        return distance < threshold;
-    };
-
-    const advanceToNextSegment = () => {
-        if (currentSegmentIndex < (currentRouteRef.current.segments?.length || 0) - 1) {
-            const newIndex = currentSegmentIndex + 1;
-            setCurrentSegmentIndex(newIndex);
-
-            const newSegment = currentRouteRef.current.segments?.[newIndex];
-            if (newSegment) {
-                announceSegmentTransition(newSegment);
-
-                setIsOnTaxi(newSegment.mode === 'auto' || newSegment.type === 'taxi');
+        if (!isOnTaxi && !isTaxiRide(taxiRoute.segments?.[index + 1])) {
+            if ((userLocation.accuracy ?? Infinity) <= 60 && calculateDistance(
+                userLocation.lat, userLocation.lng, target.lat, target.lng
+            ) < cfg.taxiWalkingEndThresholdM) {
+                if (index < (taxiRoute.segments?.length ?? 0) - 1) {
+                    currentSegmentIndexRef.current = index + 1;
+                    setCurrentSegmentIndex(index + 1);
+                } else {
+                    completed.current = true;
+                    onNavigationComplete();
+                }
             }
-        } else {
-            onNavigationComplete();
+            return;
         }
+        if (prompt || Date.now() < snoozeUntil.current) return;
+        const result = observeTaxiJourney(evidence.current, userLocation, target, isOnTaxi, isOffRoute,
+            isOnTaxi ? cfg.taxiDropoffPromptRadiusM : cfg.taxiBoardingPromptRadiusM,
+            userLocation.timestamp ?? Date.now());
+        evidence.current = result.evidence;
+        const question = result.prompt?.reason === 'route' ? 'route' : result.prompt?.kind;
+        if (result.prompt && question && !asked.current.has(question)) {
+            asked.current.add(question);
+            pauseReroutingRef.current = true;
+            setPrompt(result.prompt);
+        }
+    }, [userLocation, currentSegment, isOnTaxi, isOffRoute, taxiRoute, index, prompt,
+        currentSegmentIndexRef, isNavigatingRef, onNavigationComplete, pauseReroutingRef]);
+
+    const requestConfirmation = () => {
+        if (!isNavigatingRef.current) return;
+        pauseReroutingRef.current = true;
+        setPrompt({ kind: isOnTaxi ? 'alight' : 'board', reason: 'manual' });
     };
-
-    const announceSegmentTransition = (segment: RouteSegment) => {
-        if (segment.mode === 'auto' || segment.type === 'taxi') {
-            const message = `Board taxi at ${segment.fromNode?.name} to ${segment.toNode?.name}`;
-            setCurrentInstruction(message);
-            voiceNavigationService.speakInstruction(message);
-            showToast(`Board Taxi: ${message}`);
-        } else if (segment.mode === 'pedestrian' || segment.type === 'walk') {
-            const destination = segment.toNode?.name || 'destination';
-            const message = `Walk to ${destination}`;
-            setCurrentInstruction(message);
-            voiceNavigationService.speakInstruction(message);
-            showToast(`Walking: ${message}`);
-        }
+    const dismissPrompt = () => {
+        snoozeUntil.current = Date.now() + getAppConfig().taxiConfirmationSnoozeMs;
+        evidence.current = emptyPromptEvidence();
+        pauseReroutingRef.current = false;
+        setPrompt(null);
     };
-
-    const calculateRemaining = () => {
-        if (!currentRouteRef.current.segments) return { distance: 0, time: 0 };
-
-        let totalDistance = 0;
-        let totalTime = 0;
-
-        for (let i = currentSegmentIndex; i < currentRouteRef.current.segments.length; i++) {
-            const segment = currentRouteRef.current.segments[i];
-            totalDistance += segment.distance * 1000;
-            totalTime += segment.time;
-        }
-
-        return { distance: totalDistance, time: totalTime };
+    const commitJourney = (route: TaxiNavigationResponse) => {
+        setUndoRoute({ ...taxiRoute, segments: taxiRoute.segments?.slice(index) });
+        currentSegmentIndexRef.current = 0;
+        setCurrentSegmentIndex(0);
+        pauseReroutingRef.current = false;
+        setPrompt(null);
+        onRouteUpdate(route);
     };
-
-
-
-    useEffect(() => {
-        const { distance, time } = calculateRemaining();
-        setRemainingDistance(distance);
-        setRemainingTime(time);
-    }, [currentSegmentIndex]);
-
-    useEffect(() => {
-        if (!userLocation || !currentSegment) return;
-
-        const shouldTransition = checkSegmentTransition();
-        if (shouldTransition) {
-            advanceToNextSegment();
-        }
-
-    }, [userLocation, currentSegment]);
-
-    useEffect(() => {
-        return () => {
-        };
-    }, []);
-
-    useEffect(() => {
-        if (currentSegment) {
-            setIsOnTaxi(currentSegment.mode === 'auto' || currentSegment.type === 'taxi');
-            announceSegmentTransition(currentSegment);
-        }
-    }, []);
+    const confirmTransition = () => {
+        if (!userLocation || !isNavigatingRef.current) return;
+        commitJourney(isOnTaxi ? alightTaxiJourney(taxiRoute, index, userLocation)
+            : boardTaxiJourney(taxiRoute, index, userLocation));
+    };
+    const undoTransition = () => {
+        if (!undoRoute || !isNavigatingRef.current) return;
+        currentSegmentIndexRef.current = 0;
+        setCurrentSegmentIndex(0);
+        setPrompt(null);
+        pauseReroutingRef.current = false;
+        onRouteUpdate({ ...undoRoute, planId: nextTaxiPlanId() });
+        setUndoRoute(null);
+    };
 
     return {
-        currentSegmentIndex,
-        totalSegments: currentRouteRef.current.segments?.length || 0,
-        currentSegment,
-        nextSegment,
-        isOnTaxi,
-        currentInstruction,
-        remainingDistance,
-        remainingTime,
-        startNode: currentRouteRef.current.startNode,
-        endNode: currentRouteRef.current.endNode,
-        totalFare: currentRouteRef.current.summary.estimatedFare,
-        currency: currentRouteRef.current.summary.currency,
+        currentSegmentIndex: index, currentSegment, isOnTaxi, currentInstruction,
+        endNode: taxiRoute.endNode, totalFare: taxiRoute.summary.estimatedFare,
+        currency: taxiRoute.summary.currency, prompt, boardingTarget,
+        requestConfirmation, dismissPrompt, confirmTransition, undoTransition,
+        canUndo: !!undoRoute, commitJourney,
     };
 };

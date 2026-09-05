@@ -1,8 +1,8 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
 import * as Location from 'expo-location';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 import { showToast } from '../../../shared/utils/toast';
-import { buildSegmentedRoutesFromPosition, calculateBearing, calculateDistance } from '../utils/navigationUtils';
+import { buildSegmentedRoutesFromPosition, calculateBearing, calculateDistance, matchTaxiPosition } from '../utils/navigationUtils';
 import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 interface UseLocationTrackingProps {
     routeCoordinates: React.MutableRefObject<[number, number][]>;
@@ -25,6 +25,7 @@ interface UseLocationTrackingProps {
     routeManeuversRef?: React.MutableRefObject<any[]>;
     currentManeuverIndexRef?: React.MutableRefObject<number>;
     setCurrentSpeed?: (speed: number) => void;
+    onTaxiFix?: (fix: { lat: number; lng: number; accuracy?: number; speed?: number; timestamp?: number }) => void;
     // Taxi-specific
     taxiSegments?: Array<{
         polyline: string;
@@ -82,6 +83,7 @@ export const useLocationTracking = ({
     currentManeuverIndexRef,
     setCurrentSpeed,
     taxiSegments,
+    onTaxiFix,
     setSegmentedRoutes,
     updateNavigationState,
     onArrival,
@@ -100,18 +102,37 @@ export const useLocationTracking = ({
     const currentGPSIntervalRef = useRef<number>(getAppConfig().navGpsIntervalMs);
 
     const locationCallbackRef = useRef<((location: Location.LocationObject) => void) | null>(null);
+    const latestTaxiFixRef = useRef<Location.LocationObject | null>(null);
     const lastRenderedMarkerRef = useRef<{ lat: number; lng: number } | null>(null);
     const hasArrivedRef = useRef<boolean>(false);
     const hasReachedRef = useRef<boolean>(false);
     const lastRerouteRequestRef = useRef<number>(0);
     const offRouteEntryIndex = useRef<number>(0);
 
+    const onTaxiFixRef = useRef(onTaxiFix);
+    onTaxiFixRef.current = onTaxiFix;
+    const recalculateRouteRef = useRef(recalculateRoute);
+    recalculateRouteRef.current = recalculateRoute;
     const taxiSegmentsRef = useRef(taxiSegments);
     taxiSegmentsRef.current = taxiSegments;
     const totalRouteDistanceRef = useRef(totalRouteDistance);
     totalRouteDistanceRef.current = totalRouteDistance;
     const totalRouteDurationRef = useRef(totalRouteDuration);
     totalRouteDurationRef.current = totalRouteDuration;
+
+    useEffect(() => {
+        if (taxiSegments && isNavigatingRef.current) {
+            if (rerouteTimeout.current) clearTimeout(rerouteTimeout.current);
+            rerouteTimeout.current = null;
+            isOffRouteRef.current = false;
+            offRouteStartTime.current = null;
+            lastRerouteRequestRef.current = 0;
+            lastOffRoutePosition.current = null;
+            headingDivergeStartRef.current = null;
+            lastClosestIndex.current = 0;
+            if (latestTaxiFixRef.current) locationCallbackRef.current?.(latestTaxiFixRef.current);
+        }
+    }, [taxiSegments, isNavigatingRef, rerouteTimeout]);
 
     const stopLocationTracking = useCallback(() => {
         if (locationSubscription.current) {
@@ -125,6 +146,7 @@ export const useLocationTracking = ({
         headingDivergeStartRef.current = null;
         currentGPSIntervalRef.current = getAppConfig().navGpsIntervalMs;
         locationCallbackRef.current = null;
+        latestTaxiFixRef.current = null;
         hasArrivedRef.current = false;
         hasReachedRef.current = false;
         lastRerouteRequestRef.current = 0;
@@ -148,6 +170,15 @@ export const useLocationTracking = ({
 
             locationCallbackRef.current = (location: Location.LocationObject) => {
                 const { latitude, longitude, heading, speed } = location.coords;
+                const taxiLegs = taxiSegmentsRef.current;
+                if (taxiLegs) {
+                    latestTaxiFixRef.current = location;
+                    onTaxiFixRef.current?.({
+                        lat: latitude, lng: longitude,
+                        accuracy: location.coords.accuracy ?? undefined,
+                        speed: speed ?? undefined, timestamp: location.timestamp
+                    });
+                }
 
                 if (speed !== null && speed >= 0) {
                     setCurrentSpeed?.(Math.round(speed * 3.6)); // m/s → km/h
@@ -169,50 +200,21 @@ export const useLocationTracking = ({
                     let snappedLat = latitude;
                     let snappedLng = longitude;
 
-                    const SEARCH_WINDOW = 50;
-                    const startIndex = Math.max(0, lastClosestIndex.current - SEARCH_WINDOW);
-                    const endIndex = Math.min(routeCoordinates.current.length - 1, lastClosestIndex.current + SEARCH_WINDOW);
+                    if (taxiLegs) {
+                        const match = matchTaxiPosition(
+                            taxiLegs, activeSegmentIndexRef?.current ?? 0, latitude, longitude
+                        );
+                        closestIndex = match.index;
+                        minDistance = match.distance;
+                        snappedLat = match.lat;
+                        snappedLng = match.lng;
+                        lastClosestIndex.current = closestIndex;
+                    } else {
+                        const SEARCH_WINDOW = 50;
+                        const startIndex = Math.max(0, lastClosestIndex.current - SEARCH_WINDOW);
+                        const endIndex = Math.min(routeCoordinates.current.length - 1, lastClosestIndex.current + SEARCH_WINDOW);
 
-                    for (let i = startIndex; i < endIndex; i++) {
-                        const [lng1, lat1] = routeCoordinates.current[i];
-                        const [lng2, lat2] = routeCoordinates.current[i + 1];
-
-                        const dx = lng2 - lng1;
-                        const dy = lat2 - lat1;
-
-                        if (dx === 0 && dy === 0) {
-                            const dist = calculateDistance(latitude, longitude, lat1, lng1);
-                            if (dist < minDistance) {
-                                minDistance = dist;
-                                closestIndex = i;
-                                snappedLat = lat1;
-                                snappedLng = lng1;
-                            }
-
-                            continue;
-                        }
-                        const t = Math.max(0, Math.min(1,
-                            ((longitude - lng1) * dx + (latitude - lat1) * dy) / (dx * dx + dy * dy)
-                        ));
-
-                        const projLat = lat1 + t * dy;
-                        const projLng = lng1 + t * dx;
-
-                        const dist = calculateDistance(latitude, longitude, projLat, projLng);
-
-                        if (dist < minDistance) {
-                            minDistance = dist;
-                            closestIndex = i;
-                            snappedLat = projLat;
-                            snappedLng = projLng;
-                        }
-
-                    }
-
-                    if (minDistance > 100) {
-                        for (let i = 0; i < routeCoordinates.current.length - 1; i++) {
-                            if (i >= startIndex && i < endIndex) continue;
-
+                        for (let i = startIndex; i < endIndex; i++) {
                             const [lng1, lat1] = routeCoordinates.current[i];
                             const [lng2, lat2] = routeCoordinates.current[i + 1];
 
@@ -227,15 +229,16 @@ export const useLocationTracking = ({
                                     snappedLat = lat1;
                                     snappedLng = lng1;
                                 }
+
                                 continue;
                             }
-
                             const t = Math.max(0, Math.min(1,
                                 ((longitude - lng1) * dx + (latitude - lat1) * dy) / (dx * dx + dy * dy)
                             ));
 
                             const projLat = lat1 + t * dy;
                             const projLng = lng1 + t * dx;
+
                             const dist = calculateDistance(latitude, longitude, projLat, projLng);
 
                             if (dist < minDistance) {
@@ -244,27 +247,67 @@ export const useLocationTracking = ({
                                 snappedLat = projLat;
                                 snappedLng = projLng;
                             }
+
                         }
-                    }
 
-                    if (closestIndex >= lastClosestIndex.current) {
-                        lastClosestIndex.current = closestIndex;
-                    } else {
-                        const held = routeCoordinates.current[lastClosestIndex.current];
-                        const heldDistance = held
-                            ? calculateDistance(latitude, longitude, held[1], held[0])
-                            : Infinity;
+                        if (minDistance > 100) {
+                            for (let i = 0; i < routeCoordinates.current.length - 1; i++) {
+                                if (i >= startIndex && i < endIndex) continue;
 
-                        if (heldDistance - minDistance > BACKTRACK_MARGIN_METERS) {
-                            lastClosestIndex.current = closestIndex;
-                        } else {
-                            closestIndex = lastClosestIndex.current;
-                            if (held) {
-                                snappedLng = held[0];
-                                snappedLat = held[1];
-                                minDistance = heldDistance;
+                                const [lng1, lat1] = routeCoordinates.current[i];
+                                const [lng2, lat2] = routeCoordinates.current[i + 1];
+
+                                const dx = lng2 - lng1;
+                                const dy = lat2 - lat1;
+
+                                if (dx === 0 && dy === 0) {
+                                    const dist = calculateDistance(latitude, longitude, lat1, lng1);
+                                    if (dist < minDistance) {
+                                        minDistance = dist;
+                                        closestIndex = i;
+                                        snappedLat = lat1;
+                                        snappedLng = lng1;
+                                    }
+                                    continue;
+                                }
+
+                                const t = Math.max(0, Math.min(1,
+                                    ((longitude - lng1) * dx + (latitude - lat1) * dy) / (dx * dx + dy * dy)
+                                ));
+
+                                const projLat = lat1 + t * dy;
+                                const projLng = lng1 + t * dx;
+                                const dist = calculateDistance(latitude, longitude, projLat, projLng);
+
+                                if (dist < minDistance) {
+                                    minDistance = dist;
+                                    closestIndex = i;
+                                    snappedLat = projLat;
+                                    snappedLng = projLng;
+                                }
                             }
                         }
+
+                        if (closestIndex >= lastClosestIndex.current) {
+                            lastClosestIndex.current = closestIndex;
+                        } else {
+                            const held = routeCoordinates.current[lastClosestIndex.current];
+                            const heldDistance = held
+                                ? calculateDistance(latitude, longitude, held[1], held[0])
+                                : Infinity;
+
+                            if (heldDistance - minDistance > BACKTRACK_MARGIN_METERS) {
+                                lastClosestIndex.current = closestIndex;
+                            } else {
+                                closestIndex = lastClosestIndex.current;
+                                if (held) {
+                                    snappedLng = held[0];
+                                    snappedLat = held[1];
+                                    minDistance = heldDistance;
+                                }
+                            }
+                        }
+
                     }
 
                     distanceFromRoute = minDistance;
@@ -315,6 +358,11 @@ export const useLocationTracking = ({
 
                     const offRoute = distanceFromRoute > OFF_ROUTE_THRESHOLD || divergedByHeading;
 
+                    if (taxiLegs && offRoute) {
+                        displayLat = latitude;
+                        displayLng = longitude;
+                    }
+
                     if (offRoute) {
                         lastOffRoutePosition.current = { lat: latitude, lng: longitude };
 
@@ -329,6 +377,7 @@ export const useLocationTracking = ({
 
                             if (rerouteTimeout.current) {
                                 clearTimeout(rerouteTimeout.current);
+                                if (taxiLegs) rerouteTimeout.current = null;
                             }
                         } else {
 
@@ -348,7 +397,8 @@ export const useLocationTracking = ({
 
                                 rerouteTimeout.current = setTimeout(() => {
                                     if (isNavigatingRef.current && lastOffRoutePosition.current) {
-                                        recalculateRoute(lastOffRoutePosition.current);
+                                        const recalculate = taxiSegmentsRef.current ? recalculateRouteRef.current : recalculateRoute;
+                                        recalculate(lastOffRoutePosition.current);
                                     }
                                     rerouteTimeout.current = null;
                                 }, 100);

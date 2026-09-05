@@ -12,6 +12,9 @@ export interface AppConfigValues {
   walkingEndThresholdM: number;
   taxiStationArrivalThresholdM: number;
   taxiWalkingEndThresholdM: number;
+  taxiBoardingPromptRadiusM: number;
+  taxiDropoffPromptRadiusM: number;
+  taxiConfirmationSnoozeMs: number;
   taxiOffRouteThresholdM: number;
   arrivalDistanceM: number;
 
@@ -74,6 +77,9 @@ export const APP_CONFIG_DEFAULTS: AppConfigValues = {
   walkingEndThresholdM: 20,
   taxiStationArrivalThresholdM: 80,
   taxiWalkingEndThresholdM: 40,
+  taxiBoardingPromptRadiusM: 100,
+  taxiDropoffPromptRadiusM: 150,
+  taxiConfirmationSnoozeMs: 120000,
   taxiOffRouteThresholdM: 30,
   arrivalDistanceM: 80,
 
@@ -130,6 +136,9 @@ export const RC_KEYS: Record<keyof AppConfigValues, string> = {
   walkingEndThresholdM: 'walking_end_threshold_m',
   taxiStationArrivalThresholdM: 'taxi_station_arrival_threshold_m',
   taxiWalkingEndThresholdM: 'taxi_walking_end_threshold_m',
+  taxiBoardingPromptRadiusM: 'taxi_boarding_prompt_radius_m',
+  taxiDropoffPromptRadiusM: 'taxi_dropoff_prompt_radius_m',
+  taxiConfirmationSnoozeMs: 'taxi_confirmation_snooze_ms',
   taxiOffRouteThresholdM: 'taxi_off_route_threshold_m',
   arrivalDistanceM: 'arrival_distance_m',
 

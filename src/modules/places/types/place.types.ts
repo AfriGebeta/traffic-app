@@ -7,6 +7,7 @@ export interface Place {
     lat: number;
     lng: number;
     description: string;
+    phone?: string;
     images: string[];
     verified: boolean;
     createdAt: string;
@@ -19,6 +20,7 @@ export interface PlaceContributionRequest {
     lat: number;
     lng: number;
     description: string;
+    phone?: string;
     images: string[];
     customType?: string;
 }

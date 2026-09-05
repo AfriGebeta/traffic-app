@@ -82,14 +82,14 @@ export const BottomSheet: React.FC<BottomSheetProps> = React.memo(({ children, e
     }));
 
     return (
-        <GestureDetector gesture={gesture}>
-            <Animated.View style={[styles.container, { backgroundColor: theme.background }, animatedStyle]}>
+        <Animated.View style={[styles.container, { backgroundColor: theme.background }, animatedStyle]}>
+            <GestureDetector gesture={gesture}>
                 <View style={styles.handle}>
                     <View style={[styles.handleBar, isDark && { backgroundColor: theme.border }]} />
                 </View>
-                <View style={styles.content}>{children}</View>
-            </Animated.View>
-        </GestureDetector>
+            </GestureDetector>
+            <View style={styles.content}>{children}</View>
+        </Animated.View>
     );
 });
 
@@ -121,6 +121,7 @@ const styles = StyleSheet.create({
         borderRadius: 3,
     },
     content: {
+        flex: 1,
         paddingHorizontal: 16,
         paddingBottom: 16,
     },

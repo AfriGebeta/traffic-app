@@ -18,7 +18,7 @@ interface PlaceDetailPreviewProps {
     onDirections: () => void;
     onStart: () => void;
     onTaxi: () => void;
-    onContribute: (location: { lat: number; lng: number }) => void;
+    onContribute: (place: GeocodingPlace) => void;
     onClose: () => void;
 }
 
@@ -126,7 +126,7 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
     };
 
     const handleContribute = () => {
-        onContribute({ lat: place.latitude, lng: place.longitude });
+        onContribute(place);
     };
 
     const isClaimableBusiness = () => {

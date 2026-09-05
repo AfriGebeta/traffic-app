@@ -107,12 +107,14 @@ class ApiService {
     async post<T>(
         endpoint: string,
         body?: unknown,
-        headers?: HeadersInit
+        headers?: HeadersInit,
+        signal?: AbortSignal
     ): Promise<ApiResponse<T>> {
         return this.request<T>(endpoint, {
             method: 'POST',
             body: body ? JSON.stringify(body) : undefined,
             headers,
+            ...(signal ? { signal } : {}),
         });
     }
 
