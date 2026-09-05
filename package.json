@@ -53,6 +53,7 @@
     "expo-task-manager": "~14.0.9",
     "expo-web-browser": "~15.0.9",
     "i18next": "^25.6.3",
+    "libphonenumber-js": "^1.13.12",
     "nativewind": "^4.2.1",
     "prettier-plugin-tailwindcss": "^0.5.14",
     "react": "19.1.0",
