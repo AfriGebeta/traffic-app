@@ -22,6 +22,12 @@ export interface PaymentInitiateResponse {
     transfer: { id: number | string };
 }
 
+export interface DriverLookupResponse {
+    driverCode: string;
+    fullName: string;
+    phoneNumber: string;
+}
+
 export type PaymentSaleStatus = 'PENDING' | 'COMPLETED' | 'FAILED' | 'EXPIRED';
 
 export interface PaymentSaleResponse {

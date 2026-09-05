@@ -2115,6 +2115,56 @@
         "AM": "የእርስዎ ስልክ ቁጥር"
     },
     {
+        "key": "driver-code",
+        "EN_US": "Driver Code",
+        "AM": "የአሽከርካሪ ኮድ"
+    },
+    {
+        "key": "driver-code-placeholder",
+        "EN_US": "Enter driver code",
+        "AM": "የአሽከርካሪ ኮድ ያስገቡ"
+    },
+    {
+        "key": "scan-qr",
+        "EN_US": "Scan QR",
+        "AM": "QR ስካን"
+    },
+    {
+        "key": "scan-driver-qr",
+        "EN_US": "Scan Driver QR",
+        "AM": "የአሽከርካሪ QR ስካን ያርጉ"
+    },
+    {
+        "key": "scan-driver-qr-hint",
+        "EN_US": "Point the camera at the driver's QR code",
+        "AM": "ካሜራውን ወደ አሽከርካሪው QR ኮድ ያዙሩ"
+    },
+    {
+        "key": "camera-permission-needed",
+        "EN_US": "Camera access is needed to scan the driver's QR code",
+        "AM": "የአሽከርካሪውን QR ኮድ ስካን ለማድረግ የካሜራ ፈቃድ ያስፈልጋል"
+    },
+    {
+        "key": "open-settings",
+        "EN_US": "Open Settings",
+        "AM": "ሴቲንግ ይክፈቱ"
+    },
+    {
+        "key": "allow-camera",
+        "EN_US": "Allow Camera",
+        "AM": "ካሜራ ይፍቀዱ"
+    },
+    {
+        "key": "looking-up-driver",
+        "EN_US": "Looking up driver...",
+        "AM": "አሽከርካሪ በመፈለግ ላይ..."
+    },
+    {
+        "key": "driver-not-found",
+        "EN_US": "Driver not found",
+        "AM": "አሽከርካሪ አልተገኘም"
+    },
+    {
         "key": "driver-phone-number",
         "EN_US": "Driver's Phone Number",
         "AM": "የአሽከርካሪ ስልክ ቁጥር"
