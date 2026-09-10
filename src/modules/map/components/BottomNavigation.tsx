@@ -12,6 +12,8 @@ import DarkBookmarkIcon from '../../../../assets/images/dark-saved.svg';
 import DarkDangerTriangleIcon from '../../../../assets/images/dark-report.svg';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { useGlass } from '../../../shared/theme/glass';
+import { GlassSheen } from '../../../shared/components/GlassSheen';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { useMapTheme } from '../context/MapThemeContext';
 
@@ -44,6 +46,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
 }) => {
     const { t } = useTranslation();
     const { colors: theme, isDark } = useTheme();
+    const glass = useGlass();
     const { currentTheme } = useMapTheme();
     const isLightTile = currentTheme.id === 'standard';
     const [activeTab, setActiveTab] = useState<TabId | null>(null);
@@ -87,69 +90,63 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
 
             <View
                 className="rounded-full p-1"
-                style={{
-                    backgroundColor: isDark ? theme.background : theme.surface,
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 10,
-                    elevation: 8,
-                }}
+                style={glass.panel}
             >
-            <View
-                className="rounded-full flex-row items-center justify-between px-3"
-                style={{
-                    backgroundColor: isDark ? theme.surface : '#F0F0F0',
-                    paddingTop: 12,
-                    paddingBottom: 12,
-                }}
-            >
-                {tabs.map((tab) => {
-                    const isAi = tab.id === 'ai';
-                    const SvgIcon = isDark && tab.DarkSvgIcon ? tab.DarkSvgIcon : tab.SvgIcon;
-                    return (
-                        <TouchableOpacity
-                            key={tab.id}
-                            onPress={() => handleTabPress(tab.id)}
-                            className="flex-1 items-center justify-center"
-                            style={{ height: 48 }}
-                            activeOpacity={0.7}
-                        >
-                            {isAi ? (
-                                <View
-                                    className="items-center justify-center rounded-full"
-                                    style={{ width: 58, height: 58, backgroundColor: colors.primary.main }}
-                                >
-                                    <Image
-                                        source={tab.icon}
-                                        style={{ width: 58, height: 58 }}
-                                        resizeMode="contain"
-                                    />
-                                </View>
-                            ) : (
-                                <>
-                                    {SvgIcon ? (
-                                        <SvgIcon width={22} height={22} />
-                                    ) : (
+                <GlassSheen streak strength="thick" />
+                <View
+                    className="rounded-full flex-row items-center justify-between px-3"
+                    style={{
+                        backgroundColor: 'transparent',
+                        paddingTop: 12,
+                        paddingBottom: 12,
+                    }}
+                >
+                    {tabs.map((tab) => {
+                        const isAi = tab.id === 'ai';
+                        const SvgIcon = isDark && tab.DarkSvgIcon ? tab.DarkSvgIcon : tab.SvgIcon;
+                        return (
+                            <TouchableOpacity
+                                key={tab.id}
+                                onPress={() => handleTabPress(tab.id)}
+                                className="flex-1 items-center justify-center"
+                                style={{ height: 48 }}
+                                activeOpacity={0.7}
+                            >
+                                {isAi ? (
+                                    <View
+                                        className="items-center justify-center rounded-full"
+                                        style={{ width: 58, height: 58, backgroundColor: colors.primary.main }}
+                                    >
                                         <Image
                                             source={tab.icon}
-                                            style={{ width: 22, height: 22 }}
+                                            style={{ width: 58, height: 58 }}
                                             resizeMode="contain"
                                         />
-                                    )}
-                                    <Text
-                                        className="mt-1"
-                                        style={[{ fontSize: 10, color: theme.textPrimary }, fontsLoaded ? { fontFamily: 'PlusJakartaSans-Light' } : undefined]}
-                                        numberOfLines={1}
-                                    >
-                                        {t(tab.translationKey)}
-                                    </Text>
-                                </>
-                            )}
-                        </TouchableOpacity>
-                    );
-                })}
-            </View>
+                                    </View>
+                                ) : (
+                                    <>
+                                        {SvgIcon ? (
+                                            <SvgIcon width={22} height={22} />
+                                        ) : (
+                                            <Image
+                                                source={tab.icon}
+                                                style={{ width: 22, height: 22 }}
+                                                resizeMode="contain"
+                                            />
+                                        )}
+                                        <Text
+                                            className="mt-1"
+                                            style={[{ fontSize: 10, color: theme.textPrimary }, fontsLoaded ? { fontFamily: 'PlusJakartaSans-Light' } : undefined]}
+                                            numberOfLines={1}
+                                        >
+                                            {t(tab.translationKey)}
+                                        </Text>
+                                    </>
+                                )}
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
             </View>
         </View>
     );

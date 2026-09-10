@@ -1,3 +1,4 @@
+import { MapGlassProvider } from '../../../../modules/map-glass';
 import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react';
 import { View, Text, LogBox, BackHandler, StatusBar, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useFocusEffect, useRouter } from 'expo-router';
@@ -1164,6 +1165,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     }, [showAlternativeRoutes, allRouteOptions, selectedRouteIndex]);
 
     return (
+        <MapGlassProvider>
         <View className="flex-1">
             <StatusBar barStyle="dark-content" backgroundColor="#ffffff" translucent={false} />
             <CustomGebetaMap
@@ -1485,5 +1487,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 </View>
             )}
         </View>
+        </MapGlassProvider>
     );
 }

@@ -1,3 +1,4 @@
+import { MapGlassTarget } from '../../../modules/map-glass';
 import React, { forwardRef, useState, useImperativeHandle, useRef, useEffect, useLayoutEffect, memo, useMemo, useCallback } from 'react';
 import { View, StyleSheet, Alert, Text, Animated, Image, PixelRatio, AppState } from 'react-native';
 import MapLibreGL from '@maplibre/maplibre-react-native';
@@ -2014,8 +2015,10 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                         setMapHeight(h);
                     }}
                 >
+                    <MapGlassTarget style={styles.mapSurface}>
                     <MapLibreGL.MapView
                         ref={mapViewRef}
+                        surfaceView={false}
                         style={styles.mapSurface}
                         mapStyle={mapStyleState}
                         attributionEnabled={false}
@@ -2756,6 +2759,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                             </MapLibreGL.ShapeSource>
                         )}
                     </MapLibreGL.MapView>
+                    </MapGlassTarget>
 
                     {showFollowCamera && !!userLocation && imagesLoaded && mapHeight > 0 && (
                         <View

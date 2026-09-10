@@ -3,6 +3,8 @@ import { View, TextInput, TouchableOpacity, ActivityIndicator, Image } from 'rea
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { useGlass } from '../../../shared/theme/glass';
+import { GlassSheen } from '../../../shared/components/GlassSheen';
 import { useUserRegistration } from '../../register/hooks/useUserRegistration';
 import { useResolvedImageUri } from '../../../shared/hooks/useResolvedImageUri';
 
@@ -28,6 +30,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     isLoading = false,
 }) => {
     const { colors: theme } = useTheme();
+    const glass = useGlass();
     const { getStoredUser } = useUserRegistration();
     const [storedImage, setStoredImage] = useState<string | null>(null);
     const [localImage, setLocalImage] = useState<string | null>(null);
@@ -45,22 +48,24 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     return (
         <View className="flex-row items-center gap-3">
             <TouchableOpacity
-                className="rounded-2xl shadow-lg overflow-hidden"
-                style={{ backgroundColor: theme.surface, width: 39, height: 39, alignItems: 'center', justifyContent: 'center' }}
+                className="rounded-2xl"
+                style={[glass.surface, { width: 39, height: 39, alignItems: 'center', justifyContent: 'center' }]}
                 onPress={onProfilePress}
                 activeOpacity={0.7}
             >
+                <GlassSheen radius={16} />
                 {profileImage ? (
-                    <Image source={{ uri: profileImage }} style={{ width: 39, height: 39 }} />
+                    <Image source={{ uri: profileImage }} style={{ width: 39, height: 39, borderRadius: 16 }} />
                 ) : (
                     <Ionicons name="person" size={23} color={theme.textPrimary} />
                 )}
             </TouchableOpacity>
 
             <View
-                className="flex-1 rounded-2xl shadow-lg flex-row items-center px-3 py-0.5"
-                style={{ backgroundColor: theme.surface }}
+                className="flex-1 rounded-2xl flex-row items-center px-3 py-0.5"
+                style={glass.panel}
             >
+                <GlassSheen streak radius={16} strength="thick" />
                 <Ionicons name="search" size={16} color={theme.textSecondary} />
                 <TextInput
                     className="flex-1 ml-3 text-base"
