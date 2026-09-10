@@ -1767,7 +1767,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                 applyFlyTo(options);
             },
             refreshCamera: rebuildCameraInPlace,
-            recenterOnce: (options: { center: [number, number]; zoom?: number }) => {
+            recenterOnce: (options: { center: [number, number]; zoom?: number; duration?: number }) => {
                 homeFollowPausedRef.current = true;
                 pendingFlyTo.current = null;
                 flyToTokenRef.current += 1;
@@ -1775,6 +1775,17 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
                     center: options.center,
                     zoom: options.zoom ?? lastKnownZoomRef.current ?? (zoom ?? 15),
                 };
+                if (options.duration && options.duration > 0 && cameraRef.current) {
+                    markHomeCommand(options.center, lastFreeCameraRef.current.zoom);
+                    cameraRef.current.setCamera({
+                        centerCoordinate: options.center,
+                        zoomLevel: lastFreeCameraRef.current.zoom,
+                        animationDuration: options.duration,
+                        animationMode: 'easeTo',
+                    });
+                    neutralizeCameraStopRef.current?.(options.duration + 200);
+                    return;
+                }
                 setHomeCameraTarget(lastFreeCameraRef.current);
                 markHomeCommand(options.center, options.zoom);
                 setHomeCameraEpoch((current) => current + 1);

@@ -575,6 +575,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         (mapRef.current as any).recenterOnce({
             center: [userLocation.lng, userLocation.lat],
             zoom: USER_LOCATION_ZOOM,
+            duration: 800,
         });
     };
 
