@@ -3,7 +3,7 @@ import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react'
 import { View, Text, LogBox, BackHandler, StatusBar, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useFocusEffect, useRouter } from 'expo-router';
 import CustomGebetaMap from '../../../components/GebetaMap';
-import type { GebetaMapRef } from '@gebeta/tiles-react-native';
+import type { TrafficMapRef } from '../../../components/GebetaMap';
 import { NavigationBar } from './NavigationBar';
 import { NavigationOverlay } from './NavigationOverlay';
 import { IncidentAlert } from './IncidentAlert';
@@ -59,7 +59,7 @@ interface TrafficMapProps {
 }
 
 export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMode, voiceDestination }: TrafficMapProps) {
-    const mapRef = useRef<GebetaMapRef>(null);
+    const mapRef = useRef<TrafficMapRef>(null);
     const searchMarkerRef = useRef<any>(null);
     const processedSharedLocationRef = useRef<SharedLocation | null>(null);
     const processedVoiceDestRef = useRef<string | null>(null);
@@ -206,7 +206,8 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     }, [navigationMode, fetchRules]);
 
     const { activeAlert: activeIncidentAlert, dismissAlert: dismissIncidentAlert } = useIncidentAlerts(userLocation, incidents, navigationMode, routeCoordinates);
-    const activeRuleAlert = useRuleAlerts(userLocation, nearbyRules, navigationMode, routeCoordinates);
+    const queryRoadFeatures = React.useCallback(() => mapRef.current?.queryRoadFeatures?.() ?? Promise.resolve([]), []);
+    const activeRuleAlert = useRuleAlerts(userLocation, nearbyRules, navigationMode, routeCoordinates, queryRoadFeatures);
     const { addIncidentMarkers } = useMapMarkers(mapRef, incidents);
 
     const clearSearchMarker = () => {

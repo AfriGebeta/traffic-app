@@ -1,6 +1,6 @@
 import { MapGlassTarget } from '../../../modules/map-glass';
 import React, { forwardRef, useState, useImperativeHandle, useRef, useEffect, useLayoutEffect, memo, useMemo, useCallback } from 'react';
-import { View, StyleSheet, Alert, Text, Animated, Image, PixelRatio, AppState } from 'react-native';
+import { View, StyleSheet, Alert, Text, Animated, Image, PixelRatio, AppState, Dimensions, Platform } from 'react-native';
 import MapLibreGL from '@maplibre/maplibre-react-native';
 import { GebetaMapRef, GebetaMapProps } from '@gebeta/tiles-react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -970,7 +970,11 @@ const AnimatedNavLayer = memo(({
 AnimatedNavLayer.displayName = 'AnimatedNavLayer';
 
 
-const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
+export type TrafficMapRef = GebetaMapRef & {
+    queryRoadFeatures?: () => Promise<GeoJSON.Feature[]>;
+};
+
+const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
     ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, routeEpoch, taxiActiveRouteGeoJSON, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, isHomeMap, staticInitialCamera, freeCamera, maneuvers, boundingBox, alternativeRoutesGeoJSON, routeTimeLabels }, ref) => {
         const navPuckFraction = isTaxiNavigation ? 0.52 : NAV_PUCK_SCREEN_FRACTION;
         const { isDark } = useTheme();
@@ -1817,6 +1821,17 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             clearMarkers: () => { },
             getMarkers: () => [],
 
+            queryRoadFeatures: async () => {
+                const layers = (mapStyleState?.layers ?? []) as { id: string; type: string; 'source-layer'?: string }[];
+                const roadLayers = layers.filter(layer => layer.type === 'line' &&
+                    ['transportation', 'road', 'roads'].includes(layer['source-layer'] ?? '')).map(layer => layer.id);
+                if (!mapViewRef.current || roadLayers.length === 0) return [];
+                const { width, height } = Dimensions.get('window');
+
+                const bounds: GeoJSON.BBox = Platform.OS === 'ios' ? [height, width, 0, 0] : [0, width, height, 0];
+                const result = await mapViewRef.current.queryRenderedFeaturesInRect(bounds, undefined, roadLayers);
+                return result.features;
+            },
             getMapInstance: () => mapViewRef.current,
             startFence: () => { },
             addFencePoint: () => { },
@@ -1850,7 +1865,7 @@ const CustomGebetaMap = forwardRef<GebetaMapRef, ExtendedGebetaMapProps>(
             updateNavigationPosition: () => { },
             getNavigationState: () => null,
             isNavigating: () => false,
-        }), [applyFlyTo, markAnimatedProgrammaticCamera, markHomeCommand, rebuildCameraInPlace, NAV_ZOOM, zoom]);
+        }), [applyFlyTo, markAnimatedProgrammaticCamera, markHomeCommand, rebuildCameraInPlace, NAV_ZOOM, zoom, mapStyleState]);
 
         useEffect(() => {
             if (mapStyleJson) {
