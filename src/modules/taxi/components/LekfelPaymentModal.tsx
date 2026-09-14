@@ -1,6 +1,7 @@
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
@@ -13,6 +14,9 @@ interface LekfelPaymentModalProps {
     errorMessage: string;
     amount: string;
     currency: string;
+    saleId?: number | string | null;
+    originLat?: number;
+    originLng?: number;
     onRetry: () => void;
     onDismiss: () => void;
 }
@@ -22,11 +26,44 @@ export default function LekfelPaymentModal({
     errorMessage,
     amount,
     currency,
+    saleId,
+    originLat,
+    originLng,
     onRetry,
     onDismiss,
 }: LekfelPaymentModalProps) {
+    const router = useRouter();
     const { t } = useTranslation();
     const { colors: theme } = useTheme();
+
+    const handleViewReceipt = () => {
+        if (saleId === null || saleId === undefined) return;
+        const receiptSaleId = String(saleId);
+        onDismiss();
+        setTimeout(() => {
+            router.push({
+                pathname: '/payment-receipt',
+                params: {
+                    saleId: receiptSaleId,
+                    ...(originLat !== undefined ? { originLat: String(originLat) } : {}),
+                    ...(originLng !== undefined ? { originLng: String(originLng) } : {}),
+                },
+            });
+        }, 0);
+    };
+
+    const receiptButton = saleId !== null && saleId !== undefined ? (
+        <TouchableOpacity
+            onPress={handleViewReceipt}
+            className="rounded-lg py-3.5 items-center w-full flex-row justify-center"
+            style={{ borderWidth: 1, borderColor: theme.border }}
+        >
+            <Ionicons name="receipt-outline" size={18} color={theme.textPrimary} />
+            <Text className="font-semibold text-base ml-2" style={{ color: theme.textPrimary }}>
+                {t('view-receipt')}
+            </Text>
+        </TouchableOpacity>
+    ) : null;
 
     return (
         <Modal
@@ -59,9 +96,10 @@ export default function LekfelPaymentModal({
                             <Text className="text-sm text-center mt-1" style={{ color: theme.textSecondary }}>
                                 {amount} {currency}
                             </Text>
+                            <View className="mt-4 w-full">{receiptButton}</View>
                             <TouchableOpacity
                                 onPress={onDismiss}
-                                className="rounded-xl py-3.5 items-center mt-4 w-full"
+                                className="rounded-lg py-3.5 items-center mt-3 w-full"
                                 style={{ backgroundColor: ACCENT }}
                             >
                                 <Text className="text-white font-semibold text-base">{t('ok')}</Text>
@@ -75,7 +113,8 @@ export default function LekfelPaymentModal({
                             <Text className="text-base font-semibold mt-3 text-center" style={{ color: theme.textPrimary }}>
                                 {errorMessage || t('payment-failed')}
                             </Text>
-                            <View className="flex-row gap-3 mt-4 w-full">
+                            {receiptButton ? <View className="mt-4 w-full">{receiptButton}</View> : null}
+                            <View className="flex-row gap-3 mt-3 w-full">
                                 <TouchableOpacity
                                     onPress={onDismiss}
                                     className="flex-1 rounded-xl py-3.5 items-center"
