@@ -3,6 +3,7 @@ import * as Haptics from 'expo-haptics';
 import { TrafficRuleReport } from '../../rules/types/rule.types';
 import { RULE_TRANSLATION_MAP } from '../../rules/utils/ruleTranslations';
 import { useTranslation } from 'react-i18next';
+import { roadIntersections, trafficLightIntersection, reachedIntersection, type Coordinate } from '../utils/trafficLightIntersections';
 import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 
 const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
@@ -67,7 +68,8 @@ export const useRuleAlerts = (
     userLocation: { lat: number; lng: number } | null,
     rules: TrafficRuleReport[],
     navigationMode: boolean,
-    routeCoordinates?: [number, number][]
+    routeCoordinates?: [number, number][],
+    queryRoadFeatures?: () => Promise<GeoJSON.Feature[]>
 ) => {
     const { t } = useTranslation();
     const [activeAlert, setActiveAlert] = useState<ActiveRuleAlert | null>(null);
@@ -75,8 +77,16 @@ export const useRuleAlerts = (
     const passedRules = useRef<Set<string>>(new Set());
     const previousDistances = useRef<Map<string, number>>(new Map());
 
+    const pinnedLight = useRef<{ rule: TrafficRuleReport; activation: Coordinate; target: Coordinate | null } | null>(null);
+    const lastRoute = useRef(routeCoordinates);
+    const [intersectionRevision, setIntersectionRevision] = useState(0);
+
     useEffect(() => {
-        if (!navigationMode || !userLocation || rules.length === 0) {
+        if (lastRoute.current !== routeCoordinates) {
+            pinnedLight.current = null;
+            lastRoute.current = routeCoordinates;
+        }
+        if (!navigationMode || !userLocation || (rules.length === 0 && !pinnedLight.current)) {
             setActiveAlert(null);
             return;
         }
@@ -84,7 +94,7 @@ export const useRuleAlerts = (
         let closestRule: TrafficRuleReport | null = null;
         let closestDistance = Infinity;
 
-        for (const rule of rules) {
+        for (const rule of pinnedLight.current ? [] : rules) {
             if (passedRules.current.has(rule.id)) {
                 continue;
             }
@@ -105,6 +115,11 @@ export const useRuleAlerts = (
             }
         }
 
+        if (pinnedLight.current) {
+            closestRule = pinnedLight.current.rule;
+            closestDistance = calculateDistance(userLocation.lat, userLocation.lng, closestRule.lat, closestRule.lng);
+        }
+
         if (closestRule && closestDistance < Infinity) {
             const ruleId = closestRule.id;
             const previousDistance = previousDistances.current.get(ruleId);
@@ -112,7 +127,17 @@ export const useRuleAlerts = (
             const reachedRule = closestDistance <= getAppConfig().ruleClearDistanceKm;
             const isMovingAway = previousDistance !== undefined && closestDistance > previousDistance;
 
-            if (reachedRule && isMovingAway) {
+            const isPersistentLight = closestRule.type.name === 'Traffic Light' && !!queryRoadFeatures;
+            if (isPersistentLight && !pinnedLight.current) {
+                pinnedLight.current = { rule: closestRule, activation: [userLocation.lng, userLocation.lat], target: null };
+            }
+            const target = pinnedLight.current?.target;
+            const reachedLightJunction = !!target && !!routeCoordinates && reachedIntersection(
+                routeCoordinates, target, [userLocation.lng, userLocation.lat]
+            );
+
+            if (isPersistentLight ? reachedLightJunction : reachedRule && isMovingAway) {
+                pinnedLight.current = null;
                 passedRules.current.add(ruleId);
                 setActiveAlert(null);
                 alertedRules.current.delete(ruleId);
@@ -142,10 +167,35 @@ export const useRuleAlerts = (
         } else {
             setActiveAlert(null);
         }
-    }, [userLocation, rules, navigationMode, t, routeCoordinates]);
+    }, [userLocation, rules, navigationMode, t, routeCoordinates, queryRoadFeatures, intersectionRevision]);
+
+    useEffect(() => {
+        if (!navigationMode || !queryRoadFeatures || !routeCoordinates || !pinnedLight.current) return;
+        let cancelled = false;
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const light = pinnedLight.current;
+        const findJunction = async () => {
+            if (cancelled || light !== pinnedLight.current || light.target) return;
+            try {
+                const features = await queryRoadFeatures();
+                if (cancelled || light !== pinnedLight.current) return;
+                light.target = trafficLightIntersection(routeCoordinates, roadIntersections(features),
+                    [light.rule.lng, light.rule.lat], light.activation);
+                if (light.target) {
+                    setIntersectionRevision(value => value + 1);
+                    return;
+                }
+            } catch {
+            }
+            if (!cancelled) timer = setTimeout(findJunction, 1500);
+        };
+        void findJunction();
+        return () => { cancelled = true; if (timer) clearTimeout(timer); };
+    }, [activeAlert?.ruleId, navigationMode, queryRoadFeatures, routeCoordinates]);
 
     useEffect(() => {
         if (!navigationMode) {
+            pinnedLight.current = null;
             setActiveAlert(null);
             alertedRules.current.clear();
             passedRules.current.clear();

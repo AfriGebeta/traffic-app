@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { taxiService } from '../services/taxi.service';
-import { TaxiNode, TaxiNavigationRequest } from '../types/taxi.types';
+import { TaxiNode } from '../types/taxi.types';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { useUserRegistration } from '../../register/hooks/useUserRegistration';
 import LekfelPaymentModal from '../components/LekfelPaymentModal';
@@ -21,7 +21,13 @@ export default function TaxiSearchScreen() {
     const { userLocation } = useUserLocation();
     const { colors: theme, isDark } = useTheme();
     const { getStoredUser } = useUserRegistration();
-    const { stage: paymentStage, errorMessage: paymentError, pay, reset: resetPayment } = useLekfelPayment();
+    const {
+        stage: paymentStage,
+        errorMessage: paymentError,
+        saleId: paymentSaleId,
+        pay,
+        reset: resetPayment,
+    } = useLekfelPayment();
 
     const [originName, setOriginName] = useState('');
     const [destinationName, setDestinationName] = useState('');
@@ -502,7 +508,7 @@ export default function TaxiSearchScreen() {
                                 <Ionicons name="add-circle-outline" size={20} color="#FFA500" />
                                 <View className="ml-2 flex-1">
                                     <Text className="font-semibold" numberOfLines={1} style={{ color: theme.textPrimary }}>
-                                        {t('add')} "{destinationName.trim()}"
+                                        {`${t('add')} "${destinationName.trim()}"`}
                                     </Text>
                                     <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }}>
                                         {t('no-station-matches')}
@@ -550,6 +556,9 @@ export default function TaxiSearchScreen() {
                 errorMessage={paymentError}
                 amount={payAmount}
                 currency="ETB"
+                saleId={paymentSaleId}
+                originLat={selectedOriginCoords?.lat ?? userLocation?.lat}
+                originLng={selectedOriginCoords?.lng ?? userLocation?.lng}
                 onRetry={resetPayment}
                 onDismiss={handleDismissPayment}
             />

@@ -3798,5 +3798,125 @@
         "key": "taxi-route-unavailable-retry",
         "EN_US": "Route unavailable · Retry",
         "AM": "መንገድ አልተገኘም · እንደገና ይሞክሩ"
+    },
+    {
+        "key": "payment-transactions-title",
+        "EN_US": "Taxi payments",
+        "AM": "የታክሲ ክፍያዎች"
+    },
+    {
+        "key": "payment-transactions-subtitle",
+        "EN_US": "Your recent transactions",
+        "AM": "የቅርብ ጊዜ ክፍያዎች"
+    },
+    {
+        "key": "payments",
+        "EN_US": "Payments",
+        "AM": "ክፍያዎች"
+    },
+    {
+        "key": "payment-transactions-open-description",
+        "EN_US": "View your taxi payment history",
+        "AM": "የታክሲ ክፍያ ታሪክዎን ይመልከቱ"
+    },
+    {
+        "key": "payment-transactions-all",
+        "EN_US": "All",
+        "AM": "ሁሉም"
+    },
+    {
+        "key": "payment-transactions-completed",
+        "EN_US": "Completed",
+        "AM": "የተጠናቀቁ"
+    },
+    {
+        "key": "payment-transactions-pending",
+        "EN_US": "Pending",
+        "AM": "በመጠባበቅ ላይ"
+    },
+    {
+        "key": "payment-transactions-failed",
+        "EN_US": "Failed",
+        "AM": "ያልተሳኩ"
+    },
+    {
+        "key": "payment-transactions-loading",
+        "EN_US": "Loading payments…",
+        "AM": "ክፍያዎችን በማግኘት ላይ…"
+    },
+    {
+        "key": "payment-transactions-error",
+        "EN_US": "Could not load your payments.",
+        "AM": "ክፍያዎችዎን ማግኘት አልተቻለም።"
+    },
+    {
+        "key": "payment-transactions-empty",
+        "EN_US": "No taxi payments yet",
+        "AM": "እስካሁን የታክሲ ክፍያ የለም"
+    },
+    {
+        "key": "payment-transactions-empty-description",
+        "EN_US": "Payments you make for taxi trips will appear here.",
+        "AM": "ለታክሲ ጉዞዎች የሚከፍሏቸው ክፍያዎች እዚህ ይታያሉ።"
+    },
+    {
+        "key": "payment-transactions-taxi-payment",
+        "EN_US": "Taxi payment",
+        "AM": "የታክሲ ክፍያ"
+    },
+    {
+        "key": "payment-transactions-date-unavailable",
+        "EN_US": "Date unavailable",
+        "AM": "ቀን አልተገኘም"
+    },
+    {
+        "key": "payment-transactions-page",
+        "EN_US": "Page {{current}}",
+        "AM": "ገጽ {{current}}"
+    },
+    {
+        "key": "payment-transactions-page-count",
+        "EN_US": "Page {{current}} of {{total}}",
+        "AM": "ገጽ {{current}} ከ{{total}}"
+    },
+    {
+        "key": "payment-status-completed",
+        "EN_US": "Completed",
+        "AM": "ተጠናቋል"
+    },
+    {
+        "key": "payment-status-pending",
+        "EN_US": "Pending",
+        "AM": "በመጠባበቅ ላይ"
+    },
+    {
+        "key": "payment-status-failed",
+        "EN_US": "Failed",
+        "AM": "አልተሳካም"
+    },
+    {
+        "key": "payment-status-expired",
+        "EN_US": "Expired",
+        "AM": "ጊዜው አልፏል"
+    },
+    {
+        "key": "view-receipt",
+        "EN_US": "View receipt",
+        "AM": "ደረሰኝ ይመልከቱ"
+    },
+    {
+        "key": "receipt-title",
+        "EN_US": "Payment receipt",
+        "AM": "የክፍያ ደረሰኝ"
+    },
+    {
+        "key": "receipt-loading",
+        "EN_US": "Loading receipt…",
+        "AM": "ደረሰኝ በማግኘት ላይ…"
+    },
+    {
+        "key": "receipt-load-failed",
+        "EN_US": "Could not load this receipt.",
+        "AM": "ይህን ደረሰኝ ማግኘት አልተቻለም።"
     }
 ]

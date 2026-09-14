@@ -62,9 +62,9 @@ export const IncidentFiltersModal = ({ visible, onClose }: IncidentFiltersModalP
                                         className="px-4 py-3 flex-row items-center"
                                         style={{
                                             backgroundColor: theme.surface,
-                                            borderWidth: 2,
-                                            borderColor: enabled ? colors.primary.main : theme.border,
-                                            borderRadius: 999,
+                                            borderWidth: 1,
+                                            borderColor: isDark ? 'rgba(255, 255, 255, 0.22)' : 'rgba(0, 0, 0, 0.22)',
+                                            borderRadius: 8,
                                             width: '48%',
                                         }}
                                         disabled={filtersLoading}
@@ -78,7 +78,7 @@ export const IncidentFiltersModal = ({ visible, onClose }: IncidentFiltersModalP
                                             <Text
                                                 className="text-sm font-semibold"
                                                 style={{
-                                                    color: enabled ? colors.primary.main : theme.textSecondary,
+                                                    color: theme.textPrimary,
                                                 }}
                                                 numberOfLines={2}
                                                 ellipsizeMode="tail"
@@ -98,7 +98,7 @@ export const IncidentFiltersModal = ({ visible, onClose }: IncidentFiltersModalP
                     >
                         <TouchableOpacity
                             onPress={onClose}
-                            className="rounded-full py-4 px-8 items-center justify-center"
+                            className="rounded-lg py-4 px-8 items-center justify-center"
                             style={{ backgroundColor: colors.primary.main, minWidth: '100%' }}
                         >
                             <Text

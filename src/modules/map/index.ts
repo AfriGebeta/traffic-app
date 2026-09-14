@@ -7,5 +7,5 @@ export { MapThemeSelector } from './components/MapThemeSelector';
 export { usePlaceCategories } from './hooks/usePlaceCategories';
 export { categoriesService } from './services/categoriesService';
 export type { PlaceCategory } from './services/categoriesService';
-export { MapThemeProvider, useMapTheme, MAP_THEMES } from './context/MapThemeContext';
+export { MapThemeProvider, useMapTheme } from './context/MapThemeContext';
 export type { MapTheme, MapThemeId } from './context/MapThemeContext';

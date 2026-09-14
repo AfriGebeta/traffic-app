@@ -6,6 +6,8 @@ import DarkLocationIcon from '../../../../assets/images/dark-target.svg';
 import DarkTaxiIcon from '../../../../assets/images/dark-taxi.svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { useGlass } from '../../../shared/theme/glass';
+import { GlassSheen } from '../../../shared/components/GlassSheen';
 
 export const BASE_GAP = 112;
 export const ROUTE_PREVIEW_GAP = 292;
@@ -24,7 +26,8 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
     isRoutePreviewActive = false,
     isPlaceDetailActive = false,
 }) => {
-    const { colors: theme, isDark } = useTheme();
+    const { isDark } = useTheme();
+    const glass = useGlass();
     const insets = useSafeAreaInsets();
     const bottomPosition = useRef(new Animated.Value(insets.bottom + BASE_GAP)).current;
 
@@ -49,18 +52,20 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
         <Animated.View className="absolute right-4 gap-3" style={{ bottom: bottomPosition }}>
             <TouchableOpacity
                 onPress={onLocationPress}
-                className="rounded-full p-3 shadow-lg"
-                style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
+                className="rounded-full p-3"
+                style={glass.surface}
             >
+                <GlassSheen />
                 <LocationIcon width={24} height={24} />
             </TouchableOpacity>
 
             {!isRoutePreviewActive && (
                 <TouchableOpacity
                     onPress={onTaxiPress}
-                    className="rounded-full p-3 shadow-lg"
-                    style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
+                    className="rounded-full p-3"
+                    style={glass.surface}
                 >
+                    <GlassSheen />
                     <TaxiIcon width={24} height={24} />
                 </TouchableOpacity>
             )}
