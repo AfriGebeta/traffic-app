@@ -34,5 +34,31 @@ export interface PaymentSaleResponse {
     id: number | string;
     status: PaymentSaleStatus;
     telebirrTransactionId?: string;
+    amount?: number | string;
+    currency?: string;
+    reference?: string;
+    description?: string;
+    receiverPhone?: string;
+    driverName?: string;
+    originName?: string;
+    originLat?: number;
+    originLng?: number;
+    destinationName?: string;
+    createdAt?: string;
+    updatedAt?: string;
     [key: string]: unknown;
+}
+
+export interface PaymentSalesQuery {
+    limit?: number;
+    offset?: number;
+    status?: PaymentSaleStatus;
+}
+
+export interface PaymentSalesPage {
+    sales: PaymentSaleResponse[];
+    total?: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
 }

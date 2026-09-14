@@ -460,6 +460,34 @@ export const ProfileScreen = () => {
                         ))}
                     </View>
 
+                    <Text className="font-bold text-base mb-3" style={{ color: theme.textPrimary }}>
+                        {t('payments') || 'Payments'}
+                    </Text>
+                    <TouchableOpacity
+                        className="flex-row items-center justify-between px-4 py-4 mb-8"
+                        style={elevatedCardStyle}
+                        activeOpacity={0.7}
+                        onPress={() => router.push('/payment-transactions')}
+                    >
+                        <View className="flex-row items-center flex-1 mr-3">
+                            <View
+                                className="w-9 h-9 rounded-full items-center justify-center mr-3"
+                                style={{ backgroundColor: isDark ? '#4D3400' : '#FFF1D6' }}
+                            >
+                                <Ionicons name="receipt-outline" size={18} color={colors.primary.main} />
+                            </View>
+                            <View className="flex-1">
+                                <Text className="text-sm font-semibold" style={{ color: theme.textPrimary }}>
+                                    {t('payment-transactions-title')}
+                                </Text>
+                                <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }} numberOfLines={1}>
+                                    {t('payment-transactions-open-description')}
+                                </Text>
+                            </View>
+                        </View>
+                        <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
+                    </TouchableOpacity>
+
                     {/* Personalisation Section */}
                     <Text className="font-bold text-base mb-3" style={{ color: theme.textPrimary }}>
                         {t('personalisation') || 'Personalisation'}
@@ -494,7 +522,7 @@ export const ProfileScreen = () => {
                                             ? t('rules-shown-on-map')
                                             : t('rules-hidden-on-map')
                                     );
-                                } catch (error) {
+                                } catch {
                                     showToast(t('failed-to-update-settings'));
                                 }
                             }}

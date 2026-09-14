@@ -35,7 +35,7 @@ export default function LekfelPaySheet({
     const { colors: theme } = useTheme();
     const insets = useSafeAreaInsets();
     const { getStoredUser } = useUserRegistration();
-    const { stage, errorMessage, pay, reset } = useLekfelPayment();
+    const { stage, errorMessage, saleId, pay, reset } = useLekfelPayment();
 
     const [payerPhone, setPayerPhone] = useState('');
     const [receiverPhone, setReceiverPhone] = useState('');
@@ -139,6 +139,9 @@ export default function LekfelPaySheet({
                 errorMessage={errorMessage}
                 amount={amount}
                 currency="ETB"
+                saleId={saleId}
+                originLat={originLat}
+                originLng={originLng}
                 onRetry={reset}
                 onDismiss={handleDismissStatus}
             />

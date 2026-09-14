@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { useGlass } from '../../../shared/theme/glass';
+import { GlassSheen } from '../../../shared/components/GlassSheen';
 import { usePlaceCategories } from '../hooks/usePlaceCategories';
 
 interface QuickActionsProps {
@@ -17,6 +19,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
 }) => {
     const { i18n } = useTranslation();
     const { colors: theme } = useTheme();
+    const glass = useGlass();
     const { categories } = usePlaceCategories();
     const [internalSelectedCategory, setInternalSelectedCategory] = useState<string | null>(null);
 
@@ -52,17 +55,16 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
                         >
                             <View
                                 className="px-4 py-2 flex-row items-center rounded-full"
-                                style={{
-                                    backgroundColor: selectedCategory === category.slug
-                                        ? theme.primary
-                                        : theme.surface,
-                                    borderWidth: 0.5,
-                                    borderColor: selectedCategory === category.slug
-                                        ? theme.primaryHover
-                                        : theme.border,
-                                    borderRadius: 9999,
-                                }}
+                                style={[
+                                    glass.chip,
+                                    selectedCategory === category.slug && {
+                                        backgroundColor: theme.primary,
+                                        borderColor: theme.primaryHover,
+                                    },
+                                    { borderRadius: 9999 },
+                                ]}
                             >
+                                {selectedCategory !== category.slug && <GlassSheen strength="thin" />}
                                 <Text
                                     className="text-sm font-medium"
                                     style={{

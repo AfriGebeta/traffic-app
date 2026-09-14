@@ -13,6 +13,7 @@ export function useLekfelPayment() {
 
     const [stage, setStage] = useState<PaymentStage>('idle');
     const [errorMessage, setErrorMessage] = useState('');
+    const [saleId, setSaleId] = useState<number | string | null>(null);
 
     const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
     const pollAttempts = useRef(0);
@@ -59,12 +60,14 @@ export function useLekfelPayment() {
 
     const pay = async (request: Omit<PaymentInitiateRequest, 'reference'>) => {
         setErrorMessage('');
+        setSaleId(null);
         setStage('confirming');
 
         const reference = `trip-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
         try {
             const result = await paymentService.initiatePayment({ ...request, reference });
+            setSaleId(result.sale.id);
             startPolling(result.sale.id);
         } catch (error) {
             setErrorMessage(error instanceof Error ? error.message : t('payment-failed'));
@@ -75,8 +78,9 @@ export function useLekfelPayment() {
     const reset = () => {
         stopPolling();
         setErrorMessage('');
+        setSaleId(null);
         setStage('idle');
     };
 
-    return { stage, errorMessage, pay, reset };
+    return { stage, errorMessage, saleId, pay, reset };
 }
