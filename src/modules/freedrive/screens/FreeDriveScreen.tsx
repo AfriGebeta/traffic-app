@@ -109,7 +109,8 @@ const FreeDriveScreen: React.FC = () => {
                 <Ionicons name="close" size={22} color={colors.textPrimary} />
             </TouchableOpacity>
 
-            {activeIncidentAlert && (
+            {/* alert sits at zIndex 10000; hide it so it can't cover the report sheet */}
+            {activeIncidentAlert && !showReportOptions && (
                 <IncidentAlert
                     incidentId={activeIncidentAlert.incidentId}
                     incidentName={activeIncidentAlert.incidentName}
