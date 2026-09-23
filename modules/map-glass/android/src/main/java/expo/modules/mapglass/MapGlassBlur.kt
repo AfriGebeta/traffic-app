@@ -6,7 +6,7 @@ import android.graphics.RenderEffect
 import android.graphics.RenderNode
 import android.graphics.Shader
 import android.os.Build
-import android.view.View
+import android.view.ViewTreeObserver
 import expo.modules.kotlin.AppContext
 import expo.modules.kotlin.views.ExpoView
 import kotlin.math.ceil
@@ -16,10 +16,16 @@ class MapGlassBlur(context: Context, appContext: AppContext) : ExpoView(context,
   private val blurNode = if (Build.VERSION.SDK_INT >= 31) RenderNode("Map glass blur") else null
   private val sourcePosition = IntArray(2)
   private val glassPosition = IntArray(2)
-  private var refreshing = false
+  private var drawnOffsetX = Int.MIN_VALUE
+  private var drawnOffsetY = Int.MIN_VALUE
 
   var targetId: String = ""
-    set(value) { field = value; invalidate() }
+    set(value) {
+      if (isAttachedToWindow) MapGlassTarget.removeBlur(field, this)
+      field = value
+      if (isAttachedToWindow) MapGlassTarget.addBlur(value, this)
+      invalidate()
+    }
 
   var radius: Float = 10f
     set(value) {
@@ -29,12 +35,23 @@ class MapGlassBlur(context: Context, appContext: AppContext) : ExpoView(context,
     }
 
 
-  private val refresh = object : Runnable {
-    override fun run() {
-      if (!refreshing) return
-      invalidate()
-      postDelayed(this, 33L)
+  // Map frames are pushed by MapGlassTarget; this only catches the glass itself moving
+  // (sheet/translate animations) while the map is idle. It runs only when a frame is drawn anyway.
+  private val preDraw = ViewTreeObserver.OnPreDrawListener {
+    val target = MapGlassTarget.find(targetId)
+    if (target != null) {
+      target.getLocationInWindow(sourcePosition)
+      getLocationInWindow(glassPosition)
+      val offsetX = sourcePosition[0] - glassPosition[0]
+      val offsetY = sourcePosition[1] - glassPosition[1]
+      if (offsetX != drawnOffsetX || offsetY != drawnOffsetY) {
+        // Record now so an early-returning onDraw can't turn this into a per-frame loop.
+        drawnOffsetX = offsetX
+        drawnOffsetY = offsetY
+        invalidate()
+      }
     }
+    true
   }
 
   init {
@@ -49,26 +66,17 @@ class MapGlassBlur(context: Context, appContext: AppContext) : ExpoView(context,
     }
   }
 
-  private fun updateRefresh() {
-    val shouldRefresh = Build.VERSION.SDK_INT >= 31 && isAttachedToWindow && isShown && windowVisibility == View.VISIBLE && hasWindowFocus()
-    if (shouldRefresh == refreshing) return
-    refreshing = shouldRefresh
-    removeCallbacks(refresh)
-    if (refreshing) post(refresh)
-  }
-
-  override fun onAttachedToWindow() { super.onAttachedToWindow(); updateRefresh() }
-  override fun onWindowFocusChanged(hasWindowFocus: Boolean) { super.onWindowFocusChanged(hasWindowFocus); updateRefresh() }
-  override fun onWindowVisibilityChanged(visibility: Int) { super.onWindowVisibilityChanged(visibility); updateRefresh() }
-  override fun onVisibilityChanged(changedView: View, visibility: Int) {
-    super.onVisibilityChanged(changedView, visibility)
-    // Android may invoke this during superclass construction.
-    if (isAttachedToWindow) updateRefresh()
+  override fun onAttachedToWindow() {
+    super.onAttachedToWindow()
+    MapGlassTarget.addBlur(targetId, this)
+    viewTreeObserver.addOnPreDrawListener(preDraw)
   }
 
   override fun onDetachedFromWindow() {
-    refreshing = false
-    removeCallbacks(refresh)
+    MapGlassTarget.removeBlur(targetId, this)
+    viewTreeObserver.removeOnPreDrawListener(preDraw)
+    drawnOffsetX = Int.MIN_VALUE
+    drawnOffsetY = Int.MIN_VALUE
     if (Build.VERSION.SDK_INT >= 31) blurNode?.discardDisplayList()
     super.onDetachedFromWindow()
   }
@@ -83,6 +91,8 @@ class MapGlassBlur(context: Context, appContext: AppContext) : ExpoView(context,
 
     target.getLocationInWindow(sourcePosition)
     getLocationInWindow(glassPosition)
+    drawnOffsetX = sourcePosition[0] - glassPosition[0]
+    drawnOffsetY = sourcePosition[1] - glassPosition[1]
     // Include surrounding map pixels so blur doesn't produce dark seams at the rim.
     val padding = ceil(radius * resources.displayMetrics.density * 3).toInt()
     node.setPosition(-padding, -padding, width + padding, height + padding)

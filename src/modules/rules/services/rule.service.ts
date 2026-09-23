@@ -13,7 +13,7 @@ export const ruleService = {
     async reportRule(data: TrafficRuleReportRequest): Promise<TrafficRuleReport> {
         const response = await apiService.post<TrafficRuleReport>('/api/rules/reports', data);
         if (response.error) {
-            throw new Error(response.error);
+            throw Object.assign(new Error(response.error), { status: response.status });
         }
         if (!response.data) {
             throw new Error('No data returned from server');

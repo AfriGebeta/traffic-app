@@ -3,6 +3,12 @@ import * as Location from 'expo-location';
 import { incidentService } from '../services/incident.service';
 import { Incident } from '../types/incident.types';
 
+export interface IncidentReportResult {
+    incident: Incident | null;
+    error?: string;
+    status?: number;
+}
+
 export const useIncidentReport = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -41,7 +47,7 @@ export const useIncidentReport = () => {
         coords?: { lat: number; lng: number },
         direction?: string,
         images?: string[]
-    ): Promise<Incident | null> => {
+    ): Promise<IncidentReportResult> => {
         setLoading(true);
         setError(null);
 
@@ -50,7 +56,7 @@ export const useIncidentReport = () => {
 
             if (!locationToUse) {
                 setError('unable to get current location');
-                return null;
+                return { incident: null, error: 'unable to get current location' };
             }
 
             const response = await incidentService.report({
@@ -64,14 +70,14 @@ export const useIncidentReport = () => {
 
             if (response.error) {
                 setError(response.error);
-                return null;
+                return { incident: null, error: response.error, status: response.status };
             }
 
-            return response.data || null;
+            return { incident: response.data || null };
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to report incident';
             setError(errorMessage);
-            return null;
+            return { incident: null, error: errorMessage };
         } finally {
             setLoading(false);
         }

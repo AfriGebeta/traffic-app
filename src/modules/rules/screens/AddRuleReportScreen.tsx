@@ -8,6 +8,7 @@ import { ruleService } from '../services/rule.service';
 import { showToast } from '../../../shared/utils/toast';
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import { useLocation } from '../../../shared/contexts/LocationContext';
+import { getReportErrorMessage, reportErrorFrom } from '../../../shared/utils/reportErrors';
 import { useTranslation } from 'react-i18next';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { colors } from '../../../shared/theme/colors';
@@ -20,11 +21,13 @@ export default function AddRuleReportScreen() {
     const { colors: theme, isDark } = useTheme();
     const params = useLocalSearchParams();
     const { typeId, typeName, typeRawName, typeDescription, typeImg } = params;
-    const requiresPunishment = isPunishableRule(typeRawName as string);
+    const showPunishment = isPunishableRule(typeRawName as string);
     const { selectedLocation, setSelectedLocation } = useLocation();
     const { userLocation } = useUserLocation();
 
     const isNavigating = params.isNavigating === 'true';
+    // opened straight from the quick-report sheet: no rule list screen underneath
+    const fromReportSheet = params.fromReportSheet === 'true';
     const navLat = parseFloat(params.lat as string);
     const navLng = parseFloat(params.lng as string);
     const navCoordinates = !isNaN(navLat) && !isNaN(navLng) ? { lat: navLat, lng: navLng } : null;
@@ -71,11 +74,6 @@ export default function AddRuleReportScreen() {
     };
 
     const handleSubmit = async () => {
-        if (requiresPunishment && !punishment.trim()) {
-            showToast(`${t('punishment-required')}: ${t('enter-punishment-details')}`);
-            return;
-        }
-
         if (!coordinates) {
             showToast(`${t('location-required')}: ${t('pick-location')}`);
             return;
@@ -87,17 +85,17 @@ export default function AddRuleReportScreen() {
                 lat: coordinates.lat,
                 lng: coordinates.lng,
                 typeId: typeId as string,
-                punishment: requiresPunishment ? punishment.trim() : NO_PUNISHMENT_VALUE,
+                punishment: (showPunishment && punishment.trim()) || NO_PUNISHMENT_VALUE,
             });
 
             dashboardEventsService.contribute();
             showToast(t('traffic-rule-report-submitted'));
             router.back();
-            router.back();
+            if (!fromReportSheet) router.back();
         } catch (error) {
             console.error('Submit error:', error);
-            const errorMessage = error instanceof Error ? error.message : 'Could not submit report';
-            showToast(errorMessage);
+            const { message, status } = reportErrorFrom(error);
+            showToast(getReportErrorMessage(t, message, status));
         } finally {
             setSubmitting(false);
         }
@@ -142,10 +140,10 @@ export default function AddRuleReportScreen() {
 
             <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
                 <View className="gap-5 pb-6">
-                    {requiresPunishment && (
+                    {showPunishment && (
                         <View>
                             <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
-                                {t('punishment')} <Text style={{ color: theme.primary }}>*</Text>
+                                {t('punishment')} <Text style={{ color: theme.textSecondary }}>({t('optional')})</Text>
                             </Text>
                             <Input
                                 placeholder={t('punishment-placeholder')}
@@ -278,7 +276,7 @@ export default function AddRuleReportScreen() {
                 <Button
                     title={submitting ? t('submitting') : t('submit-report')}
                     onPress={handleSubmit}
-                    disabled={submitting || (requiresPunishment && !punishment.trim()) || !coordinates}
+                    disabled={submitting || !coordinates}
                 />
             </View>
         </View>

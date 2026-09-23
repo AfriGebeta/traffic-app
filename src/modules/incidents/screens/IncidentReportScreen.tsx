@@ -37,6 +37,7 @@ import { getIncidentTranslationKey } from '../utils/incidentTranslations';
 import { uploadToMinio } from '../../../shared/utils/minio';
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import { useLocation } from '../../../shared/contexts/LocationContext';
+import { getReportErrorMessage } from '../../../shared/utils/reportErrors';
 
 type IncidentIcon = React.FC<{ width?: number; height?: number }>;
 
@@ -74,7 +75,7 @@ export default function IncidentReportScreen() {
     const [direction, setDirection] = useState('');
     const [images, setImages] = useState<{ localUri: string; objectName: string }[]>([]);
     const [uploading, setUploading] = useState(false);
-    const { reportIncident, loading, error } = useIncidentReport();
+    const { reportIncident, loading } = useIncidentReport();
 
     useEffect(() => {
         const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -158,7 +159,7 @@ export default function IncidentReportScreen() {
             return;
         }
 
-        const incident = await reportIncident(
+        const { incident, error, status } = await reportIncident(
             incidentTypeName,
             description.trim() || 'No description provided',
             location,
@@ -173,8 +174,8 @@ export default function IncidentReportScreen() {
             setTimeout(() => {
                 router.back();
             }, 500);
-        } else if (error) {
-            showToast(error);
+        } else {
+            showToast(getReportErrorMessage(t, error, status));
         }
     };
 
