@@ -9,26 +9,10 @@ const LAST_SYNC_KEY = '@navigation_last_sync';
 export const TrackingDebugButton = () => {
     const [output, setOutput] = useState<string>('');
     const [syncInfo, setSyncInfo] = useState<string>('');
-    const [bgStatus, setBgStatus] = useState<string>('');
 
     useEffect(() => {
         updateSyncInfo();
-        updateBackgroundStatus();
     }, []);
-
-    const updateBackgroundStatus = async () => {
-        try {
-            const { backgroundSyncService } = await import('../services/background-sync.service');
-            const isRegistered = await backgroundSyncService.isRegistered();
-            const status = await backgroundSyncService.getStatus();
-
-            console.log('[debugging] Background status check:', { isRegistered, status });
-            setBgStatus(isRegistered ? 'BG: ON' : 'BG: OFF');
-        } catch (error) {
-            console.log('[debug] Background sync not available:', error);
-            setBgStatus('BG: N/A');
-        }
-    };
 
     const updateSyncInfo = async () => {
         try {
@@ -89,8 +73,7 @@ export const TrackingDebugButton = () => {
     return (
         <View className="absolute bottom-20 right-4 bg-white rounded-lg shadow-lg p-3 max-w-[180px]">
             <Text className="font-bold mb-1 text-xs">Tracking Debug</Text>
-            <Text className="text-[10px] text-gray-600">{syncInfo}</Text>
-            <Text className="text-[10px] text-gray-600 mb-2">{bgStatus}</Text>
+            <Text className="text-[10px] text-gray-600 mb-2">{syncInfo}</Text>
 
             <TouchableOpacity
                 onPress={handleViewData}

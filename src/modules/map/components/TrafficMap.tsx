@@ -26,7 +26,6 @@ import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 import { useNavigation } from '../../navigation/hooks/useNavigation';
 import { useVoiceNavigation } from '../../navigation/hooks/useVoiceNavigation';
 import { useNavigationTracking } from '../../navigation/hooks/useNavigationTracking';
-import { useBackgroundSync } from '../../navigation/hooks/useBackgroundSync';
 import { useIncidentAlerts } from '../hooks/useIncidentAlerts';
 import { useRuleAlerts } from '../hooks/useRuleAlerts';
 import { useMapMarkers } from '../hooks/useMapMarkers';
@@ -591,8 +590,6 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         isNavigating: navigationMode,
         userLocation,
     });
-
-    useBackgroundSync();
 
     useEffect(() => {
         if (sharedLocation && mapRef.current && isMapLoaded) {
@@ -1236,7 +1233,8 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 isHomeMap
             />
 
-            {activeIncidentAlert && (
+            {/* alert sits at zIndex 10000; hide it so it can't cover the report sheet */}
+            {activeIncidentAlert && !showReportOptions && (
                 <IncidentAlert
                     incidentId={activeIncidentAlert.incidentId}
                     incidentName={activeIncidentAlert.incidentName}

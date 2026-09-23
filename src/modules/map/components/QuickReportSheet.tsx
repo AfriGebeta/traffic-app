@@ -300,7 +300,7 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
                 })}
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 8 }}>
+            <ScrollView style={styles.gridScroll} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 8 }}>
                 {renderGrid()}
             </ScrollView>
         </>
@@ -451,6 +451,9 @@ const styles = StyleSheet.create({
     tabText: {
         fontSize: 15,
         fontWeight: '600',
+    },
+    gridScroll: {
+        flexShrink: 1,
     },
     grid: {
         flexDirection: 'row',

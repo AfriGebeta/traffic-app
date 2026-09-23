@@ -1,6 +1,6 @@
 import { MapGlassTarget } from '../../../modules/map-glass';
 import React, { forwardRef, useState, useImperativeHandle, useRef, useEffect, useLayoutEffect, memo, useMemo, useCallback } from 'react';
-import { View, StyleSheet, Alert, Text, Animated, Image, PixelRatio, AppState, Dimensions, Platform } from 'react-native';
+import { View, StyleSheet, Alert, Text, Image, PixelRatio, AppState, Dimensions, Platform } from 'react-native';
 import MapLibreGL from '@maplibre/maplibre-react-native';
 import { GebetaMapRef, GebetaMapProps } from '@gebeta/tiles-react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -1063,7 +1063,6 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
         const previewCameraRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
         const NAV_ZOOM = getAppConfig().navZoom;
         const lastSetZoom = useRef<number>(NAV_ZOOM);
-        const pulseAnim = useRef(new Animated.Value(1)).current;
         const [imagesLoaded, setImagesLoaded] = useState(false);
         const [renderKey, setRenderKey] = useState(0);
         const [homeCameraEpoch, setHomeCameraEpoch] = useState(0);
@@ -1506,34 +1505,6 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
                 })),
             };
         }, [taxiStationsKey]);
-
-
-        useEffect(() => {
-            if (showUserLocationMarker && !isNavigating) {
-                pulseAnim.setValue(1);
-                const pulse = Animated.loop(
-                    Animated.sequence([
-                        Animated.timing(pulseAnim, {
-                            toValue: 1.15,
-                            duration: 1000,
-                            useNativeDriver: true,
-                        }),
-                        Animated.timing(pulseAnim, {
-                            toValue: 1,
-                            duration: 1000,
-                            useNativeDriver: true,
-                        }),
-                    ])
-                );
-                pulse.start();
-                return () => {
-                    pulse.stop();
-                    pulseAnim.setValue(1);
-                };
-            } else {
-                pulseAnim.setValue(1);
-            }
-        }, [showUserLocationMarker, isNavigating, pulseAnim, mapStyleState]);
 
         const stableUserLocation = useRef<[number, number] | null>(null);
         useEffect(() => {
