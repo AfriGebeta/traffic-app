@@ -3918,5 +3918,30 @@
         "key": "receipt-load-failed",
         "EN_US": "Could not load this receipt.",
         "AM": "ይህን ደረሰኝ ማግኘት አልተቻለም።"
+    },
+    {
+        "key": "what-do-you-see",
+        "EN_US": "What do you see?",
+        "AM": "ምን አዩ?"
+    },
+    {
+        "key": "rules-tab",
+        "EN_US": "Rules",
+        "AM": "ደንቦች"
+    },
+    {
+        "key": "add-details",
+        "EN_US": "Add details",
+        "AM": "ዝርዝር ያክሉ"
+    },
+    {
+        "key": "report-failed",
+        "EN_US": "Could not send your report. Please try again.",
+        "AM": "ሪፖርቱን መላክ አልተቻለም። እባክዎ እንደገና ይሞክሩ።"
+    },
+    {
+        "key": "report-rate-limited",
+        "EN_US": "You just reported. You can send another report in a few minutes.",
+        "AM": "አሁን ሪፖርት አድርገዋል። ከጥቂት ደቂቃዎች በኋላ ሌላ ሪፖርት መላክ ይችላሉ።"
     }
 ]
