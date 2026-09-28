@@ -2,10 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Modal, View, TouchableOpacity, Keyboard, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { useUserRegistration } from '../../register/hooks/useUserRegistration';
 import { useLekfelPayment } from '../hooks/useLekfelPayment';
+import { useIsAuthenticated } from '../../register/hooks/useIsAuthenticated';
+import { AUTH_ROUTE } from '../../register/utils/authGate';
 import { toE164 } from '../utils/phone';
 import LekfelPayCard from './LekfelPayCard';
 import LekfelPaymentModal from './LekfelPaymentModal';
@@ -19,6 +22,7 @@ interface LekfelPaySheetProps {
     destinationName?: string;
     destinationLat?: number;
     destinationLng?: number;
+    allowLoginRedirect?: boolean;
 }
 
 export default function LekfelPaySheet({
@@ -30,12 +34,24 @@ export default function LekfelPaySheet({
     destinationName,
     destinationLat,
     destinationLng,
+    allowLoginRedirect = false,
 }: LekfelPaySheetProps) {
     const { t } = useTranslation();
     const { colors: theme } = useTheme();
     const insets = useSafeAreaInsets();
     const { getStoredUser } = useUserRegistration();
     const { stage, errorMessage, saleId, pay, reset } = useLekfelPayment();
+    const { isAuthed, refresh: refreshAuth } = useIsAuthenticated();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (visible) refreshAuth();
+    }, [visible, refreshAuth]);
+
+    const handleLoginPress = () => {
+        onClose();
+        router.push(AUTH_ROUTE as any);
+    };
 
     const [payerPhone, setPayerPhone] = useState('');
     const [receiverPhone, setReceiverPhone] = useState('');
@@ -76,7 +92,9 @@ export default function LekfelPaySheet({
             payerPhone: payerE164,
             receiverPhone: receiverE164,
             amount: Number(amount.trim()),
-            description: `${t('taxi-ride')} ${originName ?? ''} -> ${destinationName ?? ''}`.trim(),
+            description: destinationName
+                ? `${t('taxi-ride')} ${originName ?? ''} -> ${destinationName}`
+                : `${t('taxi-ride')} ${originName ?? ''}`.trim(),
             originName,
             originLat,
             originLng,
@@ -129,6 +147,9 @@ export default function LekfelPaySheet({
                             currency="ETB"
                             canPay={canPay}
                             onPay={handlePay}
+                            disabled={isAuthed !== true}
+                            disabledHint={isAuthed === false ? t('login-to-pay') : undefined}
+                            onDisabledHintPress={allowLoginRedirect ? handleLoginPress : undefined}
                         />
                     </View>
                 </View>

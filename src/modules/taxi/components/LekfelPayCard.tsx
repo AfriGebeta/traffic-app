@@ -101,6 +101,7 @@ interface LekfelPayCardProps {
     onPay: () => void;
     disabled?: boolean;
     disabledHint?: string;
+    onDisabledHintPress?: () => void;
 }
 
 export default function LekfelPayCard({
@@ -115,6 +116,7 @@ export default function LekfelPayCard({
     onPay,
     disabled = false,
     disabledHint,
+    onDisabledHintPress,
 }: LekfelPayCardProps) {
     const { t } = useTranslation();
     const { colors: theme } = useTheme();
@@ -292,9 +294,17 @@ export default function LekfelPayCard({
             </Pressable>
 
             {disabled && !!disabledHint && (
-                <Text className="text-xs text-center mt-3" style={{ color: theme.textSecondary }}>
-                    {disabledHint}
-                </Text>
+                onDisabledHintPress ? (
+                    <TouchableOpacity onPress={onDisabledHintPress} activeOpacity={0.7} className="mt-3">
+                        <Text className="text-sm text-center font-semibold" style={{ color: ACCENT }}>
+                            {disabledHint}
+                        </Text>
+                    </TouchableOpacity>
+                ) : (
+                    <Text className="text-xs text-center mt-3" style={{ color: theme.textSecondary }}>
+                        {disabledHint}
+                    </Text>
+                )
             )}
 
             <TouchableOpacity

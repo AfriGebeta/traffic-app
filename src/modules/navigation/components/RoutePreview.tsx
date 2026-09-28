@@ -953,6 +953,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                 destinationName={taxiRoute?.endNode.name ?? destinationName}
                 destinationLat={taxiRoute?.endNode.lat ?? destination?.latitude}
                 destinationLng={taxiRoute?.endNode.lng ?? destination?.longitude}
+                allowLoginRedirect
             />
         </View>
     );

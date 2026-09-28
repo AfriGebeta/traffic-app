@@ -2145,9 +2145,14 @@
         "AM": "ይክፈሉ"
     },
     {
-        "key": "set-destination-to-pay",
-        "EN_US": "Enter your destination first to pay",
-        "AM": "ለመክፈል መጀመሪያ መድረሻዎን ያስገቡ"
+        "key": "login-to-pay",
+        "EN_US": "Login to pay",
+        "AM": "ለመክፈል ይግቡ"
+    },
+    {
+        "key": "where-to",
+        "EN_US": "Where to?",
+        "AM": "ወዴት እየሄዱ ነው?"
     },
     {
         "key": "powered-by",
