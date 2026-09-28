@@ -1,6 +1,7 @@
-import { TouchableOpacity, Text, StyleSheet, Share, Platform, Clipboard } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { generateLocationUrl, type SharedLocation } from '../utils/deepLinking';
+import type { SharedLocation } from '../utils/deepLinking';
+import { shareLocation } from '../utils/shareLocation';
 import { showToast } from '../utils/toast';
 import { colors } from '../theme/colors';
 
@@ -16,31 +17,8 @@ export function ShareLocationButton({
     size = 'medium'
 }: ShareLocationButtonProps) {
     const handleShare = async () => {
-        try {
-            const shareUrl = generateLocationUrl(location);
-            const message = location.name
-                ? `Check out ${location.name} on Gebeta Maps: ${shareUrl}`
-                : `Check out this location on Gebeta Maps: ${shareUrl}`;
-
-            const result = await Share.share({
-                message,
-                url: shareUrl,
-                title: location.name || 'Shared Location',
-            });
-
-            if (result.action === Share.sharedAction) {
-                showToast('Shared: Location shared successfully');
-            }
-        } catch (error) {
-            console.error('Share error:', error);
-            // Fallback to clipboard
-            try {
-                const shareUrl = generateLocationUrl(location);
-                Clipboard.setString(shareUrl);
-                showToast('Copied: Link copied to clipboard');
-            } catch (clipboardError) {
-                showToast('Error: Could not share location');
-            }
+        if (await shareLocation(location)) {
+            showToast('Shared: Location shared successfully');
         }
     };
 

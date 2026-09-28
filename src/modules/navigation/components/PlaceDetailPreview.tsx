@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Share, ScrollView, Image, ImageSourcePropType } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Image, ImageSourcePropType } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,6 +10,7 @@ import { useTheme } from '../../../shared/theme/ThemeContext';
 import type { GeocodingPlace } from '../types/navigation.types';
 import { placeService } from '../../places/services/place.service';
 import { showToast } from '../../../shared/utils/toast';
+import { shareLocation } from '../../../shared/utils/shareLocation';
 import type { SavedPlace } from '../../places/types/place.types';
 
 interface PlaceDetailPreviewProps {
@@ -108,11 +109,7 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
     };
 
     const handleShare = async () => {
-        const url = `https://maps.gebeta.app/?lat=${place.latitude}&lng=${place.longitude}&name=${encodeURIComponent(place.name)}`;
-        await Share.share({
-            message: `Check out ${place.name} on Gebeta Maps: ${url}`,
-            url,
-        });
+        await shareLocation({ lat: place.latitude, lng: place.longitude, name: place.name });
     };
 
     const handleClaimBusiness = () => {

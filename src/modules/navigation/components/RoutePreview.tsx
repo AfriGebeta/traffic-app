@@ -17,6 +17,7 @@ import { navigationService } from '../services/navigation.service';
 import { calculateDistance } from '../utils/navigationUtils';
 import type { TaxiNavigationResponse } from '../../taxi/types/taxi.types';
 import LekfelPaySheet from '../../taxi/components/LekfelPaySheet';
+import { shareLocation } from '../../../shared/utils/shareLocation';
 
 interface RoutePreviewProps {
     distance: number;
@@ -372,12 +373,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
 
     const handleShareDestination = async () => {
         if (!destination) return;
-        const { Share } = await import('react-native');
-        const url = `https://maps.gebeta.app/?lat=${destination.latitude}&lng=${destination.longitude}&name=${encodeURIComponent(destination.name)}`;
-        Share.share({
-            message: `Check out ${destination.name} on Gebeta Maps: ${url}`,
-            url: url,
-        });
+        await shareLocation({ lat: destination.latitude, lng: destination.longitude, name: destination.name });
     };
 
     const handleGoRoute = (index: number) => {
@@ -843,14 +839,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                                     />
                                                 </TouchableOpacity>
                                                 <TouchableOpacity
-                                                    onPress={async () => {
-                                                        const { Share } = await import('react-native');
-                                                        const url = `https://maps.gebeta.app/?lat=${destination.latitude}&lng=${destination.longitude}&name=${encodeURIComponent(destination.name)}`;
-                                                        Share.share({
-                                                            message: `Check out ${destination.name} on Gebeta Maps: ${url}`,
-                                                            url: url,
-                                                        });
-                                                    }}
+                                                    onPress={handleShareDestination}
                                                     className="rounded-2xl px-3 py-4"
                                                 >
                                                     <Ionicons name="share-social" size={24} color={colors.primary.main} />
