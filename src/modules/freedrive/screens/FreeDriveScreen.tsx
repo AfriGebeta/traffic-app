@@ -14,6 +14,7 @@ import { IncidentAlert } from '../../map/components/IncidentAlert';
 import { useIncidentAlerts } from '../../map/hooks/useIncidentAlerts';
 import { useRuleAlerts } from '../../map/hooks/useRuleAlerts';
 import { useIncidents } from '../../incidents/hooks/useIncidents';
+import { useAuthGate } from '../../register/hooks/useAuthGate';
 import type { TrafficRuleReport } from '../../rules/types/rule.types';
 import { headingRayCoordinates } from '../utils/geo';
 import FreeDriveMap, {
@@ -44,6 +45,7 @@ const FreeDriveScreen: React.FC = () => {
     const [telemetry, setTelemetry] = useState<FreeDriveTelemetry | null>(null);
     const [cameraFree, setCameraFree] = useState(false);
     const [showReportOptions, setShowReportOptions] = useState(false);
+    const { requireAuthInPlace } = useAuthGate();
 
     const reportLocation = useMemo(
         () => (fix ? { lat: fix.lat, lng: fix.lng } : handoverCenter),
@@ -138,7 +140,7 @@ const FreeDriveScreen: React.FC = () => {
             )}
 
             <TouchableOpacity
-                onPress={() => setShowReportOptions(true)}
+                onPress={() => void requireAuthInPlace(() => setShowReportOptions(true))}
                 activeOpacity={0.85}
                 accessibilityRole="button"
                 style={[

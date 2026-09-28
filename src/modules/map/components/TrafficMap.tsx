@@ -17,6 +17,7 @@ import { ArrivalModal } from '../../navigation/components/ArrivalModal';
 import { NavigationOptionsModal } from '../../navigation/components/NavigationOptionsModal';
 import { VoiceNavigationModal } from '../../navigation/components/VoiceNavigationModal';
 import { useIncidents } from '../../incidents/hooks/useIncidents';
+import { useAuthGate } from '../../register/hooks/useAuthGate';
 import { useUserLocation } from '../hooks/useUserLocation';
 import { useSearch } from '../hooks/useSearch';
 
@@ -73,6 +74,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
 
     const initialMapCenterRef = useRef<[number, number] | null>(null);
     const [showReportOptions, setShowReportOptions] = useState(false);
+    const { requireAuthInPlace } = useAuthGate();
     const [incidentReportLocation, setIncidentReportLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [showExploreSheet, setShowExploreSheet] = useState(false);
     const [selectedExploreCategory, setSelectedExploreCategory] = useState<string | null>(null);
@@ -1267,7 +1269,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                         totalRouteDistance={totalRouteDistance}
                         destination={selectedDestination.name}
                         destinationCoords={{ lat: selectedDestination.latitude, lng: selectedDestination.longitude }}
-                        onReportPress={() => setShowReportOptions(true)}
+                        onReportPress={() => void requireAuthInPlace(() => setShowReportOptions(true))}
                         onExitPress={handleStopNavigation}
                         isOffRoute={isOffRoute}
                         isRecalculating={isRecalculating}

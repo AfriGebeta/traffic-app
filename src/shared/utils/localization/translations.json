@@ -630,6 +630,11 @@
         "AM": "ለመቀጠል ይመዝገቡ ወይም ይግቡ"
     },
     {
+        "key": "please-login-first",
+        "EN_US": "Please login first",
+        "AM": "እባክዎ መጀመሪያ ይግቡ"
+    },
+    {
         "key": "or",
         "EN_US": "Or",
         "AM": "ወይም"
