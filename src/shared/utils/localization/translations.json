@@ -4023,5 +4023,25 @@
         "key": "sos-open-failed",
         "EN_US": "Could not open the app. Please try again.",
         "AM": "መተግበሪያውን መክፈት አልተቻለም። እባክዎ እንደገና ይሞክሩ።"
+    },
+    {
+        "key": "neighborhood",
+        "EN_US": "Neighborhood",
+        "AM": "ሰፈር"
+    },
+    {
+        "key": "street-name",
+        "EN_US": "Street name",
+        "AM": "የመንገድ ስም"
+    },
+    {
+        "key": "neighborhood-placeholder",
+        "EN_US": "e.g. Bole",
+        "AM": "ለምሳሌ ቦሌ"
+    },
+    {
+        "key": "street-name-placeholder",
+        "EN_US": "e.g. Bole Road",
+        "AM": "ለምሳሌ ቦሌ መንገድ"
     }
 ]

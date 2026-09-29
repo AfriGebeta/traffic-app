@@ -4,13 +4,12 @@ import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Input, Button } from '../../../shared/components';
-import { PLACE_TYPES, PlaceType } from '../types/place.types';
+import { PLACE_CATEGORY_IDS, PLACE_TYPES, PlaceContributionAddress, PlaceType } from '../types/place.types';
 import { uploadToMinio } from '../../../shared/utils/minio';
 import { placeService } from '../services/place.service';
 import { showToast } from '../../../shared/utils/toast';
 import { useLocation } from '../../../shared/contexts/LocationContext';
 import { useTranslation } from 'react-i18next';
-import { getPlaceTranslationKey } from '../utils/placeTranslations';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
@@ -18,13 +17,7 @@ import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { getPlaceIcon } from '../utils/placeIcons';
 import { toE164 } from '../../../shared/utils/phone';
-
-const toCategorySlug = (label: string): string =>
-    label
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '_')
-        .replace(/^_|_$/g, '');
+import { getPlaceTranslationKey } from '../utils/placeTranslations';
 
 export default function AddPlaceScreen() {
     const { t } = useTranslation();
@@ -54,6 +47,9 @@ export default function AddPlaceScreen() {
     const [customCategory, setCustomCategory] = useState(prefillCategory);
     const [description, setDescription] = useState(prefillDescription);
     const [phone, setPhone] = useState(prefillPhone);
+    const [city, setCity] = useState('');
+    const [neighborhood, setNeighborhood] = useState('');
+    const [streetName, setStreetName] = useState('');
     const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(prefillCoordinates);
     const [images, setImages] = useState<{ localUri: string; objectName: string }[]>([]);
     const [uploading, setUploading] = useState(false);
@@ -177,15 +173,28 @@ export default function AddPlaceScreen() {
 
         setSubmitting(true);
         try {
+            const trimmedDescription = description.trim();
+            const trimmedCustomCategory = customCategory.trim();
+            const address: PlaceContributionAddress = {
+                city: city.trim() || undefined,
+                neighborhood: neighborhood.trim() || undefined,
+                streetName: streetName.trim() || undefined,
+            };
+            const hasAddress = Boolean(address.city || address.neighborhood || address.streetName);
+
             await placeService.contributePlace({
                 name: name.trim(),
-                type: needsCustomCategory ? toCategorySlug(customCategory) || 'other' : placeType,
-                customType: needsCustomCategory ? customCategory.trim() : undefined,
+                type: placeType,
+                categoryId: PLACE_CATEGORY_IDS[placeType],
                 lat: coordinates.lat,
                 lng: coordinates.lng,
-                description: description.trim(),
+                // "other" has no backend category - keep the user's label in the description
+                description: needsCustomCategory
+                    ? [trimmedCustomCategory, trimmedDescription].filter(Boolean).join(' - ')
+                    : trimmedDescription,
                 phone: phoneE164 ?? undefined,
                 images: images.map((img) => img.objectName),
+                address: hasAddress ? address : undefined,
             });
 
             dashboardEventsService.contribute();
@@ -277,7 +286,9 @@ export default function AddPlaceScreen() {
                     </View>
 
                     <View>
-                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('description')}</Text>
+                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
+                            {t('description')} <Text style={{ color: theme.textSecondary }}>({t('optional')})</Text>
+                        </Text>
                         <Input
                             placeholder={t('add-details-about-place')}
                             value={description}
@@ -285,6 +296,27 @@ export default function AddPlaceScreen() {
                             multiline
                             numberOfLines={3}
                         />
+                    </View>
+
+                    <View>
+                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
+                            {t('city')} <Text style={{ color: theme.textSecondary }}>({t('optional')})</Text>
+                        </Text>
+                        <Input placeholder={t('city-placeholder')} value={city} onChangeText={setCity} />
+                    </View>
+
+                    <View>
+                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
+                            {t('neighborhood')} <Text style={{ color: theme.textSecondary }}>({t('optional')})</Text>
+                        </Text>
+                        <Input placeholder={t('neighborhood-placeholder')} value={neighborhood} onChangeText={setNeighborhood} />
+                    </View>
+
+                    <View>
+                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
+                            {t('street-name')} <Text style={{ color: theme.textSecondary }}>({t('optional')})</Text>
+                        </Text>
+                        <Input placeholder={t('street-name-placeholder')} value={streetName} onChangeText={setStreetName} />
                     </View>
 
                     <View>

@@ -2,7 +2,6 @@ import { PLACE_TYPES, PlaceType } from '../types/place.types';
 
 const KEYWORD_MAP: { keywords: string[]; type: PlaceType }[] = [
     { keywords: ['gas', 'fuel', 'petrol'], type: 'gas_station' },
-    { keywords: ['taxi', 'bus_station', 'bus station'], type: 'taxi_station' },
     { keywords: ['cafe', 'coffee', 'teahouse'], type: 'cafe' },
     { keywords: ['restaurant', 'food', 'bar', 'pub'], type: 'restaurant' },
     { keywords: ['parking'], type: 'parking' },
