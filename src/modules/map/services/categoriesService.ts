@@ -28,7 +28,6 @@ export const FALLBACK_CATEGORIES: PlaceCategory[] = [
     { id: 'hospital', slug: 'hospital', label: { en: 'Hospital', am: 'ሆስፒታል' } },
     { id: 'gas-station', slug: 'gas-station', label: { en: 'Gas Station', am: 'የነዳጅ ማደያ' } },
     { id: 'parking', slug: 'parking', label: { en: 'Parking', am: 'ፓርኪንግ' } },
-    { id: 'repair-shop', slug: 'repair-shop', label: { en: 'Repair Shop', am: 'የጥገና ቤት' } },
     { id: 'bank', slug: 'bank', label: { en: 'Bank', am: 'ባንክ' } },
     { id: 'atm', slug: 'atm', label: { en: 'ATM', am: 'ኤቲኤም' } },
 ];
