@@ -11,7 +11,8 @@ import {
     TaxiRoute,
     CreateTaxiRouteRequest,
     TaxiRouteStop,
-    CreateTaxiRouteStopRequest
+    CreateTaxiRouteStopRequest,
+    CreateTaxiDestinationsRequest
 } from '../types/taxi.types';
 
 const NODES_PAGE_LIMIT = 100;
@@ -190,6 +191,19 @@ export const taxiService = {
 
         const result = response.data.data || response.data;
         return result;
+    },
+
+    async createDestinations(data: CreateTaxiDestinationsRequest): Promise<any> {
+        const response = await apiService.post<any>(
+            '/api/taxi/contributions/destinations',
+            data
+        );
+
+        if (response.error) {
+            throw new Error(response.status ? `${response.error} (HTTP ${response.status})` : response.error);
+        }
+
+        return response.data?.data ?? response.data;
     },
 
     async addStopToRoute(routeId: number, data: CreateTaxiRouteStopRequest): Promise<TaxiRouteStop> {

@@ -5,7 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import CustomGebetaMap from '../../../components/GebetaMap';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 import { useLocation } from '../../../shared/contexts/LocationContext';
-import { Button } from '../../../shared/components';
+import { Button, MapSearchBar } from '../../../shared/components';
+import type { MapSearchBarRef } from '../../../shared/components';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { showToast } from '../../../shared/utils/toast';
 import { useTranslation } from 'react-i18next';
@@ -27,6 +28,7 @@ export default function MapPickerScreen() {
     const { setSelectedLocation: setContextLocation } = useLocation();
     const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
+    const searchBarRef = useRef<MapSearchBarRef>(null);
 
     const initialCenterRef = useRef<[number, number] | null>(null);
     if (!initialCenterRef.current && userLocation) {
@@ -35,9 +37,18 @@ export default function MapPickerScreen() {
     const initialCenter: [number, number] =
         initialCenterRef.current ?? [getAppConfig().defaultMapCenterLng, getAppConfig().defaultMapCenterLat];
 
+    const handleSearchSelect = (location: { lat: number; lng: number }) => {
+        setSelectedLocation(location);
+        (mapRef.current as any)?.recenterOnce({
+            center: [location.lng, location.lat],
+            zoom: 17,
+        });
+    };
+
     const handleMapClick = (lngLat: [number, number]) => {
         const location = { lng: lngLat[0], lat: lngLat[1] };
         setSelectedLocation(location);
+        searchBarRef.current?.dismiss();
     };
 
     const handleConfirm = async () => {
@@ -170,15 +181,7 @@ export default function MapPickerScreen() {
                 freeCamera={true}
             />
 
-            <View className="absolute top-12 left-4 right-4 bg-white rounded-2xl p-4 shadow-lg">
-                <View className="flex-row items-center">
-                    <Ionicons name="information-circle" size={24} color="#3B82F6" />
-                    <Text className="text-sm text-gray-700 ml-2 flex-1">
-                        {mode === 'origin' ? t('tap-to-select-start') : t('tap-on-map-to-select-location')}
-                    </Text>
-                </View>
-            </View>
-
+            {/* Rendered before the search overlay so the results dropdown draws on top of it */}
             <TouchableOpacity
                 className="absolute top-56 right-4 bg-white rounded-full w-12 h-12 items-center justify-center shadow-lg"
                 onPress={handleLocationPress}
@@ -186,6 +189,13 @@ export default function MapPickerScreen() {
             >
                 <Ionicons name="locate" size={24} color="#FFA500" />
             </TouchableOpacity>
+
+            <MapSearchBar
+                ref={searchBarRef}
+                onSelect={handleSearchSelect}
+                hint={mode === 'origin' ? t('tap-to-select-start') : t('tap-on-map-to-select-location')}
+                style={{ position: 'absolute', left: 16, right: 16, top: insets.top + 12 }}
+            />
 
             {selectedLocation && (
                 <View className="absolute left-4 right-4" style={{ bottom: insets.bottom + 32 }}>

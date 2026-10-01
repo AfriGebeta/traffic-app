@@ -4043,5 +4043,45 @@
         "key": "street-name-placeholder",
         "EN_US": "e.g. Bole Road",
         "AM": "ለምሳሌ ቦሌ መንገድ"
+    },
+    {
+        "key": "destinations-terminals",
+        "EN_US": "Destinations / Terminals (optional)",
+        "AM": "መዳረሻዎች / ተርሚናሎች (አማራጭ)"
+    },
+    {
+        "key": "destinations-terminals-hint",
+        "EN_US": "Where do taxis from this station go? e.g. Megenagna, Ayat, Kera",
+        "AM": "ከዚህ ጣቢያ ታክሲዎች ወዴት ይሄዳሉ? ለምሳሌ መገናኛ፣ አያት፣ ቄራ"
+    },
+    {
+        "key": "search-destination-station",
+        "EN_US": "Search a station to add",
+        "AM": "ለመጨመር ጣቢያ ይፈልጉ"
+    },
+    {
+        "key": "pick-new-destination-on-map",
+        "EN_US": "New station - pick its location on the map",
+        "AM": "አዲስ ጣቢያ - ቦታውን በካርታ ላይ ይምረጡ"
+    },
+    {
+        "key": "pick-destination-location",
+        "EN_US": "Pick Destination Location",
+        "AM": "የመዳረሻ ቦታ ይምረጡ"
+    },
+    {
+        "key": "failed-to-save-destinations",
+        "EN_US": "Station saved, but destinations could not be saved. Tap submit to retry.",
+        "AM": "ጣቢያው ተቀምጧል፣ ነገር ግን መዳረሻዎቹ አልተቀመጡም። እንደገና ለመሞከር ይጫኑ።"
+    },
+    {
+        "key": "search-place-or-coordinates",
+        "EN_US": "Search place name or coordinates",
+        "AM": "የቦታ ስም ወይም መጋጠሚያ ይፈልጉ"
+    },
+    {
+        "key": "go-to-coordinates",
+        "EN_US": "Go to coordinates",
+        "AM": "ይሂዱ"
     }
 ]
