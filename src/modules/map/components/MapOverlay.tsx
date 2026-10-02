@@ -65,6 +65,7 @@ interface MapOverlayProps {
     navigationDestination?: GeocodingPlace | null;
     showRoutePreview?: boolean;
     showPlaceDetail?: boolean;
+    showExploreResults?: boolean;
     routeOrigin?: GeocodingPlace | null;
     routeWaypoints?: GeocodingPlace[];
     routeDestination?: GeocodingPlace | null;
@@ -119,6 +120,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
     navigationDestination,
     showRoutePreview = false,
     showPlaceDetail = false,
+    showExploreResults = false,
     routeOrigin,
     routeWaypoints = [],
     routeDestination,
@@ -211,7 +213,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                 onLocationPress={onLocationPress}
                 onTaxiPress={onTaxiPress}
                 isRoutePreviewActive={showRoutePreview}
-                isPlaceDetailActive={showPlaceDetail}
+                isPlaceDetailActive={showPlaceDetail || showExploreResults}
                 topActions={
                     !showRoutePreview && !showSearchContainer && (
                         <MapLayersButton

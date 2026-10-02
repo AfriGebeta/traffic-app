@@ -4083,5 +4083,20 @@
         "key": "go-to-coordinates",
         "EN_US": "Go to coordinates",
         "AM": "ይሂዱ"
+    },
+    {
+        "key": "nearby",
+        "EN_US": "Nearby",
+        "AM": "በአቅራቢያ"
+    },
+    {
+        "key": "details",
+        "EN_US": "Details",
+        "AM": "ዝርዝር"
+    },
+    {
+        "key": "no-nearby-places",
+        "EN_US": "No places found nearby",
+        "AM": "በአቅራቢያ ምንም ቦታ አልተገኘም"
     }
 ]

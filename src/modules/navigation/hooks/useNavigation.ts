@@ -17,6 +17,7 @@ import { addNavExitListener } from '../../../../modules/nav-notification';
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import { calculateBearing, calculateDistance } from '../utils/navigationUtils';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
+import { generateSessionId } from '../../../shared/utils/session';
 
 export const useNavigation = (
     mapRef: React.RefObject<GebetaMapRef | null>,
@@ -74,6 +75,9 @@ export const useNavigation = (
     const stopNavigationRef = useRef<(() => void) | null>(null);
     const totalRouteDistance = useRef<number>(0);
     const totalRouteDuration = useRef<number>(0);
+    const navSessionRef = useRef<{ id: string; startedAt: number; distanceMeters: number } | null>(null);
+    // set by any arrival callback so stop reports COMPLETED instead of CANCELLED
+    const hasArrivedRef = useRef(false);
 
     const currentCostingRef = useRef<'auto' | 'pedestrian'>('auto');
     const waypointsRef = useRef<GeocodingPlace[]>([]);
@@ -113,11 +117,13 @@ export const useNavigation = (
         setRemainingDistance,
         setRemainingTime,
         onSimulationComplete: () => {
+            hasArrivedRef.current = true;
             setArrivalStage('arrived');
             setShowArrivalModal(true);
             stopNavigationRef.current?.();
         },
         onArrival: () => {
+            hasArrivedRef.current = true;
             setArrivalStage('approaching');
             setShowArrivalModal(true);
         },
@@ -148,10 +154,12 @@ export const useNavigation = (
         routeManeuversRef: routeManeuvers,
         currentManeuverIndexRef: currentManeuverIndex,
         onArrival: () => {
+            hasArrivedRef.current = true;
             setArrivalStage('approaching');
             setShowArrivalModal(true);
         },
         onDestinationReached: () => {
+            hasArrivedRef.current = true;
             setArrivalStage('arrived');
             setShowArrivalModal(true);
             stopNavigationRef.current?.();
@@ -189,8 +197,13 @@ export const useNavigation = (
             }
         },
         onArrival: () => {
+            hasArrivedRef.current = true;
             setArrivalStage('approaching');
             setShowArrivalModal(true);
+        },
+        onRerouted: () => {
+            const session = navSessionRef.current;
+            if (session) dashboardEventsService.navigationRerouted(session.id, 'off_route');
         },
         startSimulation,
         resetClosestIndex,
@@ -223,6 +236,9 @@ export const useNavigation = (
     const handleSelectRoute = (index: number) => {
         const option = allRouteOptionsRef.current[index];
         if (!option) return;
+        if (index > 0 && index !== selectedRouteIndex) {
+            dashboardEventsService.routeAlternativeSelected(index);
+        }
         setRouteGeoJSON(option.geoJSON);
         setRemainingDistance(option.distance);
         setRemainingTime(option.duration);
@@ -618,6 +634,7 @@ export const useNavigation = (
                     );
                 },
                 onNavigationComplete: () => {
+                    hasArrivedRef.current = true;
                     setArrivalStage('arrived');
                     setShowArrivalModal(true);
                     handleStopNavigation();
@@ -628,6 +645,22 @@ export const useNavigation = (
             setIsNavigating(true);
             isNavigatingRef.current = true;
             currentManeuverIndex.current = 0;
+
+            hasArrivedRef.current = false;
+            navSessionRef.current = {
+                id: generateSessionId(),
+                startedAt: Date.now(),
+                distanceMeters: route.distance,
+            };
+            dashboardEventsService.navigationStarted({
+                navigationId: navSessionRef.current.id,
+                originLat: userLocation.lat,
+                originLng: userLocation.lng,
+                destinationLat: targetDestination.latitude,
+                destinationLng: targetDestination.longitude,
+                distanceMeters: route.distance,
+                durationSeconds: route.duration,
+            });
 
             if (stopBackgroundTracking) {
                 stopBackgroundTracking();
@@ -654,6 +687,18 @@ export const useNavigation = (
     };
 
     const handleStopNavigation = () => {
+        const session = navSessionRef.current;
+        if (session) {
+            navSessionRef.current = null;
+            const elapsedMs = Date.now() - session.startedAt;
+            if (hasArrivedRef.current) {
+                dashboardEventsService.navigationCompleted(session.id, elapsedMs, session.distanceMeters);
+            } else {
+                const remainingMeters = engineState?.distanceRemaining ?? remainingDistance;
+                dashboardEventsService.navigationCancelled(session.id, elapsedMs, remainingMeters);
+            }
+        }
+
         if (mapRef.current) {
             mapRef.current.stopNavigation();
         }

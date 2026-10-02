@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 import { exploreService } from '../services/exploreService';
 
@@ -27,9 +27,9 @@ export const useExplore = () => {
         }
     };
 
-    const clearResults = () => {
+    const clearResults = useCallback(() => {
         setResults([]);
-    };
+    }, []);
 
     return {
         isLoading,

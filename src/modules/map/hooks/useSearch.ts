@@ -62,6 +62,9 @@ export const useSearch = () => {
             } else {
                 const results = await navigationService.geocodePlace(query);
                 setSearchResults(results);
+                if (results.length === 0) {
+                    dashboardEventsService.searchNoResults(query.trim());
+                }
             }
         } catch {
             showToast('Search failed: Could not find location');

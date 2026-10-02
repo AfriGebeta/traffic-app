@@ -34,6 +34,7 @@ interface UseRouteRecalculationProps {
     setRouteManeuversList?: (maneuvers: Maneuver[]) => void;
     handleStopNavigation: () => void;
     onArrival?: () => void;
+    onRerouted?: () => void;
     startSimulation: () => void;
     resetClosestIndex: () => void;
     setUserLocation?: (location: { lat: number; lng: number }) => void;
@@ -67,6 +68,7 @@ export const useRouteRecalculation = ({
     setRouteManeuversList,
     handleStopNavigation,
     onArrival,
+    onRerouted,
     startSimulation,
     resetClosestIndex,
 
@@ -179,6 +181,7 @@ export const useRouteRecalculation = ({
 
                 setIsRecalculating(false);
                 setIsOffRoute(false);
+                onRerouted?.();
 
                 showToast(
                     `${t('route-recalculated') || 'Route Recalculated'}: ${t('following-new-route') || 'Following new route'}`
@@ -214,6 +217,7 @@ export const useRouteRecalculation = ({
             setRemainingDistance,
             setRemainingTime,
             handleStopNavigation,
+            onRerouted,
             startSimulation,
             mapRef,
 

@@ -18,6 +18,8 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
 
 const vlog = (...args: any[]) => console.log('voice nav', ...args);
 
+const VOICE_SESSION_SETTLE_MS = 1500;
+
 interface UseVoiceNavigationProps {
     mapRef: React.RefObject<GebetaMapRef | null>;
     userLocation: { lat: number; lng: number } | null;
@@ -156,6 +158,7 @@ export const useVoiceNavigation = ({
     const lastInputModeRef = useRef<'voice' | 'text'>('voice');
     const wsLanguageRef = useRef<'am' | 'en'>(toWsLanguage(language));
     wsLanguageRef.current = toWsLanguage(language);
+    const voiceSessionPendingRef = useRef(false);
 
 
     const finishProcessing = useCallback(() => {
@@ -473,6 +476,20 @@ export const useVoiceNavigation = ({
 
     }, [userLocation?.lat, userLocation?.lng]);
 
+    // VOICE_SESSION goes out only once the voice turn has fully settled (no processing,
+    // no TTS playing). Sending mid-stream got the request interrupted and lost. The delay
+    // covers the gap between `ready` and `tts_start`; any state change cancels and re-arms it.
+    useEffect(() => {
+        if (!voiceSessionPendingRef.current || isProcessing || isSpeaking) return;
+        const timer = setTimeout(() => {
+            if (!voiceSessionPendingRef.current) return;
+            voiceSessionPendingRef.current = false;
+            vlog('voice turn settled → VOICE_SESSION');
+            dashboardEventsService.voiceSession();
+        }, VOICE_SESSION_SETTLE_MS);
+        return () => clearTimeout(timer);
+    }, [isProcessing, isSpeaking]);
+
     useEffect(() => {
         if (socketRef.current?.isOpen) {
             vlog('→ set_language', toWsLanguage(language));
@@ -529,6 +546,7 @@ export const useVoiceNavigation = ({
             reqStartRef.current = Date.now();
             vlog(`aud: post audio ${bytes.length} bytes → ${streamUrlRef.current} (socket open: ${socket.isOpen})`);
             socket.sendAudio(bytes, 'audio/mp4');
+            voiceSessionPendingRef.current = true;
         } catch (error) {
             vlog('failed to read/send audio:', String(error));
             showToast('Something went wrong: Please try again');
