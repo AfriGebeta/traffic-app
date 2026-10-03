@@ -21,6 +21,8 @@ import { TaxiNode } from '../types/taxi.types';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { showToast } from '../../../shared/utils/toast';
 import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
+import { MapSearchBar } from '../../../shared/components';
+import type { MapSearchBarRef } from '../../../shared/components';
 
 export default function MapPickerScreen() {
     const router = useRouter();
@@ -30,6 +32,7 @@ export default function MapPickerScreen() {
     const { setPendingStop } = useRouteBuilder();
     const isCoordsMode = params.mode === 'coords';
     const mapRef = useRef<GebetaMapRef>(null);
+    const searchBarRef = useRef<MapSearchBarRef>(null);
     const { userLocation } = useUserLocation();
     const { apiKey } = useRemoteConfig();
 
@@ -158,6 +161,16 @@ export default function MapPickerScreen() {
     const handleMapClick = (lngLat: [number, number]) => {
         const location = { lng: lngLat[0], lat: lngLat[1] };
         setSelectedLocation(location);
+        searchBarRef.current?.dismiss();
+    };
+
+    const handleSearchSelect = (location: { lat: number; lng: number }) => {
+        setSelectedLocation(location);
+        mapRef.current?.flyTo({
+            center: [location.lng, location.lat],
+            zoom: 17,
+            duration: 1000,
+        });
     };
 
     const handleLocationPress = () => {
@@ -213,6 +226,8 @@ export default function MapPickerScreen() {
                 return t('pick-intermediate-stop');
             case 'station':
                 return t('pick-station-location');
+            case 'destination':
+                return t('pick-destination-location');
             default:
                 return t('pick-location');
         }
@@ -251,17 +266,20 @@ export default function MapPickerScreen() {
                     externalCameraControl={true}
                 />
 
-                <View className="absolute top-4 left-4 right-4 bg-white rounded-xl p-4 shadow-lg">
-                    <Text className="text-gray-700 text-center">{t('tap-map-to-select-location')}</Text>
-                </View>
-
                 <TouchableOpacity
-                    className="absolute top-24 right-4 bg-white rounded-full w-12 h-12 items-center justify-center shadow-lg"
+                    className="absolute top-36 right-4 bg-white rounded-full w-12 h-12 items-center justify-center shadow-lg"
                     onPress={handleLocationPress}
                     activeOpacity={0.7}
                 >
                     <Ionicons name="locate" size={24} color="#FFA500" />
                 </TouchableOpacity>
+
+                <MapSearchBar
+                    ref={searchBarRef}
+                    onSelect={handleSearchSelect}
+                    hint={t('tap-map-to-select-location')}
+                    style={{ position: 'absolute', top: 16, left: 16, right: 16 }}
+                />
 
             </View>
 

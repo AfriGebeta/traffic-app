@@ -99,7 +99,7 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
                 className="rounded-3xl shadow-lg overflow-hidden"
                 style={{ backgroundColor: theme.surface }}
             >
-                <View className="flex-row items-start px-4 py-3">
+                <View className="flex-row items-start px-4 py-2.5">
                     <TouchableOpacity
                         onPress={onClose}
                         className="mr-3 mt-0"
@@ -109,7 +109,7 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
                     </TouchableOpacity>
 
                     <View className="flex-1">
-                        <View className="flex-row items-center mb-2">
+                        <View className="flex-row items-center mb-1">
                             <View className="w-4 h-4 rounded-full mr-3" style={{ backgroundColor: theme.blue }} />
                             <TouchableOpacity
                                 className="flex-1 flex-row items-center justify-between"
@@ -125,7 +125,7 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
 
                         <View className="flex-row items-center">
                             <View className="w-4 items-center mr-3">
-                                <View style={{ width: 2, height: 16, backgroundColor: theme.border }}>
+                                <View style={{ width: 2, height: 10, backgroundColor: theme.border }}>
                                     <View style={{
                                         position: 'absolute',
                                         left: 0,
@@ -142,7 +142,7 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
 
                         {waypoints.map((wp, index) => (
                             <View key={index}>
-                                <View className="flex-row items-center mb-2">
+                                <View className="flex-row items-center mb-1">
                                     <Image
                                         source={require('../../../../assets/images/location-pin-2.png')}
                                         style={{ width: 16, height: 16, marginRight: 12 }}
@@ -160,7 +160,7 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
                                 </View>
                                 <View className="flex-row items-center">
                                     <View className="w-4 items-center mr-3">
-                                        <View style={{ width: 2, height: 16, backgroundColor: theme.border }}>
+                                        <View style={{ width: 2, height: 10, backgroundColor: theme.border }}>
                                             <View style={{
                                                 position: 'absolute',
                                                 left: 0,
@@ -179,7 +179,7 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
 
                         {transportMode !== 'taxi' && (
                             <>
-                                <View className="flex-row items-center mb-2">
+                                <View className="flex-row items-center mb-1">
                                     <View
                                         className="w-4 h-4 rounded-full mr-3 items-center justify-center"
                                         style={{ backgroundColor: theme.primaryMuted }}
@@ -199,7 +199,7 @@ export const RoutePointsBar: React.FC<RoutePointsBarProps> = ({
 
                                 <View className="flex-row items-center">
                                     <View className="w-4 items-center mr-3">
-                                        <View style={{ width: 2, height: 16, backgroundColor: theme.border }}>
+                                        <View style={{ width: 2, height: 10, backgroundColor: theme.border }}>
                                             <View style={{
                                                 position: 'absolute',
                                                 left: 0,

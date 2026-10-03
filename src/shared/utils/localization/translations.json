@@ -630,6 +630,11 @@
         "AM": "ለመቀጠል ይመዝገቡ ወይም ይግቡ"
     },
     {
+        "key": "please-login-first",
+        "EN_US": "Please login first",
+        "AM": "እባክዎ መጀመሪያ ይግቡ"
+    },
+    {
         "key": "or",
         "EN_US": "Or",
         "AM": "ወይም"
@@ -2140,9 +2145,14 @@
         "AM": "ይክፈሉ"
     },
     {
-        "key": "set-destination-to-pay",
-        "EN_US": "Enter your destination first to pay",
-        "AM": "ለመክፈል መጀመሪያ መድረሻዎን ያስገቡ"
+        "key": "login-to-pay",
+        "EN_US": "Login to pay",
+        "AM": "ለመክፈል ይግቡ"
+    },
+    {
+        "key": "where-to",
+        "EN_US": "Where to?",
+        "AM": "ወዴት እየሄዱ ነው?"
     },
     {
         "key": "powered-by",
@@ -3943,5 +3953,155 @@
         "key": "report-rate-limited",
         "EN_US": "You just reported. You can send another report in a few minutes.",
         "AM": "አሁን ሪፖርት አድርገዋል። ከጥቂት ደቂቃዎች በኋላ ሌላ ሪፖርት መላክ ይችላሉ።"
+    },
+    {
+        "key": "sos",
+        "EN_US": "SOS",
+        "AM": "የድንገተኛ ጥሪ"
+    },
+    {
+        "key": "sos-title",
+        "EN_US": "Emergency SOS",
+        "AM": "የድንገተኛ እርዳታ"
+    },
+    {
+        "key": "sos-close",
+        "EN_US": "Close",
+        "AM": "ዝጋ"
+    },
+    {
+        "key": "sos-message",
+        "EN_US": "SOS! I need help. My location: {{url}} ({{coords}})",
+        "AM": "SOS! እርዳታ እፈልጋለሁ። ያለሁበት ቦታ: {{url}} ({{coords}})"
+    },
+    {
+        "key": "sos-message-no-location",
+        "EN_US": "SOS! I need help.",
+        "AM": "SOS! እርዳታ እፈልጋለሁ።"
+    },
+    {
+        "key": "sos-locating",
+        "EN_US": "Getting your location...",
+        "AM": "ቦታዎን በማግኘት ላይ..."
+    },
+    {
+        "key": "sos-no-location",
+        "EN_US": "Location unavailable",
+        "AM": "ቦታ ማግኘት አልተቻለም"
+    },
+    {
+        "key": "sos-send-sms",
+        "EN_US": "Send SMS",
+        "AM": "SMS ላክ"
+    },
+    {
+        "key": "sos-share",
+        "EN_US": "Share",
+        "AM": "አጋራ"
+    },
+    {
+        "key": "sos-emergency-numbers",
+        "EN_US": "Emergency numbers",
+        "AM": "የአደጋ ጊዜ ቁጥሮች"
+    },
+    {
+        "key": "sos-call-police",
+        "EN_US": "Police",
+        "AM": "ፖሊስ"
+    },
+    {
+        "key": "sos-call-ambulance",
+        "EN_US": "Ambulance",
+        "AM": "አምቡላንስ"
+    },
+    {
+        "key": "sos-call-fire",
+        "EN_US": "Fire",
+        "AM": "እሳት አደጋ"
+    },
+    {
+        "key": "sos-open-failed",
+        "EN_US": "Could not open the app. Please try again.",
+        "AM": "መተግበሪያውን መክፈት አልተቻለም። እባክዎ እንደገና ይሞክሩ።"
+    },
+    {
+        "key": "neighborhood",
+        "EN_US": "Neighborhood",
+        "AM": "ሰፈር"
+    },
+    {
+        "key": "street-name",
+        "EN_US": "Street name",
+        "AM": "የመንገድ ስም"
+    },
+    {
+        "key": "neighborhood-placeholder",
+        "EN_US": "e.g. Bole",
+        "AM": "ለምሳሌ ቦሌ"
+    },
+    {
+        "key": "street-name-placeholder",
+        "EN_US": "e.g. Bole Road",
+        "AM": "ለምሳሌ ቦሌ መንገድ"
+    },
+    {
+        "key": "destinations-terminals",
+        "EN_US": "Destinations / Terminals (optional)",
+        "AM": "መዳረሻዎች / ተርሚናሎች (አማራጭ)"
+    },
+    {
+        "key": "destinations-terminals-hint",
+        "EN_US": "Where do taxis from this station go? e.g. Megenagna, Ayat, Kera",
+        "AM": "ከዚህ ጣቢያ ታክሲዎች ወዴት ይሄዳሉ? ለምሳሌ መገናኛ፣ አያት፣ ቄራ"
+    },
+    {
+        "key": "search-destination-station",
+        "EN_US": "Search a station to add",
+        "AM": "ለመጨመር ጣቢያ ይፈልጉ"
+    },
+    {
+        "key": "pick-new-destination-on-map",
+        "EN_US": "New station - pick its location on the map",
+        "AM": "አዲስ ጣቢያ - ቦታውን በካርታ ላይ ይምረጡ"
+    },
+    {
+        "key": "pick-destination-location",
+        "EN_US": "Pick Destination Location",
+        "AM": "የመዳረሻ ቦታ ይምረጡ"
+    },
+    {
+        "key": "failed-to-save-destinations",
+        "EN_US": "Station saved, but destinations could not be saved. Tap submit to retry.",
+        "AM": "ጣቢያው ተቀምጧል፣ ነገር ግን መዳረሻዎቹ አልተቀመጡም። እንደገና ለመሞከር ይጫኑ።"
+    },
+    {
+        "key": "search-place-or-coordinates",
+        "EN_US": "Search place name or coordinates",
+        "AM": "የቦታ ስም ወይም መጋጠሚያ ይፈልጉ"
+    },
+    {
+        "key": "go-to-coordinates",
+        "EN_US": "Go to coordinates",
+        "AM": "ይሂዱ"
+    },
+    {
+        "key": "nearby",
+        "EN_US": "Nearby",
+        "AM": "በአቅራቢያ"
+    },
+    {
+        "key": "details",
+        "EN_US": "Details",
+        "AM": "ዝርዝር"
+    },
+    {
+        "key": "no-nearby-places",
+        "EN_US": "No places found nearby",
+        "AM": "በአቅራቢያ ምንም ቦታ አልተገኘም"
+    },
+    {
+        "key": "edit",
+        "EN_US": "Edit",
+        "AM": "አስተካክል"
     }
 ]

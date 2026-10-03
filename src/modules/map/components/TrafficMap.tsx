@@ -9,6 +9,7 @@ import { NavigationOverlay } from './NavigationOverlay';
 import { IncidentAlert } from './IncidentAlert';
 
 import { MapOverlay } from './MapOverlay';
+import { ExploreResultsSheet } from './ExploreResultsSheet';
 import { IncidentReportSheet } from './IncidentReportSheet';
 import { ExploreSheet } from '../../explore/components/ExploreSheet';
 import { RoutePreview } from '../../navigation/components/RoutePreview';
@@ -17,6 +18,7 @@ import { ArrivalModal } from '../../navigation/components/ArrivalModal';
 import { NavigationOptionsModal } from '../../navigation/components/NavigationOptionsModal';
 import { VoiceNavigationModal } from '../../navigation/components/VoiceNavigationModal';
 import { useIncidents } from '../../incidents/hooks/useIncidents';
+import { useAuthGate } from '../../register/hooks/useAuthGate';
 import { useUserLocation } from '../hooks/useUserLocation';
 import { useSearch } from '../hooks/useSearch';
 
@@ -47,6 +49,7 @@ import { decodeTaxiSegmentPaths } from '../../navigation/utils/navigationUtils';
 import { exploreService } from '../services/exploreService';
 import type { TaxiNavigationResponse } from '../../taxi/types/taxi.types';
 import { setNavigationPreviewData } from '../../navigation/services/navigationPreviewCache';
+import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import { resolvePlaceType } from '../../places/utils/placeTypeMapping';
 import { buildPreviewSteps, fitBoundsToCoords } from '../../navigation/utils/navigationPreviewUtils';
 
@@ -73,6 +76,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
 
     const initialMapCenterRef = useRef<[number, number] | null>(null);
     const [showReportOptions, setShowReportOptions] = useState(false);
+    const { requireAuthInPlace } = useAuthGate();
     const [incidentReportLocation, setIncidentReportLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [showExploreSheet, setShowExploreSheet] = useState(false);
     const [selectedExploreCategory, setSelectedExploreCategory] = useState<string | null>(null);
@@ -484,6 +488,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         }
 
         setSelectedExploreCategory(categoryId);
+        clearExploreResults();
 
         try {
             const places = await searchNearby(categoryId, userLocation);
@@ -519,6 +524,31 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
             setSelectedExploreCategory(null);
         }
     };
+
+    const handleCloseExploreResults = useCallback(() => {
+        setSelectedExploreCategory(null);
+        clearExploreResults();
+    }, [clearExploreResults]);
+
+    const showExploreResults = !!selectedExploreCategory
+        && !navigationMode
+        && !showPlaceDetail
+        && !showRoutePreview
+        && !showSearchContainer;
+
+    useEffect(() => {
+        if (!showExploreResults) return;
+
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+            if (showReportOptions || isOnIncidentReportScreen) {
+                return false;
+            }
+            handleCloseExploreResults();
+            return true;
+        });
+
+        return () => backHandler.remove();
+    }, [showExploreResults, showReportOptions, isOnIncidentReportScreen, handleCloseExploreResults]);
 
     useEffect(() => {
         LogBox.ignoreLogs(['MapLibre error', 'Failed to load sprite']);
@@ -1267,7 +1297,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                         totalRouteDistance={totalRouteDistance}
                         destination={selectedDestination.name}
                         destinationCoords={{ lat: selectedDestination.latitude, lng: selectedDestination.longitude }}
-                        onReportPress={() => setShowReportOptions(true)}
+                        onReportPress={() => void requireAuthInPlace(() => setShowReportOptions(true))}
                         onExitPress={handleStopNavigation}
                         isOffRoute={isOffRoute}
                         isRecalculating={isRecalculating}
@@ -1296,7 +1326,14 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     isSearching={isSearching}
                     showSearchContainer={showSearchContainer}
                     showRecentSearches={showRecentSearches}
-                    onSelectPlace={(place) => handleSelectPlace(place, false, true)}
+                    onSelectPlace={(place) => {
+                        // recents/saved places are separate objects, so indexOf only matches live search results
+                        const resultIndex = searchResults.indexOf(place);
+                        if (resultIndex !== -1 && searchQuery.trim()) {
+                            dashboardEventsService.searchResultSelected(searchQuery.trim(), place.id, resultIndex);
+                        }
+                        handleSelectPlace(place, false, true);
+                    }}
                     onPrepareSearchSelect={prepareSearchSelection}
                     onRemoveRecentSearch={removeRecentSearch}
                     onClearRecentSearches={clearRecentSearches}
@@ -1335,6 +1372,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     isProcessingVoice={isProcessingVoice}
                     showRoutePreview={showRoutePreview}
                     showPlaceDetail={showPlaceDetail}
+                    showExploreResults={showExploreResults}
                     voiceNavigationData={voiceNavigationData}
                     onExploreCategory={handleExploreCategory}
                     isExploring={isExploring}
@@ -1354,6 +1392,18 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                         }
                     }}
                     routeTransportMode={currentCosting === 'pedestrian' ? 'walking' : isFromTaxiSearch ? 'taxi' : 'driving'}
+                />
+            )}
+
+            {showExploreResults && selectedExploreCategory && (
+                <ExploreResultsSheet
+                    categoryId={selectedExploreCategory}
+                    places={exploreResults}
+                    isLoading={isExploring}
+                    userLocation={userLocation}
+                    onSelectPlace={(place) => handleSelectPlace(place)}
+                    onDirections={(place) => handleSelectPlace(place, true)}
+                    onClose={handleCloseExploreResults}
                 />
             )}
 

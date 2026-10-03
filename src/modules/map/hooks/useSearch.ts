@@ -6,28 +6,7 @@ import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 import type { SavedPlace } from '../../places/types/place.types';
 import { showToast } from '../../../shared/utils/toast';
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
-
-const parseCoordinates = (query: string): { lat: number; lng: number } | null => {
-    const cleaned = query.trim().replace(/\s+/g, ' ');
-
-    const patterns = [
-        /^(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/,  //lat,lng
-        /^(-?\d+\.?\d*)\s+(-?\d+\.?\d*)$/,  //lat lng
-    ];
-
-    for (const pattern of patterns) {
-        const match = cleaned.match(pattern);
-        if (match) {
-            const lat = parseFloat(match[1]);
-            const lng = parseFloat(match[2]);
-            if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
-                return { lat, lng };
-            }
-        }
-    }
-
-    return null;
-};
+import { parseCoordinates } from '../../../shared/utils/coordinates';
 
 export const useSearch = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -83,6 +62,9 @@ export const useSearch = () => {
             } else {
                 const results = await navigationService.geocodePlace(query);
                 setSearchResults(results);
+                if (results.length === 0) {
+                    dashboardEventsService.searchNoResults(query.trim());
+                }
             }
         } catch {
             showToast('Search failed: Could not find location');

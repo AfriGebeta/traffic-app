@@ -10,6 +10,7 @@ import { colors } from '../../../shared/theme/colors';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
 import { getAppConfig } from '../../../shared/config/remoteConfigValues';
+import { MapSearchBar } from '../../../shared/components';
 
 export default function DestinationPickerScreen() {
     const router = useRouter();
@@ -30,6 +31,15 @@ export default function DestinationPickerScreen() {
         mapRef.current.flyTo({
             center: [userLocation.lng, userLocation.lat],
             zoom: 15,
+            duration: 1000,
+        });
+    };
+
+    const handleSearchSelect = (location: { lat: number; lng: number }) => {
+        setSelectedLocation(location);
+        mapRef.current?.flyTo({
+            center: [location.lng, location.lat],
+            zoom: 17,
             duration: 1000,
         });
     };
@@ -72,12 +82,17 @@ export default function DestinationPickerScreen() {
 
                 <TouchableOpacity
                     className="absolute right-4 bg-white rounded-full w-12 h-12 items-center justify-center shadow-lg"
-                    style={{ top: insets.top + 16 }}
+                    style={{ top: insets.top + 80 }}
                     onPress={handleLocationPress}
                     activeOpacity={0.7}
                 >
                     <Ionicons name="locate" size={24} color={colors.primary.main} />
                 </TouchableOpacity>
+
+                <MapSearchBar
+                    onSelect={handleSearchSelect}
+                    style={{ position: 'absolute', top: insets.top + 16, left: 76, right: 16 }}
+                />
 
                 <View
                     className="absolute inset-0 items-center justify-center"

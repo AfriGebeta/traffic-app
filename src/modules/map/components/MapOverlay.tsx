@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { SearchBar } from './SearchBar';
 import { QuickActions } from './QuickActions';
 import { FreeDriveButton } from './FreeDriveButton';
+import { SosButton } from './SosButton';
 import { MapLayersButton } from './MapLayersButton';
 import { SearchResults } from './SearchResults';
 import { DestinationCard } from './DestinationCard';
@@ -64,6 +65,7 @@ interface MapOverlayProps {
     navigationDestination?: GeocodingPlace | null;
     showRoutePreview?: boolean;
     showPlaceDetail?: boolean;
+    showExploreResults?: boolean;
     routeOrigin?: GeocodingPlace | null;
     routeWaypoints?: GeocodingPlace[];
     routeDestination?: GeocodingPlace | null;
@@ -80,6 +82,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
     onSearchBlur,
     searchResults,
     recentSearches = [],
+
     savedPlaces = [],
     isSearching,
     showSearchContainer,
@@ -93,6 +96,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
     isNavigating,
     simulateMovement,
     onSimulateToggle,
+
     onNavigate,
     onClearRoute,
     userLocation,
@@ -106,6 +110,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
     onVoiceRelease,
     isRecording,
     isProcessingVoice,
+
     voiceNavigationData,
     onExploreCategory,
     isExploring = false,
@@ -115,10 +120,12 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
     navigationDestination,
     showRoutePreview = false,
     showPlaceDetail = false,
+    showExploreResults = false,
     routeOrigin,
     routeWaypoints = [],
     routeDestination,
     onRouteOriginChange,
+    
     onRouteWaypointsChange,
     routeTransportMode = 'driving',
 }) => {
@@ -127,7 +134,8 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
     const insets = useSafeAreaInsets();
     const { requireAuth } = useAuthGate();
     const [showThemeSelector, setShowThemeSelector] = useState(false);
-    const [layersButtonTop, setLayersButtonTop] = useState(0);
+    const [layersButtonBottom, setLayersButtonBottom] = useState(0);
+    const { height: windowHeight } = useWindowDimensions();
 
     const handleProfilePress = () => {
         router.push('/profile');
@@ -166,10 +174,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                     {!showSearchContainer && (
                         <>
                             <FreeDriveButton userLocation={userLocation} />
-                            <MapLayersButton
-                                onPress={() => setShowThemeSelector(true)}
-                                onLayout={(e) => setLayersButtonTop(e.nativeEvent.layout.y)}
-                            />
+                            <SosButton userLocation={userLocation} />
                         </>
                     )}
 
@@ -208,7 +213,17 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                 onLocationPress={onLocationPress}
                 onTaxiPress={onTaxiPress}
                 isRoutePreviewActive={showRoutePreview}
-                isPlaceDetailActive={showPlaceDetail}
+                isPlaceDetailActive={showPlaceDetail || showExploreResults}
+                middleActions={
+                    !showRoutePreview && !showSearchContainer && (
+                        <MapLayersButton
+                            onPress={({ y, height }) => {
+                                setLayersButtonBottom(windowHeight - (y + height));
+                                setShowThemeSelector(true);
+                            }}
+                        />
+                    )
+                }
             />
 
             {isNavigationMinimized && navigationDestination && onRestoreNavigation && (
@@ -238,31 +253,33 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                 </View>
             )}
 
-            <BottomNavigation
-                onTabPress={(tabId) => {
-                    void requireAuth(() => {
-                        if (tabId === 'report') {
-                            onReportPress();
-                        } else if (tabId === 'explore') {
-                            onExplorePress();
-                        } else if (tabId === 'saved') {
-                            router.push('/saved-places');
-                        } else if (tabId === 'ai') {
-                            router.push('/ai-assistant');
-                        } else {
-                            showToast(`${t('coming-soon')}: ${tabId}`);
-                        }
-                    });
-                }}
-                onAddPress={() => {
-                    void requireAuth(onAddPlacePress);
-                }}
-            />
+            {!showRoutePreview && !showPlaceDetail && (
+                <BottomNavigation
+                    onTabPress={(tabId) => {
+                        void requireAuth(() => {
+                            if (tabId === 'report') {
+                                onReportPress();
+                            } else if (tabId === 'explore') {
+                                onExplorePress();
+                            } else if (tabId === 'saved') {
+                                router.push('/saved-places');
+                            } else if (tabId === 'ai') {
+                                router.push('/ai-assistant');
+                            } else {
+                                showToast(`${t('coming-soon')}: ${tabId}`);
+                            }
+                        });
+                    }}
+                    onAddPress={() => {
+                        void requireAuth(onAddPlacePress);
+                    }}
+                />
+            )}
 
             <MapThemeSelector
                 visible={showThemeSelector}
                 onClose={() => setShowThemeSelector(false)}
-                topOffset={insets.top + 10 + layersButtonTop}
+                bottomOffset={layersButtonBottom}
             />
         </>
     );

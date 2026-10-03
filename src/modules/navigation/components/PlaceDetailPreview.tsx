@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Share, ScrollView, Image, ImageSourcePropType } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Image, ImageSourcePropType } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,6 +10,7 @@ import { useTheme } from '../../../shared/theme/ThemeContext';
 import type { GeocodingPlace } from '../types/navigation.types';
 import { placeService } from '../../places/services/place.service';
 import { showToast } from '../../../shared/utils/toast';
+import { shareLocation } from '../../../shared/utils/shareLocation';
 import type { SavedPlace } from '../../places/types/place.types';
 
 interface PlaceDetailPreviewProps {
@@ -79,6 +80,7 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
     const insets = useSafeAreaInsets();
     const { colors: theme, isDark } = useTheme();
     const [savedPlace, setSavedPlace] = useState<SavedPlace | null>(null);
+    const [imageBoxWidth, setImageBoxWidth] = useState(0);
     const router = useRouter();
 
     useEffect(() => {
@@ -108,11 +110,7 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
     };
 
     const handleShare = async () => {
-        const url = `https://maps.gebeta.app/?lat=${place.latitude}&lng=${place.longitude}&name=${encodeURIComponent(place.name)}`;
-        await Share.share({
-            message: `Check out ${place.name} on Gebeta Maps: ${url}`,
-            url,
-        });
+        await shareLocation({ lat: place.latitude, lng: place.longitude, name: place.name });
     };
 
     const handleClaimBusiness = () => {
@@ -190,6 +188,12 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
         return require('../../../../assets/images/establishment-place-detail.png');
     };
 
+    const placeImage = getPlaceImage();
+    const imageBoxHeight = 112;
+    const { width: imageWidth, height: imageHeight } = Image.resolveAssetSource(placeImage);
+    const imageScale = Math.max(imageBoxWidth / imageWidth, imageBoxHeight / imageHeight);
+    const displayedImageHeight = imageHeight * imageScale;
+
     return (
         <View
             className="absolute rounded-3xl shadow-2xl overflow-hidden self-center"
@@ -215,27 +219,33 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
                     <View className="px-5 pb-2">
                         <View
                             className="rounded-2xl overflow-hidden mb-3"
-                            style={{ height: 112 }}
+                            style={{ height: imageBoxHeight }}
+                            onLayout={({ nativeEvent }) => setImageBoxWidth(nativeEvent.layout.width)}
                         >
                             <Image
-                                source={getPlaceImage()}
-                                style={{ width: '100%', height: '100%' }}
+                                source={placeImage}
+                                style={{
+                                    position: 'absolute',
+                                    left: 0,
+                                    top: (imageBoxHeight - displayedImageHeight) / 2,
+                                    width: imageWidth * imageScale,
+                                    height: displayedImageHeight,
+                                }}
                                 resizeMode="contain"
                             />
                             <TouchableOpacity
                                 onPress={handleContribute}
                                 activeOpacity={0.8}
+                                accessibilityRole="button"
+                                accessibilityLabel={t('edit')}
                                 style={{
                                     position: 'absolute',
                                     bottom: 16,
                                     left: 0,
                                     maxWidth: '95%',
-                                    alignSelf: 'flex-start',
                                     flexDirection: 'row',
                                     alignItems: 'center',
                                     backgroundColor: colors.primary.main,
-                                    borderTopLeftRadius: 0,
-                                    borderBottomLeftRadius: 0,
                                     borderTopRightRadius: 6,
                                     borderBottomRightRadius: 6,
                                     paddingVertical: 5,
@@ -243,11 +253,11 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
                                 }}
                             >
                                 <Text
-                                    style={{ color: '#fff', fontSize: 11, fontWeight: '600' }}
+                                    style={{ color: '#fff', fontSize: 11, fontWeight: '600', flexShrink: 1 }}
                                     numberOfLines={1}
                                     ellipsizeMode="tail"
                                 >
-                                    {t('contribute')}
+                                    {t('edit')}
                                 </Text>
                             </TouchableOpacity>
                         </View>

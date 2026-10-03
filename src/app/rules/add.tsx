@@ -1,3 +1,4 @@
 import AddRuleReportScreen from '../../modules/rules/screens/AddRuleReportScreen';
+import { withAuthGuard } from '../../modules/register/components/withAuthGuard';
 
-export default AddRuleReportScreen;
+export default withAuthGuard(AddRuleReportScreen);

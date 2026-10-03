@@ -22,5 +22,19 @@ export const useAuthGate = () => {
         [router, t]
     );
 
-    return { requireAuth };
+    // for flows that must not be left (active navigation, free drive): toast only, no redirect
+    const requireAuthInPlace = useCallback(
+        async (action?: () => void): Promise<boolean> => {
+            if (await isAuthenticated()) {
+                action?.();
+                return true;
+            }
+
+            showToast(t('please-login-first') || 'Please login first');
+            return false;
+        },
+        [t]
+    );
+
+    return { requireAuth, requireAuthInPlace };
 };

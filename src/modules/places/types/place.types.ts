@@ -4,6 +4,7 @@ export interface Place {
     id: string;
     name: string;
     type: PlaceType;
+    categoryId?: string | null;
     lat: number;
     lng: number;
     description: string;
@@ -14,15 +15,22 @@ export interface Place {
     updatedAt: string;
 }
 
+export interface PlaceContributionAddress {
+    city?: string;
+    neighborhood?: string;
+    streetName?: string;
+}
+
 export interface PlaceContributionRequest {
     name: string;
-    type: PlaceType | (string & {});
+    type: PlaceType;
+    categoryId?: string;
     lat: number;
     lng: number;
     description: string;
     phone?: string;
     images: string[];
-    customType?: string;
+    address?: PlaceContributionAddress;
 }
 
 export type SavedPlaceType = 'HOME' | 'WORK' | 'FAVORITE' | 'CUSTOM';
@@ -77,9 +85,28 @@ export interface SavePlaceAudioResponse {
     missingFields: HomeAddressRequiredField[];
 }
 
+export const PLACE_CATEGORY_IDS: Partial<Record<PlaceType, string>> = {
+    restaurant: 'cms7an5hu000011qfrmiwqctq',
+    hotel: 'cms7aqmde000111qfib62myvp',
+    hospital: 'cms7aqmzs000211qf6n64b9kx',
+    gas_station: 'cms7aqnkf000311qfpfabcmnm',
+    bank: 'cms7aqpij000611qfutjxjwl4',
+    atm: 'cms7aqqge000711qf6j5pkck9',
+    pharmacy: 'cmuhml2bh0003zht3ntnuswtu',
+    school: 'cmulbmf3z0204o3b7odu15a01',
+    cafe: 'cmulbs41e0205o3b7o3sl0qud',
+    clinic: 'cmulbsdld0206o3b7o0g6fcf2',
+    building: 'cmulbt3fg0207o3b7st765n9m',
+    company: 'cmulbtdmy0208o3b7800hz80h',
+    government: 'cmulbtkky0209o3b7t0q1fd3b',
+    mall: 'cmulbtsvw020ao3b7fp60ybw3',
+    shop: 'cmuldqanv021ho3b70lhzv1xt',
+    park: 'cmuldr72v021io3b70cvtgift',
+    parking: 'cmumawa7000afpx0iw48pvrt5',
+};
+
 export const PLACE_TYPES = [
     { id: 'gas_station', label: 'Gas Station', icon: 'water' as const, color: '#EF4444' },
-    { id: 'taxi_station', label: 'Taxi Station', icon: 'car' as const, color: '#3B82F6' },
     { id: 'restaurant', label: 'Restaurant', icon: 'restaurant' as const, color: '#10B981' },
     { id: 'cafe', label: 'Cafe', icon: 'cafe' as const, color: '#B45309' },
     { id: 'parking', label: 'Parking', icon: 'car' as const, color: '#8B5CF6' },

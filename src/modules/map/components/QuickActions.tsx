@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { useGlass } from '../../../shared/theme/glass';
 import { GlassSheen } from '../../../shared/components/GlassSheen';
-import { usePlaceCategories } from '../hooks/usePlaceCategories';
+import { FALLBACK_CATEGORIES as categories } from '../services/categoriesService';
 
 interface QuickActionsProps {
     onSelectCategory?: (categoryId: string) => void;
@@ -20,7 +20,6 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
     const { i18n } = useTranslation();
     const { colors: theme } = useTheme();
     const glass = useGlass();
-    const { categories } = usePlaceCategories();
     const [internalSelectedCategory, setInternalSelectedCategory] = useState<string | null>(null);
 
     const lang = i18n.language === 'am' ? 'am' : 'en';

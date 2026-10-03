@@ -10,7 +10,7 @@ import { useGlass } from '../../../shared/theme/glass';
 import { GlassSheen } from '../../../shared/components/GlassSheen';
 
 export const BASE_GAP = 112;
-export const ROUTE_PREVIEW_GAP = 292;
+export const ROUTE_PREVIEW_GAP = 316;
 export const PLACE_DETAIL_GAP = 297;
 
 interface FloatingActionsProps {
@@ -18,6 +18,7 @@ interface FloatingActionsProps {
     onTaxiPress?: () => void;
     isRoutePreviewActive?: boolean;
     isPlaceDetailActive?: boolean;
+    middleActions?: React.ReactNode;
 }
 
 export const FloatingActions: React.FC<FloatingActionsProps> = ({
@@ -25,6 +26,7 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
     onTaxiPress,
     isRoutePreviewActive = false,
     isPlaceDetailActive = false,
+    middleActions,
 }) => {
     const { isDark } = useTheme();
     const glass = useGlass();
@@ -58,6 +60,7 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
                 <GlassSheen />
                 <LocationIcon width={24} height={24} />
             </TouchableOpacity>
+            {middleActions}
 
             {!isRoutePreviewActive && (
                 <TouchableOpacity

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Image, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Image, Modal, TextInput, KeyboardAvoidingView, Platform, Animated } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -17,6 +17,7 @@ import { navigationService } from '../services/navigation.service';
 import { calculateDistance } from '../utils/navigationUtils';
 import type { TaxiNavigationResponse } from '../../taxi/types/taxi.types';
 import LekfelPaySheet from '../../taxi/components/LekfelPaySheet';
+import { shareLocation } from '../../../shared/utils/shareLocation';
 
 interface RoutePreviewProps {
     distance: number;
@@ -78,12 +79,30 @@ const formatETA = (seconds: number): string => {
     return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
 };
 
+const SkeletonPulse: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const opacity = useRef(new Animated.Value(1)).current;
+
+    useEffect(() => {
+        const loop = Animated.loop(
+            Animated.sequence([
+                Animated.timing(opacity, { toValue: 0.4, duration: 700, useNativeDriver: true }),
+                Animated.timing(opacity, { toValue: 1, duration: 700, useNativeDriver: true }),
+            ])
+        );
+        loop.start();
+        return () => loop.stop();
+    }, [opacity]);
+
+    return <Animated.View style={{ opacity }}>{children}</Animated.View>;
+};
+
 export const RoutePreview: React.FC<RoutePreviewProps> = ({
     distance,
     duration,
     destinationName,
     simulateMovement,
     onSimulateToggle,
+
     onStartNavigation,
     onStartTaxiNavigation,
     onPreviewTaxiRoute,
@@ -94,6 +113,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
     initialTaxiRoute = null,
     initialMode = 'driving',
     onModeChange,
+
     waypoints = [],
     onWaypointsChange,
     origin = null,
@@ -113,6 +133,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
 
     const [transportMode, setTransportMode] = useState<'driving' | 'taxi' | 'walking'>(initialMode);
     const [showPaySheet, setShowPaySheet] = useState(false);
+    const [taxiDetailsExpanded, setTaxiDetailsExpanded] = useState(false);
     const [taxiRoute, setTaxiRoute] = useState<TaxiNavigationResponse | null>(initialTaxiRoute);
     const taxiRouteOriginRef = useRef<{ lat: number; lng: number } | null>(
         initialTaxiRoute?.origin ? { lat: initialTaxiRoute.origin.lat, lng: initialTaxiRoute.origin.lng } : null
@@ -127,7 +148,28 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
     const [fareInput, setFareInput] = useState('');
     const [savingFare, setSavingFare] = useState(false);
 
+    const getTaxiLegChain = (): ('taxi' | 'walk')[] => {
+        if (!taxiRoute) return [];
+        const segments = taxiRoute.segments;
+        if (segments && segments.length > 0) {
+            return segments.flatMap((segment: any, index: number): ('taxi' | 'walk')[] => {
+                if (segment.type === 'walk' || segment.mode === 'pedestrian') {
+                    const isEdge = index === 0 || index === segments.length - 1;
+                    return !isEdge && !segment.distance && !segment.time ? [] : ['walk'];
+                }
+                if (segment.type === 'taxi' || segment.mode === 'auto') return ['taxi'];
+                return [];
+            });
+        }
+        return [
+            ...(taxiRoute.originWalkRoute && taxiRoute.startNode ? ['walk' as const] : []),
+            ...(taxiRoute.startNode && taxiRoute.endNode ? ['taxi' as const] : []),
+            ...(taxiRoute.destinationWalkRoute ? ['walk' as const] : []),
+        ];
+    };
+
     const isCustomOrigin = origin !== null;
+    const skeletonColor = isDark ? theme.border : '#D1D5DB';
 
     const getOriginCoords = () => {
         if (origin) return { lat: origin.latitude, lng: origin.longitude };
@@ -372,12 +414,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
 
     const handleShareDestination = async () => {
         if (!destination) return;
-        const { Share } = await import('react-native');
-        const url = `https://maps.gebeta.app/?lat=${destination.latitude}&lng=${destination.longitude}&name=${encodeURIComponent(destination.name)}`;
-        Share.share({
-            message: `Check out ${destination.name} on Gebeta Maps: ${url}`,
-            url: url,
-        });
+        await shareLocation({ lat: destination.latitude, lng: destination.longitude, name: destination.name });
     };
 
     const handleGoRoute = (index: number) => {
@@ -415,24 +452,24 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
         >
             <BlurView intensity={100} tint={isDark ? 'dark' : 'light'} style={{ flex: 1, borderRadius: 24 }}>
                 <View style={{ backgroundColor: isDark ? 'rgba(30, 30, 30, 0.6)' : 'rgba(255, 255, 255, 0.4)', borderRadius: 24 }}>
-                    <View className="px-6 pt-4" style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}>
+                    <View className="px-6 pt-3" style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}>
                         <View className="flex-row items-center justify-between mb-2">
-                            <Text className="text-2xl font-bold" style={{ color: theme.textPrimary }}>{t('directions')}</Text>
+                            <Text className="text-xl font-bold" style={{ color: theme.textPrimary }}>{t('directions')}</Text>
                             <TouchableOpacity
                                 onPress={onCancel}
-                                className="w-10 h-10 items-center justify-center rounded-full"
+                                className="w-9 h-9 items-center justify-center rounded-full"
                                 style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : '#F3F4F6' }}
                             >
-                                <Ionicons name="close" size={24} color={theme.textPrimary} />
+                                <Ionicons name="close" size={22} color={theme.textPrimary} />
                             </TouchableOpacity>
                         </View>
                     </View>
 
-                    <View className="px-6 py-3" style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}>
-                        <View className="flex-row rounded-xl p-1" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#F3F4F6' }}>
+                    <View className="px-2 py-2" style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}>
+                        <View className="flex-row rounded-2xl p-1" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#F3F4F6' }}>
                             <TouchableOpacity
                                 onPress={() => handleModeChange('driving')}
-                                className="flex-1 flex-row items-center justify-center py-2 rounded-lg"
+                                className="flex-1 flex-row items-center justify-center py-2 rounded-xl"
                                 style={{
                                     backgroundColor: transportMode === 'driving' ? theme.surface : 'transparent',
                                 }}
@@ -457,7 +494,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={() => handleModeChange('walking')}
-                                className="flex-1 flex-row items-center justify-center py-2 rounded-lg"
+                                className="flex-1 flex-row items-center justify-center py-2 rounded-xl"
                                 style={{
                                     backgroundColor: transportMode === 'walking' ? theme.surface : 'transparent',
                                 }}
@@ -479,7 +516,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={() => handleModeChange('taxi')}
-                                className="flex-1 flex-row items-center justify-center py-2 rounded-lg"
+                                className="flex-1 flex-row items-center justify-center py-2 rounded-xl"
                                 style={{
                                     backgroundColor: transportMode === 'taxi' ? theme.surface : 'transparent',
                                 }}
@@ -508,7 +545,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                     {showRouteOptionCards && (
                         <ScrollView
                             className="max-h-80"
-                            contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12, gap: 10 }}
+                            contentContainerStyle={{ padding: 8, gap: 8 }}
                             showsVerticalScrollIndicator={false}
                         >
                             {routeOptions!.map((opt, i) => {
@@ -518,7 +555,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                         key={i}
                                         activeOpacity={0.85}
                                         onPress={() => onSelectRoute?.(i)}
-                                        className="rounded-2xl p-4"
+                                        className="rounded-2xl pl-4 pr-2 py-2"
                                         style={{
                                             borderWidth: 1,
                                             borderColor: isSelected ? colors.primary.main : theme.border,
@@ -544,7 +581,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                                 {destination && (
                                                     <TouchableOpacity
                                                         onPress={handleShareDestination}
-                                                        className="w-11 h-11 items-center justify-center rounded-2xl mr-2"
+                                                        className="w-11 h-11 items-center justify-center rounded-lg mr-2"
                                                         style={{ borderWidth: 1.5, borderColor: colors.primary.main }}
                                                     >
                                                         <Ionicons name="share-social" size={20} color={colors.primary.main} />
@@ -552,7 +589,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                                 )}
                                                 <TouchableOpacity
                                                     onPress={() => handleGoRoute(i)}
-                                                    className="rounded-2xl px-6 py-4 shadow-lg"
+                                                    className="rounded-lg px-6 py-3 shadow-lg"
                                                     style={{
                                                         backgroundColor: colors.primary.main,
                                                         shadowColor: colors.primary.main,
@@ -600,11 +637,11 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                             activeOpacity={0.7}
                             className="flex-row items-center justify-between"
                             style={{
-                                marginHorizontal: 24,
-                                marginTop: 12,
-                                marginBottom: 16,
+                                marginHorizontal: 8,
+                                marginTop: 8,
+                                marginBottom: 8,
                                 paddingHorizontal: 16,
-                                paddingVertical: 14,
+                                paddingVertical: 10,
                                 borderRadius: 16,
                                 borderWidth: 1,
                                 borderColor: theme.border,
@@ -637,12 +674,27 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                     )}
                     <ScrollView className="max-h-48">
                         {loadingTaxiRoute ? (
-                            <View className="px-6 py-8 items-center">
-                                <ActivityIndicator size="large" color={colors.primary.main} />
-                                <Text className="mt-2" style={{ color: theme.textSecondary }}>{t('loading-taxi-route')}</Text>
+                            <View className="px-2 pb-2">
+                                <View
+                                    className="rounded-2xl p-4"
+                                    style={{ backgroundColor: isDark ? theme.surface : '#E5E7EB' }}
+                                    accessibilityLabel={t('loading-taxi-route')}
+                                >
+                                    <SkeletonPulse>
+                                        <View className="flex-row items-center" style={{ height: 20 }}>
+                                            {[48, 72, 48].map((width, index) => (
+                                                <View key={index} className="flex-row items-center">
+                                                    {index > 0 && <View style={{ width: 14 }} className="mx-1" />}
+                                                    <View className="rounded-full" style={{ width: 16, height: 16, backgroundColor: skeletonColor }} />
+                                                    <View className="rounded ml-1" style={{ width, height: 12, backgroundColor: skeletonColor }} />
+                                                </View>
+                                            ))}
+                                        </View>
+                                    </SkeletonPulse>
+                                </View>
                             </View>
                         ) : taxiRouteError ? (
-                            <View className="px-6 py-6">
+                            <View className="px-2 py-2">
                                 <View className="rounded-2xl p-4" style={{ backgroundColor: theme.primaryMuted }}>
                                     <Text className="font-semibold text-base mb-1" style={{ color: theme.textPrimary }}>
                                         {t('no-taxi-route-found')}
@@ -653,10 +705,38 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                 </View>
                             </View>
                         ) : transportMode === 'taxi' && taxiRoute ? (
-                            <View className="px-6 py-3">
+                            <View className="px-2 pb-2">
                                 <View className="rounded-2xl p-4" style={{ backgroundColor: isDark ? theme.surface : '#E5E7EB' }}>
+                                    <TouchableOpacity
+                                        onPress={() => setTaxiDetailsExpanded((v) => !v)}
+                                        activeOpacity={0.7}
+                                        className={`flex-row items-center justify-between ${taxiDetailsExpanded ? 'mb-3' : ''}`}
+                                    >
+                                        <View className="flex-row items-center flex-1 flex-wrap">
+                                            {getTaxiLegChain().map((leg, index) => (
+                                                <View key={index} className="flex-row items-center">
+                                                    {index > 0 && (
+                                                        <Ionicons name="chevron-forward" size={14} color={theme.textSecondary} style={{ marginHorizontal: 4 }} />
+                                                    )}
+                                                    <Ionicons
+                                                        name={leg === 'taxi' ? 'car' : 'walk'}
+                                                        size={16}
+                                                        color={leg === 'taxi' ? colors.primary.main : theme.error}
+                                                    />
+                                                    <Text className="text-sm ml-1" style={{ color: theme.textPrimary }}>
+                                                        {leg === 'taxi' ? t('taxi-ride') : t('walk')}
+                                                    </Text>
+                                                </View>
+                                            ))}
+                                        </View>
+                                        <Ionicons
+                                            name={taxiDetailsExpanded ? 'chevron-down' : 'chevron-up'}
+                                            size={20}
+                                            color={theme.textSecondary}
+                                        />
+                                    </TouchableOpacity>
 
-                                    {taxiRoute.segments && taxiRoute.segments.length > 0 ? (
+                                    {!taxiDetailsExpanded ? null : taxiRoute.segments && taxiRoute.segments.length > 0 ? (
                                         taxiRoute.segments.map((segment: any, index: number) => {
                                             const isWalkSegment = segment.type === 'walk' || segment.mode === 'pedestrian';
                                             const isTaxiSegment = segment.type === 'taxi' || segment.mode === 'auto';
@@ -779,14 +859,19 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                     </ScrollView>
 
                     {!showRouteOptionCards && (
-                        <View className="px-6 py-3 mb-2" style={{ borderTopWidth: 1, borderTopColor: theme.border }}>
-                            <View className="rounded-2xl p-4" style={{ backgroundColor: isDark ? theme.surface : '#E5E7EB' }}>
-                                <View className="flex-row items-start justify-between">
+                        <View className="p-2" style={{ borderTopWidth: 1, borderTopColor: theme.border }}>
+                            <View className="rounded-2xl pl-4 pr-2 py-2" style={{ backgroundColor: isDark ? theme.surface : '#E5E7EB' }}>
+                                <View className="flex-row items-center justify-between">
                                     <View className="flex-1 mr-3" style={{ opacity: isFetchingRoute && transportMode !== 'taxi' ? 0.4 : 1 }}>
-                                        {transportMode === 'taxi' && taxiRoute && taxiRoute.summary ? (
+                                        {transportMode === 'taxi' && loadingTaxiRoute ? (
+                                            <SkeletonPulse>
+                                                <View className="rounded" style={{ width: 96, height: 24, marginVertical: 4, backgroundColor: skeletonColor }} />
+                                                <View className="rounded" style={{ width: 128, height: 12, marginTop: 4, backgroundColor: skeletonColor }} />
+                                            </SkeletonPulse>
+                                        ) : transportMode === 'taxi' && taxiRoute && taxiRoute.summary ? (
                                             <>
                                                 <View className="flex-row items-center">
-                                                    <Text className="text-3xl font-bold" style={{ color: colors.primary.main }}>
+                                                    <Text className="text-2xl font-bold" style={{ color: colors.primary.main }}>
                                                         {taxiRoute.summary?.estimatedFare || 0} {taxiRoute.summary?.currency || 'ETB'}
                                                     </Text>
                                                     {isAuthenticated && taxiRoute.endNode && (
@@ -799,28 +884,22 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                                         </TouchableOpacity>
                                                     )}
                                                 </View>
-                                                <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>
+                                                <Text className="text-sm" style={{ color: theme.textSecondary }}>
                                                     {t('taxi-fare')} • {formatTime(displayDuration)}
-                                                </Text>
-                                                <Text className="font-medium mt-1" style={{ color: theme.textPrimary }} numberOfLines={2} ellipsizeMode="tail">
-                                                    {destinationName}
                                                 </Text>
                                             </>
                                         ) : (
                                             <>
                                                 <View className="flex-row items-center">
-                                                    <Text className="text-3xl font-bold" style={{ color: theme.textPrimary }}>
+                                                    <Text className="text-2xl font-bold" style={{ color: theme.textPrimary }}>
                                                         {formatTime(duration)}
                                                     </Text>
                                                     {isFetchingRoute && (
                                                         <ActivityIndicator size="small" color={colors.primary.main} style={{ marginLeft: 10 }} />
                                                     )}
                                                 </View>
-                                                <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>
+                                                <Text className="text-sm" style={{ color: theme.textSecondary }}>
                                                     {t('eta')} {formatETA(duration)} • {formatDistance(distance)}
-                                                </Text>
-                                                <Text className="font-medium mt-1" style={{ color: theme.textPrimary }} numberOfLines={2} ellipsizeMode="tail">
-                                                    {destinationName}
                                                 </Text>
                                             </>
                                         )}
@@ -834,7 +913,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                                         pathname: '/places/save',
                                                         params: { lat: destination.latitude, lng: destination.longitude, name: destination.name },
                                                     } as any)}
-                                                    className="rounded-2xl px-3 py-4 -mr-3"
+                                                    className="rounded-2xl px-3 py-2 -mr-3"
                                                 >
                                                     <Ionicons
                                                         name={savedPlace ? "bookmark" : "bookmark-outline"}
@@ -843,15 +922,8 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                                     />
                                                 </TouchableOpacity>
                                                 <TouchableOpacity
-                                                    onPress={async () => {
-                                                        const { Share } = await import('react-native');
-                                                        const url = `https://maps.gebeta.app/?lat=${destination.latitude}&lng=${destination.longitude}&name=${encodeURIComponent(destination.name)}`;
-                                                        Share.share({
-                                                            message: `Check out ${destination.name} on Gebeta Maps: ${url}`,
-                                                            url: url,
-                                                        });
-                                                    }}
-                                                    className="rounded-2xl px-3 py-4"
+                                                    onPress={handleShareDestination}
+                                                    className="rounded-2xl px-3 py-2"
                                                 >
                                                     <Ionicons name="share-social" size={24} color={colors.primary.main} />
                                                 </TouchableOpacity>
@@ -866,7 +938,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                                         ? handlePreviewPress
                                                         : handleStartNavigation
                                             }
-                                            className="rounded-2xl px-8 py-4 shadow-lg"
+                                            className="rounded-lg px-7 py-3 shadow-lg"
                                             style={{
                                                 backgroundColor: colors.primary.main,
                                                 shadowColor: colors.primary.main,
@@ -876,7 +948,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                                 elevation: 8,
                                             }}
                                         >
-                                            <Text className="text-white text-xl font-bold">
+                                            <Text className="text-white text-lg font-bold">
                                                 {!isCustomOrigin ? t('go') : t('preview')}
                                             </Text>
                                         </TouchableOpacity>
@@ -964,6 +1036,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                 destinationName={taxiRoute?.endNode.name ?? destinationName}
                 destinationLat={taxiRoute?.endNode.lat ?? destination?.latitude}
                 destinationLng={taxiRoute?.endNode.lng ?? destination?.longitude}
+                allowLoginRedirect
             />
         </View>
     );

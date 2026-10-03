@@ -27,6 +27,15 @@ export interface CreateTaxiNodeRequest {
     landmark?: string;
 }
 
+export type TaxiDestinationContribution =
+    | { toNodeId: number }
+    | { newStop: { name: string; lat: number; lng: number } };
+
+export interface CreateTaxiDestinationsRequest {
+    fromNodeId: number;
+    destinations: TaxiDestinationContribution[];
+}
+
 export interface TaxiRoute {
     id: number;
     name: string;

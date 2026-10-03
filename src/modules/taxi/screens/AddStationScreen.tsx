@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import Animated, { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-reanimated';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -14,6 +14,13 @@ import { taxiService } from '../services/taxi.service';
 import { TaxiNode } from '../types/taxi.types';
 
 const NEARBY_RADIUS_METERS = 300;
+
+interface DestinationEntry {
+    key: string;
+    name: string;
+    toNodeId?: number;
+    newStop?: { name: string; lat: number; lng: number };
+}
 
 export default function AddStationScreen() {
     const router = useRouter();
@@ -34,8 +41,12 @@ export default function AddStationScreen() {
     const [nodeType, setNodeType] = useState<'station' | 'stop'>('station');
     const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [locationSource, setLocationSource] = useState<'current' | 'map' | null>(null);
-    const [nearby, setNearby] = useState<(TaxiNode & { distance: number })[]>([]);
-    const [loadingNearby, setLoadingNearby] = useState(false);
+    const [allNodes, setAllNodes] = useState<TaxiNode[]>([]);
+    const [loadingNodes, setLoadingNodes] = useState(true);
+    const [destinations, setDestinations] = useState<DestinationEntry[]>([]);
+    const [destinationQuery, setDestinationQuery] = useState('');
+    const pendingDestinationName = useRef('');
+    const createdNodeId = useRef<number | null>(null);
     const [submitting, setSubmitting] = useState(false);
 
     const calculateDistance = (point1: { lat: number; lng: number }, point2: { lat: number; lng: number }) => {
@@ -63,42 +74,86 @@ export default function AddStationScreen() {
     }, [pendingStop, pickType, setPendingStop, setPickType]);
 
     useEffect(() => {
-        const fetchNearby = async () => {
-            if (!location) {
-                setNearby([]);
-                return;
+        if (pendingStop && pickType === 'destination') {
+            const newName = pendingDestinationName.current;
+            if (newName) {
+                setDestinations((prev) => [
+                    ...prev,
+                    { key: `new-${Date.now()}`, name: newName, newStop: { name: newName, lat: pendingStop.lat, lng: pendingStop.lng } },
+                ]);
+                setDestinationQuery('');
             }
+            pendingDestinationName.current = '';
+            setPendingStop(null);
+            setPickType(null);
+        }
+    }, [pendingStop, pickType, setPendingStop, setPickType]);
 
-            setLoadingNearby(true);
+    useEffect(() => {
+        const fetchNodes = async () => {
             try {
                 const response: any = await taxiService.getNodes();
-                const allNodes = Array.isArray(response) ? response : response.data || [];
-
-                if (!Array.isArray(allNodes)) {
-                    setNearby([]);
-                    return;
-                }
-
-                const found = allNodes
-                    .map((node: TaxiNode) => ({
-                        ...node,
-                        distance: calculateDistance(location, { lat: node.lat, lng: node.lng }),
-                    }))
-                    .filter((node: any) => node.distance < NEARBY_RADIUS_METERS)
-                    .sort((a: any, b: any) => a.distance - b.distance)
-                    .slice(0, 5);
-
-                setNearby(found as (TaxiNode & { distance: number })[]);
+                const nodes = Array.isArray(response) ? response : response.data || [];
+                setAllNodes(Array.isArray(nodes) ? nodes : []);
             } catch (error) {
-                console.error('[AddStation] Error fetching nearby nodes:', error);
-                setNearby([]);
+                console.error('[AddStation] Error fetching nodes:', error);
+                setAllNodes([]);
             } finally {
-                setLoadingNearby(false);
+                setLoadingNodes(false);
             }
         };
 
-        fetchNearby();
-    }, [location]);
+        fetchNodes();
+    }, []);
+
+    const nearby = useMemo(() => {
+        if (!location) return [];
+        return allNodes
+            .map((node) => ({
+                ...node,
+                distance: calculateDistance(location, { lat: node.lat, lng: node.lng }),
+            }))
+            .filter((node) => node.distance < NEARBY_RADIUS_METERS)
+            .sort((a, b) => a.distance - b.distance)
+            .slice(0, 5);
+    }, [allNodes, location]);
+
+    const trimmedDestinationQuery = destinationQuery.trim();
+
+    const destinationMatches = useMemo(() => {
+        const q = trimmedDestinationQuery.toLowerCase();
+        if (!q) return [];
+        const picked = new Set(destinations.map((d) => d.toNodeId).filter((id) => id != null));
+        return allNodes
+            .filter((node) =>
+                !picked.has(node.id) &&
+                (node.name.toLowerCase().includes(q) || node.routeName?.toLowerCase().includes(q))
+            )
+            .slice(0, 10);
+    }, [allNodes, destinations, trimmedDestinationQuery]);
+
+    const hasExactDestinationMatch =
+        destinationMatches.some((node) => node.name.trim().toLowerCase() === trimmedDestinationQuery.toLowerCase()) ||
+        destinations.some((d) => d.name.trim().toLowerCase() === trimmedDestinationQuery.toLowerCase());
+
+    const handleSelectDestination = (node: TaxiNode) => {
+        setDestinations((prev) => [...prev, { key: `node-${node.id}`, name: node.name, toNodeId: node.id }]);
+        setDestinationQuery('');
+    };
+
+    const handleAddNewDestination = () => {
+        if (!trimmedDestinationQuery) return;
+        pendingDestinationName.current = trimmedDestinationQuery;
+        setPickType('destination');
+        router.push({
+            pathname: '/taxi/map-picker',
+            params: { type: 'destination', mode: 'coords' },
+        });
+    };
+
+    const handleRemoveDestination = (key: string) => {
+        setDestinations((prev) => prev.filter((d) => d.key !== key));
+    };
 
     const handleUseCurrentLocation = () => {
         if (!userLocation) {
@@ -131,13 +186,33 @@ export default function AddStationScreen() {
 
         setSubmitting(true);
         try {
-            await taxiService.createNodeForRoute({
-                name: name.trim(),
-                lat: location.lat,
-                lng: location.lng,
-                nodeType,
-                landmark: landmark.trim() || undefined,
-            });
+            if (createdNodeId.current == null) {
+                const created = await taxiService.createNodeForRoute({
+                    name: name.trim(),
+                    lat: location.lat,
+                    lng: location.lng,
+                    nodeType,
+                    landmark: landmark.trim() || undefined,
+                });
+                createdNodeId.current = created?.id ?? null;
+            }
+
+            if (destinations.length > 0) {
+                if (createdNodeId.current == null) {
+                    throw new Error(t('failed-to-save-destinations'));
+                }
+                try {
+                    await taxiService.createDestinations({
+                        fromNodeId: createdNodeId.current,
+                        destinations: destinations.map((d) =>
+                            d.newStop ? { newStop: d.newStop } : { toNodeId: d.toNodeId as number }
+                        ),
+                    });
+                } catch (error) {
+                    console.error('[AddStation] Error saving destinations:', error);
+                    throw new Error(t('failed-to-save-destinations'));
+                }
+            }
 
             showToast(t('station-created-successfully'));
             router.back();
@@ -237,7 +312,7 @@ export default function AddStationScreen() {
                             </View>
                         )}
 
-                        {location && loadingNearby && (
+                        {location && loadingNodes && (
                             <Text className="text-xs mb-6" style={{ color: theme.textSecondary }}>{t('loading-nearby-stations')}</Text>
                         )}
 
@@ -289,6 +364,78 @@ export default function AddStationScreen() {
                                 multiline
                                 numberOfLines={2}
                             />
+                        </View>
+
+                        <View className="mb-6">
+                            <Text className="font-semibold mb-1" style={{ color: theme.textPrimary }}>{t('destinations-terminals')}</Text>
+                            <Text className="text-xs mb-2" style={{ color: theme.textSecondary }}>{t('destinations-terminals-hint')}</Text>
+
+                            {destinations.length > 0 && (
+                                <View className="flex-row flex-wrap gap-2 mb-2">
+                                    {destinations.map((d) => (
+                                        <View
+                                            key={d.key}
+                                            className="flex-row items-center rounded-full pl-3 pr-1 py-1"
+                                            style={{ backgroundColor: theme.primaryMuted, borderWidth: 1, borderColor: theme.primary }}
+                                        >
+                                            {d.newStop && <Ionicons name="add-circle-outline" size={14} color={theme.primary} style={{ marginRight: 4 }} />}
+                                            <Text className="text-sm font-medium" style={{ color: theme.primary }}>{d.name}</Text>
+                                            <TouchableOpacity onPress={() => handleRemoveDestination(d.key)} className="ml-1" hitSlop={8}>
+                                                <Ionicons name="close-circle" size={18} color={theme.primary} />
+                                            </TouchableOpacity>
+                                        </View>
+                                    ))}
+                                </View>
+                            )}
+
+                            <TextInput
+                                className="rounded-xl px-4 py-3"
+                                style={{ backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border, color: theme.textPrimary }}
+                                placeholderTextColor={theme.textSecondary}
+                                placeholder={t('search-destination-station')}
+                                value={destinationQuery}
+                                onChangeText={setDestinationQuery}
+                            />
+
+                            {destinationMatches.length > 0 && (
+                                <View className="mt-2 rounded-xl overflow-hidden" style={{ backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border }}>
+                                    <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled keyboardShouldPersistTaps="always">
+                                        {destinationMatches.map((node) => (
+                                            <TouchableOpacity
+                                                key={node.id}
+                                                className="px-4 py-3"
+                                                style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}
+                                                onPress={() => handleSelectDestination(node)}
+                                            >
+                                                <Text className="font-semibold" style={{ color: theme.textPrimary }}>{node.name}</Text>
+                                                {node.routeName && (
+                                                    <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>{node.routeName}</Text>
+                                                )}
+                                            </TouchableOpacity>
+                                        ))}
+                                    </ScrollView>
+                                </View>
+                            )}
+
+                            {trimmedDestinationQuery.length > 0 && !hasExactDestinationMatch && (
+                                <TouchableOpacity
+                                    className="mt-2 rounded-xl px-4 py-3 flex-row items-center"
+                                    style={{ backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border }}
+                                    onPress={handleAddNewDestination}
+                                    activeOpacity={0.7}
+                                >
+                                    <Ionicons name="add-circle-outline" size={20} color={colors.primary.main} />
+                                    <View className="ml-2 flex-1">
+                                        <Text className="font-semibold" numberOfLines={1} style={{ color: theme.textPrimary }}>
+                                            {`${t('add')} "${trimmedDestinationQuery}"`}
+                                        </Text>
+                                        <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }}>
+                                            {t('pick-new-destination-on-map')}
+                                        </Text>
+                                    </View>
+                                    <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+                                </TouchableOpacity>
+                            )}
                         </View>
 
                         <TouchableOpacity

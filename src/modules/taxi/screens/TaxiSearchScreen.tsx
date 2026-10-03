@@ -9,8 +9,11 @@ import { taxiService } from '../services/taxi.service';
 import { TaxiNode } from '../types/taxi.types';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { useUserRegistration } from '../../register/hooks/useUserRegistration';
+import { useIsAuthenticated } from '../../register/hooks/useIsAuthenticated';
+import { AUTH_ROUTE } from '../../register/utils/authGate';
 import LekfelPaymentModal from '../components/LekfelPaymentModal';
 import LekfelPayCard from '../components/LekfelPayCard';
+import WhereToSheet from '../components/WhereToSheet';
 import { useLekfelPayment } from '../hooks/useLekfelPayment';
 import { toE164 } from '../utils/phone';
 
@@ -21,6 +24,7 @@ export default function TaxiSearchScreen() {
     const { userLocation } = useUserLocation();
     const { colors: theme, isDark } = useTheme();
     const { getStoredUser } = useUserRegistration();
+    const { isAuthed } = useIsAuthenticated();
     const {
         stage: paymentStage,
         errorMessage: paymentError,
@@ -42,6 +46,7 @@ export default function TaxiSearchScreen() {
     const [payerPhone, setPayerPhone] = useState('');
     const [receiverPhone, setReceiverPhone] = useState('');
     const [payAmount, setPayAmount] = useState('');
+    const [showWhereTo, setShowWhereTo] = useState(false);
     const lastProcessedTimestamp = useRef<number>(0);
     const skipOriginFilter = useRef(false);
     const skipDestinationFilter = useRef(false);
@@ -267,7 +272,7 @@ export default function TaxiSearchScreen() {
 
     const canPay = !!payerE164 && !!receiverE164 && Number(payAmount.trim()) > 0;
 
-    const handlePay = () => {
+    const submitPayment = (destination: { name: string; lat?: number; lng?: number } | null) => {
         if (!payerE164 || !receiverE164) return;
 
         const now = new Date();
@@ -279,16 +284,40 @@ export default function TaxiSearchScreen() {
             payerPhone: payerE164,
             receiverPhone: receiverE164,
             amount: Number(payAmount.trim()),
-            description: `${t('taxi-ride')} ${resolvedOriginName} -> ${destinationName.trim()}`,
+            description: destination
+                ? `${t('taxi-ride')} ${resolvedOriginName} -> ${destination.name}`
+                : `${t('taxi-ride')} ${resolvedOriginName}`,
             originName: resolvedOriginName,
             originLat: originCoords?.lat,
             originLng: originCoords?.lng,
-            destinationName: destinationName.trim(),
-            destinationLat: selectedCoords?.lat,
-            destinationLng: selectedCoords?.lng,
+            destinationName: destination?.name,
+            destinationLat: destination?.lat,
+            destinationLng: destination?.lng,
             tripDayOfWeek: now.getDay(),
             tripMinutesOfDay: now.getHours() * 60 + now.getMinutes(),
         });
+    };
+
+    const handlePay = () => {
+        const trimmedDestination = destinationName.trim();
+        if (!trimmedDestination) {
+            setShowWhereTo(true);
+            return;
+        }
+        submitPayment({ name: trimmedDestination, lat: selectedCoords?.lat, lng: selectedCoords?.lng });
+    };
+
+    const handleWhereToSelect = (station: TaxiNode) => {
+        skipDestinationFilter.current = true;
+        setDestinationName(station.name);
+        setSelectedCoords({ lat: station.lat, lng: station.lng });
+        setShowWhereTo(false);
+        submitPayment({ name: station.name, lat: station.lat, lng: station.lng });
+    };
+
+    const handleWhereToSkip = () => {
+        setShowWhereTo(false);
+        submitPayment(null);
     };
 
     const handleDismissPayment = () => {
@@ -546,10 +575,20 @@ export default function TaxiSearchScreen() {
                     currency="ETB"
                     canPay={canPay}
                     onPay={handlePay}
-                    disabled={destinationName.trim().length === 0}
-                    disabledHint={t('set-destination-to-pay')}
+                    disabled={isAuthed !== true}
+                    disabledHint={isAuthed === false ? t('login-to-pay') : undefined}
+                    onDisabledHintPress={() => router.push(AUTH_ROUTE as any)}
                 />
             </ScrollView>
+
+            <WhereToSheet
+                visible={showWhereTo}
+                stations={stations}
+                labelFor={labelFor}
+                onSelect={handleWhereToSelect}
+                onSkip={handleWhereToSkip}
+                onClose={() => setShowWhereTo(false)}
+            />
 
             <LekfelPaymentModal
                 stage={paymentStage}
