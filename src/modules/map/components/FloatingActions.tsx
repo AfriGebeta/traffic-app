@@ -10,7 +10,7 @@ import { useGlass } from '../../../shared/theme/glass';
 import { GlassSheen } from '../../../shared/components/GlassSheen';
 
 export const BASE_GAP = 112;
-export const ROUTE_PREVIEW_GAP = 292;
+export const ROUTE_PREVIEW_GAP = 316;
 export const PLACE_DETAIL_GAP = 297;
 
 interface FloatingActionsProps {

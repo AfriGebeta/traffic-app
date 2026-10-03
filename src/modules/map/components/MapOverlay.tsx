@@ -253,26 +253,28 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                 </View>
             )}
 
-            <BottomNavigation
-                onTabPress={(tabId) => {
-                    void requireAuth(() => {
-                        if (tabId === 'report') {
-                            onReportPress();
-                        } else if (tabId === 'explore') {
-                            onExplorePress();
-                        } else if (tabId === 'saved') {
-                            router.push('/saved-places');
-                        } else if (tabId === 'ai') {
-                            router.push('/ai-assistant');
-                        } else {
-                            showToast(`${t('coming-soon')}: ${tabId}`);
-                        }
-                    });
-                }}
-                onAddPress={() => {
-                    void requireAuth(onAddPlacePress);
-                }}
-            />
+            {!showRoutePreview && !showPlaceDetail && (
+                <BottomNavigation
+                    onTabPress={(tabId) => {
+                        void requireAuth(() => {
+                            if (tabId === 'report') {
+                                onReportPress();
+                            } else if (tabId === 'explore') {
+                                onExplorePress();
+                            } else if (tabId === 'saved') {
+                                router.push('/saved-places');
+                            } else if (tabId === 'ai') {
+                                router.push('/ai-assistant');
+                            } else {
+                                showToast(`${t('coming-soon')}: ${tabId}`);
+                            }
+                        });
+                    }}
+                    onAddPress={() => {
+                        void requireAuth(onAddPlacePress);
+                    }}
+                />
+            )}
 
             <MapThemeSelector
                 visible={showThemeSelector}
