@@ -18,8 +18,7 @@ interface FloatingActionsProps {
     onTaxiPress?: () => void;
     isRoutePreviewActive?: boolean;
     isPlaceDetailActive?: boolean;
-    // Extra buttons stacked above the location/taxi pair.
-    topActions?: React.ReactNode;
+    middleActions?: React.ReactNode;
 }
 
 export const FloatingActions: React.FC<FloatingActionsProps> = ({
@@ -27,7 +26,7 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
     onTaxiPress,
     isRoutePreviewActive = false,
     isPlaceDetailActive = false,
-    topActions,
+    middleActions,
 }) => {
     const { isDark } = useTheme();
     const glass = useGlass();
@@ -53,7 +52,6 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
 
     return (
         <Animated.View className="absolute right-4 gap-3" style={{ bottom: bottomPosition }}>
-            {topActions}
             <TouchableOpacity
                 onPress={onLocationPress}
                 className="rounded-full p-3"
@@ -62,6 +60,7 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
                 <GlassSheen />
                 <LocationIcon width={24} height={24} />
             </TouchableOpacity>
+            {middleActions}
 
             {!isRoutePreviewActive && (
                 <TouchableOpacity

@@ -214,7 +214,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                 onTaxiPress={onTaxiPress}
                 isRoutePreviewActive={showRoutePreview}
                 isPlaceDetailActive={showPlaceDetail || showExploreResults}
-                topActions={
+                middleActions={
                     !showRoutePreview && !showSearchContainer && (
                         <MapLayersButton
                             onPress={({ y, height }) => {
