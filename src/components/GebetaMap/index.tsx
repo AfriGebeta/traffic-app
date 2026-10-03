@@ -22,30 +22,17 @@ import {
     calculateDistance,
     calculateBearing,
 } from '../../modules/navigation/utils/navigationUtils';
-import AccidentLightIcon from '../../../assets/images/accident-light.svg';
-import AccidentDarkIcon from '../../../assets/images/accident-dark.svg';
-import BadWeatherLightIcon from '../../../assets/images/bad-weather-light.svg';
-import BadWeatherDarkIcon from '../../../assets/images/bad-weather-dark.svg';
-import BrokenRoadLightIcon from '../../../assets/images/broken-road-light.svg';
-import BrokenRoadDarkIcon from '../../../assets/images/broken-road-dark.svg';
-import ClosureLightIcon from '../../../assets/images/closure-light.svg';
-import ClosureDarkIcon from '../../../assets/images/closure-dark.svg';
-
-import CrashLightIcon from '../../../assets/images/crash-light.svg';
-import CrashDarkIcon from '../../../assets/images/crash-dark.svg';
-import GatedCommunityLightIcon from '../../../assets/images/gated-community-light.svg';
-import GatedCommunityDarkIcon from '../../../assets/images/gated-community-dark.svg';
-import HazardLightIcon from '../../../assets/images/hazard-light.svg';
-import HazardDarkIcon from '../../../assets/images/hazard-dark.svg';
-import OtherLightIcon from '../../../assets/images/other-light.svg';
-import OtherDarkIcon from '../../../assets/images/other-dark.svg';
-import RadarLightIcon from '../../../assets/images/radar-light.svg';
-import RadarDarkIcon from '../../../assets/images/radar-dark.svg';
-
-import TrafficJamLightIcon from '../../../assets/images/traffic-jam-light.svg';
-import TrafficJamDarkIcon from '../../../assets/images/traffic-jam-dark.svg';
-import FloodLightIcon from '../../../assets/images/flood-light.svg';
-import FloodDarkIcon from '../../../assets/images/flood-dark.svg';
+import MapIncidentAccidentIcon from '../../../assets/images/map-incident-accident.svg';
+import MapIncidentBadWeatherIcon from '../../../assets/images/map-incident-bad-weather.svg';
+import MapIncidentBrokenRoadIcon from '../../../assets/images/map-incident-broken-road.svg';
+import MapIncidentClosureIcon from '../../../assets/images/map-incident-closure.svg';
+import MapIncidentCrashIcon from '../../../assets/images/map-incident-crash.svg';
+import MapIncidentFloodIcon from '../../../assets/images/map-incident-flood.svg';
+import MapIncidentGatedCommunityIcon from '../../../assets/images/map-incident-gated-community.svg';
+import MapIncidentHazardIcon from '../../../assets/images/map-incident-hazard.svg';
+import MapIncidentOtherIcon from '../../../assets/images/map-incident-other.svg';
+import MapIncidentRadarIcon from '../../../assets/images/map-incident-radar.svg';
+import MapIncidentTrafficJamIcon from '../../../assets/images/map-incident-traffic-jam.svg';
 
 const MAPPIN_IMAGE = require('../../../assets/images/Mappin.png');
 const NAV_ARROWHEAD_IMAGE = require('../../../assets/images/nav-arrowhead.png');
@@ -114,19 +101,24 @@ const EXPLORE_IMAGES: Record<string, any> = {
     atm: require('../../../assets/images/atm.png'),
 };
 
-const INCIDENT_SVG_ICONS: Record<string, { light: React.FC<{ width?: number; height?: number }>; dark: React.FC<{ width?: number; height?: number }> }> = {
-    ROAD_CLOSURE: { light: ClosureLightIcon, dark: ClosureDarkIcon },
-    ACCIDENT: { light: AccidentLightIcon, dark: AccidentDarkIcon },
-    TRAFFIC_JAM: { light: TrafficJamLightIcon, dark: TrafficJamDarkIcon },
-    BAD_WEATHER: { light: BadWeatherLightIcon, dark: BadWeatherDarkIcon },
-    HAZARD: { light: HazardLightIcon, dark: HazardDarkIcon },
-    CRASH: { light: CrashLightIcon, dark: CrashDarkIcon },
-    GATED_COMMUNITY: { light: GatedCommunityLightIcon, dark: GatedCommunityDarkIcon },
-    BROKEN_ROAD: { light: BrokenRoadLightIcon, dark: BrokenRoadDarkIcon },
-    RADAR: { light: RadarLightIcon, dark: RadarDarkIcon },
-    FLOOD: { light: FloodLightIcon, dark: FloodDarkIcon },
-    OTHER: { light: OtherLightIcon, dark: OtherDarkIcon },
+const INCIDENT_SVG_ICONS: Record<string, React.FC<{ width?: number; height?: number }>> = {
+    ROAD_CLOSURE: MapIncidentClosureIcon,
+    ACCIDENT: MapIncidentAccidentIcon,
+    TRAFFIC_JAM: MapIncidentTrafficJamIcon,
+    BAD_WEATHER: MapIncidentBadWeatherIcon,
+    HAZARD: MapIncidentHazardIcon,
+    CRASH: MapIncidentCrashIcon,
+    GATED_COMMUNITY: MapIncidentGatedCommunityIcon,
+    BROKEN_ROAD: MapIncidentBrokenRoadIcon,
+    RADAR: MapIncidentRadarIcon,
+    FLOOD: MapIncidentFloodIcon,
+    OTHER: MapIncidentOtherIcon,
 };
+
+// Pin artwork is 52x60 with the tip at y=54 (rest is drop-shadow padding).
+const INCIDENT_PIN_WIDTH = 36;
+const INCIDENT_PIN_HEIGHT = 42;
+const INCIDENT_PIN_ANCHOR = { x: 0.5, y: 0.9 };
 
 const MAP_TILE_LOADING_BACKGROUND_LIGHT = colors.gray[200];
 const MAP_TILE_LOADING_BACKGROUND_DARK = colors.gray[800];
@@ -2535,26 +2527,26 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
                         )}
 
                         {imagesLoaded && visibleIncidents.map((incident) => {
-                            const iconPair = INCIDENT_SVG_ICONS[incident.type.name as keyof typeof INCIDENT_SVG_ICONS];
-                            const IncidentSvgIcon = iconPair ? (isDark ? iconPair.dark : iconPair.light) : null;
+                            const IncidentSvgIcon = INCIDENT_SVG_ICONS[incident.type.name] ?? INCIDENT_SVG_ICONS.OTHER;
 
                             return (
                                 <MapLibreGL.PointAnnotation
                                     key={`incident-${incident.id}-${renderKey}`}
                                     id={`incident-${incident.id}`}
                                     coordinate={[incident.lng, incident.lat]}
+                                    anchor={INCIDENT_PIN_ANCHOR}
                                     onSelected={() => {
                                         showToast(`Incident: ${incident.type.label || incident.type.name}`);
                                     }}
                                 >
                                     <View style={{
-                                        width: 28,
-                                        height: 28,
+                                        width: INCIDENT_PIN_WIDTH,
+                                        height: INCIDENT_PIN_HEIGHT,
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                     }}>
                                         {IncidentSvgIcon ? (
-                                            <IncidentSvgIcon width={24} height={24} />
+                                            <IncidentSvgIcon width={INCIDENT_PIN_WIDTH} height={INCIDENT_PIN_HEIGHT} />
                                         ) : (
                                             <Ionicons name="alert-circle" size={22} color="#F97316" />
                                         )}
