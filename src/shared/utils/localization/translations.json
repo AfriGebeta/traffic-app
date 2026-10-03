@@ -4098,5 +4098,10 @@
         "key": "no-nearby-places",
         "EN_US": "No places found nearby",
         "AM": "በአቅራቢያ ምንም ቦታ አልተገኘም"
+    },
+    {
+        "key": "edit",
+        "EN_US": "Edit",
+        "AM": "አስተካክል"
     }
 ]
