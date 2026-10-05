@@ -1,16 +1,16 @@
 import React from 'react';
-import { View, Dimensions, StyleSheet } from 'react-native';
+import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
     withSpring,
 } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeContext';
+import { useLayout, LAYOUT_GUTTER, PANEL_WIDTH } from '../layout/useLayout';
 
-const SCREEN_HEIGHT = Dimensions.get('window').height;
 const MIN_HEIGHT = 200;
-const MAX_HEIGHT = SCREEN_HEIGHT - 5; 
 
 interface BottomSheetProps {
     children: React.ReactNode;
@@ -19,6 +19,11 @@ interface BottomSheetProps {
 
 export const BottomSheet: React.FC<BottomSheetProps> = React.memo(({ children, expandWhenOpen = false }) => {
     const { colors: theme, isDark } = useTheme();
+    // read live (not at module load) so rotation keeps the sheet on screen
+    const { height: SCREEN_HEIGHT } = useWindowDimensions();
+    const MAX_HEIGHT = SCREEN_HEIGHT - 5;
+    const insets = useSafeAreaInsets();
+    const { isMedium, isWide, centeredInset } = useLayout();
     const translateY = useSharedValue(SCREEN_HEIGHT - MIN_HEIGHT);
     const context = useSharedValue({ y: 0 });
 
@@ -37,7 +42,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = React.memo(({ children, e
                 overshootClamping: true,
             });
         }
-    }, [expandWhenOpen]);
+    }, [expandWhenOpen, SCREEN_HEIGHT]);
 
     const gesture = Gesture.Pan()
         .onStart(() => {
@@ -81,8 +86,15 @@ export const BottomSheet: React.FC<BottomSheetProps> = React.memo(({ children, e
         transform: [{ translateY: translateY.value }],
     }));
 
+    // medium: centered, capped width. wide: left-docked panel so the map stays visible
+    const placement = isWide
+        ? { left: insets.left + LAYOUT_GUTTER, right: undefined, width: PANEL_WIDTH }
+        : isMedium
+            ? { left: centeredInset(), right: centeredInset() }
+            : null;
+
     return (
-        <Animated.View style={[styles.container, { backgroundColor: theme.background }, animatedStyle]}>
+        <Animated.View style={[styles.container, { height: MAX_HEIGHT, backgroundColor: theme.background }, placement, animatedStyle]}>
             <GestureDetector gesture={gesture}>
                 <View style={styles.handle}>
                     <View style={[styles.handleBar, isDark && { backgroundColor: theme.border }]} />
@@ -99,7 +111,6 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        height: MAX_HEIGHT,
         zIndex: 30,
         backgroundColor: 'white',
         borderTopLeftRadius: 24,

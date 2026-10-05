@@ -16,6 +16,7 @@ import { useGlass } from '../../../shared/theme/glass';
 import { GlassSheen } from '../../../shared/components/GlassSheen';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { useMapTheme } from '../context/MapThemeContext';
+import { useLayout, LAYOUT_GUTTER, PANEL_WIDTH, RAIL_WIDTH } from '../../../shared/layout/useLayout';
 
 type TabId = 'explore' | 'contribute' | 'ai' | 'saved' | 'report';
 
@@ -51,6 +52,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
     const isLightTile = currentTheme.id === 'standard';
     const [activeTab, setActiveTab] = useState<TabId | null>(null);
     const insets = useSafeAreaInsets();
+    const { isMedium, isWide, centeredInset, panelLeft } = useLayout();
     const [fontsLoaded] = useFonts({
         'PlusJakartaSans-Light': require('../../../../assets/fonts/plus-jakarta-sans/PlusJakartaSans-Light.ttf'),
         'PlusJakartaSans-Bold': require('../../../../assets/fonts/plus-jakarta-sans/PlusJakartaSans-Bold.ttf'),
@@ -65,26 +67,94 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
         }
     };
 
+    const brandStyle = [
+        {
+            fontSize: 16,
+            fontWeight: fontsLoaded ? 'normal' : '900',
+            color: isLightTile ? '#555555' : '#ffffff',
+            letterSpacing: 0.2,
+            textShadowColor: isLightTile ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.9)',
+            textShadowOffset: { width: 0, height: 1 },
+            textShadowRadius: 3,
+        } as const,
+        fontsLoaded ? { fontFamily: 'PlusJakartaSans-Bold' } : undefined,
+    ];
+
+    // wide (landscape tablet / car screen): vertical rail on the left edge
+    if (isWide) {
+        return (
+            <>
+                <View
+                    className="absolute"
+                    style={{
+                        left: insets.left + LAYOUT_GUTTER,
+                        top: insets.top + LAYOUT_GUTTER,
+                        bottom: insets.bottom + LAYOUT_GUTTER,
+                        width: RAIL_WIDTH,
+                    }}
+                >
+                    <View className="flex-1 rounded-3xl" style={glass.panel}>
+                        <GlassSheen streak radius={24} strength="thick" />
+                        <View className="flex-1 items-center justify-evenly py-3">
+                            {tabs.map((tab) => {
+                                const isAi = tab.id === 'ai';
+                                const SvgIcon = isDark && tab.DarkSvgIcon ? tab.DarkSvgIcon : tab.SvgIcon;
+                                return (
+                                    <TouchableOpacity
+                                        key={tab.id}
+                                        onPress={() => handleTabPress(tab.id)}
+                                        className="items-center justify-center"
+                                        style={{ width: RAIL_WIDTH, minHeight: 60 }}
+                                        activeOpacity={0.7}
+                                    >
+                                        {isAi ? (
+                                            <View
+                                                className="items-center justify-center rounded-full"
+                                                style={{ width: 58, height: 58, backgroundColor: colors.primary.main }}
+                                            >
+                                                <Image source={tab.icon} style={{ width: 58, height: 58 }} resizeMode="contain" />
+                                            </View>
+                                        ) : (
+                                            <>
+                                                {SvgIcon ? (
+                                                    <SvgIcon width={26} height={26} />
+                                                ) : (
+                                                    <Image source={tab.icon} style={{ width: 26, height: 26 }} resizeMode="contain" />
+                                                )}
+                                                <Text
+                                                    className="mt-1"
+                                                    style={[{ fontSize: 11, color: theme.textPrimary }, fontsLoaded ? { fontFamily: 'PlusJakartaSans-Light' } : undefined]}
+                                                    numberOfLines={1}
+                                                >
+                                                    {t(tab.translationKey)}
+                                                </Text>
+                                            </>
+                                        )}
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    </View>
+                </View>
+
+                {/* brand sits on the map just right of the panel column */}
+                <Text
+                    className="absolute"
+                    style={[...brandStyle, { left: panelLeft() + PANEL_WIDTH + LAYOUT_GUTTER, bottom: insets.bottom + LAYOUT_GUTTER }]}
+                    pointerEvents="none"
+                >
+                    {t('gebeta-maps')}
+                </Text>
+            </>
+        );
+    }
+
     return (
         <View
             className="absolute left-4 right-4"
-            style={{ bottom: insets.bottom + 2 }}
+            style={[{ bottom: insets.bottom + 2 }, isMedium && { left: centeredInset(480), right: centeredInset(480) }]}
         >
-            <Text
-                className="mb-2 ml-1"
-                style={[
-                    {
-                        fontSize: 16,
-                        fontWeight: fontsLoaded ? 'normal' : '900',
-                        color: isLightTile ? '#555555' : '#ffffff',
-                        letterSpacing: 0.2,
-                        textShadowColor: isLightTile ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.9)',
-                        textShadowOffset: { width: 0, height: 1 },
-                        textShadowRadius: 3,
-                    },
-                    fontsLoaded ? { fontFamily: 'PlusJakartaSans-Bold' } : undefined,
-                ]}
-            >
+            <Text className="mb-2 ml-1" style={brandStyle}>
                 {t('gebeta-maps')}
             </Text>
 

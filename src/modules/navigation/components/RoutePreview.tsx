@@ -8,6 +8,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { useLayout, PANEL_WIDTH } from '../../../shared/layout/useLayout';
 import type { GeocodingPlace, Maneuver } from '../types/navigation.types';
 import { placeService } from '../../places/services/place.service';
 import { showToast } from '../../../shared/utils/toast';
@@ -127,6 +128,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
 }) => {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
+    const { isMedium, isWide, centeredInset, panelLeft } = useLayout();
     const { colors: theme, isDark } = useTheme();
     const router = useRouter();
     const [savedPlace, setSavedPlace] = useState<SavedPlace | null>(null);
@@ -448,7 +450,11 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
     return (
         <View
             className="absolute left-4 right-4 rounded-3xl shadow-2xl overflow-hidden"
-            style={{ bottom: insets.bottom > 0 ? insets.bottom + 4 : 34 }}
+            style={[
+                { bottom: insets.bottom > 0 ? insets.bottom + 4 : 34 },
+                isWide && { left: panelLeft(), right: 'auto', width: PANEL_WIDTH },
+                isMedium && { left: centeredInset(), right: centeredInset() },
+            ]}
         >
             <BlurView intensity={100} tint={isDark ? 'dark' : 'light'} style={{ flex: 1, borderRadius: 24 }}>
                 <View style={{ backgroundColor: isDark ? 'rgba(30, 30, 30, 0.6)' : 'rgba(255, 255, 255, 0.4)', borderRadius: 24 }}>

@@ -24,6 +24,7 @@ import '../shared/utils/localization/i18n';
 import { applyGlobalFont } from '../shared/utils/globalFont';
 import { installClientHeaders } from '../shared/utils/clientHeaders';
 import { initializeCrashlytics, logBreadcrumb } from '../shared/utils/crashlytics';
+import { useOrientationPolicy } from '../shared/layout/useOrientationPolicy';
 
 import '../modules/navigation/services/nav-foreground-service';
 
@@ -52,6 +53,7 @@ function ThemedNavigationBar() {
 
 function AppShell() {
   useTelegramDeepLink();
+  useOrientationPolicy();
   const { updateRequired, updateAvailable, latestVersion, storeUrl } = useRemoteConfig();
   const pathname = usePathname();
   const showUpdateBanner = updateAvailable && !updateRequired && pathname === '/';

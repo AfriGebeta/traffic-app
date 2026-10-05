@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { useGlass } from '../../../shared/theme/glass';
 import { GlassSheen } from '../../../shared/components/GlassSheen';
+import { useLayout, LAYOUT_GUTTER } from '../../../shared/layout/useLayout';
 
 export const BASE_GAP = 112;
 export const ROUTE_PREVIEW_GAP = 316;
@@ -31,6 +32,7 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
     const { isDark } = useTheme();
     const glass = useGlass();
     const insets = useSafeAreaInsets();
+    const { isWide } = useLayout();
     const bottomPosition = useRef(new Animated.Value(insets.bottom + BASE_GAP)).current;
 
     const LocationIcon = isDark ? DarkLocationIcon : FloatingLocationIcon;
@@ -38,7 +40,10 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
 
     useEffect(() => {
         let targetBottom = insets.bottom + BASE_GAP;
-        if (isRoutePreviewActive) {
+        if (isWide) {
+            // wide: no bottom bar and sheets dock left, so the buttons never need to dodge them
+            targetBottom = insets.bottom + LAYOUT_GUTTER * 2;
+        } else if (isRoutePreviewActive) {
             targetBottom = insets.bottom + ROUTE_PREVIEW_GAP;
         } else if (isPlaceDetailActive) {
             targetBottom = insets.bottom + PLACE_DETAIL_GAP;
@@ -48,10 +53,10 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
             duration: 250,
             useNativeDriver: false,
         }).start();
-    }, [isRoutePreviewActive, isPlaceDetailActive, insets.bottom]);
+    }, [isRoutePreviewActive, isPlaceDetailActive, insets.bottom, isWide]);
 
     return (
-        <Animated.View className="absolute right-4 gap-3" style={{ bottom: bottomPosition }}>
+        <Animated.View className="absolute right-4 gap-3" style={[{ bottom: bottomPosition }, isWide && { right: insets.right + 16 }]}>
             <TouchableOpacity
                 onPress={onLocationPress}
                 className="rounded-full p-3"

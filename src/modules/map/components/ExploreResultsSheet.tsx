@@ -7,6 +7,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withSpring, withRepeat, wit
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { useLayout, PANEL_WIDTH, LAYOUT_GUTTER } from '../../../shared/layout/useLayout';
 import { haversine } from '../../navigation/utils/instructionEngine';
 import { FALLBACK_CATEGORIES } from '../services/categoriesService';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
@@ -78,6 +79,7 @@ export const ExploreResultsSheet: React.FC<ExploreResultsSheetProps> = ({
     const { colors: theme, isDark } = useTheme();
     const insets = useSafeAreaInsets();
     const { height: windowHeight } = useWindowDimensions();
+    const { isMedium, isWide, centeredInset, panelLeft } = useLayout();
 
     const expandedHeight = Math.round(windowHeight * 0.62);
     const peekHeight = insets.bottom + PEEK_HEIGHT;
@@ -142,6 +144,15 @@ export const ExploreResultsSheet: React.FC<ExploreResultsSheetProps> = ({
             style={[
                 styles.container,
                 { backgroundColor: theme.background },
+                // wide: floating card docked under the search panel; medium: centered, capped width
+                isWide && {
+                    left: panelLeft(),
+                    right: 'auto',
+                    width: PANEL_WIDTH,
+                    bottom: insets.bottom + LAYOUT_GUTTER,
+                    borderRadius: 24,
+                },
+                isMedium && { left: centeredInset(), right: centeredInset() },
                 animatedStyle,
             ]}
         >

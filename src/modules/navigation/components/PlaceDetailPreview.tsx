@@ -7,6 +7,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { useLayout, PANEL_WIDTH } from '../../../shared/layout/useLayout';
 import type { GeocodingPlace } from '../types/navigation.types';
 import { placeService } from '../../places/services/place.service';
 import { showToast } from '../../../shared/utils/toast';
@@ -78,6 +79,7 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
 }) => {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
+    const { isWide, panelLeft } = useLayout();
     const { colors: theme, isDark } = useTheme();
     const [savedPlace, setSavedPlace] = useState<SavedPlace | null>(null);
     const [imageBoxWidth, setImageBoxWidth] = useState(0);
@@ -202,6 +204,8 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
                 width: '92%',
                 maxWidth: 480,
                 alignSelf: 'center',
+                // wide: dock under the search panel instead of centering over the map
+                ...(isWide ? { left: panelLeft(), width: PANEL_WIDTH, maxWidth: PANEL_WIDTH, alignSelf: 'flex-start' } : null),
             }}
         >
             <BlurView intensity={100} tint={isDark ? 'dark' : 'light'} style={{ flex: 1, borderRadius: 24 }}>

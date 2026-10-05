@@ -1,13 +1,11 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, Dimensions, FlatList, Image } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, TouchableOpacity, useWindowDimensions, FlatList, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../../../shared/theme/colors';
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import { LANGUAGE_SELECTION_PENDING_KEY } from './SelectLanguageScreen';
-
-const { width } = Dimensions.get('window');
 
 interface OnboardingStep {
     id: string;
@@ -41,6 +39,12 @@ export const OnboardingScreen: React.FC = () => {
     const router = useRouter();
     const [currentIndex, setCurrentIndex] = useState(0);
     const flatListRef = useRef<FlatList>(null);
+    // live width so pages stay aligned after a rotation
+    const { width } = useWindowDimensions();
+
+    useEffect(() => {
+        flatListRef.current?.scrollToOffset({ offset: currentIndex * width, animated: false });
+    }, [width]);
 
     const handleNext = () => {
         if (currentIndex < steps.length - 1) {
@@ -87,6 +91,7 @@ export const OnboardingScreen: React.FC = () => {
                 data={steps}
                 renderItem={renderItem}
                 keyExtractor={(item) => item.id}
+                getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
                 horizontal
                 pagingEnabled
                 showsHorizontalScrollIndicator={false}
