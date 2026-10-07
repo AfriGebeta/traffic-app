@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { TaxiNode } from '../types/taxi.types';
+import { SHEET_MAX_STYLE } from '../../../shared/layout/modalStyles';
 
 interface WhereToSheetProps {
     visible: boolean;
@@ -65,10 +66,10 @@ export default function WhereToSheet({
             <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
                 <View
                     className="rounded-t-3xl px-4 pt-2"
-                    style={{
+                    style={[{
                         backgroundColor: theme.background,
                         paddingBottom: keyboardHeight > 0 ? keyboardHeight + 16 : insets.bottom + 24,
-                    }}
+                    }, SHEET_MAX_STYLE]}
                 >
                     <View className="flex-row items-center justify-between">
                         <Text className="text-xl" style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Bold' }}>

@@ -19,6 +19,7 @@ import { calculateDistance } from '../utils/navigationUtils';
 import type { TaxiNavigationResponse } from '../../taxi/types/taxi.types';
 import LekfelPaySheet from '../../taxi/components/LekfelPaySheet';
 import { shareLocation } from '../../../shared/utils/shareLocation';
+import { DIALOG_MAX_STYLE } from '../../../shared/layout/modalStyles';
 
 interface RoutePreviewProps {
     distance: number;
@@ -978,7 +979,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                     className="flex-1 items-center justify-center px-8"
                     style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
                 >
-                    <View className="w-full rounded-3xl p-6" style={{ backgroundColor: theme.surface }}>
+                    <View className="w-full rounded-3xl p-6" style={[{ backgroundColor: theme.surface }, DIALOG_MAX_STYLE]}>
                         <Text className="text-lg font-bold" style={{ color: theme.textPrimary }}>
                             {t('update-taxi-fare')}
                         </Text>

@@ -32,6 +32,7 @@ import { prepareTaxiJourney, type TaxiFix } from '../../navigation/utils/taxiJou
 import { changeTaxiDropoff } from '../../navigation/services/taxiJourney.service';
 
 import LekfelLogo from '../../../../assets/images/lekfel.svg';
+import { useLayout } from '../../../shared/layout/useLayout';
 
 const NAV_GREEN = '#0F9D58';
 
@@ -65,6 +66,7 @@ function TaxiNavigationContent({ routeData, simulateMovementParam }: {
     const router = useRouter();
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
+    const { panelPlacement } = useLayout();
     const { currentTheme } = useMapTheme();
     const { colors: theme, isDark } = useTheme();
     const { apiKey } = useRemoteConfig();
@@ -515,7 +517,7 @@ function TaxiNavigationContent({ routeData, simulateMovementParam }: {
                     onUserInteraction={() => setHasUserZoomedOut(true)}
                 />
 
-                <View className="absolute left-4 right-4" style={{ top: insets.top + 18 }}>
+                <View className="absolute left-4 right-4" style={[{ top: insets.top + 18 }, panelPlacement()]}>
                     <View
                         style={{
                             backgroundColor: '#0F9D58',
@@ -561,7 +563,7 @@ function TaxiNavigationContent({ routeData, simulateMovementParam }: {
 
                 <View
                     className="absolute left-4 right-4"
-                    style={{ bottom: insets.bottom + 12 }}
+                    style={[{ bottom: insets.bottom + 12 }, panelPlacement()]}
                 >
                     {(isOffRoute || isRecalculating || routeError) && (
                         <TouchableOpacity

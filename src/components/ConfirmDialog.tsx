@@ -5,6 +5,7 @@ import { useTheme } from '../shared/theme/ThemeContext';
 
 import DeleteLight from '../../assets/images/delete-light.svg';
 import DeleteDark from '../../assets/images/delete-dark.svg';
+import { DIALOG_MAX_STYLE } from '../shared/layout/modalStyles';
 
 interface ConfirmDialogProps {
     visible: boolean;
@@ -38,7 +39,7 @@ export const ConfirmDialog = ({
             <View className="flex-1 items-center justify-center px-8" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
                 <View
                     className="w-full rounded-2xl p-6 items-center"
-                    style={{ backgroundColor: theme.background }}
+                    style={[{ backgroundColor: theme.background }, DIALOG_MAX_STYLE]}
                 >
                     {showDeleteIcon && (
                         <View className="mb-4">

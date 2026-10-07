@@ -15,6 +15,7 @@ import { navigationService } from '../../navigation/services/navigation.service'
 import { colors } from '../../../shared/theme/colors';
 import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
 import { getAppConfig } from '../../../shared/config/remoteConfigValues';
+import { useLayout } from '../../../shared/layout/useLayout';
 
 export default function MapPickerScreen() {
     const router = useRouter();
@@ -22,6 +23,7 @@ export default function MapPickerScreen() {
     const params = useLocalSearchParams();
     const mode = (params.mode as 'stop' | 'origin') || 'stop';
     const insets = useSafeAreaInsets();
+    const { panelPlacement } = useLayout();
     const mapRef = useRef<GebetaMapRef>(null);
     const { userLocation } = useUserLocation();
     const { apiKey } = useRemoteConfig();
@@ -194,11 +196,11 @@ export default function MapPickerScreen() {
                 ref={searchBarRef}
                 onSelect={handleSearchSelect}
                 hint={mode === 'origin' ? t('tap-to-select-start') : t('tap-on-map-to-select-location')}
-                style={{ position: 'absolute', left: 16, right: 16, top: insets.top + 12 }}
+                style={{ position: 'absolute', left: 16, right: 16, top: insets.top + 12, ...panelPlacement() }}
             />
 
             {selectedLocation && (
-                <View className="absolute left-4 right-4" style={{ bottom: insets.bottom + 32 }}>
+                <View className="absolute left-4 right-4" style={[{ bottom: insets.bottom + 32 }, panelPlacement()]}>
                     <View className="bg-white rounded-2xl p-4 shadow-lg mb-3">
                         <Text className="text-sm font-medium text-gray-700">{t('selected-location')}</Text>
                         <Text className="text-gray-600 mt-1">

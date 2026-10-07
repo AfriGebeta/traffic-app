@@ -20,6 +20,7 @@ interface FloatingActionsProps {
     isRoutePreviewActive?: boolean;
     isPlaceDetailActive?: boolean;
     middleActions?: React.ReactNode;
+    bottomActions?: React.ReactNode;
 }
 
 export const FloatingActions: React.FC<FloatingActionsProps> = ({
@@ -28,11 +29,12 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
     isRoutePreviewActive = false,
     isPlaceDetailActive = false,
     middleActions,
+    bottomActions,
 }) => {
     const { isDark } = useTheme();
     const glass = useGlass();
     const insets = useSafeAreaInsets();
-    const { isWide } = useLayout();
+    const { isWide, isCompact } = useLayout();
     const bottomPosition = useRef(new Animated.Value(insets.bottom + BASE_GAP)).current;
 
     const LocationIcon = isDark ? DarkLocationIcon : FloatingLocationIcon;
@@ -67,7 +69,7 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
             </TouchableOpacity>
             {middleActions}
 
-            {!isRoutePreviewActive && (
+            {!isRoutePreviewActive && isCompact && (
                 <TouchableOpacity
                     onPress={onTaxiPress}
                     className="rounded-full p-3"
@@ -77,6 +79,7 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
                     <TaxiIcon width={24} height={24} />
                 </TouchableOpacity>
             )}
+            {bottomActions}
         </Animated.View>
     );
 };

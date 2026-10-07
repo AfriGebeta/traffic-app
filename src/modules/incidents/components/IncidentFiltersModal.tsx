@@ -8,6 +8,7 @@ import { INCIDENT_TYPES } from '../types/incident.types';
 import { getIncidentTranslationKey } from '../utils/incidentTranslations';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { SHEET_MAX_STYLE } from '../../../shared/layout/modalStyles';
 
 interface IncidentFiltersModalProps {
     visible: boolean;
@@ -28,7 +29,7 @@ export const IncidentFiltersModal = ({ visible, onClose }: IncidentFiltersModalP
             onRequestClose={onClose}
         >
             <View className="flex-1 bg-black/50 justify-end">
-                <View className="rounded-t-3xl" style={{ maxHeight: '80%', backgroundColor: theme.background }}>
+                <View className="rounded-t-3xl" style={[{ maxHeight: '80%', backgroundColor: theme.background }, SHEET_MAX_STYLE]}>
                     <View className="flex-row items-center justify-between px-6 pt-6 pb-4" style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}>
                         <View className="flex-row items-center">
                             <Ionicons name="filter" size={24} color={theme.textPrimary} />

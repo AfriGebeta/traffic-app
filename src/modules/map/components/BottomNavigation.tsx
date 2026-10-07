@@ -16,7 +16,7 @@ import { useGlass } from '../../../shared/theme/glass';
 import { GlassSheen } from '../../../shared/components/GlassSheen';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { useMapTheme } from '../context/MapThemeContext';
-import { useLayout, LAYOUT_GUTTER, PANEL_WIDTH, RAIL_WIDTH } from '../../../shared/layout/useLayout';
+import { useLayout, LAYOUT_GUTTER, RAIL_WIDTH } from '../../../shared/layout/useLayout';
 
 type TabId = 'explore' | 'contribute' | 'ai' | 'saved' | 'report';
 
@@ -137,10 +137,9 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
                     </View>
                 </View>
 
-                {/* brand sits on the map just right of the panel column */}
                 <Text
                     className="absolute"
-                    style={[...brandStyle, { left: panelLeft() + PANEL_WIDTH + LAYOUT_GUTTER, bottom: insets.bottom + LAYOUT_GUTTER }]}
+                    style={[...brandStyle, { left: panelLeft(), bottom: insets.bottom + LAYOUT_GUTTER }]}
                     pointerEvents="none"
                 >
                     {t('gebeta-maps')}

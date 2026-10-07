@@ -14,6 +14,7 @@ import { useKeepAwake } from 'expo-keep-awake';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { useLayout } from '../../../shared/layout/useLayout';
 import NavigationDirectionBackground from '../../../../assets/images/navigation-direction-background.svg';
 import { maneuverIcon } from '../../navigation/utils/instructionEngine';
 
@@ -115,6 +116,7 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
     const insets = useSafeAreaInsets();
     const { t } = useTranslation();
     const { colors: theme, isDark } = useTheme();
+    const { panelPlacement } = useLayout();
     const directionIcon = (maneuverType !== undefined
         ? maneuverIcon(maneuverType)
         : getDirectionIcon(currentInstruction)) as keyof typeof Ionicons.glyphMap;
@@ -138,7 +140,7 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
     })();
 
     return (
-        <View className="absolute left-0 right-0 bottom-0">
+        <View className="absolute left-0 right-0 bottom-0" style={panelPlacement()}>
             {isRecalculating && (
                 <View className="items-center mb-3">
                     <View

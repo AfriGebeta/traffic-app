@@ -12,11 +12,13 @@ import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { colors } from '../../../shared/theme/colors';
 import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
+import { useLayout } from '../../../shared/layout/useLayout';
 
 export default function NeighborhoodBoundingBoxScreen() {
     const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { panelPlacement } = useLayout();
     const params = useLocalSearchParams();
     const mapRef = useRef<GebetaMapRef>(null);
     const { userLocation } = useUserLocation();
@@ -244,7 +246,7 @@ export default function NeighborhoodBoundingBoxScreen() {
                 )}
             </View>
 
-            <View className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl px-6 pt-4 shadow-2xl" style={{ paddingBottom: insets.bottom + 16 }}>
+            <View className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl px-6 pt-4 shadow-2xl" style={[{ paddingBottom: insets.bottom + 16 }, panelPlacement()]}>
                 <View className="rounded-xl p-3 mb-4" style={{ backgroundColor: 'rgba(255, 165, 0, 0.1)', borderColor: colors.primary.main, borderWidth: 1 }}>
                     <Text className="text-xs" style={{ color: colors.primary.main }}>
                         {t('bounding-box-tap-instruction')}

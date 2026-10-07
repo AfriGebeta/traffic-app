@@ -12,6 +12,7 @@ import { ShareLocationButton } from '../../../shared/components/ShareLocationBut
 import { placeService } from '../../places/services/place.service';
 import { showToast } from '../../../shared/utils/toast';
 import type { SavedPlace } from '../../places/types/place.types';
+import { SHEET_MAX_STYLE } from '../../../shared/layout/modalStyles';
 
 interface PlaceDetailsSheetProps {
     place: GeocodingPlace | null;
@@ -72,7 +73,7 @@ export const PlaceDetailsSheet: React.FC<PlaceDetailsSheetProps> = ({
                 className="flex-1 justify-end bg-black/50"
                 onPress={onClose}
             >
-                <View className="rounded-t-3xl overflow-hidden">
+                <View className="rounded-t-3xl overflow-hidden" style={SHEET_MAX_STYLE}>
                     <BlurView intensity={100} tint={isDark ? 'dark' : 'light'} style={{ borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
                         <View style={{ backgroundColor: isDark ? 'rgba(30, 30, 30, 0.6)' : 'rgba(255, 255, 255, 0.4)', borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
                             <Pressable

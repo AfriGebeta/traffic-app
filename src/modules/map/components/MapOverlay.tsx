@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, useWindowDimensions } from 'react-native'
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import { SearchBar } from './SearchBar';
+import { SearchBar, ProfileButton } from './SearchBar';
 import { QuickActions } from './QuickActions';
 import { FreeDriveButton } from './FreeDriveButton';
 import { SosButton } from './SosButton';
@@ -136,8 +136,10 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
     const { requireAuth } = useAuthGate();
     const [showThemeSelector, setShowThemeSelector] = useState(false);
     const [layersButtonBottom, setLayersButtonBottom] = useState(0);
+    const [searchBarHeight, setSearchBarHeight] = useState(0);
+    const [chipRowHeight, setChipRowHeight] = useState(0);
     const { height: windowHeight } = useWindowDimensions();
-    const { isMedium, isWide, centeredInset, panelLeft } = useLayout();
+    const { isCompact, isMedium, isWide, centeredInset, panelLeft } = useLayout();
 
     // phones: null, so the existing className positioning is untouched
     const columnPlacement = isWide
@@ -170,26 +172,31 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
 
             {!showRoutePreview && (
                 <View className="absolute left-4 right-4" style={[{ top: insets.top + 10, zIndex: 20 }, columnPlacement]}>
-                    <SearchBar
-                        value={searchQuery}
-                        onChangeText={onSearchChange}
-                        onClear={onSearchClear}
-                        onFocus={onSearchFocus}
-                        onBlur={onSearchBlur}
-                        placeholder={t('where-to-go')}
-                        onProfilePress={handleProfilePress}
-                        isLoading={isExploring}
-                    />
+                    <View onLayout={isWide ? (e) => setSearchBarHeight(e.nativeEvent.layout.height) : undefined}>
+                        <SearchBar
+                            value={searchQuery}
+                            onChangeText={onSearchChange}
+                            onClear={onSearchClear}
+                            onFocus={onSearchFocus}
+                            onBlur={onSearchBlur}
+                            placeholder={t('where-to-go')}
+                            onProfilePress={handleProfilePress}
+                            isLoading={isExploring}
+                            hideProfile={isWide}
+                        />
+                    </View>
 
-                    <QuickActions
-                        onSelectCategory={onExploreCategory}
-                        isLoading={isExploring}
-                        selectedCategory={selectedExploreCategory}
-                    />
+                    {!isWide && (
+                        <QuickActions
+                            onSelectCategory={onExploreCategory}
+                            isLoading={isExploring}
+                            selectedCategory={selectedExploreCategory}
+                        />
+                    )}
 
                     {!showSearchContainer && !isWide && (
                         <>
-                            <FreeDriveButton userLocation={userLocation} />
+                            {isCompact && <FreeDriveButton userLocation={userLocation} />}
                             <SosButton userLocation={userLocation} />
                         </>
                     )}
@@ -212,10 +219,30 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
             )}
 
             {/* wide: free drive + SOS move to the top-right corner instead of hanging off the panel */}
-            {!showRoutePreview && !showSearchContainer && isWide && (
-                <View className="absolute" style={{ top: insets.top + 10, right: insets.right + 16, zIndex: 20 }}>
-                    <FreeDriveButton userLocation={userLocation} />
-                    <SosButton userLocation={userLocation} />
+            {/* wide: category chips run along the top of the map, beside the search panel */}
+            {!showRoutePreview && isWide && (
+                <QuickActions
+                    onSelectCategory={onExploreCategory}
+                    isLoading={isExploring}
+                    selectedCategory={selectedExploreCategory}
+                    onLayout={(e) => setChipRowHeight(e.nativeEvent.layout.height)}
+                    contentContainerStyle={{ paddingBottom: 0 }}
+                    style={{
+                        position: 'absolute',
+                        top: insets.top + 10 + (searchBarHeight - chipRowHeight) / 2,
+                        left: panelLeft() + PANEL_WIDTH + LAYOUT_GUTTER,
+                        right: insets.right + 16 + 48 + LAYOUT_GUTTER,
+                        marginTop: 0,
+                        marginHorizontal: 0,
+                        zIndex: 20,
+                    }}
+                />
+            )}
+
+            {!showRoutePreview && isWide && (
+                <View className="absolute items-end" style={{ top: insets.top + 10, right: insets.right + 16, zIndex: 20 }}>
+                    <ProfileButton onPress={handleProfilePress} size={48} />
+                    {!showSearchContainer && <SosButton userLocation={userLocation} />}
                 </View>
             )}
 
@@ -246,6 +273,11 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                                 setShowThemeSelector(true);
                             }}
                         />
+                    )
+                }
+                bottomActions={
+                    !isCompact && !showRoutePreview && !showSearchContainer && (
+                        <FreeDriveButton userLocation={userLocation} />
                     )
                 }
             />

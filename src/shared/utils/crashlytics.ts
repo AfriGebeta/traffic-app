@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import * as Device from 'expo-device';
 import * as Application from 'expo-application';
+import { hasPlayServices } from './playServices';
 import {
   getCrashlytics,
   setCrashlyticsCollectionEnabled,
@@ -33,6 +34,7 @@ async function attachDeviceContext(): Promise<void> {
     os_version: String(Platform.Version),
     native_app_version: Application.nativeApplicationVersion ?? 'unknown',
     native_build_version: Application.nativeBuildVersion ?? 'unknown',
+    has_play_services: String(hasPlayServices()),
   });
 }
 

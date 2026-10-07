@@ -17,6 +17,7 @@ import { useRouter } from 'expo-router';
 
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { useLayout } from '../../../shared/layout/useLayout';
 import { showToast } from '../../../shared/utils/toast';
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import { getReportErrorMessage, reportErrorFrom } from '../../../shared/utils/reportErrors';
@@ -56,6 +57,7 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
     const insets = useSafeAreaInsets();
     const { height: windowHeight } = useWindowDimensions();
     const { colors: theme, isDark } = useTheme();
+    const { panelPlacement } = useLayout();
 
     const [tab, setTab] = React.useState<Tab>('incidents');
     const [ruleTypes, setRuleTypes] = React.useState<TrafficRuleType[] | null>(cachedRuleTypes);
@@ -381,6 +383,8 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
                         paddingBottom: insets.bottom + 16,
                         maxHeight: windowHeight * 0.85,
                     },
+                    // big screens: same column as the trip card instead of full width
+                    panelPlacement(),
                 ]}
             >
                 <View style={styles.handle}>

@@ -25,6 +25,7 @@ import { applyGlobalFont } from '../shared/utils/globalFont';
 import { installClientHeaders } from '../shared/utils/clientHeaders';
 import { initializeCrashlytics, logBreadcrumb } from '../shared/utils/crashlytics';
 import { useOrientationPolicy } from '../shared/layout/useOrientationPolicy';
+import { createScreenLayout } from '../shared/layout/ResponsiveScreen';
 
 import '../modules/navigation/services/nav-foreground-service';
 
@@ -34,6 +35,31 @@ applyGlobalFont();
 installClientHeaders();
 
 const BACKGROUND_IDLE_MS = 30 * 60 * 1000;
+
+const rootScreenLayout = createScreenLayout({
+  fullBleed: [
+    'index',
+    'free-drive',
+    'incident-map-picker',
+    'navigation/route-preview',
+    'neighborhoods/bounding-box',
+    'share',
+    'telegram-auth',
+    'places',
+    'rules',
+    'taxi',
+  ],
+  forms: [
+    'login',
+    'register',
+    'verify-email',
+    'complete-profile',
+    'telegram-login',
+    'select-language',
+    'edit-profile',
+    'incident-report',
+  ],
+});
 
 function ThemedNavigationBar() {
   const { colors, isDark } = useTheme();
@@ -109,6 +135,7 @@ function AppShell() {
                     screenOptions={{
                       headerShown: false,
                     }}
+                    screenLayout={rootScreenLayout}
                   />
                   <ToastHost />
                   <UpdateBanner

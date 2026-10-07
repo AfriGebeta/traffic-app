@@ -12,6 +12,7 @@ import { AUTH_ROUTE } from '../../register/utils/authGate';
 import { toE164 } from '../utils/phone';
 import LekfelPayCard from './LekfelPayCard';
 import LekfelPaymentModal from './LekfelPaymentModal';
+import { SHEET_MAX_STYLE } from '../../../shared/layout/modalStyles';
 
 interface LekfelPaySheetProps {
     visible: boolean;
@@ -126,10 +127,10 @@ export default function LekfelPaySheet({
                 >
                     <View
                         className="rounded-t-3xl px-4 pt-2"
-                        style={{
+                        style={[{
                             backgroundColor: theme.background,
                             paddingBottom: keyboardHeight > 0 ? keyboardHeight + 16 : insets.bottom + 24,
-                        }}
+                        }, SHEET_MAX_STYLE]}
                     >
                         <View className="flex-row items-center justify-end">
                             <TouchableOpacity onPress={onClose} className="p-2">

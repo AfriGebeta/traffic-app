@@ -9,6 +9,7 @@ import { useTheme } from '../../../shared/theme/ThemeContext';
 import { CategorySection } from './CategorySection';
 import { PLACEHOLDER_PLACES } from '../data/placeholderPlaces';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
+import { SHEET_MAX_STYLE } from '../../../shared/layout/modalStyles';
 
 interface ExploreSheetProps {
     visible: boolean;
@@ -37,7 +38,7 @@ export const ExploreSheet: React.FC<ExploreSheetProps> = ({
             <Pressable className="flex-1 justify-end bg-black/50" onPress={onClose}>
                 <Pressable
                     className="rounded-t-3xl max-h-[85%] overflow-hidden"
-                    style={{ paddingBottom: insets.bottom, backgroundColor: theme.background }}
+                    style={[{ paddingBottom: insets.bottom, backgroundColor: theme.background }, SHEET_MAX_STYLE]}
                     onPress={(e) => e.stopPropagation()}
                 >
                     <View className="p-6" style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}>

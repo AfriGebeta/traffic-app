@@ -7,6 +7,7 @@ import { useKeepAwake } from 'expo-keep-awake';
 import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { useLayout } from '../../../shared/layout/useLayout';
 import { colors as palette } from '../../../shared/theme/colors';
 import { useMapTheme } from '../../map/context/MapThemeContext';
 import { IncidentReportSheet } from '../../map/components/IncidentReportSheet';
@@ -27,6 +28,7 @@ import type { MotionFix } from '../utils/motionModel';
 const FreeDriveScreen: React.FC = () => {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { panelPlacement } = useLayout();
     const { t, i18n } = useTranslation();
     const { colors, isDark } = useTheme();
     const { currentTheme } = useMapTheme();
@@ -171,6 +173,7 @@ const FreeDriveScreen: React.FC = () => {
                 style={[
                     styles.hud,
                     { bottom: insets.bottom + 24, backgroundColor: surface },
+                    panelPlacement(),
                 ]}
             >
                 <View style={styles.speedBlock}>

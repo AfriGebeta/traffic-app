@@ -1,29 +1,28 @@
 import React from 'react';
-import { View, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
     withSpring,
 } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeContext';
-import { useLayout, LAYOUT_GUTTER, PANEL_WIDTH } from '../layout/useLayout';
+import { useLayout, PANEL_WIDTH } from '../layout/useLayout';
 
 const MIN_HEIGHT = 200;
 
 interface BottomSheetProps {
     children: React.ReactNode;
     expandWhenOpen?: boolean;
+    onBackdropPress?: () => void;
 }
 
-export const BottomSheet: React.FC<BottomSheetProps> = React.memo(({ children, expandWhenOpen = false }) => {
+export const BottomSheet: React.FC<BottomSheetProps> = React.memo(({ children, expandWhenOpen = false, onBackdropPress }) => {
     const { colors: theme, isDark } = useTheme();
     // read live (not at module load) so rotation keeps the sheet on screen
     const { height: SCREEN_HEIGHT } = useWindowDimensions();
     const MAX_HEIGHT = SCREEN_HEIGHT - 5;
-    const insets = useSafeAreaInsets();
-    const { isMedium, isWide, centeredInset } = useLayout();
+    const { isCompact, isMedium, isWide, centeredInset, panelLeft } = useLayout();
     const translateY = useSharedValue(SCREEN_HEIGHT - MIN_HEIGHT);
     const context = useSharedValue({ y: 0 });
 
@@ -88,12 +87,12 @@ export const BottomSheet: React.FC<BottomSheetProps> = React.memo(({ children, e
 
     // medium: centered, capped width. wide: left-docked panel so the map stays visible
     const placement = isWide
-        ? { left: insets.left + LAYOUT_GUTTER, right: undefined, width: PANEL_WIDTH }
+        ? { left: panelLeft(), right: 'auto' as const, width: PANEL_WIDTH }
         : isMedium
             ? { left: centeredInset(), right: centeredInset() }
             : null;
 
-    return (
+    const sheet = (
         <Animated.View style={[styles.container, { height: MAX_HEIGHT, backgroundColor: theme.background }, placement, animatedStyle]}>
             <GestureDetector gesture={gesture}>
                 <View style={styles.handle}>
@@ -102,6 +101,15 @@ export const BottomSheet: React.FC<BottomSheetProps> = React.memo(({ children, e
             </GestureDetector>
             <View style={styles.content}>{children}</View>
         </Animated.View>
+    );
+
+    if (isCompact) return sheet;
+
+    return (
+        <>
+            <Pressable style={[StyleSheet.absoluteFill, styles.backdrop]} onPress={onBackdropPress} />
+            {sheet}
+        </>
     );
 });
 
@@ -120,6 +128,10 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.25,
         shadowRadius: 8,
         elevation: 30,
+    },
+    backdrop: {
+        zIndex: 29,
+        backgroundColor: 'rgba(0,0,0,0.15)',
     },
     handle: {
         alignItems: 'center',
