@@ -1,5 +1,5 @@
 import { AppState, Platform } from 'react-native';
-import * as Location from 'expo-location';
+import * as Location from '../../../shared/services/location';
 import * as TaskManager from 'expo-task-manager';
 import { updateNativeNavNotification } from '../../../../modules/nav-notification';
 import { colors } from '../../../shared/theme/colors';

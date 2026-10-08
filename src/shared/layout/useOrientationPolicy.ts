@@ -2,17 +2,20 @@ import { useEffect } from 'react';
 import { Dimensions } from 'react-native';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { useRemoteConfig } from '../contexts/RemoteConfigContext';
-import { isLandscapeDisplay, isResponsiveLayoutEnabled, isTabletSized } from './useLayout';
+import { isBigDisplay, isResponsiveLayoutEnabled } from './useLayout';
 
 // The manifest locks the app to portrait, so phones never rotate.
-// Tablet-sized screens (tablets, car head units) get rotation unlocked at runtime.
 export function useOrientationPolicy() {
     // re-run once remote config hydrates, so the kill switch also re-locks orientation
     const remoteConfig = useRemoteConfig();
 
     useEffect(() => {
         const screen = Dimensions.get('screen');
-        if (!isTabletSized(screen.width, screen.height) && !isLandscapeDisplay(screen.width, screen.height)) return;
+        const bigScreen = isBigDisplay(screen.width, screen.height);
+        if (__DEV__) {
+            console.log(`orientation: screen=${screen.width}x${screen.height} ${bigScreen ? 'unlocking' : 'staying portrait (phone)'}`);
+        }
+        if (!bigScreen) return;
 
         const apply = isResponsiveLayoutEnabled()
             ? ScreenOrientation.unlockAsync()

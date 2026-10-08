@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import * as Location from 'expo-location';
+import * as Location from '../../../shared/services/location';
 import { incidentService } from '../services/incident.service';
 import { Incident } from '../types/incident.types';
 

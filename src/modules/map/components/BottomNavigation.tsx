@@ -16,7 +16,7 @@ import { useGlass } from '../../../shared/theme/glass';
 import { GlassSheen } from '../../../shared/components/GlassSheen';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { useMapTheme } from '../context/MapThemeContext';
-import { useLayout, LAYOUT_GUTTER, RAIL_WIDTH } from '../../../shared/layout/useLayout';
+import { useLayout, LAYOUT_GUTTER, RAIL_EDGE_INSET, RAIL_WIDTH } from '../../../shared/layout/useLayout';
 
 type TabId = 'explore' | 'contribute' | 'ai' | 'saved' | 'report';
 
@@ -52,7 +52,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
     const isLightTile = currentTheme.id === 'standard';
     const [activeTab, setActiveTab] = useState<TabId | null>(null);
     const insets = useSafeAreaInsets();
-    const { isMedium, isWide, centeredInset, panelLeft } = useLayout();
+    const { isMedium, isWide, centeredInset } = useLayout();
     const [fontsLoaded] = useFonts({
         'PlusJakartaSans-Light': require('../../../../assets/fonts/plus-jakarta-sans/PlusJakartaSans-Light.ttf'),
         'PlusJakartaSans-Bold': require('../../../../assets/fonts/plus-jakarta-sans/PlusJakartaSans-Bold.ttf'),
@@ -84,18 +84,20 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
     if (isWide) {
         return (
             <>
+                {/* rail hugs its tabs and sits vertically centered instead of spanning the full height */}
                 <View
-                    className="absolute"
+                    className="absolute justify-center"
+                    pointerEvents="box-none"
                     style={{
-                        left: insets.left + LAYOUT_GUTTER,
+                        left: insets.left + RAIL_EDGE_INSET,
                         top: insets.top + LAYOUT_GUTTER,
                         bottom: insets.bottom + LAYOUT_GUTTER,
                         width: RAIL_WIDTH,
                     }}
                 >
-                    <View className="flex-1 rounded-3xl" style={glass.panel}>
+                    <View className="rounded-3xl" style={glass.panel}>
                         <GlassSheen streak radius={24} strength="thick" />
-                        <View className="flex-1 items-center justify-evenly py-3">
+                        <View className="items-center py-4" style={{ gap: 14 }}>
                             {tabs.map((tab) => {
                                 const isAi = tab.id === 'ai';
                                 const SvgIcon = isDark && tab.DarkSvgIcon ? tab.DarkSvgIcon : tab.SvgIcon;
@@ -139,7 +141,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
 
                 <Text
                     className="absolute"
-                    style={[...brandStyle, { left: panelLeft(), bottom: insets.bottom + LAYOUT_GUTTER }]}
+                    style={[...brandStyle, { left: insets.left + RAIL_EDGE_INSET, bottom: insets.bottom + LAYOUT_GUTTER }]}
                     pointerEvents="none"
                 >
                     {t('gebeta-maps')}

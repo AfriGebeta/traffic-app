@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import * as Location from 'expo-location';
+import * as Location from '../../../shared/services/location';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 import type { GeocodingPlace, Leg, Maneuver } from '../types/navigation.types';
 import { navigationService } from '../services/navigation.service';

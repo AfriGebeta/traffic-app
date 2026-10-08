@@ -24,15 +24,15 @@ export function ResponsiveScreen({ children, fullBleed = false, maxWidth = PAGE_
     const { isCompact } = useLayout();
     const { colors: theme } = useTheme();
 
-    if (isCompact || fullBleed) return children;
+    // fixed per route, so this branch never flips while the screen is mounted
+    if (fullBleed) return children;
 
     return (
-        <View style={{ flex: 1, backgroundColor: theme.background }}>
-            <View style={{ flex: 1, width: '100%', maxWidth, alignSelf: 'center' }}>
-                <ContentWidthContext.Provider value={maxWidth}>{children}</ContentWidthContext.Provider>
+        <View style={[{ flex: 1 }, !isCompact && { backgroundColor: theme.background }]}>
+            <View style={[{ flex: 1, width: '100%' }, !isCompact && { maxWidth, alignSelf: 'center' }]}>
+                <ContentWidthContext.Provider value={isCompact ? null : maxWidth}>{children}</ContentWidthContext.Provider>
             </View>
         </View>
-
     );
 }
 

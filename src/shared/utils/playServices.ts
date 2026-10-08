@@ -13,7 +13,6 @@ export function hasPlayServices(): boolean {
         return false;
     }
     if (cached !== null) return cached;
-
     try {
         const { isAvailable, status } = utils().playServicesAvailability;
         cached = isAvailable;

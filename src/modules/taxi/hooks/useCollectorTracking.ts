@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
-import * as Location from 'expo-location';
+import * as Location from '../../../shared/services/location';
 import { navigationTrackingService } from '../../navigation/services/tracking.service';
 import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 

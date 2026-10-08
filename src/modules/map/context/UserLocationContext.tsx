@@ -8,7 +8,7 @@ import React, {
     type ReactNode,
 } from 'react';
 import { PermissionsAndroid, Platform } from 'react-native';
-import * as Location from 'expo-location';
+import * as Location from '../../../shared/services/location';
 import { markLocationPermissionSettled } from '../../../shared/utils/permissionSequence';
 import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 
