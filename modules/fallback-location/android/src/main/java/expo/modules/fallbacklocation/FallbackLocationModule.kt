@@ -71,8 +71,13 @@ class FallbackLocationModule : Module() {
 
   // providers this device has at all (a head unit may have no network provider)
   private fun existingProviders(manager: LocationManager): List<String> =
-    listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
+    (if (USE_NETWORK_PROVIDER) listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
+     else listOf(LocationManager.GPS_PROVIDER))
       .filter { manager.allProviders.contains(it) }
+
+  companion object {
+    private const val USE_NETWORK_PROVIDER = true
+  }
 
   private fun enabledProviders(manager: LocationManager): List<String> =
     existingProviders(manager).filter { provider ->

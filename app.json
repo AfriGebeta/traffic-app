@@ -173,7 +173,8 @@
           "androidPermissions": [],
           "iosMicrophonePermission": "Gebeta Maps uses your microphone for voice commands during navigation."
         }
-      ]
+      ],
+      "./plugins/withEarlyRotationUnlock"
     ],
     "experiments": {
       "typedRoutes": true,

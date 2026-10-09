@@ -5,6 +5,8 @@ import semver from 'semver';
 import * as Application from 'expo-application';
 import { buildRemoteConfigDefaults, hydrateAppConfig, getAppConfig, RC_KEYS } from '../config/remoteConfigValues';
 import { initializeAppCheckSingleton, getAppCheckToken } from '../utils/appCheck';
+import { isResponsiveLayoutEnabled } from '../layout/useLayout';
+import { storeLayoutEnabled } from '../../../modules/layout-prefs';
 
 const FALLBACK_API_KEY = process.env.EXPO_PUBLIC_GEBETA_API_KEY ?? '';
 
@@ -99,6 +101,7 @@ export function RemoteConfigProvider({ children }: { children: ReactNode }) {
       );
 
       hydrateAppConfig(rc);
+      storeLayoutEnabled(isResponsiveLayoutEnabled());
 
       const appConfig = getAppConfig();
       const fromRemote = (Object.keys(RC_KEYS) as (keyof typeof RC_KEYS)[])
