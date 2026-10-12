@@ -417,7 +417,10 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
 
     const handleShareDestination = async () => {
         if (!destination) return;
-        await shareLocation({ lat: destination.latitude, lng: destination.longitude, name: destination.name });
+        await shareLocation(
+            { lat: destination.latitude, lng: destination.longitude, name: destination.name },
+            { kind: 'route_dest' }
+        );
     };
 
     const handleGoRoute = (index: number) => {

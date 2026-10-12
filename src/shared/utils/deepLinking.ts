@@ -181,7 +181,23 @@ export function generateCustomSchemeUrl(location: SharedLocation): string {
     return `${baseUrl}?${params.toString()}`;
 }
 
+const SHARE_CODE_PATH = /^\/s\/([A-Za-z0-9_-]+)\/?$/;
+
+// short share link (https://maps.gebeta.app/s/<code>, or the bare /s/<code> path)
+export function extractShareCode(url: string): string | null {
+    try {
+        if (url.startsWith('/')) return url.split('?')[0].match(SHARE_CODE_PATH)?.[1] ?? null;
+        const urlObj = new URL(url);
+        const host = urlObj.hostname.replace(/^www\./, '');
+        if (host !== 'maps.gebeta.app') return null;
+        return urlObj.pathname.match(SHARE_CODE_PATH)?.[1] ?? null;
+    } catch {
+        return null;
+    }
+}
+
 export function isGebetaMapsUrl(url: string): boolean {
+    if (extractShareCode(url)) return true;
     try {
         const urlObj = new URL(url);
         return (
