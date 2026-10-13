@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Image, Modal, TextInput, KeyboardAvoidingView, Platform, Animated } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getAccessToken } from '../../../shared/services/auth-session';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -186,7 +186,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
 
     useEffect(() => {
         let cancelled = false;
-        AsyncStorage.getItem('@traffic_app_token')
+        getAccessToken()
             .then(token => {
                 if (!cancelled) setIsAuthenticated(!!token);
             })

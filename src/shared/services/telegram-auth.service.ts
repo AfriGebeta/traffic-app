@@ -7,8 +7,8 @@ import {
     summarizeTelegramIdTokenClaims,
 } from '../utils/telegram-auth-url';
 import { telegramAuthLog } from '../utils/telegram-auth-logger';
+import { saveSession } from './auth-session';
 
-const TOKEN_STORAGE_KEY = '@traffic_app_token';
 const USER_STORAGE_KEY = '@traffic_app_user';
 
 class TelegramAuthService {
@@ -21,13 +21,14 @@ class TelegramAuthService {
             message: response.message,
             userId: response.data?.user?.id,
             hasToken: !!response.data?.token,
+            hasRefreshToken: !!response.data?.refreshToken,
         });
 
         if (!response.data) {
             return false;
         }
 
-        await AsyncStorage.setItem(TOKEN_STORAGE_KEY, response.data.token);
+        await saveSession(response.data);
         await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(response.data.user));
 
         telegramAuthLog.info('session stored in AsyncStorage');

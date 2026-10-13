@@ -4103,5 +4103,10 @@
         "key": "edit",
         "EN_US": "Edit",
         "AM": "አስተካክል"
+    },
+    {
+        "key": "session-expired",
+        "EN_US": "Your session has expired. Please log in again.",
+        "AM": "ክፍለ ጊዜዎ አብቅቷል። እባክዎ እንደገና ይግቡ።"
     }
 ]

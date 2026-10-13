@@ -14,4 +14,6 @@ export interface TelegramAuthResponse {
         updatedAt: string;
     };
     token: string;
+    accessToken?: string;
+    refreshToken?: string;
 }
