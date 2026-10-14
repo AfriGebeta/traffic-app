@@ -2,7 +2,7 @@ diff --git a/node_modules/expo-location/android/src/main/java/expo/modules/locat
 index e659285..15afd9e 100644
 --- a/node_modules/expo-location/android/src/main/java/expo/modules/location/taskConsumers/LocationTaskConsumer.kt
 +++ b/node_modules/expo-location/android/src/main/java/expo/modules/location/taskConsumers/LocationTaskConsumer.kt
-@@ -78,45 +78,17 @@ class LocationTaskConsumer(context: Context, taskManagerUtils: TaskManagerUtilsI
+@@ -78,45 +78,16 @@ class LocationTaskConsumer(context: Context, taskManagerUtils: TaskManagerUtilsI
      maybeStartForegroundService()
    }
  
