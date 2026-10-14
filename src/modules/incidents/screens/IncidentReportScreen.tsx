@@ -29,6 +29,7 @@ import TrafficJamDarkIcon from '../../../../assets/images/traffic-jam-dark.svg';
 
 import { Button } from '../../../shared/components';
 import { useIncidentReport } from '../hooks/useIncidentReport';
+import { CONGESTION_LEVELS, CongestionLevel, DEFAULT_CONGESTION_LEVEL } from '../types/incident.types';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { showToast } from '../../../shared/utils/toast';
@@ -64,6 +65,11 @@ export default function IncidentReportScreen() {
     const windowWidth = useContentWidth();
     const tileSize = Math.floor((windowWidth - 48 - 24) / 3);
     const incidentTypeName = params.typeName as string;
+    // nav quick report passes the chosen level; the API requires one for traffic jams
+    const congestionLevel: CongestionLevel | undefined =
+        incidentTypeName === 'TRAFFIC_JAM'
+            ? CONGESTION_LEVELS.find((level) => level === params.congestionLevel) ?? DEFAULT_CONGESTION_LEVEL
+            : undefined;
     const passedLat = params.lat ? parseFloat(params.lat as string) : null;
     const passedLng = params.lng ? parseFloat(params.lng as string) : null;
 
@@ -165,7 +171,8 @@ export default function IncidentReportScreen() {
             description.trim() || 'No description provided',
             location,
             direction.trim() || undefined,
-            images.map((img) => img.objectName)
+            images.map((img) => img.objectName),
+            congestionLevel
         );
 
         if (incident) {
