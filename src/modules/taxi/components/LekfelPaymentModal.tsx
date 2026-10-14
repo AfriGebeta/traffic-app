@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { PaymentStage } from '../hooks/useLekfelPayment';
+import { DIALOG_MAX_STYLE } from '../../../shared/layout/modalStyles';
 
 const ACCENT = '#F97316';
 
@@ -74,7 +75,7 @@ export default function LekfelPaymentModal({
             onRequestClose={stage === 'confirming' ? undefined : onDismiss}
         >
             <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
-                <View className="w-full rounded-2xl p-6" style={{ backgroundColor: theme.background }}>
+                <View className="w-full rounded-2xl p-6" style={[{ backgroundColor: theme.background }, DIALOG_MAX_STYLE]}>
                     {stage === 'confirming' && (
                         <View className="items-center py-4">
                             <ActivityIndicator size="large" color={colors.primary.main} />

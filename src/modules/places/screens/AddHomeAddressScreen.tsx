@@ -14,7 +14,7 @@ import {
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Location from 'expo-location';
+import * as Location from '../../../shared/services/location';
 import { Audio } from 'expo-av';
 import { useLocation } from '../../../shared/contexts/LocationContext';
 import { colors } from '../../../shared/theme/colors';

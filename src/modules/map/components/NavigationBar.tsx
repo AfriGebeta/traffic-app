@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { useLayout } from '../../../shared/layout/useLayout';
 import { useTranslation } from 'react-i18next';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 import { maneuverIcon } from '../../navigation/utils/instructionEngine';
@@ -77,6 +78,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
     const insets = useSafeAreaInsets();
     const { t } = useTranslation();
     const { colors: theme } = useTheme();
+    const { panelPlacement } = useLayout();
 
     useEffect(() => {
         if (userLocation) {
@@ -109,7 +111,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
         : getDirectionIcon(nextInstruction)) as keyof typeof Ionicons.glyphMap;
 
     return (
-        <View className="absolute left-4 right-4" style={{ top: insets.top + (hasIncidentAlert ? 112 : 18) }}>
+        <View className="absolute left-4 right-4" style={[{ top: insets.top + (hasIncidentAlert ? 112 : 18) }, panelPlacement()]}>
             <View
                 style={{
                     backgroundColor: '#0F9D58',

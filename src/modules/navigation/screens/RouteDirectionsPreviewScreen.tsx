@@ -17,6 +17,7 @@ import {
     clearNavigationPreviewData,
 } from '../services/navigationPreviewCache';
 import { segmentToGeoJSON, fitBoundsToCoords } from '../utils/navigationPreviewUtils';
+import { useLayout } from '../../../shared/layout/useLayout';
 
 const formatDistance = (meters: number): string => {
     if (meters < 1000) return `${Math.round(meters)} m`;
@@ -44,6 +45,7 @@ export default function RouteDirectionsPreviewScreen() {
     const router = useRouter();
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
+    const { panelPlacement } = useLayout();
     const { currentTheme } = useMapTheme();
     const { apiKey } = useRemoteConfig();
     const { userLocation } = useUserLocation();
@@ -196,7 +198,7 @@ export default function RouteDirectionsPreviewScreen() {
 
             <View
                 className="absolute left-4 right-4 rounded-3xl shadow-2xl overflow-hidden"
-                style={{ bottom: insets.bottom > 0 ? insets.bottom + 8 : 24 }}
+                style={[{ bottom: insets.bottom > 0 ? insets.bottom + 8 : 24 }, panelPlacement()]}
             >
                 <View style={{ backgroundColor: 'rgba(255, 255, 255, 0.97)', borderRadius: 24 }}>
                     <View style={{ borderRadius: 24 }}>

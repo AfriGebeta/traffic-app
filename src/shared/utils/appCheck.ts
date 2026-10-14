@@ -1,5 +1,6 @@
 import { initializeAppCheck, getToken } from '@react-native-firebase/app-check';
 import type { AppCheck } from '@react-native-firebase/app-check';
+import { hasPlayServices } from './playServices';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const ReactNativeFirebaseAppCheckProvider = require('@react-native-firebase/app-check/dist/module/ReactNativeFirebaseAppCheckProvider.js').default;
 
@@ -11,6 +12,7 @@ let tokenFetchPromise: Promise<string | null> | null = null;
 
 export function initializeAppCheckSingleton(): void {
   if (appCheckInstance || initPromise) return;
+  if (!hasPlayServices()) return;
 
   initPromise = (async () => {
     const provider = new ReactNativeFirebaseAppCheckProvider();

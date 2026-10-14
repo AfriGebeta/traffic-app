@@ -1,5 +1,5 @@
 import { AppState, Platform } from 'react-native';
-import * as Location from 'expo-location';
+import * as Location from '../../../shared/services/location';
 import * as TaskManager from 'expo-task-manager';
 import { updateNativeNavNotification } from '../../../../modules/nav-notification';
 import { colors } from '../../../shared/theme/colors';
@@ -9,6 +9,8 @@ import { logBreadcrumb } from '../../../shared/utils/crashlytics';
 const NAV_TASK = 'gebeta-nav-location-task';
 const TITLE = 'Gebeta Maps';
 
+// never invoked: patches/expo-location+*.patch drops background fixes (pending job extras grew
+// until oom). The task only keeps the foreground service alive; positions come from watchPositionAsync.
 TaskManager.defineTask(NAV_TASK, async () => { });
 
 export function registerNavForegroundService(): void { }

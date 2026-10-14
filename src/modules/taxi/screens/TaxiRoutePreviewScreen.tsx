@@ -14,11 +14,13 @@ import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
 import { TaxiNavigationResponse } from '../types/taxi.types';
 import { decodeTaxiSegmentPaths } from '../../navigation/utils/navigationUtils';
 import { fitBoundsToCoords } from '../../navigation/utils/navigationPreviewUtils';
+import { useLayout, PANEL_WIDTH } from '../../../shared/layout/useLayout';
 
 export default function TaxiRoutePreviewScreen() {
     const router = useRouter();
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
+    const { isWide } = useLayout();
     const params = useLocalSearchParams();
     const { currentTheme } = useMapTheme();
     const { colors: theme, isDark } = useTheme();
@@ -165,7 +167,7 @@ export default function TaxiRoutePreviewScreen() {
     }, [mapReady]);
 
     return (
-        <View className="flex-1" style={{ backgroundColor: theme.background }}>
+        <View className="flex-1" style={[{ backgroundColor: theme.background }, isWide && { flexDirection: 'row-reverse' }]}>
             <View className="flex-1">
                 <GebetaMap
                     ref={mapRef}
@@ -205,9 +207,12 @@ export default function TaxiRoutePreviewScreen() {
 
             <View
                 className="rounded-t-3xl shadow-2xl"
-                style={{ paddingBottom: insets.bottom + 16, backgroundColor: theme.background }}
+                style={[
+                    { paddingBottom: insets.bottom + 16, backgroundColor: theme.background },
+                    isWide && { width: PANEL_WIDTH, paddingTop: insets.top, borderTopLeftRadius: 0, borderTopRightRadius: 0 },
+                ]}
             >
-                <ScrollView className="max-h-96" showsVerticalScrollIndicator={false}>
+                <ScrollView className="max-h-96" style={isWide ? { maxHeight: '100%' } : undefined} showsVerticalScrollIndicator={false}>
                     <View className="px-6 pt-6 pb-4" style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}>
                         <Text className="text-2xl font-bold mb-2" style={{ color: theme.textPrimary }}>
                             {t('taxi-route')}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, Image, ActivityIndicator, BackHandler, KeyboardAvoidingView, Platform, useWindowDimensions } from 'react-native';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, Image, ActivityIndicator, BackHandler, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,6 +29,7 @@ import TrafficJamDarkIcon from '../../../../assets/images/traffic-jam-dark.svg';
 
 import { Button } from '../../../shared/components';
 import { useIncidentReport } from '../hooks/useIncidentReport';
+import { CONGESTION_LEVELS, CongestionLevel, DEFAULT_CONGESTION_LEVEL } from '../types/incident.types';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { showToast } from '../../../shared/utils/toast';
@@ -38,6 +39,7 @@ import { uploadToMinio } from '../../../shared/utils/minio';
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import { useLocation } from '../../../shared/contexts/LocationContext';
 import { getReportErrorMessage } from '../../../shared/utils/reportErrors';
+import { useContentWidth } from '../../../shared/layout/ResponsiveScreen';
 
 type IncidentIcon = React.FC<{ width?: number; height?: number }>;
 
@@ -60,9 +62,14 @@ export default function IncidentReportScreen() {
     const params = useLocalSearchParams();
     const { colors: theme, isDark } = useTheme();
     const insets = useSafeAreaInsets();
-    const { width: windowWidth } = useWindowDimensions();
+    const windowWidth = useContentWidth();
     const tileSize = Math.floor((windowWidth - 48 - 24) / 3);
     const incidentTypeName = params.typeName as string;
+    // nav quick report passes the chosen level; the API requires one for traffic jams
+    const congestionLevel: CongestionLevel | undefined =
+        incidentTypeName === 'TRAFFIC_JAM'
+            ? CONGESTION_LEVELS.find((level) => level === params.congestionLevel) ?? DEFAULT_CONGESTION_LEVEL
+            : undefined;
     const passedLat = params.lat ? parseFloat(params.lat as string) : null;
     const passedLng = params.lng ? parseFloat(params.lng as string) : null;
 
@@ -164,7 +171,8 @@ export default function IncidentReportScreen() {
             description.trim() || 'No description provided',
             location,
             direction.trim() || undefined,
-            images.map((img) => img.objectName)
+            images.map((img) => img.objectName),
+            congestionLevel
         );
 
         if (incident) {

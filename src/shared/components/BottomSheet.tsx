@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Dimensions, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
     useSharedValue,
@@ -7,18 +7,22 @@ import Animated, {
     withSpring,
 } from 'react-native-reanimated';
 import { useTheme } from '../theme/ThemeContext';
+import { useLayout, PANEL_WIDTH } from '../layout/useLayout';
 
-const SCREEN_HEIGHT = Dimensions.get('window').height;
 const MIN_HEIGHT = 200;
-const MAX_HEIGHT = SCREEN_HEIGHT - 5; 
 
 interface BottomSheetProps {
     children: React.ReactNode;
     expandWhenOpen?: boolean;
+    onBackdropPress?: () => void;
 }
 
-export const BottomSheet: React.FC<BottomSheetProps> = React.memo(({ children, expandWhenOpen = false }) => {
+export const BottomSheet: React.FC<BottomSheetProps> = React.memo(({ children, expandWhenOpen = false, onBackdropPress }) => {
     const { colors: theme, isDark } = useTheme();
+    // read live (not at module load) so rotation keeps the sheet on screen
+    const { height: SCREEN_HEIGHT } = useWindowDimensions();
+    const MAX_HEIGHT = SCREEN_HEIGHT - 5;
+    const { isCompact, isMedium, isWide, centeredInset, panelLeft } = useLayout();
     const translateY = useSharedValue(SCREEN_HEIGHT - MIN_HEIGHT);
     const context = useSharedValue({ y: 0 });
 
@@ -37,7 +41,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = React.memo(({ children, e
                 overshootClamping: true,
             });
         }
-    }, [expandWhenOpen]);
+    }, [expandWhenOpen, SCREEN_HEIGHT]);
 
     const gesture = Gesture.Pan()
         .onStart(() => {
@@ -81,8 +85,15 @@ export const BottomSheet: React.FC<BottomSheetProps> = React.memo(({ children, e
         transform: [{ translateY: translateY.value }],
     }));
 
-    return (
-        <Animated.View style={[styles.container, { backgroundColor: theme.background }, animatedStyle]}>
+    // medium: centered, capped width. wide: left-docked panel so the map stays visible
+    const placement = isWide
+        ? { left: panelLeft(), right: 'auto' as const, width: PANEL_WIDTH }
+        : isMedium
+            ? { left: centeredInset(), right: centeredInset() }
+            : null;
+
+    const sheet = (
+        <Animated.View style={[styles.container, { height: MAX_HEIGHT, backgroundColor: theme.background }, placement, animatedStyle]}>
             <GestureDetector gesture={gesture}>
                 <View style={styles.handle}>
                     <View style={[styles.handleBar, isDark && { backgroundColor: theme.border }]} />
@@ -90,6 +101,15 @@ export const BottomSheet: React.FC<BottomSheetProps> = React.memo(({ children, e
             </GestureDetector>
             <View style={styles.content}>{children}</View>
         </Animated.View>
+    );
+
+    if (isCompact) return sheet;
+
+    return (
+        <>
+            <Pressable style={[StyleSheet.absoluteFill, styles.backdrop]} onPress={onBackdropPress} />
+            {sheet}
+        </>
     );
 });
 
@@ -99,7 +119,6 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        height: MAX_HEIGHT,
         zIndex: 30,
         backgroundColor: 'white',
         borderTopLeftRadius: 24,
@@ -109,6 +128,10 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.25,
         shadowRadius: 8,
         elevation: 30,
+    },
+    backdrop: {
+        zIndex: 29,
+        backgroundColor: 'rgba(0,0,0,0.15)',
     },
     handle: {
         alignItems: 'center',

@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import * as Location from 'expo-location';
+import * as Location from '../../../shared/services/location';
 import { incidentService } from '../services/incident.service';
-import { Incident } from '../types/incident.types';
+import { CongestionLevel, Incident } from '../types/incident.types';
 
 export interface IncidentReportResult {
     incident: Incident | null;
@@ -46,7 +46,8 @@ export const useIncidentReport = () => {
         description: string,
         coords?: { lat: number; lng: number },
         direction?: string,
-        images?: string[]
+        images?: string[],
+        congestionLevel?: CongestionLevel
     ): Promise<IncidentReportResult> => {
         setLoading(true);
         setError(null);
@@ -66,6 +67,7 @@ export const useIncidentReport = () => {
                 description,
                 direction,
                 ...(images && images.length > 0 && { image: images }),
+                ...(congestionLevel && { congestionLevel }),
             });
 
             if (response.error) {

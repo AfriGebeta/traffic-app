@@ -69,6 +69,10 @@ export interface AppConfigValues {
   userLocationZoom: number;
   navZoom: number;
   maxRecentSearches: number;
+
+  // big-screen layouts (tablets / car screens): 1 = on (default), 2 = off.
+  // 0 can't mean off: hydrate ignores values <= 0 and keeps the default.
+  responsiveLayoutEnabled: number;
 }
 
 export const APP_CONFIG_DEFAULTS: AppConfigValues = {
@@ -130,6 +134,8 @@ export const APP_CONFIG_DEFAULTS: AppConfigValues = {
   userLocationZoom: 15,
   navZoom: 17,
   maxRecentSearches: 5,
+
+  responsiveLayoutEnabled: 1,
 };
 
 export const RC_KEYS: Record<keyof AppConfigValues, string> = {
@@ -191,6 +197,8 @@ export const RC_KEYS: Record<keyof AppConfigValues, string> = {
   userLocationZoom: 'user_location_zoom',
   navZoom: 'nav_zoom',
   maxRecentSearches: 'max_recent_searches',
+
+  responsiveLayoutEnabled: 'responsive_layout_enabled',
 };
 
 const CONFIG_KEYS = Object.keys(RC_KEYS) as (keyof AppConfigValues)[];

@@ -1,10 +1,17 @@
 import { Stack } from 'expo-router';
+import { createScreenLayout } from '../../shared/layout/ResponsiveScreen';
 import { LocationProvider } from '../../shared/contexts/LocationContext';
+
+const screenLayout = createScreenLayout({
+    fullBleed: ['map-picker'],
+    forms: ['add', 'add-home', 'save', 'claim'],
+});
 
 export default function PlacesLayout() {
     return (
         <LocationProvider>
             <Stack
+                screenLayout={screenLayout}
                 screenOptions={{
                     headerShown: true,
                     headerStyle: {

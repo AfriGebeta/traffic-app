@@ -3945,6 +3945,26 @@
         "AM": "ዝርዝር ያክሉ"
     },
     {
+        "key": "how-bad-is-traffic",
+        "EN_US": "How bad is it?",
+        "AM": "ምን ያህል ተዘጋግቷል?"
+    },
+    {
+        "key": "congestion-low",
+        "EN_US": "Light",
+        "AM": "ቀላል"
+    },
+    {
+        "key": "congestion-medium",
+        "EN_US": "Moderate",
+        "AM": "መካከለኛ"
+    },
+    {
+        "key": "congestion-high",
+        "EN_US": "Heavy",
+        "AM": "ከባድ"
+    },
+    {
         "key": "report-failed",
         "EN_US": "Could not send your report. Please try again.",
         "AM": "ሪፖርቱን መላክ አልተቻለም። እባክዎ እንደገና ይሞክሩ።"
@@ -4103,5 +4123,10 @@
         "key": "edit",
         "EN_US": "Edit",
         "AM": "አስተካክል"
+    },
+    {
+        "key": "session-expired",
+        "EN_US": "Your session has expired. Please log in again.",
+        "AM": "ክፍለ ጊዜዎ አብቅቷል። እባክዎ እንደገና ይግቡ።"
     }
 ]

@@ -1,0 +1,56 @@
+diff --git a/node_modules/expo-location/android/src/main/java/expo/modules/location/taskConsumers/LocationTaskConsumer.kt b/node_modules/expo-location/android/src/main/java/expo/modules/location/taskConsumers/LocationTaskConsumer.kt
+index e659285..15afd9e 100644
+--- a/node_modules/expo-location/android/src/main/java/expo/modules/location/taskConsumers/LocationTaskConsumer.kt
++++ b/node_modules/expo-location/android/src/main/java/expo/modules/location/taskConsumers/LocationTaskConsumer.kt
+@@ -78,45 +78,17 @@ class LocationTaskConsumer(context: Context, taskManagerUtils: TaskManagerUtilsI
+     maybeStartForegroundService()
+   }
+ 
++  // js reads positions via watchPositionAsync. delivering fixes through JobScheduler merges every
++  // fix into the pending job's extras, which grow without bound in background and cause OOM.
++  // so fixes are dropped here and any leftover job is finished without reading its extras.
+   override fun didReceiveBroadcast(intent: Intent) {
+-    mTask ?: return
+-    val result = LocationResult.extractResult(intent)
+-    if (result != null) {
+-      val locations = result.locations
+-      deferLocations(locations)
+-      maybeReportDeferredLocations()
+-    } else {
+-      try {
+-        mLocationClient.lastLocation.addOnCompleteListener { task ->
+-          task.result?.let {
+-            deferLocations(listOf(it))
+-            maybeReportDeferredLocations()
+-          }
+-        }
+-      } catch (e: SecurityException) {
+-        Log.e(TAG, "Cannot get last location: " + e.message)
+-      }
+-    }
++    return
+   }
+ 
+   override fun didExecuteJob(jobService: JobService, params: JobParameters): Boolean {
+-    val data = taskManagerUtils.extractDataFromJobParams(params)
+-    val locationBundles = ArrayList<Bundle>()
+-    for (persistableLocationBundle in data) {
+-      val locationBundle = Bundle()
+-      val coordsBundle = Bundle()
+-      if (persistableLocationBundle != null) {
+-        coordsBundle.putAll(persistableLocationBundle.getPersistableBundle("coords"))
+-        locationBundle.putAll(persistableLocationBundle)
+-        locationBundle.putBundle("coords", coordsBundle)
+-        locationBundles.add(locationBundle)
+-      }
+-    }
+-    executeTaskWithLocationBundles(locationBundles) { jobService.jobFinished(params, false) }
+-
+-    // Returning `true` indicates that the job is still running, but in async mode.
+-    // In that case we're obligated to call `jobService.jobFinished` as soon as the async block finishes.
+-    return true
++    // returning `false` tells JobScheduler the job is already done; no jobFinished call needed.
++    return false
+   }
+ 
+   //region private

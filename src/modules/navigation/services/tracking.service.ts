@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { StoredNavigation, RequestNavigationHistory, NavigationPoint } from '../types/tracking.types';
 import { getAppCheckToken } from '../../../shared/utils/appCheck';
+import { authFetch } from '../../../shared/services/auth-session';
 import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 
 const STORAGE_KEY = '@navigation_tracking';
@@ -128,22 +129,18 @@ class NavigationTrackingService {
     }
 
     private async postNavigations(payload: RequestNavigationHistory): Promise<boolean> {
-        const token = await AsyncStorage.getItem('@traffic_app_token');
         const appCheckToken = await getAppCheckToken();
         const headers: HeadersInit = {
             'Content-Type': 'application/json',
             ...(appCheckToken ? { 'X-Firebase-AppCheck': appCheckToken } : {}),
         };
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
         const body = JSON.stringify(payload);
 
         let backoff = 1000;
         for (let attempt = 1; attempt <= MAX_POST_ATTEMPTS; attempt++) {
             await this.throttle();
 
-            const response = await fetch(`${API_URL}/api/navigation/track-navigation-history`, {
+            const response = await authFetch(`${API_URL}/api/navigation/track-navigation-history`, {
                 method: 'POST',
                 headers,
                 body,

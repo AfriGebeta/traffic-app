@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useMapTheme, MapTheme } from '../context/MapThemeContext';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { useLayout } from '../../../shared/layout/useLayout';
 
 interface MapThemeSelectorProps {
     visible: boolean;
@@ -14,6 +15,8 @@ interface MapThemeSelectorProps {
 const CARD_WIDTH = 112;
 const CARD_HEIGHT = 104;
 const RIGHT_GUTTER = 72;
+// tablets/car screens: hug the layers button instead of stretching across the map
+const BIG_SCREEN_WIDTH = 520;
 
 const PREVIEWS = {
     classic: require('../../../../assets/images/overlay-classic.png'),
@@ -49,6 +52,7 @@ export const MapThemeSelector: React.FC<MapThemeSelectorProps> = ({
     const { colors: theme } = useTheme();
     const isAmharic = i18n.language === 'am';
     const appear = useRef(new Animated.Value(0)).current;
+    const { isCompact } = useLayout();
 
     useEffect(() => {
         Animated.timing(appear, {
@@ -74,6 +78,7 @@ export const MapThemeSelector: React.FC<MapThemeSelectorProps> = ({
                 style={{
                     bottom: bottomOffset,
                     right: RIGHT_GUTTER,
+                    ...(isCompact ? null : { left: 'auto', width: BIG_SCREEN_WIDTH }),
                     zIndex: 31,
                     backgroundColor: theme.surface,
                     borderWidth: 1,

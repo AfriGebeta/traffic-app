@@ -4,9 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { userService } from '../services/user.service';
 import { AuthResponse, UserLoginRequest } from '../types/user.types';
 import { AuthErrorCode, toFriendlyAuthError } from '../utils/authErrors';
+import { saveSession } from '../../../shared/services/auth-session';
 
 const USER_STORAGE_KEY = '@traffic_app_user';
-const TOKEN_STORAGE_KEY = '@traffic_app_token';
 
 export interface LoginResult {
     data: AuthResponse | null;
@@ -58,7 +58,7 @@ export const useUserLogin = () => {
 
             const { password, ...userWithoutPassword } = response.data.user;
             await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userWithoutPassword));
-            await AsyncStorage.setItem(TOKEN_STORAGE_KEY, response.data.token);
+            await saveSession(response.data);
 
             return {
                 data: response.data,

@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../../shared/theme/colors';
+import { SHEET_MAX_STYLE } from '../../../shared/layout/modalStyles';
 
 interface VoiceNavigationModalProps {
     visible: boolean;
@@ -85,10 +86,10 @@ export const VoiceNavigationModal: React.FC<VoiceNavigationModalProps> = ({
                 />
 
                 <Animated.View
-                    style={{
+                    style={[{
                         transform: [{ translateY }],
                         paddingBottom: insets.bottom || 20,
-                    }}
+                    }, SHEET_MAX_STYLE]}
                     className="bg-white rounded-t-3xl"
                 >
                     <View className="items-center pt-3 pb-2">

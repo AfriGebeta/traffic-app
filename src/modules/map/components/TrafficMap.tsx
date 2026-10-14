@@ -97,6 +97,13 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
     const params = useLocalSearchParams();
     const { incidents, refetch } = useIncidents();
     const { userLocation, setUserLocation, stopLocationTracking: stopBackgroundTracking, startLocationTracking: startBackgroundTracking } = useUserLocation();
+    const [useDefaultMapCenter, setUseDefaultMapCenter] = useState(false);
+    const hasUserLocation = userLocation !== null;
+    useEffect(() => {
+        if (hasUserLocation) return;
+        const timer = setTimeout(() => setUseDefaultMapCenter(true), 3000);
+        return () => clearTimeout(timer);
+    }, [hasUserLocation]);
     const { currentTheme } = useMapTheme();
     const { colors: appTheme } = useTheme();
     const { apiKey } = useRemoteConfig();
@@ -1146,7 +1153,8 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
 
     const mapCenter: [number, number] | undefined = sharedLocation
         ? [sharedLocation.lng, sharedLocation.lat]
-        : initialMapCenterRef.current ?? undefined;
+        : initialMapCenterRef.current
+            ?? (useDefaultMapCenter ? [getAppConfig().defaultMapCenterLng, getAppConfig().defaultMapCenterLat] : undefined);
 
     const showAlternativeRoutes = !isNavigationMinimized && !taxiRouteData && !navigationMode && allRouteOptions.length > 1;
 

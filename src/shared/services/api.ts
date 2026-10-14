@@ -1,9 +1,8 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAppCheckToken } from '../utils/appCheck';
 import { CLIENT_HEADERS } from '../utils/clientHeaders';
+import { authFetch } from './auth-session';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL!;
-const TOKEN_STORAGE_KEY = '@traffic_app_token';
 
 export interface ApiResponse<T> {
     data?: T;
@@ -28,20 +27,6 @@ class ApiService {
         this.baseUrl = API_URL;
     }
 
-    private async getAuthHeaders(): Promise<HeadersInit> {
-        try {
-            const token = await AsyncStorage.getItem(TOKEN_STORAGE_KEY);
-            if (token) {
-                return {
-                    'Authorization': `Bearer ${token}`,
-                };
-            }
-        } catch (error) {
-
-        }
-        return {};
-    }
-
     private async request<T>(
         endpoint: string,
         options: RequestInit = {}
@@ -49,7 +34,6 @@ class ApiService {
         try {
             const url = `${this.baseUrl}${endpoint}`;
 
-            const authHeaders = await this.getAuthHeaders();
             const appCheckToken = await getAppCheckToken();
 
             const config: RequestInit = {
@@ -57,13 +41,12 @@ class ApiService {
                 headers: {
                     'Content-Type': 'application/json',
                     ...CLIENT_HEADERS,
-                    ...authHeaders,
                     ...(appCheckToken ? { 'X-Firebase-AppCheck': appCheckToken } : {}),
                     ...options.headers,
                 },
             };
 
-            const response = await fetch(url, config);
+            const response = await authFetch(url, config);
 
             const contentType = response.headers.get('content-type');
             if (!contentType || !contentType.includes('application/json')) {
@@ -126,14 +109,12 @@ class ApiService {
         try {
             const url = `${this.baseUrl}${endpoint}`;
 
-            const authHeaders = await this.getAuthHeaders();
             const appCheckToken = await getAppCheckToken();
 
-            const response = await fetch(url, {
+            const response = await authFetch(url, {
                 method,
                 headers: {
                     ...CLIENT_HEADERS,
-                    ...authHeaders,
                     ...(appCheckToken ? { 'X-Firebase-AppCheck': appCheckToken } : {}),
                 },
                 body: formData,

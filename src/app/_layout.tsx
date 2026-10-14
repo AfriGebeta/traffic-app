@@ -1,4 +1,4 @@
-import { Stack, usePathname } from "expo-router";
+import { Stack, router, usePathname } from "expo-router";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { MapThemeProvider } from '../modules/map/context/MapThemeContext';
@@ -16,14 +16,19 @@ import { initializeAppCheckSingleton } from '../shared/utils/appCheck';
 import { ForceUpdateModal } from '../components/ForceUpdateModal';
 import { UpdateBanner } from '../components/UpdateBanner';
 import { ToastHost } from '../shared/components/ToastHost';
+import { showToast } from '../shared/utils/toast';
+import { onSessionExpired } from '../shared/services/auth-session';
+import { resetHomeOnboarding } from '../modules/places/utils/homeOnboarding';
+import i18n from '../shared/utils/localization/i18n';
 import telemetryApiService from '../shared/services/telemetry-api.service';
 import { dashboardEventsService } from '../shared/services/dashboard-events.service';
 import { locationPermissionSettled } from '../shared/utils/permissionSequence';
 import './globals.css';
-import '../shared/utils/localization/i18n';
 import { applyGlobalFont } from '../shared/utils/globalFont';
 import { installClientHeaders } from '../shared/utils/clientHeaders';
 import { initializeCrashlytics, logBreadcrumb } from '../shared/utils/crashlytics';
+import { useOrientationPolicy } from '../shared/layout/useOrientationPolicy';
+import { createScreenLayout } from '../shared/layout/ResponsiveScreen';
 
 import '../modules/navigation/services/nav-foreground-service';
 
@@ -33,6 +38,39 @@ applyGlobalFont();
 installClientHeaders();
 
 const BACKGROUND_IDLE_MS = 30 * 60 * 1000;
+
+const NAVIGATION_PATHS = [
+  '/navigation/route-preview',
+  '/taxi/navigation',
+  '/taxi/route-preview',
+  '/free-drive',
+];
+const isNavigationPath = (path: string) => NAVIGATION_PATHS.some((p) => path.startsWith(p));
+
+const rootScreenLayout = createScreenLayout({
+  fullBleed: [
+    'index',
+    'free-drive',
+    'incident-map-picker',
+    'navigation/route-preview',
+    'neighborhoods/bounding-box',
+    'share',
+    'telegram-auth',
+    'places',
+    'rules',
+    'taxi',
+  ],
+  forms: [
+    'login',
+    'register',
+    'verify-email',
+    'complete-profile',
+    'telegram-login',
+    'select-language',
+    'edit-profile',
+    'incident-report',
+  ],
+});
 
 function ThemedNavigationBar() {
   const { colors, isDark } = useTheme();
@@ -52,6 +90,7 @@ function ThemedNavigationBar() {
 
 function AppShell() {
   useTelegramDeepLink();
+  useOrientationPolicy();
   const { updateRequired, updateAvailable, latestVersion, storeUrl } = useRemoteConfig();
   const pathname = usePathname();
   const showUpdateBanner = updateAvailable && !updateRequired && pathname === '/';
@@ -83,6 +122,34 @@ function AppShell() {
     return () => subscription.remove();
   }, []);
 
+  const pathnameRef = useRef(pathname);
+  pathnameRef.current = pathname;
+  const loginRedirectPendingRef = useRef(false);
+
+  const redirectToLogin = () => {
+    loginRedirectPendingRef.current = false;
+    showToast(i18n.t('session-expired'));
+    router.push('/login');
+  };
+
+  useEffect(() => {
+    return onSessionExpired(() => {
+      void resetHomeOnboarding();
+      if (isNavigationPath(pathnameRef.current)) {
+        logBreadcrumb('auth: session expired during navigation, deferring login redirect');
+        loginRedirectPendingRef.current = true;
+        return;
+      }
+      redirectToLogin();
+    });
+  }, []);
+
+  useEffect(() => {
+    if (loginRedirectPendingRef.current && !isNavigationPath(pathname)) {
+      redirectToLogin();
+    }
+  }, [pathname]);
+
   useEffect(() => {
     if (Platform.OS === 'android' && Number(Platform.Version) >= 33) {
       const timeout = new Promise<void>((resolve) => setTimeout(resolve, 30000));
@@ -107,6 +174,7 @@ function AppShell() {
                     screenOptions={{
                       headerShown: false,
                     }}
+                    screenLayout={rootScreenLayout}
                   />
                   <ToastHost />
                   <UpdateBanner
