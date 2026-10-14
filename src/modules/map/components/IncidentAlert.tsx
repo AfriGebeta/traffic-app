@@ -25,6 +25,7 @@ interface IncidentAlertProps {
     distance: string;
     distanceKm: number;
     incidentType: IncidentTypeFromAPI;
+    voterLocation: { lat: number; lng: number } | null;
     onDismiss?: () => void;
     topOffset?: number;
 }
@@ -41,6 +42,7 @@ export const IncidentAlert: React.FC<IncidentAlertProps> = ({
     distance,
     distanceKm,
     incidentType,
+    voterLocation,
     topOffset = 155,
 }) => {
     const { t } = useTranslation();
@@ -54,17 +56,24 @@ export const IncidentAlert: React.FC<IncidentAlertProps> = ({
 
     const handleVote = async (direction: 'up' | 'down') => {
         if (isVoting) return;
+        if (!voterLocation) {
+            showToast(t('location-unavailable'));
+            return;
+        }
 
         setIsVoting(true);
         try {
             const response =
                 direction === 'up'
-                    ? await incidentService.upvote(incidentId)
-                    : await incidentService.downvote(incidentId);
+                    ? await incidentService.upvote(incidentId, voterLocation)
+                    : await incidentService.downvote(incidentId, voterLocation);
             if (isRestrictedError(response.errorCode)) {
                 // global toast already shown
+            } else if (response.status === 403) {
+                // E0017 is handled above, so a 403 here is the 300 m proximity check
+                showToast(t('vote-too-far'));
             } else if (response.error) {
-                showToast(`${t('failed-to-vote')}: ${response.error}`);
+                showToast(`${t('failed-to-vote')}. ${t('please-try-again')}`);
             } else {
                 setVotedFor(incidentId);
                 showToast(`${t('thanks')} ${t('feedback-helps-others')}`);

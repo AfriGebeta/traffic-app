@@ -2,7 +2,8 @@ export type PlaceType = 'gas_station' | 'taxi_station' | 'restaurant' | 'cafe' |
 
 export interface Place {
     id: string;
-    name: string;
+    // backend returns { en, am }; either can be ""
+    name: string | { en?: string; am?: string };
     type: PlaceType;
     categoryId?: string | null;
     lat: number;
@@ -31,6 +32,9 @@ export interface PlaceContributionRequest {
     phone?: string;
     images: string[];
     address?: PlaceContributionAddress;
+    // where the phone is, which can differ from a map-picked lat/lng; backend checks photos against it
+    deviceLat?: number;
+    deviceLng?: number;
 }
 
 export type SavedPlaceType = 'HOME' | 'WORK' | 'FAVORITE' | 'CUSTOM';

@@ -22,6 +22,7 @@ import { showToast } from '../../../shared/utils/toast';
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import { reportErrorFrom, showReportError } from '../../../shared/utils/reportErrors';
 import { ApiError } from '../../../shared/utils/apiErrors';
+import { ReportLocation } from '../../../shared/utils/reportHeading';
 import { incidentService } from '../../incidents/services/incident.service';
 import { getIncidentTranslationKey } from '../../incidents/utils/incidentTranslations';
 import { CONGESTION_LEVELS, CongestionLevel, DEFAULT_CONGESTION_LEVEL } from '../../incidents/types/incident.types';
@@ -45,7 +46,7 @@ type Selection =
 interface QuickReportSheetProps {
     incidentTypes: readonly { name: string; icon: string; color: string }[];
     onClose: () => void;
-    userLocation: { lat: number; lng: number } | null;
+    userLocation: ReportLocation | null;
     onNavigateToReport?: () => void;
 }
 
@@ -65,7 +66,7 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
     const [tab, setTab] = React.useState<Tab>('incidents');
     const [ruleTypes, setRuleTypes] = React.useState<TrafficRuleType[] | null>(cachedRuleTypes);
     const [selection, setSelection] = React.useState<Selection | null>(null);
-    const [reportLocation, setReportLocation] = React.useState<{ lat: number; lng: number } | null>(null);
+    const [reportLocation, setReportLocation] = React.useState<ReportLocation | null>(null);
     const [congestionLevel, setCongestionLevel] = React.useState<CongestionLevel>(DEFAULT_CONGESTION_LEVEL);
     // the auto-report timer closes over the selection, so it reads the level from here
     const congestionLevelRef = React.useRef<CongestionLevel>(DEFAULT_CONGESTION_LEVEL);
@@ -124,7 +125,7 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
     }, [selection, backToGrid, close]);
 
     const submit = React.useCallback(
-        async (sel: Selection, location: { lat: number; lng: number } | null) => {
+        async (sel: Selection, location: ReportLocation | null) => {
             if (submitted.current) return;
             submitted.current = true;
             stopCountdown();
@@ -142,18 +143,20 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
                         lng: location.lng,
                         type: sel.typeName,
                         description: 'No description provided',
+                        ...(location.heading !== undefined && { heading: location.heading }),
                         ...(sel.typeName === TRAFFIC_JAM && { congestionLevel: congestionLevelRef.current }),
                     });
                     if (response.error) throw new ApiError(response);
-                    showToast(t('incident-reported-successfully'));
+                    showToast(t(response.data?.merged ? 'report-merged-thanks' : 'incident-reported-successfully'));
                 } else {
-                    await ruleService.reportRule({
+                    const report = await ruleService.reportRule({
                         lat: location.lat,
                         lng: location.lng,
                         typeId: sel.rule.id,
                         punishment: NO_PUNISHMENT_VALUE,
+                        ...(location.heading !== undefined && { heading: location.heading }),
                     });
-                    showToast(t('traffic-rule-report-submitted'));
+                    showToast(t(report.merged ? 'report-merged-thanks' : 'traffic-rule-report-submitted'));
                 }
                 dashboardEventsService.contribute();
             } catch (error) {
@@ -192,6 +195,7 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
         stopCountdown();
         const lat = reportLocation?.lat.toString() ?? '';
         const lng = reportLocation?.lng.toString() ?? '';
+        const heading = reportLocation?.heading?.toString() ?? '';
 
         onNavigateToReport?.();
         if (selection.kind === 'incident') {
@@ -201,6 +205,7 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
                 lng,
                 refresh: 'true',
                 isNavigating: 'true',
+                heading,
             });
             if (selection.typeName === TRAFFIC_JAM) params.set('congestionLevel', congestionLevelRef.current);
             router.push(`/incident-report?${params.toString()}`);
@@ -218,6 +223,7 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
                     isNavigating: 'true',
                     lat,
                     lng,
+                    heading,
                     fromReportSheet: 'true',
                 },
             });

@@ -48,7 +48,8 @@ export const useIncidentReport = () => {
         coords?: { lat: number; lng: number },
         direction?: string,
         images?: string[],
-        congestionLevel?: CongestionLevel
+        congestionLevel?: CongestionLevel,
+        heading?: number
     ): Promise<IncidentReportResult> => {
         setLoading(true);
         setError(null);
@@ -67,6 +68,7 @@ export const useIncidentReport = () => {
                 type: typeName,
                 description,
                 direction,
+                ...(heading !== undefined && { heading }),
                 ...(images && images.length > 0 && { image: images }),
                 ...(congestionLevel && { congestionLevel }),
             });

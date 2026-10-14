@@ -27,6 +27,10 @@ export interface Incident {
     upvotes: number;
     downvotes: number;
     congestionLevel?: CongestionLevel | null;
+    reliability?: number;
+    expiresAt?: string;
+    // true when the backend folded this report into an existing one (HTTP 200 instead of 201)
+    merged?: boolean;
 }
 
 export interface IncidentReportRequest {
@@ -35,7 +39,9 @@ export interface IncidentReportRequest {
     type: string;
     description: string;
     direction?: string;
-    images?: string[];
+    // driving direction 0–360
+    heading?: number;
+    image?: string[];
     // required by the API when type is TRAFFIC_JAM
     congestionLevel?: CongestionLevel;
 }

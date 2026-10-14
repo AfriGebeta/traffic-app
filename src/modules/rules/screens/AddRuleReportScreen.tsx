@@ -9,6 +9,7 @@ import { showToast } from '../../../shared/utils/toast';
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import { useLocation } from '../../../shared/contexts/LocationContext';
 import { reportErrorFrom, showReportError } from '../../../shared/utils/reportErrors';
+import { toReportHeading } from '../../../shared/utils/reportHeading';
 import { useTranslation } from 'react-i18next';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { colors } from '../../../shared/theme/colors';
@@ -31,6 +32,7 @@ export default function AddRuleReportScreen() {
     const navLat = parseFloat(params.lat as string);
     const navLng = parseFloat(params.lng as string);
     const navCoordinates = !isNaN(navLat) && !isNaN(navLng) ? { lat: navLat, lng: navLng } : null;
+    const navHeading = toReportHeading(params.heading as string | undefined);
 
     const insets = useSafeAreaInsets();
     const [punishment, setPunishment] = useState('');
@@ -81,15 +83,18 @@ export default function AddRuleReportScreen() {
 
         setSubmitting(true);
         try {
-            await ruleService.reportRule({
+            // heading only applies to the spot the driver reported from, not a map-picked one
+            const atNavFix = coordinates.lat === navCoordinates?.lat && coordinates.lng === navCoordinates?.lng;
+            const report = await ruleService.reportRule({
                 lat: coordinates.lat,
                 lng: coordinates.lng,
                 typeId: typeId as string,
                 punishment: (showPunishment && punishment.trim()) || NO_PUNISHMENT_VALUE,
+                ...(atNavFix && navHeading !== undefined && { heading: navHeading }),
             });
 
             dashboardEventsService.contribute();
-            showToast(t('traffic-rule-report-submitted'));
+            showToast(t(report.merged ? 'report-merged-thanks' : 'traffic-rule-report-submitted'));
             router.back();
             if (!fromReportSheet) router.back();
         } catch (error) {

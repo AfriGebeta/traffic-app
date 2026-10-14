@@ -37,6 +37,23 @@ export const notifyIfRestricted = <T>(response: ApiResponse<T>): ApiResponse<T> 
     return response;
 };
 
+// place names come back as { en, am }, either side can be ""
+const pickLocalizedName = (name: unknown, language: string): string | undefined => {
+    if (typeof name === 'string') return name;
+    if (!name || typeof name !== 'object') return undefined;
+    const names = name as Record<string, unknown>;
+    const preferred = language.startsWith('am') ? ['am', 'en'] : ['en', 'am'];
+    return preferred.map((key) => names[key]).find((value): value is string => typeof value === 'string' && value.trim().length > 0);
+};
+
+// E0016 additional.duplicates: [{ id, type, name: { en, am }, lat, lng, distanceM, similarity }]
+export const getDuplicatePlaceNames = (additional: Record<string, any> | undefined, language: string): string[] => {
+    const duplicates = Array.isArray(additional?.duplicates) ? additional.duplicates : [];
+    return duplicates
+        .map((place: any) => pickLocalizedName(place?.name, language))
+        .filter((name: string | undefined): name is string => !!name);
+};
+
 export const isRestrictedError = (code?: string): boolean => code === ApiErrorCode.UserRestricted;
 
 // lets services that throw keep the backend code for callers
