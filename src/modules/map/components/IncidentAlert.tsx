@@ -16,6 +16,7 @@ import { getIncidentColor, getIncidentIconName } from '../../incidents/utils/inc
 import { IncidentTypeFromAPI } from '../../incidents/types/incident.types';
 import { incidentService } from '../../incidents/services/incident.service';
 import { showToast } from '../../../shared/utils/toast';
+import { isRestrictedError } from '../../../shared/utils/apiErrors';
 import { useTranslation } from 'react-i18next';
 
 interface IncidentAlertProps {
@@ -60,7 +61,9 @@ export const IncidentAlert: React.FC<IncidentAlertProps> = ({
                 direction === 'up'
                     ? await incidentService.upvote(incidentId)
                     : await incidentService.downvote(incidentId);
-            if (response.error) {
+            if (isRestrictedError(response.errorCode)) {
+                // global toast already shown
+            } else if (response.error) {
                 showToast(`${t('failed-to-vote')}: ${response.error}`);
             } else {
                 setVotedFor(incidentId);

@@ -8,7 +8,7 @@ import { ruleService } from '../services/rule.service';
 import { showToast } from '../../../shared/utils/toast';
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import { useLocation } from '../../../shared/contexts/LocationContext';
-import { getReportErrorMessage, reportErrorFrom } from '../../../shared/utils/reportErrors';
+import { reportErrorFrom, showReportError } from '../../../shared/utils/reportErrors';
 import { useTranslation } from 'react-i18next';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { colors } from '../../../shared/theme/colors';
@@ -94,8 +94,7 @@ export default function AddRuleReportScreen() {
             if (!fromReportSheet) router.back();
         } catch (error) {
             console.error('Submit error:', error);
-            const { message, status } = reportErrorFrom(error);
-            showToast(getReportErrorMessage(t, message, status));
+            showReportError(t, reportErrorFrom(error));
         } finally {
             setSubmitting(false);
         }

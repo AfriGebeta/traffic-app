@@ -38,7 +38,7 @@ import { getIncidentTranslationKey } from '../utils/incidentTranslations';
 import { uploadToMinio } from '../../../shared/utils/minio';
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import { useLocation } from '../../../shared/contexts/LocationContext';
-import { getReportErrorMessage } from '../../../shared/utils/reportErrors';
+import { showReportError } from '../../../shared/utils/reportErrors';
 import { useContentWidth } from '../../../shared/layout/ResponsiveScreen';
 
 type IncidentIcon = React.FC<{ width?: number; height?: number }>;
@@ -166,7 +166,7 @@ export default function IncidentReportScreen() {
             return;
         }
 
-        const { incident, error, status } = await reportIncident(
+        const { incident, error, status, code } = await reportIncident(
             incidentTypeName,
             description.trim() || 'No description provided',
             location,
@@ -183,7 +183,7 @@ export default function IncidentReportScreen() {
                 router.back();
             }, 500);
         } else {
-            showToast(getReportErrorMessage(t, error, status));
+            showReportError(t, { message: error, status, code });
         }
     };
 

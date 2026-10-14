@@ -1,4 +1,5 @@
 import { apiService } from '../../../shared/services/api';
+import { ApiError } from '../../../shared/utils/apiErrors';
 import { TrafficRuleType, TrafficRuleReport, TrafficRuleReportRequest } from '../types/rule.types';
 
 export const ruleService = {
@@ -13,7 +14,7 @@ export const ruleService = {
     async reportRule(data: TrafficRuleReportRequest): Promise<TrafficRuleReport> {
         const response = await apiService.post<TrafficRuleReport>('/api/rules/reports', data);
         if (response.error) {
-            throw Object.assign(new Error(response.error), { status: response.status });
+            throw new ApiError(response);
         }
         if (!response.data) {
             throw new Error('No data returned from server');

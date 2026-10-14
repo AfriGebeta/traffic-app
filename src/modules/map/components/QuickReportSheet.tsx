@@ -20,7 +20,8 @@ import { useTheme } from '../../../shared/theme/ThemeContext';
 import { useLayout } from '../../../shared/layout/useLayout';
 import { showToast } from '../../../shared/utils/toast';
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
-import { getReportErrorMessage, reportErrorFrom } from '../../../shared/utils/reportErrors';
+import { reportErrorFrom, showReportError } from '../../../shared/utils/reportErrors';
+import { ApiError } from '../../../shared/utils/apiErrors';
 import { incidentService } from '../../incidents/services/incident.service';
 import { getIncidentTranslationKey } from '../../incidents/utils/incidentTranslations';
 import { CONGESTION_LEVELS, CongestionLevel, DEFAULT_CONGESTION_LEVEL } from '../../incidents/types/incident.types';
@@ -143,7 +144,7 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
                         description: 'No description provided',
                         ...(sel.typeName === TRAFFIC_JAM && { congestionLevel: congestionLevelRef.current }),
                     });
-                    if (response.error) throw Object.assign(new Error(response.error), { status: response.status });
+                    if (response.error) throw new ApiError(response);
                     showToast(t('incident-reported-successfully'));
                 } else {
                     await ruleService.reportRule({
@@ -157,8 +158,7 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
                 dashboardEventsService.contribute();
             } catch (error) {
                 console.error('Quick report failed:', error);
-                const { message, status } = reportErrorFrom(error);
-                showToast(getReportErrorMessage(t, message, status));
+                showReportError(t, reportErrorFrom(error));
             }
         },
         [stopCountdown, onClose, t]
