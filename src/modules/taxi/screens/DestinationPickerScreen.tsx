@@ -11,11 +11,13 @@ import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
 import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 import { MapSearchBar } from '../../../shared/components';
+import { useLayout } from '../../../shared/layout/useLayout';
 
 export default function DestinationPickerScreen() {
     const router = useRouter();
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
+    const { panelPlacement } = useLayout();
     const { userLocation } = useUserLocation();
     const { apiKey } = useRemoteConfig();
     const mapRef = useRef<GebetaMapRef>(null);
@@ -106,7 +108,7 @@ export default function DestinationPickerScreen() {
 
             <View
                 className="absolute left-4 right-4 bg-white rounded-2xl shadow-lg p-4"
-                style={{ bottom: insets.bottom + 16 }}
+                style={[{ bottom: insets.bottom + 16 }, panelPlacement()]}
             >
                 <View className="flex-row items-center mb-3">
                     <Ionicons name="location" size={24} color={colors.primary.main} />

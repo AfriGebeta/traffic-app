@@ -17,11 +17,13 @@ import { useRouter } from 'expo-router';
 
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { useLayout } from '../../../shared/layout/useLayout';
 import { showToast } from '../../../shared/utils/toast';
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import { getReportErrorMessage, reportErrorFrom } from '../../../shared/utils/reportErrors';
 import { incidentService } from '../../incidents/services/incident.service';
 import { getIncidentTranslationKey } from '../../incidents/utils/incidentTranslations';
+import { CONGESTION_LEVELS, CongestionLevel, DEFAULT_CONGESTION_LEVEL } from '../../incidents/types/incident.types';
 import { ruleService } from '../../rules/services/rule.service';
 import { TrafficRuleType } from '../../rules/types/rule.types';
 import { RULE_TRANSLATION_MAP, sortRuleTypes, NO_PUNISHMENT_VALUE } from '../../rules/utils/ruleTranslations';
@@ -29,6 +31,7 @@ import { INCIDENT_SVG_ICON_MAP } from './incidentIcons';
 
 const AUTO_REPORT_MS = 5000;
 const TILE_CIRCLE = 76;
+const TRAFFIC_JAM = 'TRAFFIC_JAM';
 
 let cachedRuleTypes: TrafficRuleType[] | null = null;
 
@@ -56,11 +59,15 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
     const insets = useSafeAreaInsets();
     const { height: windowHeight } = useWindowDimensions();
     const { colors: theme, isDark } = useTheme();
+    const { panelPlacement } = useLayout();
 
     const [tab, setTab] = React.useState<Tab>('incidents');
     const [ruleTypes, setRuleTypes] = React.useState<TrafficRuleType[] | null>(cachedRuleTypes);
     const [selection, setSelection] = React.useState<Selection | null>(null);
     const [reportLocation, setReportLocation] = React.useState<{ lat: number; lng: number } | null>(null);
+    const [congestionLevel, setCongestionLevel] = React.useState<CongestionLevel>(DEFAULT_CONGESTION_LEVEL);
+    // the auto-report timer closes over the selection, so it reads the level from here
+    const congestionLevelRef = React.useRef<CongestionLevel>(DEFAULT_CONGESTION_LEVEL);
 
     const progress = useSharedValue(0);
     const autoReportTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -134,6 +141,7 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
                         lng: location.lng,
                         type: sel.typeName,
                         description: 'No description provided',
+                        ...(sel.typeName === TRAFFIC_JAM && { congestionLevel: congestionLevelRef.current }),
                     });
                     if (response.error) throw Object.assign(new Error(response.error), { status: response.status });
                     showToast(t('incident-reported-successfully'));
@@ -161,6 +169,8 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
             const location = userLocation;
             setSelection(sel);
             setReportLocation(location);
+            congestionLevelRef.current = DEFAULT_CONGESTION_LEVEL;
+            setCongestionLevel(DEFAULT_CONGESTION_LEVEL);
 
             progress.value = 0;
             progress.value = withTiming(1, { duration: AUTO_REPORT_MS, easing: Easing.linear });
@@ -171,6 +181,11 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
         },
         [userLocation, progress, submit]
     );
+
+    const pickCongestionLevel = React.useCallback((level: CongestionLevel) => {
+        congestionLevelRef.current = level;
+        setCongestionLevel(level);
+    }, []);
 
     const openDetails = React.useCallback(() => {
         if (!selection) return;
@@ -187,6 +202,7 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
                 refresh: 'true',
                 isNavigating: 'true',
             });
+            if (selection.typeName === TRAFFIC_JAM) params.set('congestionLevel', congestionLevelRef.current);
             router.push(`/incident-report?${params.toString()}`);
         } else {
             const { rule } = selection;
@@ -306,6 +322,34 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
         </>
     );
 
+    const renderCongestionPicker = () => (
+        <View style={styles.congestion}>
+            <Text style={[styles.congestionTitle, { color: theme.textSecondary }]}>{t('how-bad-is-traffic')}</Text>
+            <View style={styles.congestionRow}>
+                {CONGESTION_LEVELS.map((level) => {
+                    const active = congestionLevel === level;
+                    return (
+                        <TouchableOpacity
+                            key={level}
+                            style={[
+                                styles.congestionChip,
+                                active
+                                    ? { backgroundColor: theme.primary, borderColor: theme.primary }
+                                    : { backgroundColor: circleBg, borderColor: circleBg },
+                            ]}
+                            onPress={() => pickCongestionLevel(level)}
+                            activeOpacity={0.8}
+                        >
+                            <Text style={[styles.congestionText, { color: active ? '#FFFFFF' : theme.textPrimary }]}>
+                                {t(`congestion-${level}`)}
+                            </Text>
+                        </TouchableOpacity>
+                    );
+                })}
+            </View>
+        </View>
+    );
+
     const renderConfirm = (sel: Selection) => {
         const label = sel.kind === 'incident' ? t(getIncidentTranslationKey(sel.typeName)) : ruleLabel(sel.rule);
         const icon = sel.kind === 'incident' ? renderIncidentIcon(sel.typeName, 52) : renderRuleIcon(sel.rule, 48);
@@ -338,6 +382,8 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
                         <Ionicons name="checkmark" size={14} color="#FFFFFF" />
                     </View>
                 </View>
+
+                {sel.kind === 'incident' && sel.typeName === TRAFFIC_JAM && renderCongestionPicker()}
 
                 <TouchableOpacity onPress={openDetails} style={styles.detailsLink} hitSlop={8} activeOpacity={0.7}>
                     <Ionicons name="create-outline" size={18} color={theme.blue} />
@@ -381,6 +427,8 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
                         paddingBottom: insets.bottom + 16,
                         maxHeight: windowHeight * 0.85,
                     },
+                    // big screens: same column as the trip card instead of full width
+                    panelPlacement(),
                 ]}
             >
                 <View style={styles.handle}>
@@ -497,6 +545,31 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    congestion: {
+        marginTop: 20,
+    },
+    congestionTitle: {
+        fontSize: 15,
+        fontWeight: '600',
+        textAlign: 'center',
+        marginBottom: 10,
+    },
+    congestionRow: {
+        flexDirection: 'row',
+        gap: 10,
+    },
+    congestionChip: {
+        flex: 1,
+        height: 44,
+        borderRadius: 22,
+        borderWidth: 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    congestionText: {
+        fontSize: 15,
+        fontWeight: '600',
     },
     detailsLink: {
         flexDirection: 'row',

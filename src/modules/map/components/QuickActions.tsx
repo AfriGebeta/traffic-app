@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleProp, ViewStyle, LayoutChangeEvent } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { useGlass } from '../../../shared/theme/glass';
@@ -10,12 +10,18 @@ interface QuickActionsProps {
     onSelectCategory?: (categoryId: string) => void;
     isLoading?: boolean;
     selectedCategory?: string | null;
+    style?: StyleProp<ViewStyle>;
+    contentContainerStyle?: StyleProp<ViewStyle>;
+    onLayout?: (event: LayoutChangeEvent) => void;
 }
 
 export const QuickActions: React.FC<QuickActionsProps> = ({
     onSelectCategory,
     isLoading = false,
-    selectedCategory: externalSelectedCategory
+    selectedCategory: externalSelectedCategory,
+    style,
+    contentContainerStyle,
+    onLayout,
 }) => {
     const { i18n } = useTranslation();
     const { colors: theme } = useTheme();
@@ -37,11 +43,11 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
     };
 
     return (
-        <View className="mt-1.5 -mx-4">
+        <View className="mt-1.5 -mx-4" style={style} onLayout={onLayout}>
             <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingLeft: 14, paddingRight: 14, paddingBottom: 8 }}
+                contentContainerStyle={[{ paddingLeft: 14, paddingRight: 14, paddingBottom: 8 }, contentContainerStyle]}
             >
                 {categories.map((category, index) => (
                     <View

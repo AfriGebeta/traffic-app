@@ -7,6 +7,7 @@ import { useTheme } from '../../../shared/theme/ThemeContext';
 import { navigationService } from '../../navigation/services/navigation.service';
 import type { JourneyPrompt } from '../../navigation/utils/taxiJourney';
 import TaxiDarkIcon from '../../../../assets/images/contribute-taxi-dark.svg';
+import { SHEET_MAX_STYLE } from '../../../shared/layout/modalStyles';
 
 const GREEN = '#0F9D58';
 type Place = { name: string; lat: number; lng: number };
@@ -120,8 +121,8 @@ export default function TaxiJourneyCard({ prompt, isOnTaxi, boardingTarget, targ
                 <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.3)' }}
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
                     <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('taxi-journey-close-options')} style={{ flex: 1 }} onPress={closeSheet} />
-                    <View style={{ maxHeight: '65%', backgroundColor: theme.background, borderTopLeftRadius: 24,
-                        borderTopRightRadius: 24, padding: 20, paddingBottom: insets.bottom + 16 }}>
+                    <View style={[{ maxHeight: '65%', backgroundColor: theme.background, borderTopLeftRadius: 24,
+                        borderTopRightRadius: 24, padding: 20, paddingBottom: insets.bottom + 16 }, SHEET_MAX_STYLE]}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
                             <Text accessibilityRole="header" style={{ flex: 1, color: theme.textPrimary, fontSize: 20, fontWeight: '700' }}>
                                 {sheet === 'search' ? t('taxi-journey-change-dropoff') : t('taxi-journey-options')}

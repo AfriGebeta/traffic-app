@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Image, Modal, TextInput, KeyboardAvoidingView, Platform, Animated } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getAccessToken } from '../../../shared/services/auth-session';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { useLayout, PANEL_WIDTH } from '../../../shared/layout/useLayout';
 import type { GeocodingPlace, Maneuver } from '../types/navigation.types';
 import { placeService } from '../../places/services/place.service';
 import { showToast } from '../../../shared/utils/toast';
@@ -18,6 +19,7 @@ import { calculateDistance } from '../utils/navigationUtils';
 import type { TaxiNavigationResponse } from '../../taxi/types/taxi.types';
 import LekfelPaySheet from '../../taxi/components/LekfelPaySheet';
 import { shareLocation } from '../../../shared/utils/shareLocation';
+import { DIALOG_MAX_STYLE } from '../../../shared/layout/modalStyles';
 
 interface RoutePreviewProps {
     distance: number;
@@ -127,6 +129,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
 }) => {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
+    const { isMedium, isWide, centeredInset, panelLeft } = useLayout();
     const { colors: theme, isDark } = useTheme();
     const router = useRouter();
     const [savedPlace, setSavedPlace] = useState<SavedPlace | null>(null);
@@ -183,7 +186,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
 
     useEffect(() => {
         let cancelled = false;
-        AsyncStorage.getItem('@traffic_app_token')
+        getAccessToken()
             .then(token => {
                 if (!cancelled) setIsAuthenticated(!!token);
             })
@@ -414,7 +417,10 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
 
     const handleShareDestination = async () => {
         if (!destination) return;
-        await shareLocation({ lat: destination.latitude, lng: destination.longitude, name: destination.name });
+        await shareLocation(
+            { lat: destination.latitude, lng: destination.longitude, name: destination.name },
+            { kind: 'route_dest' }
+        );
     };
 
     const handleGoRoute = (index: number) => {
@@ -448,7 +454,11 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
     return (
         <View
             className="absolute left-4 right-4 rounded-3xl shadow-2xl overflow-hidden"
-            style={{ bottom: insets.bottom > 0 ? insets.bottom + 4 : 34 }}
+            style={[
+                { bottom: insets.bottom > 0 ? insets.bottom + 4 : 34 },
+                isWide && { left: panelLeft(), right: 'auto', width: PANEL_WIDTH },
+                isMedium && { left: centeredInset(), right: centeredInset() },
+            ]}
         >
             <BlurView intensity={100} tint={isDark ? 'dark' : 'light'} style={{ flex: 1, borderRadius: 24 }}>
                 <View style={{ backgroundColor: isDark ? 'rgba(30, 30, 30, 0.6)' : 'rgba(255, 255, 255, 0.4)', borderRadius: 24 }}>
@@ -972,7 +982,7 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                     className="flex-1 items-center justify-center px-8"
                     style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
                 >
-                    <View className="w-full rounded-3xl p-6" style={{ backgroundColor: theme.surface }}>
+                    <View className="w-full rounded-3xl p-6" style={[{ backgroundColor: theme.surface }, DIALOG_MAX_STYLE]}>
                         <Text className="text-lg font-bold" style={{ color: theme.textPrimary }}>
                             {t('update-taxi-fare')}
                         </Text>

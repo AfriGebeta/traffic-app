@@ -112,7 +112,7 @@ export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
     }
 
     return (
-        <BottomSheet expandWhenOpen={true}>
+        <BottomSheet expandWhenOpen={true} onBackdropPress={onClose}>
             <View className="flex-1 pb-4">
                 <View className="flex-row items-center mb-6">
                     <TouchableOpacity

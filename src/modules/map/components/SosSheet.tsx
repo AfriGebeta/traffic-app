@@ -11,7 +11,7 @@ import {
     View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Location from 'expo-location';
+import * as Location from '../../../shared/services/location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../shared/theme/ThemeContext';
@@ -19,6 +19,7 @@ import { generateLocationUrl } from '../../../shared/utils/deepLinking';
 import { openDialer, openSmsComposer, shareLocation } from '../../../shared/utils/shareLocation';
 import { showToast } from '../../../shared/utils/toast';
 import { AMBULANCE_ICON, FIRE_ICON, POLICE_ICON, SOS_ICON } from './sosIcons';
+import { SHEET_MAX_STYLE } from '../../../shared/layout/modalStyles';
 
 type LatLng = { lat: number; lng: number };
 
@@ -146,10 +147,10 @@ export const SosSheet: React.FC<SosSheetProps> = ({ visible, onClose, userLocati
 
                 <View
                     className="rounded-t-3xl px-5 pt-5"
-                    style={{
+                    style={[{
                         backgroundColor: theme.background,
                         paddingBottom: (keyboardHeight || insets.bottom) + 16,
-                    }}
+                    }, SHEET_MAX_STYLE]}
                 >
                     <View className="flex-row items-center justify-between">
                         <View className="flex-row items-center">

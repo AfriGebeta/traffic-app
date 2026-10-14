@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import * as Location from 'expo-location';
+import * as Location from '../../../shared/services/location';
 import { FREE_DRIVE_GPS_INTERVAL_MS } from '../constants';
 import type { MotionFix } from '../utils/motionModel';
 

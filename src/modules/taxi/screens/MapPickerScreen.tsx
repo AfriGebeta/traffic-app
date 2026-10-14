@@ -23,11 +23,13 @@ import { showToast } from '../../../shared/utils/toast';
 import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
 import { MapSearchBar } from '../../../shared/components';
 import type { MapSearchBarRef } from '../../../shared/components';
+import { useLayout } from '../../../shared/layout/useLayout';
 
 export default function MapPickerScreen() {
     const router = useRouter();
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
+    const { panelPlacement } = useLayout();
     const params = useLocalSearchParams();
     const { setPendingStop } = useRouteBuilder();
     const isCoordsMode = params.mode === 'coords';
@@ -278,7 +280,7 @@ export default function MapPickerScreen() {
                     ref={searchBarRef}
                     onSelect={handleSearchSelect}
                     hint={t('tap-map-to-select-location')}
-                    style={{ position: 'absolute', top: 16, left: 16, right: 16 }}
+                    style={{ position: 'absolute', top: 16, left: 16, right: 16, ...panelPlacement() }}
                 />
 
             </View>

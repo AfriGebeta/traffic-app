@@ -1,5 +1,5 @@
 import { useRef, useCallback, useEffect } from 'react';
-import * as Location from 'expo-location';
+import * as Location from '../../../shared/services/location';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 import { showToast } from '../../../shared/utils/toast';
 import { buildSegmentedRoutesFromPosition, calculateBearing, calculateDistance, matchTaxiPosition } from '../utils/navigationUtils';

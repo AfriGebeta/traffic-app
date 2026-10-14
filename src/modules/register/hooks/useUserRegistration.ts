@@ -5,9 +5,9 @@ import { userService } from '../services/user.service';
 import { AuthResponse, UserRegistrationRequest } from '../types/user.types';
 import { resetHomeOnboarding } from '../../places/utils/homeOnboarding';
 import { AuthErrorCode, toFriendlyAuthError } from '../utils/authErrors';
+import { clearSession, getAccessToken } from '../../../shared/services/auth-session';
 
 const USER_STORAGE_KEY = '@traffic_app_user';
-const TOKEN_STORAGE_KEY = '@traffic_app_token';
 
 export interface RegisterResult {
     userId: string | null;
@@ -89,16 +89,10 @@ export const useUserRegistration = () => {
         return updateStoredUser(updates);
     };
 
-    const getStoredToken = async (): Promise<string | null> => {
-        try {
-            return await AsyncStorage.getItem(TOKEN_STORAGE_KEY);
-        } catch {
-            return null;
-        }
-    };
+    const getStoredToken = (): Promise<string | null> => getAccessToken();
 
     const clearAuth = async (): Promise<void> => {
-        await AsyncStorage.multiRemove([USER_STORAGE_KEY, TOKEN_STORAGE_KEY]);
+        await clearSession();
         await resetHomeOnboarding();
     };
 

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../../shared/theme/colors';
 import type { NavigationOption } from '../types/voice-navigation.types';
+import { SHEET_MAX_STYLE } from '../../../shared/layout/modalStyles';
 
 interface NavigationOptionsModalProps {
     visible: boolean;
@@ -48,7 +49,7 @@ export const NavigationOptionsModal: React.FC<NavigationOptionsModalProps> = ({
 
                 <View
                     className="bg-white rounded-t-3xl max-h-[70%]"
-                    style={{ paddingBottom: insets.bottom || 20 }}
+                    style={[{ paddingBottom: insets.bottom || 20 }, SHEET_MAX_STYLE]}
                 >
                     <View className="items-center pt-3 pb-2">
                         <View className="w-12 h-1 bg-gray-300 rounded-full" />

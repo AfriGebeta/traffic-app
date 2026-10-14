@@ -1,4 +1,4 @@
-import { resolveLocationUrl } from '../shared/utils/deepLinking';
+import { extractShareCode, resolveLocationUrl } from '../shared/utils/deepLinking';
 
 export async function redirectSystemPath({
     path,
@@ -7,6 +7,13 @@ export async function redirectSystemPath({
     initial: boolean;
 }): Promise<string> {
     try {
+        const shareCode = extractShareCode(path);
+        if (shareCode) {
+            // console.log('[share] incoming link', path, '-> /s/' + shareCode);
+            return `/s/${shareCode}`;
+        }
+
+
         const location = await resolveLocationUrl(path);
         if (!location) return path;
 

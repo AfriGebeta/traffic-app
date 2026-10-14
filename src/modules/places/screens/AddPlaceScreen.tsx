@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image, ActivityIndicator, useWindowDimensions } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -18,13 +18,14 @@ import { useTheme } from '../../../shared/theme/ThemeContext';
 import { getPlaceIcon } from '../utils/placeIcons';
 import { toE164 } from '../../../shared/utils/phone';
 import { getPlaceTranslationKey } from '../utils/placeTranslations';
+import { useContentWidth } from '../../../shared/layout/ResponsiveScreen';
 
 export default function AddPlaceScreen() {
     const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { colors: theme, isDark } = useTheme();
-    const { width: windowWidth } = useWindowDimensions();
+    const windowWidth = useContentWidth();
     const tileSize = Math.floor((windowWidth - 48 - 24) / 3);
     const params = useLocalSearchParams();
     const placeType = params.type as PlaceType;

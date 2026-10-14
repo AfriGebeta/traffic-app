@@ -17,18 +17,10 @@ interface SearchBarProps {
     placeholder?: string;
     onProfilePress?: () => void;
     isLoading?: boolean;
+    hideProfile?: boolean;
 }
 
-export const SearchBar: React.FC<SearchBarProps> = ({
-    value,
-    onChangeText,
-    onClear,
-    onFocus,
-    onBlur,
-    placeholder = 'Search Location...',
-    onProfilePress,
-    isLoading = false,
-}) => {
+export const ProfileButton: React.FC<{ onPress?: () => void; size?: number }> = ({ onPress, size = 39 }) => {
     const { colors: theme } = useTheme();
     const glass = useGlass();
     const { getStoredUser } = useUserRegistration();
@@ -46,20 +38,39 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     );
 
     return (
+        <TouchableOpacity
+            className="rounded-2xl"
+            style={[glass.surface, { width: size, height: size, alignItems: 'center', justifyContent: 'center' }]}
+            onPress={onPress}
+            activeOpacity={0.7}
+        >
+            <GlassSheen radius={16} />
+            {profileImage ? (
+                <Image source={{ uri: profileImage }} style={{ width: size, height: size, borderRadius: 16 }} />
+            ) : (
+                <Ionicons name="person" size={Math.round(size * 0.6)} color={theme.textPrimary} />
+            )}
+        </TouchableOpacity>
+    );
+};
+
+export const SearchBar: React.FC<SearchBarProps> = ({
+    value,
+    onChangeText,
+    onClear,
+    onFocus,
+    onBlur,
+    placeholder = 'Search Location...',
+    onProfilePress,
+    isLoading = false,
+    hideProfile = false,
+}) => {
+    const { colors: theme } = useTheme();
+    const glass = useGlass();
+
+    return (
         <View className="flex-row items-center gap-3">
-            <TouchableOpacity
-                className="rounded-2xl"
-                style={[glass.surface, { width: 39, height: 39, alignItems: 'center', justifyContent: 'center' }]}
-                onPress={onProfilePress}
-                activeOpacity={0.7}
-            >
-                <GlassSheen radius={16} />
-                {profileImage ? (
-                    <Image source={{ uri: profileImage }} style={{ width: 39, height: 39, borderRadius: 16 }} />
-                ) : (
-                    <Ionicons name="person" size={23} color={theme.textPrimary} />
-                )}
-            </TouchableOpacity>
+            {!hideProfile && <ProfileButton onPress={onProfilePress} />}
 
             <View
                 className="flex-1 rounded-2xl flex-row items-center px-3 py-0.5"

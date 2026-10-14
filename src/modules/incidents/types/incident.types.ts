@@ -10,6 +10,11 @@ export interface IncidentTypeFromAPI {
     updatedAt: string;
 }
 
+export type CongestionLevel = 'low' | 'medium' | 'high';
+
+export const CONGESTION_LEVELS: readonly CongestionLevel[] = ['low', 'medium', 'high'];
+export const DEFAULT_CONGESTION_LEVEL: CongestionLevel = 'low';
+
 export interface Incident {
     id: string;
     lat: number;
@@ -21,6 +26,7 @@ export interface Incident {
     createdAt: string;
     upvotes: number;
     downvotes: number;
+    congestionLevel?: CongestionLevel | null;
 }
 
 export interface IncidentReportRequest {
@@ -30,6 +36,8 @@ export interface IncidentReportRequest {
     description: string;
     direction?: string;
     images?: string[];
+    // required by the API when type is TRAFFIC_JAM
+    congestionLevel?: CongestionLevel;
 }
 
 export const INCIDENT_TYPES = [
