@@ -4128,5 +4128,45 @@
         "key": "session-expired",
         "EN_US": "Your session has expired. Please log in again.",
         "AM": "ክፍለ ጊዜዎ አብቅቷል። እባክዎ እንደገና ይግቡ።"
+    },
+    {
+        "key": "reporting-paused-until",
+        "EN_US": "Reporting is paused until {{date}}",
+        "AM": "ሪፖርት ማድረግ እስከ {{date}} ድረስ ታግዷል"
+    },
+    {
+        "key": "reporting-paused",
+        "EN_US": "Reporting is paused on your account",
+        "AM": "በአካውንትዎ ላይ ሪፖርት ማድረግ ታግዷል"
+    },
+    {
+        "key": "account-suspended",
+        "EN_US": "Your account is suspended",
+        "AM": "አካውንትዎ ታግዷል"
+    },
+    {
+        "key": "report-merged-thanks",
+        "EN_US": "Thanks, we added your confirmation",
+        "AM": "እናመሰግናለን፣ ማረጋገጫዎን ጨምረናል"
+    },
+    {
+        "key": "vote-too-far",
+        "EN_US": "You're too far from this report to confirm it",
+        "AM": "ይህን ሪፖርት ለማረጋገጥ በጣም ርቀዋል"
+    },
+    {
+        "key": "similar-place-title",
+        "EN_US": "Did you mean…?",
+        "AM": "ይህን ማለትዎ ነው?"
+    },
+    {
+        "key": "similar-place-exists",
+        "EN_US": "A similar place already exists nearby:",
+        "AM": "ተመሳሳይ ቦታ በአቅራቢያ አለ፦"
+    },
+    {
+        "key": "photo-location-mismatch",
+        "EN_US": "This photo wasn't taken at this place. Please add a photo taken there.",
+        "AM": "ይህ ፎቶ በዚህ ቦታ አልተነሳም። እባክዎ እዚያ የተነሳ ፎቶ ያክሉ።"
     }
 ]

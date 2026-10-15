@@ -19,11 +19,12 @@ export const incidentService = {
         return apiService.get<Incident[]>(url);
     },
 
-    async upvote(incidentId: string) {
-        return apiService.post<void>(`/api/incidents/${incidentId}/upvote`);
+    // backend rejects votes from more than 300 m away, so the voter's location is required
+    async upvote(incidentId: string, location: { lat: number; lng: number }) {
+        return apiService.post<Incident>(`/api/incidents/${incidentId}/upvote`, location);
     },
 
-    async downvote(incidentId: string) {
-        return apiService.post<void>(`/api/incidents/${incidentId}/downvote`);
+    async downvote(incidentId: string, location: { lat: number; lng: number }) {
+        return apiService.post<Incident>(`/api/incidents/${incidentId}/downvote`, location);
     },
 };

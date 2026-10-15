@@ -1,7 +1,29 @@
 import { apiService } from '../../../shared/services/api';
+import { ApiError } from '../../../shared/utils/apiErrors';
 import { TrafficRuleType, TrafficRuleReport, TrafficRuleReportRequest } from '../types/rule.types';
 
 export const ruleService = {
+    // backend rejects votes from more than 300 m away, so the voter's location is required
+    async upvote(reportId: string, location: { lat: number; lng: number }): Promise<TrafficRuleReport> {
+        return ruleService.vote(reportId, 'upvote', location);
+    },
+
+    async downvote(reportId: string, location: { lat: number; lng: number }): Promise<TrafficRuleReport> {
+        return ruleService.vote(reportId, 'downvote', location);
+    },
+
+    async vote(
+        reportId: string,
+        direction: 'upvote' | 'downvote',
+        location: { lat: number; lng: number }
+    ): Promise<TrafficRuleReport> {
+        const response = await apiService.post<TrafficRuleReport>(`/api/rules/reports/${reportId}/${direction}`, location);
+        if (response.error || !response.data) {
+            throw new ApiError(response, 'Failed to vote');
+        }
+        return response.data;
+    },
+
     async getRuleTypes(): Promise<TrafficRuleType[]> {
         const response = await apiService.get<TrafficRuleType[]>('/api/rules/types');
         if (response.error) {
@@ -13,7 +35,7 @@ export const ruleService = {
     async reportRule(data: TrafficRuleReportRequest): Promise<TrafficRuleReport> {
         const response = await apiService.post<TrafficRuleReport>('/api/rules/reports', data);
         if (response.error) {
-            throw Object.assign(new Error(response.error), { status: response.status });
+            throw new ApiError(response);
         }
         if (!response.data) {
             throw new Error('No data returned from server');

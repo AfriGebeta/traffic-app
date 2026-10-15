@@ -16,6 +16,7 @@ export interface TrafficRuleReport {
     userId?: string;
     createdAt: string;
     updatedAt: string;
+    merged?: boolean;
 }
 
 export interface TrafficRuleReportRequest {
@@ -24,4 +25,6 @@ export interface TrafficRuleReportRequest {
     typeId: string;
     punishment: string;
     userId?: string;
+    // driving direction 0–360
+    heading?: number;
 }

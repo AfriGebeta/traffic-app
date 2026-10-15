@@ -1,13 +1,15 @@
 import { apiService } from '../../../shared/services/api';
 import { Place, PlaceContributionRequest, SavedPlace, SavePlaceRequest, SavePlaceVoiceRequest, SavePlaceAudioResponse } from '../types/place.types';
 import { ClaimBusinessRequest, ClaimBusinessResponse } from '../types/claim.types';
+import { ApiError } from '../../../shared/utils/apiErrors';
 
 export const placeService = {
     async contributePlace(data: PlaceContributionRequest): Promise<Place> {
         const response = await apiService.post<Place>('/api/places', data);
 
         if (response.error || !response.data) {
-            throw new Error(response.error || 'Failed to contribute place');
+            // keeps the code so the screen can handle E0016 / E0018
+            throw new ApiError(response, 'Failed to contribute place');
         }
 
         return response.data;

@@ -11,11 +11,12 @@ import { getAppCheckToken } from '../../../shared/utils/appCheck';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { INCIDENT_SVG_ICON_MAP as INCIDENT_ICON_MAP } from './incidentIcons';
 import { QuickReportSheet } from './QuickReportSheet';
+import { ReportLocation } from '../../../shared/utils/reportHeading';
 
 interface IncidentReportSheetProps {
     isVisible: boolean;
     onClose: () => void;
-    userLocation: { lat: number; lng: number } | null;
+    userLocation: ReportLocation | null;
     isNavigating?: boolean;
     onNavigateToReport?: () => void;
 }
@@ -88,6 +89,7 @@ export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
                 typeName: typeName,
                 lat: userLocation?.lat.toString() || '',
                 lng: userLocation?.lng.toString() || '',
+                heading: userLocation?.heading?.toString() ?? '',
                 refresh: 'true',
                 isNavigating: isNavigating.toString(),
             });
