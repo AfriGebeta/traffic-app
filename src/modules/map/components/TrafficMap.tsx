@@ -1289,6 +1289,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     distance={activeIncidentAlert.distance}
                     distanceKm={activeIncidentAlert.distanceKm}
                     incidentType={activeIncidentAlert.incidentType}
+                    isOwnReport={activeIncidentAlert.isOwnReport}
                     voterLocation={userLocation}
                     onDismiss={dismissIncidentAlert}
                 />
@@ -1509,6 +1510,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                 userLocation={reportSheetLocation}
                 isNavigating={navigationMode}
                 onNavigateToReport={() => setIsOnIncidentReportScreen(true)}
+                onIncidentReported={refetch}
             />
 
             <ExploreSheet

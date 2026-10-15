@@ -48,6 +48,8 @@ interface QuickReportSheetProps {
     onClose: () => void;
     userLocation: ReportLocation | null;
     onNavigateToReport?: () => void;
+    // called after a successful incident report so the map can show it right away
+    onIncidentReported?: () => void;
 }
 
 export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
@@ -55,6 +57,7 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
     onClose,
     userLocation,
     onNavigateToReport,
+    onIncidentReported,
 }) => {
     const { t } = useTranslation();
     const router = useRouter();
@@ -148,6 +151,7 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
                     });
                     if (response.error) throw new ApiError(response);
                     showToast(t(response.data?.merged ? 'report-merged-thanks' : 'incident-reported-successfully'));
+                    onIncidentReported?.();
                 } else {
                     const report = await ruleService.reportRule({
                         lat: location.lat,
@@ -164,7 +168,7 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
                 showReportError(t, reportErrorFrom(error));
             }
         },
-        [stopCountdown, onClose, t]
+        [stopCountdown, onClose, onIncidentReported, t]
     );
 
     const select = React.useCallback(

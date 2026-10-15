@@ -26,6 +26,7 @@ interface IncidentAlertProps {
     distanceKm: number;
     incidentType: IncidentTypeFromAPI;
     voterLocation: { lat: number; lng: number } | null;
+    isOwnReport?: boolean;
     onDismiss?: () => void;
     topOffset?: number;
 }
@@ -43,6 +44,7 @@ export const IncidentAlert: React.FC<IncidentAlertProps> = ({
     distanceKm,
     incidentType,
     voterLocation,
+    isOwnReport = false,
     topOffset = 155,
 }) => {
     const { t } = useTranslation();
@@ -52,7 +54,7 @@ export const IncidentAlert: React.FC<IncidentAlertProps> = ({
 
     const [isVoting, setIsVoting] = useState(false);
     const [votedFor, setVotedFor] = useState<string | null>(null);
-    const showVoteButtons = distanceKm <= VOTE_DISTANCE_KM && votedFor !== incidentId;
+    const showVoteButtons = !isOwnReport && distanceKm <= VOTE_DISTANCE_KM && votedFor !== incidentId;
 
     const handleVote = async (direction: 'up' | 'down') => {
         if (isVoting) return;
