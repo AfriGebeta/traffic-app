@@ -18,6 +18,7 @@ import { UpdateBanner } from '../components/UpdateBanner';
 import { ToastHost } from '../shared/components/ToastHost';
 import { showToast } from '../shared/utils/toast';
 import { onSessionExpired } from '../shared/services/auth-session';
+import { onUserRestricted, UserRestriction } from '../shared/utils/apiErrors';
 import { resetHomeOnboarding } from '../modules/places/utils/homeOnboarding';
 import i18n from '../shared/utils/localization/i18n';
 import telemetryApiService from '../shared/services/telemetry-api.service';
@@ -38,6 +39,18 @@ applyGlobalFont();
 installClientHeaders();
 
 const BACKGROUND_IDLE_MS = 30 * 60 * 1000;
+const RESTRICTED_TOAST_COOLDOWN_MS = 30 * 1000;
+
+const restrictionMessage = ({ scope, expiresAt }: UserRestriction): string => {
+  if (scope?.toLowerCase() === 'account') return i18n.t('account-suspended');
+  const until = expiresAt ? new Date(expiresAt) : null;
+  if (until && !Number.isNaN(until.getTime())) {
+    return i18n.t('reporting-paused-until', {
+      date: until.toLocaleString(i18n.language, { dateStyle: 'medium', timeStyle: 'short' }),
+    });
+  }
+  return i18n.t('reporting-paused');
+};
 
 const NAVIGATION_PATHS = [
   '/navigation/route-preview',
@@ -141,6 +154,17 @@ function AppShell() {
         return;
       }
       redirectToLogin();
+    });
+  }, []);
+
+  // toast only, never a modal or redirect, so it's safe during navigation
+  useEffect(() => {
+    let lastShownAt = 0;
+    return onUserRestricted((restriction) => {
+      if (Date.now() - lastShownAt < RESTRICTED_TOAST_COOLDOWN_MS) return;
+      lastShownAt = Date.now();
+      logBreadcrumb(`api: user restricted (${restriction.scope ?? '-'})`);
+      showToast(restrictionMessage(restriction));
     });
   }, []);
 

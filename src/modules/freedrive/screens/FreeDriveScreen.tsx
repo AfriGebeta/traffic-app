@@ -18,6 +18,7 @@ import { useIncidents } from '../../incidents/hooks/useIncidents';
 import { useAuthGate } from '../../register/hooks/useAuthGate';
 import type { TrafficRuleReport } from '../../rules/types/rule.types';
 import { headingRayCoordinates } from '../utils/geo';
+import { toReportHeading } from '../../../shared/utils/reportHeading';
 import FreeDriveMap, {
     FreeDriveMapHandle,
     FreeDriveTelemetry,
@@ -52,6 +53,11 @@ const FreeDriveScreen: React.FC = () => {
     const reportLocation = useMemo(
         () => (fix ? { lat: fix.lat, lng: fix.lng } : handoverCenter),
         [fix, handoverCenter]
+    );
+
+    const reportSheetLocation = useMemo(
+        () => reportLocation && { ...reportLocation, heading: toReportHeading(fix?.roadBearing ?? fix?.heading) },
+        [reportLocation, fix]
     );
 
     const { incidents } = useIncidents();
@@ -121,6 +127,7 @@ const FreeDriveScreen: React.FC = () => {
                     distance={activeIncidentAlert.distance}
                     distanceKm={activeIncidentAlert.distanceKm}
                     incidentType={activeIncidentAlert.incidentType}
+                    voterLocation={reportLocation}
                     onDismiss={dismissIncidentAlert}
                     topOffset={12}
                 />
@@ -213,7 +220,7 @@ const FreeDriveScreen: React.FC = () => {
             <IncidentReportSheet
                 isVisible={showReportOptions}
                 onClose={() => setShowReportOptions(false)}
-                userLocation={reportLocation}
+                userLocation={reportSheetLocation}
                 isNavigating={true}
             />
         </View>

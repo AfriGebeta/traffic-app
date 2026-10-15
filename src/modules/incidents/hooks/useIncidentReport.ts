@@ -7,6 +7,7 @@ export interface IncidentReportResult {
     incident: Incident | null;
     error?: string;
     status?: number;
+    code?: string;
 }
 
 export const useIncidentReport = () => {
@@ -47,7 +48,8 @@ export const useIncidentReport = () => {
         coords?: { lat: number; lng: number },
         direction?: string,
         images?: string[],
-        congestionLevel?: CongestionLevel
+        congestionLevel?: CongestionLevel,
+        heading?: number
     ): Promise<IncidentReportResult> => {
         setLoading(true);
         setError(null);
@@ -66,13 +68,14 @@ export const useIncidentReport = () => {
                 type: typeName,
                 description,
                 direction,
+                ...(heading !== undefined && { heading }),
                 ...(images && images.length > 0 && { image: images }),
                 ...(congestionLevel && { congestionLevel }),
             });
 
             if (response.error) {
                 setError(response.error);
-                return { incident: null, error: response.error, status: response.status };
+                return { incident: null, error: response.error, status: response.status, code: response.errorCode };
             }
 
             return { incident: response.data || null };

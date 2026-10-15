@@ -1,6 +1,7 @@
 import { getAppCheckToken } from '../utils/appCheck';
 import { CLIENT_HEADERS } from '../utils/clientHeaders';
 import { authFetch } from './auth-session';
+import { notifyIfRestricted } from '../utils/apiErrors';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL!;
 
@@ -9,6 +10,8 @@ export interface ApiResponse<T> {
     error?: string;
     errorData?: unknown;
     errorBody?: any;
+    errorCode?: string;
+    errorAdditional?: Record<string, any>;
     message?: string;
     status?: number;
 }
@@ -17,8 +20,20 @@ const toErrorMessage = (data: any, status: number): string => {
     if (data?.message) return data.message;
     if (typeof data?.error === 'string') return data.error;
     if (data?.error?.elaboration) return data.error.elaboration;
+    if (typeof data?.error?.message === 'string') return data.error.message;
     return `Request failed with status ${status}`;
 };
+
+// backend errors: { error: { namespace, code, message, additional } }
+const toErrorResponse = <T>(data: any, status: number): ApiResponse<T> => notifyIfRestricted({
+    error: toErrorMessage(data, status),
+    errorData: data.error,
+    errorBody: data,
+    errorCode: typeof data?.error?.code === 'string' ? data.error.code : undefined,
+    errorAdditional: data?.error?.additional ?? undefined,
+    message: data.message,
+    status,
+});
 
 class ApiService {
     private baseUrl: string;
@@ -59,15 +74,8 @@ class ApiService {
             const data = await response.json();
 
             if (!response.ok) {
-                const errorMessage = toErrorMessage(data, response.status);
                 console.error(`API ${options.method || 'GET'} ${endpoint} failed (${response.status}):`, JSON.stringify(data));
-                return {
-                    error: errorMessage,
-                    errorData: data.error,
-                    errorBody: data,
-                    message: data.message,
-                    status: response.status,
-                };
+                return toErrorResponse<T>(data, response.status);
             }
 
             return {
@@ -131,15 +139,8 @@ class ApiService {
             const data = await response.json();
 
             if (!response.ok) {
-                const errorMessage = toErrorMessage(data, response.status);
                 console.error(`API ${method}(form) ${endpoint} failed (${response.status}):`, JSON.stringify(data));
-                return {
-                    error: errorMessage,
-                    errorData: data.error,
-                    errorBody: data,
-                    message: data.message,
-                    status: response.status,
-                };
+                return toErrorResponse<T>(data, response.status);
             }
 
             return {

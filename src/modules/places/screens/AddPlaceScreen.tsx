@@ -19,9 +19,11 @@ import { getPlaceIcon } from '../utils/placeIcons';
 import { toE164 } from '../../../shared/utils/phone';
 import { getPlaceTranslationKey } from '../utils/placeTranslations';
 import { useContentWidth } from '../../../shared/layout/ResponsiveScreen';
+import { ConfirmDialog } from '../../../components/ConfirmDialog';
+import { ApiError, ApiErrorCode, getDuplicatePlaceNames, isRestrictedError } from '../../../shared/utils/apiErrors';
 
 export default function AddPlaceScreen() {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { colors: theme, isDark } = useTheme();
@@ -55,6 +57,8 @@ export default function AddPlaceScreen() {
     const [images, setImages] = useState<{ localUri: string; objectName: string }[]>([]);
     const [uploading, setUploading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    // E0016: names of similar places nearby; null when the dialog is closed
+    const [duplicateNames, setDuplicateNames] = useState<string[] | null>(null);
     const [usingCurrentLocation, setUsingCurrentLocation] = useState(false);
     const autoFilledLocation = React.useRef(Boolean(prefillCoordinates));
 
@@ -151,6 +155,12 @@ export default function AddPlaceScreen() {
         setUsingCurrentLocation(true);
     };
 
+    const leaveScreen = () => {
+        for (let i = 0; i < backSteps && router.canGoBack(); i += 1) {
+            router.back();
+        }
+    };
+
     const handleSubmit = async () => {
         if (!name.trim()) {
             showToast(`${t('name-required')}: ${t('please-enter-place-name')}`);
@@ -196,16 +206,25 @@ export default function AddPlaceScreen() {
                 phone: phoneE164 ?? undefined,
                 images: images.map((img) => img.objectName),
                 address: hasAddress ? address : undefined,
+                ...(userLocation && { deviceLat: userLocation.lat, deviceLng: userLocation.lng }),
             });
 
             dashboardEventsService.contribute();
             showToast(t('place-contribution-submitted'));
 
-            for (let i = 0; i < backSteps && router.canGoBack(); i += 1) {
-                router.back();
-            }
+            leaveScreen();
         } catch (error) {
             console.error('Submit error:', error);
+            const code = error instanceof ApiError ? error.code : undefined;
+            if (isRestrictedError(code)) return;
+            if (code === ApiErrorCode.DuplicatePlace) {
+                setDuplicateNames(getDuplicatePlaceNames((error as ApiError).additional, i18n.language));
+                return;
+            }
+            if (code === ApiErrorCode.PhotoLocationMismatch) {
+                showToast(t('photo-location-mismatch'));
+                return;
+            }
             const errorMessage = error instanceof Error ? error.message : t('could-not-submit-contribution');
             showToast(errorMessage);
         } finally {
@@ -487,6 +506,19 @@ export default function AddPlaceScreen() {
                     disabled={submitting || !name.trim() || !coordinates || phoneInvalid || (needsCustomCategory && !customCategory.trim())}
                 />
             </View>
+
+            <ConfirmDialog
+                visible={duplicateNames !== null}
+                title={t('similar-place-title')}
+                message={[t('similar-place-exists'), ...(duplicateNames ?? []).map((n) => `• ${n}`)].join('\n')}
+                cancelLabel={t('edit')}
+                confirmLabel={t('done')}
+                onCancel={() => setDuplicateNames(null)}
+                onConfirm={() => {
+                    setDuplicateNames(null);
+                    leaveScreen();
+                }}
+            />
         </View>
     );
 }

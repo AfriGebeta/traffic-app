@@ -38,7 +38,8 @@ import { getIncidentTranslationKey } from '../utils/incidentTranslations';
 import { uploadToMinio } from '../../../shared/utils/minio';
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import { useLocation } from '../../../shared/contexts/LocationContext';
-import { getReportErrorMessage } from '../../../shared/utils/reportErrors';
+import { showReportError } from '../../../shared/utils/reportErrors';
+import { toReportHeading } from '../../../shared/utils/reportHeading';
 import { useContentWidth } from '../../../shared/layout/ResponsiveScreen';
 
 type IncidentIcon = React.FC<{ width?: number; height?: number }>;
@@ -72,6 +73,7 @@ export default function IncidentReportScreen() {
             : undefined;
     const passedLat = params.lat ? parseFloat(params.lat as string) : null;
     const passedLng = params.lng ? parseFloat(params.lng as string) : null;
+    const passedHeading = toReportHeading(params.heading as string | undefined);
 
 
     const { selectedLocation, setSelectedLocation } = useLocation();
@@ -166,24 +168,26 @@ export default function IncidentReportScreen() {
             return;
         }
 
-        const { incident, error, status } = await reportIncident(
+        const { incident, error, status, code } = await reportIncident(
             incidentTypeName,
             description.trim() || 'No description provided',
             location,
             direction.trim() || undefined,
             images.map((img) => img.objectName),
-            congestionLevel
+            congestionLevel,
+            // a map-picked spot isn't where the driver is heading
+            pickedLocation ? undefined : passedHeading
         );
 
         if (incident) {
             console.log('Incident created:', incident);
             dashboardEventsService.contribute();
-            showToast(t('incident-reported-successfully'));
+            showToast(t(incident.merged ? 'report-merged-thanks' : 'incident-reported-successfully'));
             setTimeout(() => {
                 router.back();
             }, 500);
         } else {
-            showToast(getReportErrorMessage(t, error, status));
+            showReportError(t, { message: error, status, code });
         }
     };
 

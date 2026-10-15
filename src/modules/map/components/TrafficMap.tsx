@@ -52,6 +52,7 @@ import { setNavigationPreviewData } from '../../navigation/services/navigationPr
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import { resolvePlaceType } from '../../places/utils/placeTypeMapping';
 import { buildPreviewSteps, fitBoundsToCoords } from '../../navigation/utils/navigationPreviewUtils';
+import { toReportHeading } from '../../../shared/utils/reportHeading';
 
 interface TrafficMapProps {
     sharedLocation?: SharedLocation | null;
@@ -184,6 +185,15 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         setCurrentCosting,
         currentSpeed,
     } = useNavigation(mapRef, userLocation, setUserLocation, stopBackgroundTracking, startBackgroundTracking);
+
+    // currentHeading is only live while navigating, and an exact 0 is its initial value
+    // (or a zero-length bearing), not a real direction, so leave heading out then
+    const reportSheetLocation = useMemo(() => {
+        const location = incidentReportLocation ?? userLocation;
+        if (!location) return null;
+        const hasHeading = navigationMode && currentHeading !== 0;
+        return { ...location, heading: hasHeading ? toReportHeading(currentHeading) : undefined };
+    }, [incidentReportLocation, userLocation, navigationMode, currentHeading]);
 
     const [nearbyRules, setNearbyRules] = useState<any[]>([]);
 
@@ -1279,6 +1289,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     distance={activeIncidentAlert.distance}
                     distanceKm={activeIncidentAlert.distanceKm}
                     incidentType={activeIncidentAlert.incidentType}
+                    voterLocation={userLocation}
                     onDismiss={dismissIncidentAlert}
                 />
             )}
@@ -1495,7 +1506,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     setShowReportOptions(false);
                     setIncidentReportLocation(null);
                 }}
-                userLocation={incidentReportLocation ?? userLocation}
+                userLocation={reportSheetLocation}
                 isNavigating={navigationMode}
                 onNavigateToReport={() => setIsOnIncidentReportScreen(true)}
             />
