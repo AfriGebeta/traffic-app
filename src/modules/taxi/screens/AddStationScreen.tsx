@@ -12,6 +12,7 @@ import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { showToast } from '../../../shared/utils/toast';
 import { taxiService } from '../services/taxi.service';
 import { TaxiNode } from '../types/taxi.types';
+import { ApiError, isRestrictedError } from '../../../shared/utils/apiErrors';
 
 const NEARBY_RADIUS_METERS = 300;
 
@@ -186,6 +187,7 @@ export default function AddStationScreen() {
 
         setSubmitting(true);
         try {
+            let merged = false;
             if (createdNodeId.current == null) {
                 const created = await taxiService.createNodeForRoute({
                     name: name.trim(),
@@ -195,6 +197,7 @@ export default function AddStationScreen() {
                     landmark: landmark.trim() || undefined,
                 });
                 createdNodeId.current = created?.id ?? null;
+                merged = created?.merged === true;
             }
 
             if (destinations.length > 0) {
@@ -214,10 +217,12 @@ export default function AddStationScreen() {
                 }
             }
 
-            showToast(t('station-created-successfully'));
+            showToast(t(merged ? 'report-merged-thanks' : 'station-created-successfully'));
             router.back();
         } catch (error: any) {
             console.error('[AddStation] Error creating node:', error);
+            // E0017 already shows a global toast
+            if (error instanceof ApiError && isRestrictedError(error.code)) return;
             Alert.alert(t('error'), error?.message || t('failed-to-create-station'));
         } finally {
             setSubmitting(false);

@@ -9,6 +9,7 @@ import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { routeCacheService } from '../services/route-cache.service';
 import { showToast } from '../../../shared/utils/toast';
+import { ApiError, isRestrictedError } from '../../../shared/utils/apiErrors';
 
 interface RouteStop {
     id: string;
@@ -225,6 +226,8 @@ export default function SetPricingScreen() {
             });
         } catch (error: any) {
             console.error('Route creation error:', error);
+            // E0017 already shows a global toast
+            if (error instanceof ApiError && isRestrictedError(error.code)) return;
             Alert.alert(
                 t('error'),
                 error.message || t('failed-to-create-route')
