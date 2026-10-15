@@ -13,6 +13,8 @@ import TrafficLightIcon from '../../../../assets/images/contribute-traffic-light
 import TrafficDarkIcon from '../../../../assets/images/contribute-traffic-dark.svg';
 import TaxiLightIcon from '../../../../assets/images/contribute-taxi-light.svg';
 import TaxiDarkIcon from '../../../../assets/images/contribute-taxi-dark.svg';
+import { CampaignPointsBadge } from '../../campaigns/components/CampaignPointsBadge';
+import { CampaignKind } from '../../campaigns/types/campaign.types';
 
 export default function ContributionScreen() {
     const router = useRouter();
@@ -27,6 +29,7 @@ export default function ContributionScreen() {
             descriptionKey: 'contribute-place-description',
             Icon: isDark ? PlaceDarkIcon : PlaceLightIcon,
             route: '/places/contribute',
+            campaignKind: 'place' as CampaignKind,
         },
         {
             id: 'neighborhoods',
@@ -34,6 +37,8 @@ export default function ContributionScreen() {
             descriptionKey: 'contribute-neighborhood-description',
             Icon: isDark ? NeighborhoodDarkIcon : NeighborhoodLightIcon,
             route: '/neighborhoods/contribute',
+            // neighborhoods aren't campaign contributions, so no points badge
+            campaignKind: null,
         },
         {
             id: 'rules',
@@ -41,6 +46,7 @@ export default function ContributionScreen() {
             descriptionKey: 'report-traffic-rule-description',
             Icon: isDark ? TrafficDarkIcon : TrafficLightIcon,
             route: '/rules/contribute',
+            campaignKind: 'traffic_rule' as CampaignKind,
         },
         {
             id: 'taxi',
@@ -48,6 +54,7 @@ export default function ContributionScreen() {
             descriptionKey: 'contribute-taxi-info-description',
             Icon: isDark ? TaxiDarkIcon : TaxiLightIcon,
             route: '/taxi/contribute',
+            campaignKind: 'taxi_station' as CampaignKind,
         },
     ];
 
@@ -82,9 +89,12 @@ export default function ContributionScreen() {
                                     <option.Icon width={40} height={40} />
                                 </View>
                                 <View className="flex-1">
-                                    <Text className="text-xl font-semibold mb-1" style={{ color: theme.textPrimary }}>
-                                        {t(option.titleKey)}
-                                    </Text>
+                                    <View className="flex-row items-center flex-wrap mb-1">
+                                        <Text className="text-xl font-semibold mr-2" style={{ color: theme.textPrimary }}>
+                                            {t(option.titleKey)}
+                                        </Text>
+                                        {option.campaignKind && <CampaignPointsBadge kind={option.campaignKind} />}
+                                    </View>
                                     <Text className="text-sm" style={{ color: theme.textSecondary }}>
                                         {t(option.descriptionKey)}
                                     </Text>

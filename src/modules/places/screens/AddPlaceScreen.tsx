@@ -20,7 +20,8 @@ import { toE164 } from '../../../shared/utils/phone';
 import { getPlaceTranslationKey } from '../utils/placeTranslations';
 import { useContentWidth } from '../../../shared/layout/ResponsiveScreen';
 import { ConfirmDialog } from '../../../components/ConfirmDialog';
-import { ApiError, ApiErrorCode, getDuplicatePlaceNames, isRestrictedError } from '../../../shared/utils/apiErrors';
+import { ApiError, ApiErrorCode, getCampaignFailures, getDuplicatePlaceNames, isRestrictedError } from '../../../shared/utils/apiErrors';
+import { showCampaignPointsEstimate } from '../../campaigns/utils/pointsPopup';
 
 export default function AddPlaceScreen() {
     const { t, i18n } = useTranslation();
@@ -211,6 +212,7 @@ export default function AddPlaceScreen() {
 
             dashboardEventsService.contribute();
             showToast(t('place-contribution-submitted'));
+            showCampaignPointsEstimate('place', coordinates, { hasPhoto: images.length > 0 });
 
             leaveScreen();
         } catch (error) {
@@ -223,6 +225,11 @@ export default function AddPlaceScreen() {
             }
             if (code === ApiErrorCode.PhotoLocationMismatch) {
                 showToast(t('photo-location-mismatch'));
+                return;
+            }
+            if (code === ApiErrorCode.CampaignRulesNotMet) {
+                const failures = getCampaignFailures((error as ApiError).additional);
+                showToast(failures.length > 0 ? failures.join('\n') : t('campaign-rules-not-met'));
                 return;
             }
             const errorMessage = error instanceof Error ? error.message : t('could-not-submit-contribution');

@@ -16,6 +16,8 @@ import { initializeAppCheckSingleton } from '../shared/utils/appCheck';
 import { ForceUpdateModal } from '../components/ForceUpdateModal';
 import { UpdateBanner } from '../components/UpdateBanner';
 import { ToastHost } from '../shared/components/ToastHost';
+import { PointsPopupHost } from '../modules/campaigns/components/PointsPopupHost';
+import { refreshCampaigns } from '../modules/campaigns/store/campaignStore';
 import { showToast } from '../shared/utils/toast';
 import { onSessionExpired } from '../shared/services/auth-session';
 import { onUserRestricted, UserRestriction } from '../shared/utils/apiErrors';
@@ -114,6 +116,7 @@ function AppShell() {
 
     // cold start
     dashboardEventsService.sessionStart();
+    void refreshCampaigns();
     void dashboardEventsService.installOnce();
   }, []);
 
@@ -123,6 +126,7 @@ function AppShell() {
       if (nextState === 'background' || nextState === 'inactive') {
         backgroundedAtRef.current = Date.now();
       } else if (nextState === 'active') {
+        void refreshCampaigns();
         const backgroundedAt = backgroundedAtRef.current;
         if (backgroundedAt !== null && Date.now() - backgroundedAt >= BACKGROUND_IDLE_MS) {
           dashboardEventsService.sessionStart();
@@ -201,6 +205,7 @@ function AppShell() {
                     screenLayout={rootScreenLayout}
                   />
                   <ToastHost />
+                  <PointsPopupHost />
                   <UpdateBanner
                     visible={showUpdateBanner}
                     latestVersion={latestVersion}

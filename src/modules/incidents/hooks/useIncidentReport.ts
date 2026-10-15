@@ -8,6 +8,7 @@ export interface IncidentReportResult {
     error?: string;
     status?: number;
     code?: string;
+    additional?: Record<string, any>;
 }
 
 export const useIncidentReport = () => {
@@ -75,7 +76,7 @@ export const useIncidentReport = () => {
 
             if (response.error) {
                 setError(response.error);
-                return { incident: null, error: response.error, status: response.status, code: response.errorCode };
+                return { incident: null, error: response.error, status: response.status, code: response.errorCode, additional: response.errorAdditional };
             }
 
             return { incident: response.data || null };

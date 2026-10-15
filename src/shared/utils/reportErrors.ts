@@ -1,4 +1,4 @@
-import { isRestrictedError } from './apiErrors';
+import { ApiErrorCode, getCampaignFailures, isRestrictedError } from './apiErrors';
 import { showToast } from './toast';
 
 type Translate = (key: string) => string;
@@ -12,13 +12,26 @@ export const getReportErrorMessage = (t: Translate, message?: string, status?: n
     isReportRateLimited(message, status) ? t('report-rate-limited') : t('report-failed');
 
 // E0017 already shows a global toast; callers skip their own
-export const showReportError = (t: Translate, error: { message?: string; status?: number; code?: string }) => {
+export interface ReportErrorInfo {
+    message?: string;
+    status?: number;
+    code?: string;
+    additional?: Record<string, any>;
+}
+
+export const showReportError = (t: Translate, error: ReportErrorInfo) => {
     if (isRestrictedError(error.code)) return;
+    if (error.code === ApiErrorCode.CampaignRulesNotMet) {
+        const failures = getCampaignFailures(error.additional);
+        showToast(failures.length > 0 ? failures.join('\n') : t('campaign-rules-not-met'));
+        return;
+    }
     showToast(getReportErrorMessage(t, error.message, error.status));
 };
 
-export const reportErrorFrom = (error: unknown): { message?: string; status?: number; code?: string } => ({
+export const reportErrorFrom = (error: unknown): ReportErrorInfo => ({
     message: error instanceof Error ? error.message : undefined,
     status: (error as { status?: number } | null)?.status,
     code: (error as { code?: string } | null)?.code,
+    additional: (error as { additional?: Record<string, any> } | null)?.additional,
 });

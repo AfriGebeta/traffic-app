@@ -2,10 +2,12 @@ import { apiService } from '../../../shared/services/api';
 import { Place, PlaceContributionRequest, SavedPlace, SavePlaceRequest, SavePlaceVoiceRequest, SavePlaceAudioResponse } from '../types/place.types';
 import { ClaimBusinessRequest, ClaimBusinessResponse } from '../types/claim.types';
 import { ApiError } from '../../../shared/utils/apiErrors';
+import { getDeviceFields } from '../../../shared/utils/deviceFields';
 
 export const placeService = {
     async contributePlace(data: PlaceContributionRequest): Promise<Place> {
-        const response = await apiService.post<Place>('/api/places', data);
+        // caller's live deviceLat/deviceLng win over the last-known fix
+        const response = await apiService.post<Place>('/api/places', { ...(await getDeviceFields()), ...data });
 
         if (response.error || !response.data) {
             // keeps the code so the screen can handle E0016 / E0018

@@ -10,6 +10,7 @@ import { dashboardEventsService } from '../../../shared/services/dashboard-event
 import { useLocation } from '../../../shared/contexts/LocationContext';
 import { reportErrorFrom, showReportError } from '../../../shared/utils/reportErrors';
 import { toReportHeading } from '../../../shared/utils/reportHeading';
+import { showCampaignPointsEstimate } from '../../campaigns/utils/pointsPopup';
 import { useTranslation } from 'react-i18next';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { colors } from '../../../shared/theme/colors';
@@ -95,6 +96,7 @@ export default function AddRuleReportScreen() {
 
             dashboardEventsService.contribute();
             showToast(t(report.merged ? 'report-merged-thanks' : 'traffic-rule-report-submitted'));
+            if (!report.merged) showCampaignPointsEstimate('traffic_rule', coordinates);
             router.back();
             if (!fromReportSheet) router.back();
         } catch (error) {

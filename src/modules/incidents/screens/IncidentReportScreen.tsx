@@ -40,6 +40,7 @@ import { dashboardEventsService } from '../../../shared/services/dashboard-event
 import { useLocation } from '../../../shared/contexts/LocationContext';
 import { showReportError } from '../../../shared/utils/reportErrors';
 import { toReportHeading } from '../../../shared/utils/reportHeading';
+import { showCampaignPointsEstimate } from '../../campaigns/utils/pointsPopup';
 import { useContentWidth } from '../../../shared/layout/ResponsiveScreen';
 
 type IncidentIcon = React.FC<{ width?: number; height?: number }>;
@@ -168,7 +169,7 @@ export default function IncidentReportScreen() {
             return;
         }
 
-        const { incident, error, status, code } = await reportIncident(
+        const { incident, error, status, code, additional } = await reportIncident(
             incidentTypeName,
             description.trim() || 'No description provided',
             location,
@@ -183,11 +184,12 @@ export default function IncidentReportScreen() {
             console.log('Incident created:', incident);
             dashboardEventsService.contribute();
             showToast(t(incident.merged ? 'report-merged-thanks' : 'incident-reported-successfully'));
+            if (!incident.merged) showCampaignPointsEstimate('incident', location, { hasPhoto: images.length > 0 });
             setTimeout(() => {
                 router.back();
             }, 500);
         } else {
-            showReportError(t, { message: error, status, code });
+            showReportError(t, { message: error, status, code, additional });
         }
     };
 

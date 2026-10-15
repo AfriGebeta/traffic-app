@@ -1,4 +1,5 @@
 import { apiService } from '../../../shared/services/api';
+import { getDeviceFields } from '../../../shared/utils/deviceFields';
 import { Incident, IncidentReportRequest, IncidentTypeFromAPI } from '../types/incident.types';
 
 export const incidentService = {
@@ -7,7 +8,7 @@ export const incidentService = {
     },
 
     async report(data: IncidentReportRequest) {
-        return apiService.post<Incident>('/api/incidents/report', data);
+        return apiService.post<Incident>('/api/incidents/report', { ...data, ...(await getDeviceFields()) });
     },
 
     async getIncidents(filters?: string[]) {

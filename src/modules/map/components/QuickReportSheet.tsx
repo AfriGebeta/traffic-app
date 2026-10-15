@@ -23,6 +23,7 @@ import { dashboardEventsService } from '../../../shared/services/dashboard-event
 import { reportErrorFrom, showReportError } from '../../../shared/utils/reportErrors';
 import { ApiError } from '../../../shared/utils/apiErrors';
 import { ReportLocation } from '../../../shared/utils/reportHeading';
+import { showCampaignPointsEstimate } from '../../campaigns/utils/pointsPopup';
 import { incidentService } from '../../incidents/services/incident.service';
 import { getIncidentTranslationKey } from '../../incidents/utils/incidentTranslations';
 import { CONGESTION_LEVELS, CongestionLevel, DEFAULT_CONGESTION_LEVEL } from '../../incidents/types/incident.types';
@@ -151,6 +152,8 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
                     });
                     if (response.error) throw new ApiError(response);
                     showToast(t(response.data?.merged ? 'report-merged-thanks' : 'incident-reported-successfully'));
+                    // a merge confirms someone else's report, so no new-contribution points
+                    if (!response.data?.merged) showCampaignPointsEstimate('incident', location);
                     onIncidentReported?.();
                 } else {
                     const report = await ruleService.reportRule({
@@ -161,6 +164,7 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
                         ...(location.heading !== undefined && { heading: location.heading }),
                     });
                     showToast(t(report.merged ? 'report-merged-thanks' : 'traffic-rule-report-submitted'));
+                    if (!report.merged) showCampaignPointsEstimate('traffic_rule', location);
                 }
                 dashboardEventsService.contribute();
             } catch (error) {

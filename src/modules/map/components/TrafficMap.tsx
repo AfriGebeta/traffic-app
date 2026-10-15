@@ -53,6 +53,7 @@ import { dashboardEventsService } from '../../../shared/services/dashboard-event
 import { resolvePlaceType } from '../../places/utils/placeTypeMapping';
 import { buildPreviewSteps, fitBoundsToCoords } from '../../navigation/utils/navigationPreviewUtils';
 import { toReportHeading } from '../../../shared/utils/reportHeading';
+import { CampaignBanner } from '../../campaigns/components/CampaignBanner';
 
 interface TrafficMapProps {
     sharedLocation?: SharedLocation | null;
@@ -1500,6 +1501,9 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                     isFetchingRoute={isNavigating}
                 />
             )}
+
+            {/* once per campaign; never over an active drive */}
+            {!navigationMode && <CampaignBanner />}
 
             <IncidentReportSheet
                 isVisible={showReportOptions}

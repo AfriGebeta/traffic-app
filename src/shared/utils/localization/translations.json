@@ -4168,5 +4168,350 @@
         "key": "photo-location-mismatch",
         "EN_US": "This photo wasn't taken at this place. Please add a photo taken there.",
         "AM": "ይህ ፎቶ በዚህ ቦታ አልተነሳም። እባክዎ እዚያ የተነሳ ፎቶ ያክሉ።"
+    },
+    {
+        "key": "close",
+        "EN_US": "Close",
+        "AM": "ዝጋ"
+    },
+    {
+        "key": "not-now",
+        "EN_US": "Not now",
+        "AM": "አሁን ይለፈኝ"
+    },
+    {
+        "key": "campaigns",
+        "EN_US": "Campaigns",
+        "AM": "ውድድሮች"
+    },
+    {
+        "key": "campaigns-profile-description",
+        "EN_US": "Join campaigns and earn points",
+        "AM": "ውድድሮች ይቀላቀሉ እና ነጥብ ያግኙ"
+    },
+    {
+        "key": "campaigns-none",
+        "EN_US": "No campaigns are running right now",
+        "AM": "በአሁኑ ጊዜ የሚካሄድ ውድድር የለም"
+    },
+    {
+        "key": "campaign-new",
+        "EN_US": "New campaign",
+        "AM": "አዲስ ውድድር"
+    },
+    {
+        "key": "campaign-banner-pitch",
+        "EN_US": "Help map your city and earn rewards for every verified contribution.",
+        "AM": "ከተማዎን ካርታ ላይ እንዲወጣ ያግዙ፣ ለእያንዳንዱ የተረጋገጠ አስተዋጽኦ ሽልማት ያግኙ።"
+    },
+    {
+        "key": "campaign-view",
+        "EN_US": "View",
+        "AM": "ይመልከቱ"
+    },
+    {
+        "key": "campaign-join",
+        "EN_US": "Join campaign",
+        "AM": "ውድድሩን ይቀላቀሉ"
+    },
+    {
+        "key": "campaign-joined",
+        "EN_US": "You joined the campaign",
+        "AM": "ውድድሩን ተቀላቅለዋል"
+    },
+    {
+        "key": "campaign-joined-short",
+        "EN_US": "Joined",
+        "AM": "ተቀላቅለዋል"
+    },
+    {
+        "key": "campaign-not-joined",
+        "EN_US": "Not joined yet",
+        "AM": "ገና አልተቀላቀሉም"
+    },
+    {
+        "key": "campaign-you-joined",
+        "EN_US": "You're in",
+        "AM": "ተቀላቅለዋል"
+    },
+    {
+        "key": "campaign-join-failed",
+        "EN_US": "Could not join the campaign. Please try again.",
+        "AM": "ውድድሩን መቀላቀል አልተቻለም። እባክዎ እንደገና ይሞክሩ።"
+    },
+    {
+        "key": "campaign-already-joined",
+        "EN_US": "You already joined this campaign",
+        "AM": "ይህን ውድድር ቀድመው ተቀላቅለዋል"
+    },
+    {
+        "key": "campaign-not-open",
+        "EN_US": "This campaign is not open for joining",
+        "AM": "ይህ ውድድር ለመቀላቀል ክፍት አይደለም"
+    },
+    {
+        "key": "campaign-not-found",
+        "EN_US": "Campaign not found",
+        "AM": "ውድድሩ አልተገኘም"
+    },
+    {
+        "key": "campaign-disqualified",
+        "EN_US": "You were disqualified",
+        "AM": "ከውድድሩ ተሰርዘዋል"
+    },
+    {
+        "key": "campaign-choose-track",
+        "EN_US": "Choose your track",
+        "AM": "ምድብዎን ይምረጡ"
+    },
+    {
+        "key": "campaign-track-locked",
+        "EN_US": "You can't change this after joining.",
+        "AM": "ከተቀላቀሉ በኋላ ይህን መቀየር አይችሉም።"
+    },
+    {
+        "key": "campaign-how-points-work",
+        "EN_US": "How points work",
+        "AM": "ነጥብ እንዴት እንደሚሰጥ"
+    },
+    {
+        "key": "campaign-points",
+        "EN_US": "points",
+        "AM": "ነጥብ"
+    },
+    {
+        "key": "campaign-pts",
+        "EN_US": "pts",
+        "AM": "ነጥብ"
+    },
+    {
+        "key": "campaign-points-pending",
+        "EN_US": "points (pending)",
+        "AM": "ነጥብ (በመጠባበቅ ላይ)"
+    },
+    {
+        "key": "campaign-outside-area",
+        "EN_US": "Outside area",
+        "AM": "ከክልሉ ውጪ"
+    },
+    {
+        "key": "campaign-bonus-photo",
+        "EN_US": "With a good photo",
+        "AM": "ጥሩ ፎቶ ካለው"
+    },
+    {
+        "key": "campaign-bonus-complete",
+        "EN_US": "With all details filled in",
+        "AM": "ሁሉም ዝርዝሮች ከተሞሉ"
+    },
+    {
+        "key": "campaign-bonus-priority",
+        "EN_US": "In priority areas",
+        "AM": "በቅድሚያ ክልሎች ውስጥ"
+    },
+    {
+        "key": "campaign-bonus-first",
+        "EN_US": "First to map a place",
+        "AM": "አንድን ቦታ ለመጀመሪያ ጊዜ ካርታ ላይ ያስገቡ"
+    },
+    {
+        "key": "campaign-daily-cap",
+        "EN_US": "Paid items per type per day",
+        "AM": "በቀን በአይነት የሚከፈልባቸው ብዛት"
+    },
+    {
+        "key": "campaign-rules",
+        "EN_US": "Rules",
+        "AM": "ደንቦች"
+    },
+    {
+        "key": "campaign-rule-verified",
+        "EN_US": "Points are paid once a contribution is verified.",
+        "AM": "ነጥብ የሚሰጠው አስተዋጽኦው ከተረጋገጠ በኋላ ነው።"
+    },
+    {
+        "key": "campaign-rule-area",
+        "EN_US": "Only contributions inside the campaign area count.",
+        "AM": "የሚቆጠሩት በዘመቻው ክልል ውስጥ ያሉ አስተዋጽኦዎች ብቻ ናቸው።"
+    },
+    {
+        "key": "campaign-rule-be-there",
+        "EN_US": "Be within {{meters}} m of what you add.",
+        "AM": "ከሚያስገቡት ቦታ በ{{meters}} ሜትር ውስጥ ይሁኑ።"
+    },
+    {
+        "key": "campaign-rule-fresh-photo",
+        "EN_US": "Photos must be taken within the last {{hours}} hours.",
+        "AM": "ፎቶዎች ባለፉት {{hours}} ሰዓታት ውስጥ የተነሱ መሆን አለባቸው።"
+    },
+    {
+        "key": "campaign-rule-camera",
+        "EN_US": "Take photos with the in-app camera for faster verification.",
+        "AM": "ለፈጣን ማረጋገጫ ፎቶዎችን በመተግበሪያው ካሜራ ያንሱ።"
+    },
+    {
+        "key": "campaign-rule-honest",
+        "EN_US": "Fake locations, reused photos or false reports lead to disqualification.",
+        "AM": "የሐሰት አካባቢ፣ ድጋሚ ጥቅም ላይ የዋሉ ፎቶዎች ወይም የሐሰት ሪፖርቶች ከውድድሩ ያስወጣሉ።"
+    },
+    {
+        "key": "campaign-rules-not-met",
+        "EN_US": "This contribution doesn't meet the campaign rules",
+        "AM": "ይህ አስተዋጽኦ የውድድሩን ደንቦች አያሟላም"
+    },
+    {
+        "key": "campaign-period-weekly",
+        "EN_US": "This week",
+        "AM": "በዚህ ሳምንት"
+    },
+    {
+        "key": "campaign-period-monthly",
+        "EN_US": "This month",
+        "AM": "በዚህ ወር"
+    },
+    {
+        "key": "campaign-status-auditing",
+        "EN_US": "Results are being checked",
+        "AM": "ውጤቶቹ እየተረጋገጡ ነው"
+    },
+    {
+        "key": "campaign-status-final",
+        "EN_US": "Final results",
+        "AM": "የመጨረሻ ውጤቶች"
+    },
+    {
+        "key": "campaign-leaderboard-empty",
+        "EN_US": "No one on the board yet",
+        "AM": "እስካሁን በሰንጠረዡ ላይ ማንም የለም"
+    },
+    {
+        "key": "campaign-leaderboard-failed",
+        "EN_US": "Could not load the leaderboard",
+        "AM": "የደረጃ ሰንጠረዡን መጫን አልተቻለም"
+    },
+    {
+        "key": "campaign-kind-place",
+        "EN_US": "Place",
+        "AM": "ቦታ"
+    },
+    {
+        "key": "campaign-kind-taxi-station",
+        "EN_US": "Taxi station",
+        "AM": "የታክሲ ተራ"
+    },
+    {
+        "key": "campaign-kind-traffic-rule",
+        "EN_US": "Traffic rule",
+        "AM": "የትራፊክ ደንብ"
+    },
+    {
+        "key": "campaign-kind-incident",
+        "EN_US": "Incident",
+        "AM": "ክስተት"
+    },
+    {
+        "key": "campaign-period-total",
+        "EN_US": "Total",
+        "AM": "ጠቅላላ"
+    },
+    {
+        "key": "campaign-open-to-all",
+        "EN_US": "Open to everyone: your contributions count",
+        "AM": "ለሁሉም ክፍት ነው፦ አስተዋጽኦዎችዎ ይቆጠራሉ"
+    },
+    {
+        "key": "campaign-open-short",
+        "EN_US": "Open to everyone",
+        "AM": "ለሁሉም ክፍት"
+    },
+    {
+        "key": "my-contributions",
+        "EN_US": "My contributions",
+        "AM": "የእኔ አስተዋጽኦዎች"
+    },
+    {
+        "key": "my-contributions-description",
+        "EN_US": "Status and points for everything you added",
+        "AM": "ላስገቡት ሁሉ ሁኔታ እና ነጥብ"
+    },
+    {
+        "key": "my-contributions-empty",
+        "EN_US": "No contributions yet",
+        "AM": "እስካሁን ምንም አስተዋጽኦ የለም"
+    },
+    {
+        "key": "my-contributions-failed",
+        "EN_US": "Could not load your contributions",
+        "AM": "አስተዋጽኦዎችዎን መጫን አልተቻለም"
+    },
+    {
+        "key": "submission-status-pending",
+        "EN_US": "Checking",
+        "AM": "በማረጋገጥ ላይ"
+    },
+    {
+        "key": "submission-status-review",
+        "EN_US": "Under review",
+        "AM": "በግምገማ ላይ"
+    },
+    {
+        "key": "submission-status-verified",
+        "EN_US": "Verified",
+        "AM": "ተረጋግጧል"
+    },
+    {
+        "key": "submission-status-rejected",
+        "EN_US": "Rejected",
+        "AM": "ውድቅ ተደርጓል"
+    },
+    {
+        "key": "submission-status-expired",
+        "EN_US": "Expired",
+        "AM": "ጊዜው አልፏል"
+    },
+    {
+        "key": "submission-status-revoked",
+        "EN_US": "Revoked",
+        "AM": "ተሰርዟል"
+    },
+    {
+        "key": "submission-correction",
+        "EN_US": "Correction",
+        "AM": "እርማት"
+    },
+    {
+        "key": "submission-reason",
+        "EN_US": "Reason",
+        "AM": "ምክንያት"
+    },
+    {
+        "key": "submission-no-campaign-points",
+        "EN_US": "No campaign points",
+        "AM": "የውድድሮች ነጥብ የለም"
+    },
+    {
+        "key": "submission-reason-duplicate",
+        "EN_US": "Already added by someone else",
+        "AM": "ቀድሞ በሌላ ሰው ገብቷል"
+    },
+    {
+        "key": "submission-reason-photo-reused",
+        "EN_US": "Photo was used before",
+        "AM": "ፎቶው ከዚህ በፊት ጥቅም ላይ ውሏል"
+    },
+    {
+        "key": "submission-reason-mock-location",
+        "EN_US": "Fake GPS location",
+        "AM": "የሐሰት የጂፒኤስ አካባቢ"
+    },
+    {
+        "key": "submission-reason-high-risk",
+        "EN_US": "Failed automatic checks",
+        "AM": "አውቶማቲክ ፍተሻዎችን አላለፈም"
+    },
+    {
+        "key": "submission-reason-disputed",
+        "EN_US": "Other users disputed it",
+        "AM": "ሌሎች ተጠቃሚዎች ተቃውመውታል"
     }
 ]
