@@ -186,11 +186,13 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         currentSpeed,
     } = useNavigation(mapRef, userLocation, setUserLocation, stopBackgroundTracking, startBackgroundTracking);
 
-    // currentHeading is only live while navigating; off-route it's a stale 0, so leave heading out
+    // currentHeading is only live while navigating, and an exact 0 is its initial value
+    // (or a zero-length bearing), not a real direction, so leave heading out then
     const reportSheetLocation = useMemo(() => {
         const location = incidentReportLocation ?? userLocation;
         if (!location) return null;
-        return { ...location, heading: navigationMode ? toReportHeading(currentHeading) : undefined };
+        const hasHeading = navigationMode && currentHeading !== 0;
+        return { ...location, heading: hasHeading ? toReportHeading(currentHeading) : undefined };
     }, [incidentReportLocation, userLocation, navigationMode, currentHeading]);
 
     const [nearbyRules, setNearbyRules] = useState<any[]>([]);
