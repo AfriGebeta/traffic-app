@@ -18,6 +18,7 @@ import { UpdateBanner } from '../components/UpdateBanner';
 import { ToastHost } from '../shared/components/ToastHost';
 import { showToast } from '../shared/utils/toast';
 import { onSessionExpired } from '../shared/services/auth-session';
+import { AUTH_ROUTE } from '../modules/register/utils/authGate';
 import { onUserRestricted, UserRestriction } from '../shared/utils/apiErrors';
 import { resetHomeOnboarding } from '../modules/places/utils/homeOnboarding';
 import i18n from '../shared/utils/localization/i18n';
@@ -142,7 +143,7 @@ function AppShell() {
   const redirectToLogin = () => {
     loginRedirectPendingRef.current = false;
     showToast(i18n.t('session-expired'));
-    router.push('/login');
+    router.push(AUTH_ROUTE as any);
   };
 
   useEffect(() => {
