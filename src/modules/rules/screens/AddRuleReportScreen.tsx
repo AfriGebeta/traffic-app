@@ -16,6 +16,7 @@ import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { isPunishableRule, NO_PUNISHMENT_VALUE } from '../utils/ruleTranslations';
+import { PhotoPicker, UploadedPhoto } from '../../../shared/components/PhotoPicker';
 
 export default function AddRuleReportScreen() {
     const router = useRouter();
@@ -41,6 +42,7 @@ export default function AddRuleReportScreen() {
         isNavigating ? navCoordinates ?? null : null
     );
     const [submitting, setSubmitting] = useState(false);
+    const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
     const [usingCurrentLocation, setUsingCurrentLocation] = useState(isNavigating && !!navCoordinates);
 
     const autoFilledLocation = React.useRef(false);
@@ -92,11 +94,12 @@ export default function AddRuleReportScreen() {
                 typeId: typeId as string,
                 punishment: (showPunishment && punishment.trim()) || NO_PUNISHMENT_VALUE,
                 ...(atNavFix && navHeading !== undefined && { heading: navHeading }),
+                ...(photos.length > 0 && { image: photos.map((photo) => photo.objectName) }),
             });
 
             dashboardEventsService.contribute();
             showToast(t(report.merged ? 'report-merged-thanks' : 'traffic-rule-report-submitted'));
-            if (!report.merged) showCampaignPointsEstimate('traffic_rule', coordinates);
+            if (!report.merged) showCampaignPointsEstimate('traffic_rule', coordinates, { hasPhoto: photos.length > 0 });
             router.back();
             if (!fromReportSheet) router.back();
         } catch (error) {
@@ -274,6 +277,13 @@ export default function AddRuleReportScreen() {
                                 </TouchableOpacity>
                             </View>
                         )}
+                    </View>
+
+                    <View>
+                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
+                            {t('photos')} <Text style={{ color: theme.textSecondary }}>({t('optional')})</Text>
+                        </Text>
+                        <PhotoPicker photos={photos} onChange={setPhotos} folder="rules" />
                     </View>
                 </View>
             </ScrollView>

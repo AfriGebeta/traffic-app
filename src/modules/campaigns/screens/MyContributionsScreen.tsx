@@ -32,7 +32,13 @@ const STATUS_LABEL_KEYS: Record<SubmissionStatus, string> = {
 };
 
 // backend decisionNote codes we can explain; anything else is shown as sent
-const KNOWN_REASONS = ['duplicate', 'photo_reused', 'mock_location', 'high_risk', 'disputed'];
+const KNOWN_REASONS = ['duplicate', 'photo_reused', 'mock_location', 'high_risk', 'disputed', 'required_fields', 'photo_missing'];
+
+// decisionNote can hold several comma-separated codes, sometimes repeated ("photo_reused,photo_reused")
+const formatReasons = (note: string, t: (key: string) => string): string =>
+    [...new Set(note.split(',').map((code) => code.trim()).filter(Boolean))]
+        .map((code) => (KNOWN_REASONS.includes(code) ? t(`submission-reason-${code.replace(/_/g, '-')}`) : code))
+        .join(', ');
 
 type Translate = (key: string) => string;
 
@@ -121,7 +127,7 @@ export default function MyContributionsScreen() {
             key={label}
             onPress={onPress}
             activeOpacity={0.7}
-            className="px-4 py-2 rounded-full mr-2"
+            className="px-4 py-2 rounded-lg mr-2"
             style={{
                 backgroundColor: active ? colors.primary.main : theme.surface,
                 borderWidth: 1,
@@ -138,11 +144,7 @@ export default function MyContributionsScreen() {
     const renderItem = ({ item }: { item: Submission }) => {
         const title = itemTitle(item, i18n.language, t) || t(KIND_LABEL_KEYS[item.kind] ?? 'campaign-kind-place');
         const outsideCampaign = item.status === 'VERIFIED' && (item.scoreDetail?.reason === 'outside_campaign' || !item.campaign);
-        const reason = item.decisionNote
-            ? KNOWN_REASONS.includes(item.decisionNote)
-                ? t(`submission-reason-${item.decisionNote.replace('_', '-')}`)
-                : item.decisionNote
-            : null;
+        const reason = item.decisionNote ? formatReasons(item.decisionNote, t) : null;
         const photo = item.photoUrls?.[0];
 
         return (

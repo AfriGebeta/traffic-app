@@ -27,4 +27,6 @@ export interface TrafficRuleReportRequest {
     userId?: string;
     // driving direction 0–360
     heading?: number;
+    // uploaded object names, e.g. "rules/abc.jpg"
+    image?: string[];
 }

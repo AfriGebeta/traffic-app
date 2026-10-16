@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
 import { Input, Button } from '../../../shared/components';
 import { PLACE_CATEGORY_IDS, PLACE_TYPES, PlaceContributionAddress, PlaceType } from '../types/place.types';
-import { uploadToMinio } from '../../../shared/utils/minio';
 import { placeService } from '../services/place.service';
 import { showToast } from '../../../shared/utils/toast';
 import { useLocation } from '../../../shared/contexts/LocationContext';
@@ -18,18 +16,18 @@ import { useTheme } from '../../../shared/theme/ThemeContext';
 import { getPlaceIcon } from '../utils/placeIcons';
 import { toE164 } from '../../../shared/utils/phone';
 import { getPlaceTranslationKey } from '../utils/placeTranslations';
-import { useContentWidth } from '../../../shared/layout/ResponsiveScreen';
+import { PhotoPicker, UploadedPhoto } from '../../../shared/components/PhotoPicker';
+import { useScoringCampaign } from '../../campaigns/hooks/useScoringCampaign';
 import { ConfirmDialog } from '../../../components/ConfirmDialog';
 import { ApiError, ApiErrorCode, getCampaignFailures, getDuplicatePlaceNames, isRestrictedError } from '../../../shared/utils/apiErrors';
 import { showCampaignPointsEstimate } from '../../campaigns/utils/pointsPopup';
+
 
 export default function AddPlaceScreen() {
     const { t, i18n } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { colors: theme, isDark } = useTheme();
-    const windowWidth = useContentWidth();
-    const tileSize = Math.floor((windowWidth - 48 - 24) / 3);
     const params = useLocalSearchParams();
     const placeType = params.type as PlaceType;
     const { selectedLocation, setSelectedLocation } = useLocation();
@@ -55,11 +53,12 @@ export default function AddPlaceScreen() {
     const [neighborhood, setNeighborhood] = useState('');
     const [streetName, setStreetName] = useState('');
     const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(prefillCoordinates);
-    const [images, setImages] = useState<{ localUri: string; objectName: string }[]>([]);
-    const [uploading, setUploading] = useState(false);
+    const inCampaign = !!useScoringCampaign('place');
+    const [images, setImages] = useState<UploadedPhoto[]>([]);
     const [submitting, setSubmitting] = useState(false);
     // E0016: names of similar places nearby; null when the dialog is closed
     const [duplicateNames, setDuplicateNames] = useState<string[] | null>(null);
+    const [showNoPhotoWarning, setShowNoPhotoWarning] = useState(false);
     const [usingCurrentLocation, setUsingCurrentLocation] = useState(false);
     const autoFilledLocation = React.useRef(Boolean(prefillCoordinates));
 
@@ -86,61 +85,6 @@ export default function AddPlaceScreen() {
         }, [selectedLocation, setSelectedLocation])
     );
 
-    const pickImage = async () => {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-        if (status !== 'granted') {
-            showToast(`${t('permission-denied')}: ${t('camera-roll-permission-required')}`);
-            return;
-        }
-
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: 'images',
-            allowsMultipleSelection: true,
-            selectionLimit: 0,
-            quality: 0.8,
-        });
-
-        if (!result.canceled && result.assets.length > 0) {
-            await uploadImages(result.assets.map((a) => a.uri));
-        }
-    };
-
-    const takePhoto = async () => {
-        const { status } = await ImagePicker.requestCameraPermissionsAsync();
-
-        if (status !== 'granted') {
-            showToast(`${t('permission-denied')}: ${t('camera-permission-required')}`);
-            return;
-        }
-
-        const result = await ImagePicker.launchCameraAsync({
-            quality: 0.8,
-        });
-
-        if (!result.canceled && result.assets[0]) {
-            await uploadImages([result.assets[0].uri]);
-        }
-    };
-
-    const uploadImages = async (uris: string[]) => {
-        setUploading(true);
-        try {
-            const uploaded = await Promise.all(
-                uris.map(async (uri) => ({ localUri: uri, objectName: await uploadToMinio(uri, 'places') }))
-            );
-            setImages((prev) => [...prev, ...uploaded]);
-            showToast(t('photo-added-successfully'));
-        } catch (error) {
-            showToast(`${t('upload-failed')}: ${t('could-not-upload-image')}`);
-        } finally {
-            setUploading(false);
-        }
-    };
-
-    const removeImage = (index: number) => {
-        setImages((prev) => prev.filter((_, i) => i !== index));
-    };
 
     const handlePickLocation = () => {
         router.push('/places/map-picker');
@@ -162,7 +106,8 @@ export default function AddPlaceScreen() {
         }
     };
 
-    const handleSubmit = async () => {
+    // skipPhotoCheck: the user already saw the "no photo" warning and chose to submit anyway
+    const handleSubmit = async (skipPhotoCheck = false) => {
         if (!name.trim()) {
             showToast(`${t('name-required')}: ${t('please-enter-place-name')}`);
             return;
@@ -180,6 +125,12 @@ export default function AddPlaceScreen() {
 
         if (phoneInvalid) {
             showToast(t('invalid-phone-number'));
+            return;
+        }
+
+        // campaigns reject places without a photo; warn before it's sent rather than after
+        if (inCampaign && images.length === 0 && !skipPhotoCheck) {
+            setShowNoPhotoWarning(true);
             return;
         }
 
@@ -449,59 +400,12 @@ export default function AddPlaceScreen() {
                     </View>
 
                     <View>
-                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('photos')}</Text>
-
-                        <View className="flex-row flex-wrap gap-3 mb-3">
-                            <TouchableOpacity
-                                className="rounded-2xl items-center justify-center"
-                                style={{ width: tileSize, height: tileSize, backgroundColor: theme.surface, borderWidth: 2, borderStyle: 'dashed', borderColor: theme.border }}
-                                onPress={takePhoto}
-                                disabled={uploading}
-                                activeOpacity={0.7}
-                            >
-                                <View className="rounded-full p-3 mb-2" style={{ backgroundColor: isDark ? theme.background : '#F3F4F6' }}>
-                                    <Ionicons name="camera" size={24} color={theme.textSecondary} />
-                                </View>
-                                <Text className="text-xs font-medium" style={{ color: theme.textSecondary }}>{t('camera')}</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                className="rounded-2xl items-center justify-center"
-                                style={{ width: tileSize, height: tileSize, backgroundColor: theme.surface, borderWidth: 2, borderStyle: 'dashed', borderColor: theme.border }}
-                                onPress={pickImage}
-                                disabled={uploading}
-                                activeOpacity={0.7}
-                            >
-                                <View className="rounded-full p-3 mb-2" style={{ backgroundColor: isDark ? theme.background : '#F3F4F6' }}>
-                                    <Ionicons name="images" size={24} color={theme.textSecondary} />
-                                </View>
-                                <Text className="text-xs font-medium" style={{ color: theme.textSecondary }}>{t('gallery')}</Text>
-                            </TouchableOpacity>
-
-                            {images.map((img, index) => (
-                                <View key={index} className="relative">
-                                    <Image
-                                        source={{ uri: img.localUri }}
-                                        style={{ width: tileSize, height: tileSize, borderRadius: 16 }}
-                                        resizeMode="cover"
-                                    />
-                                    <TouchableOpacity
-                                        className="absolute -top-2 -right-2 bg-red-500 rounded-full w-7 h-7 items-center justify-center shadow-lg"
-                                        onPress={() => removeImage(index)}
-                                        activeOpacity={0.8}
-                                    >
-                                        <Ionicons name="close" size={16} color="white" />
-                                    </TouchableOpacity>
-                                </View>
-                            ))}
-                        </View>
-
-                        {uploading && (
-                            <View className="flex-row items-center mb-3 rounded-xl p-3" style={{ backgroundColor: theme.blueMuted }}>
-                                <ActivityIndicator size="small" color={theme.blue} />
-                                <Text className="text-sm ml-2 font-medium" style={{ color: theme.blue }}>{t('uploading')}</Text>
-                            </View>
-                        )}
+                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
+                            {t('photos')}
+                            {/* campaigns reject places without a photo, so don't call it optional there */}
+                            {!inCampaign && <Text style={{ color: theme.textSecondary }}> ({t('optional')})</Text>}
+                        </Text>
+                        <PhotoPicker photos={images} onChange={setImages} folder="places" />
                     </View>
                 </View>
             </ScrollView>
@@ -509,7 +413,7 @@ export default function AddPlaceScreen() {
             <View className="px-6 pt-4" style={{ paddingBottom: insets.bottom + 16, backgroundColor: theme.background, borderTopWidth: 1, borderTopColor: theme.border }}>
                 <Button
                     title={submitting ? t('submitting') : t('submit-contribution')}
-                    onPress={handleSubmit}
+                    onPress={() => void handleSubmit()}
                     disabled={submitting || !name.trim() || !coordinates || phoneInvalid || (needsCustomCategory && !customCategory.trim())}
                 />
             </View>
@@ -525,6 +429,19 @@ export default function AddPlaceScreen() {
                     setDuplicateNames(null);
                     leaveScreen();
                 }}
+            />
+
+            <ConfirmDialog
+                visible={showNoPhotoWarning}
+                title={t('campaign-no-photo-title')}
+                message={t('campaign-no-photo-message')}
+                cancelLabel={t('submit-anyway')}
+                confirmLabel={t('add-photo')}
+                onCancel={() => {
+                    setShowNoPhotoWarning(false);
+                    void handleSubmit(true);
+                }}
+                onConfirm={() => setShowNoPhotoWarning(false)}
             />
         </View>
     );

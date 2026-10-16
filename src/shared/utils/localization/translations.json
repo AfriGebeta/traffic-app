@@ -4513,5 +4513,45 @@
         "key": "submission-reason-disputed",
         "EN_US": "Other users disputed it",
         "AM": "ሌሎች ተጠቃሚዎች ተቃውመውታል"
+    },
+    {
+        "key": "submission-reason-required-fields",
+        "EN_US": "Missing required details",
+        "AM": "አስፈላጊ መረጃዎች ይጎድላሉ"
+    },
+    {
+        "key": "submission-reason-photo-missing",
+        "EN_US": "No photo",
+        "AM": "ፎቶ የለም"
+    },
+    {
+        "key": "retake",
+        "EN_US": "Retake",
+        "AM": "እንደገና ያንሱ"
+    },
+    {
+        "key": "use-photo",
+        "EN_US": "Use photo",
+        "AM": "ፎቶውን ይጠቀሙ"
+    },
+    {
+        "key": "campaign-no-photo-title",
+        "EN_US": "No photo added",
+        "AM": "ፎቶ አልተጨመረም"
+    },
+    {
+        "key": "campaign-no-photo-message",
+        "EN_US": "Places without a photo don't earn campaign points. Add a photo taken at the place?",
+        "AM": "ፎቶ የሌላቸው ቦታዎች የዘመቻ ነጥብ አያገኙም። በቦታው የተነሳ ፎቶ ይጨምሩ?"
+    },
+    {
+        "key": "submit-anyway",
+        "EN_US": "Submit anyway",
+        "AM": "እንደዚሁ ይላኩ"
+    },
+    {
+        "key": "add-photo",
+        "EN_US": "Add photo",
+        "AM": "ፎቶ ይጨምሩ"
     }
 ]

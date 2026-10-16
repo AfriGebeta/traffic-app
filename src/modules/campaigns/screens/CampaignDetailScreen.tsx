@@ -89,6 +89,9 @@ export default function CampaignDetailScreen() {
             markCampaignJoined(campaign.slug, track);
             showToast(t('campaign-joined'));
             void refreshCampaigns();
+            // back to the map to start contributing; pops everything (banner → detail, or profile → list → detail)
+            if (router.canDismiss()) router.dismissAll();
+            else router.replace('/');
         } catch (error) {
             const code = error instanceof ApiError ? error.code : undefined;
             if (isRestrictedError(code)) return;

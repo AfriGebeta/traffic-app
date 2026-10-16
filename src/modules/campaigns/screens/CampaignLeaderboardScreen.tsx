@@ -68,7 +68,7 @@ export default function CampaignLeaderboardScreen() {
             key={label}
             onPress={onPress}
             activeOpacity={0.7}
-            className="px-4 py-2 rounded-full mr-2"
+            className="px-4 py-2 rounded-lg mr-2"
             style={{
                 backgroundColor: active ? colors.primary.main : theme.surface,
                 borderWidth: 1,
