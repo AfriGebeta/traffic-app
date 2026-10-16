@@ -4542,7 +4542,7 @@
     {
         "key": "campaign-no-photo-message",
         "EN_US": "Places without a photo don't earn campaign points. Add a photo taken at the place?",
-        "AM": "ፎቶ የሌላቸው ቦታዎች የዘመቻ ነጥብ አያገኙም። በቦታው የተነሳ ፎቶ ይጨምሩ?"
+        "AM": "ፎቶ የሌላቸው ቦታዎች የውድድር ነጥብ አያገኙም። በቦታው የተነሳ ፎቶ ይጨምሩ?"
     },
     {
         "key": "submit-anyway",
@@ -4553,5 +4553,15 @@
         "key": "add-photo",
         "EN_US": "Add photo",
         "AM": "ፎቶ ይጨምሩ"
+    },
+    {
+        "key": "campaign-ended",
+        "EN_US": "Campaign ended",
+        "AM": "ዘመቻው ተጠናቋል"
+    },
+    {
+        "key": "campaign-ended-description",
+        "EN_US": "New contributions no longer earn points in this campaign.",
+        "AM": "አዲስ አስተዋጽኦዎች በዚህ ውድድሩ ነጥብ አያገኙም።"
     }
 ]

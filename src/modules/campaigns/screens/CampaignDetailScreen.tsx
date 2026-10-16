@@ -10,7 +10,7 @@ import { showToast } from '../../../shared/utils/toast';
 import { ApiError, ApiErrorCode, isRestrictedError } from '../../../shared/utils/apiErrors';
 import { useAuthGate } from '../../register/hooks/useAuthGate';
 import { campaignService } from '../services/campaign.service';
-import { isParticipating, markCampaignJoined, markCampaignLeft, refreshCampaigns, useCampaigns } from '../store/campaignStore';
+import { hasCampaignEnded, isParticipating, markCampaignJoined, markCampaignLeft, refreshCampaigns, useCampaigns } from '../store/campaignStore';
 import { basePoints } from '../utils/campaignPoints';
 import { getLastTrackKey, setLastTrackKey } from '../utils/campaignPrefs';
 import { pickLocalized } from '../utils/localizedText';
@@ -146,7 +146,8 @@ export default function CampaignDetailScreen() {
     const cardStyle = { backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border };
     // open campaigns (requiresJoin false) count everyone, so only offer Join where it matters.
     // /running only lists open campaigns, and E0020 covers one that closed meanwhile
-    const canJoin = campaign.requiresJoin && !joined;
+    const ended = hasCampaignEnded(campaign);
+    const canJoin = campaign.requiresJoin && !joined && !ended;
 
     return (
         <View className="flex-1" style={{ paddingTop: insets.top, backgroundColor: theme.background }}>
@@ -171,6 +172,17 @@ export default function CampaignDetailScreen() {
                         <Ionicons name="calendar-outline" size={16} color={theme.textSecondary} />
                         <Text className="text-sm ml-2" style={{ color: theme.textSecondary }}>
                             {formatDate(campaign.startsAt, i18n.language)} – {formatDate(campaign.endsAt, i18n.language)}
+                        </Text>
+                    </View>
+                )}
+
+                {ended && (
+                    <View className="rounded-2xl p-4 mb-6" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
+                        <Text className="font-bold text-base" style={{ color: theme.textPrimary }}>
+                            {t('campaign-ended')}
+                        </Text>
+                        <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>
+                            {t('campaign-ended-description')}
                         </Text>
                     </View>
                 )}
@@ -332,7 +344,7 @@ export default function CampaignDetailScreen() {
                     </>
                 )}
 
-                {participating && (
+                {(participating || (ended && joined)) && (
                     <TouchableOpacity
                         onPress={() => router.push({ pathname: '/campaigns/[slug]/leaderboard', params: { slug: campaign.slug } })}
                         activeOpacity={0.7}
@@ -346,7 +358,7 @@ export default function CampaignDetailScreen() {
                     </TouchableOpacity>
                 )}
 
-                {participating && (
+                {(participating || (ended && joined)) && (
                     <TouchableOpacity
                         onPress={() => router.push({ pathname: '/my-contributions', params: { campaign: campaign.slug } })}
                         activeOpacity={0.7}

@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { DIALOG_MAX_STYLE } from '../../../shared/layout/modalStyles';
-import { isParticipating, useCampaigns } from '../store/campaignStore';
+import { hasCampaignEnded, isParticipating, useCampaigns } from '../store/campaignStore';
 import { getSeenBannerSlugs, markBannerSeen } from '../utils/campaignPrefs';
 import { pickLocalized } from '../utils/localizedText';
 import { Campaign } from '../types/campaign.types';
@@ -34,7 +34,7 @@ export function CampaignBanner() {
     const campaign = useMemo(() => {
         if (!state.loaded || !seen) return null;
         return [...state.campaigns]
-            .filter((c) => !seen.includes(c.slug) && !(c.requiresJoin && isParticipating(c, state)))
+            .filter((c) => !seen.includes(c.slug) && !hasCampaignEnded(c) && !(c.requiresJoin && isParticipating(c, state)))
             .sort((a, b) => startTime(b) - startTime(a))[0] ?? null;
     }, [state, seen]);
 

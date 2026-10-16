@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
-import { isParticipating, refreshCampaigns, useCampaigns } from '../store/campaignStore';
+import { hasCampaignEnded, isParticipating, refreshCampaigns, useCampaigns } from '../store/campaignStore';
 import { pickLocalized } from '../utils/localizedText';
 
 const AnnouncementLight = require('../../../../assets/images/announcement-light.png');
@@ -81,7 +81,9 @@ export default function CampaignsListScreen() {
                                               ]
                                                   .filter(Boolean)
                                                   .join(' · ')
-                                            : t('campaign-not-joined')}
+                                            : hasCampaignEnded(campaign)
+                                              ? t('campaign-ended')
+                                              : t('campaign-not-joined')}
                                     </Text>
                                 </View>
                                 <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />

@@ -21,6 +21,33 @@ const setState = (next: Partial<CampaignState>) => {
     listeners.forEach((listener) => listener());
 };
 
+// /running only drops a campaign on the next refresh; until then, end it locally at endsAt
+export const hasCampaignEnded = (campaign: Campaign, now = Date.now()): boolean => {
+    const end = campaign.endsAt ? new Date(campaign.endsAt).getTime() : NaN;
+    return !Number.isNaN(end) && now >= end;
+};
+
+// wake subscribers exactly when the next campaign ends, so badges/popups switch off on time.
+// JS timers pause in the background; the foreground refresh in _layout covers that case
+let endTimer: ReturnType<typeof setTimeout> | null = null;
+const MAX_TIMER_MS = 24 * 60 * 60 * 1000;
+
+const scheduleNextEnd = () => {
+    if (endTimer) clearTimeout(endTimer);
+    endTimer = null;
+    const now = Date.now();
+    const nextEnd = state.campaigns
+        .map((campaign) => (campaign.endsAt ? new Date(campaign.endsAt).getTime() : NaN))
+        .filter((end) => !Number.isNaN(end) && end > now)
+        .sort((a, b) => a - b)[0];
+    if (nextEnd === undefined) return;
+    endTimer = setTimeout(() => {
+        // new object so useSyncExternalStore re-renders and every check re-reads the clock
+        setState({});
+        scheduleNextEnd();
+    }, Math.min(nextEnd - now + 1000, MAX_TIMER_MS));
+};
+
 const subscribe = (listener: () => void) => {
     listeners.add(listener);
     return () => {
@@ -48,6 +75,7 @@ export const refreshCampaigns = (): Promise<void> => {
                 });
             }
             setState({ campaigns, me, loaded: true });
+            scheduleNextEnd();
         } catch (error) {
             console.warn('campaigns: refresh failed', error);
             setState({ loaded: true });
@@ -70,7 +98,8 @@ export const markCampaignLeft = (slug: string) => {
     setState({ me: { ...state.me, [slug]: { ...state.me[slug], joined: false, enrollment: null } } });
 };
 
+// an ended campaign counts for nobody: no badges, popups, photo warnings
 export const isParticipating = (campaign: Campaign, s: CampaignState = state): boolean =>
-    !campaign.requiresJoin || s.me[campaign.slug]?.joined === true;
+    !hasCampaignEnded(campaign) && (!campaign.requiresJoin || s.me[campaign.slug]?.joined === true);
 
 export const useCampaigns = () => useSyncExternalStore(subscribe, getCampaignState);
