@@ -29,6 +29,8 @@ export interface Incident {
     congestionLevel?: CongestionLevel | null;
     reliability?: number;
     expiresAt?: string;
+    // reporter; null for anonymous reports
+    userId?: string | null;
     // true when the backend folded this report into an existing one (HTTP 200 instead of 201)
     merged?: boolean;
 }

@@ -19,6 +19,7 @@ interface IncidentReportSheetProps {
     userLocation: ReportLocation | null;
     isNavigating?: boolean;
     onNavigateToReport?: () => void;
+    onIncidentReported?: () => void;
 }
 
 export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
@@ -27,6 +28,7 @@ export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
     userLocation,
     isNavigating = false,
     onNavigateToReport,
+    onIncidentReported,
 }) => {
     const { t } = useTranslation();
     const router = useRouter();
@@ -109,6 +111,7 @@ export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
                 onClose={onClose}
                 userLocation={userLocation}
                 onNavigateToReport={onNavigateToReport}
+                onIncidentReported={onIncidentReported}
             />
         );
     }

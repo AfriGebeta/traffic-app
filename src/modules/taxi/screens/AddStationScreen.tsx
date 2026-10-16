@@ -12,6 +12,8 @@ import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { showToast } from '../../../shared/utils/toast';
 import { taxiService } from '../services/taxi.service';
 import { TaxiNode } from '../types/taxi.types';
+import { ApiError, ApiErrorCode, getCampaignFailures, isRestrictedError } from '../../../shared/utils/apiErrors';
+import { showCampaignPointsEstimate } from '../../campaigns/utils/pointsPopup';
 
 const NEARBY_RADIUS_METERS = 300;
 
@@ -186,6 +188,7 @@ export default function AddStationScreen() {
 
         setSubmitting(true);
         try {
+            let merged = false;
             if (createdNodeId.current == null) {
                 const created = await taxiService.createNodeForRoute({
                     name: name.trim(),
@@ -195,6 +198,8 @@ export default function AddStationScreen() {
                     landmark: landmark.trim() || undefined,
                 });
                 createdNodeId.current = created?.id ?? null;
+                merged = created?.merged === true;
+                if (!merged) showCampaignPointsEstimate('taxi_station', location);
             }
 
             if (destinations.length > 0) {
@@ -214,10 +219,17 @@ export default function AddStationScreen() {
                 }
             }
 
-            showToast(t('station-created-successfully'));
+            showToast(t(merged ? 'report-merged-thanks' : 'station-created-successfully'));
             router.back();
         } catch (error: any) {
             console.error('[AddStation] Error creating node:', error);
+            // E0017 already shows a global toast
+            if (error instanceof ApiError && isRestrictedError(error.code)) return;
+            if (error instanceof ApiError && error.code === ApiErrorCode.CampaignRulesNotMet) {
+                const failures = getCampaignFailures(error.additional);
+                Alert.alert(t('error'), failures.length > 0 ? failures.join('\n') : t('campaign-rules-not-met'));
+                return;
+            }
             Alert.alert(t('error'), error?.message || t('failed-to-create-station'));
         } finally {
             setSubmitting(false);

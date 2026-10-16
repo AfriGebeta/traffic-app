@@ -23,6 +23,7 @@ import { dashboardEventsService } from '../../../shared/services/dashboard-event
 import { reportErrorFrom, showReportError } from '../../../shared/utils/reportErrors';
 import { ApiError } from '../../../shared/utils/apiErrors';
 import { ReportLocation } from '../../../shared/utils/reportHeading';
+import { showCampaignPointsEstimate } from '../../campaigns/utils/pointsPopup';
 import { incidentService } from '../../incidents/services/incident.service';
 import { getIncidentTranslationKey } from '../../incidents/utils/incidentTranslations';
 import { CONGESTION_LEVELS, CongestionLevel, DEFAULT_CONGESTION_LEVEL } from '../../incidents/types/incident.types';
@@ -48,6 +49,8 @@ interface QuickReportSheetProps {
     onClose: () => void;
     userLocation: ReportLocation | null;
     onNavigateToReport?: () => void;
+    // called after a successful incident report so the map can show it right away
+    onIncidentReported?: () => void;
 }
 
 export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
@@ -55,6 +58,7 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
     onClose,
     userLocation,
     onNavigateToReport,
+    onIncidentReported,
 }) => {
     const { t } = useTranslation();
     const router = useRouter();
@@ -148,6 +152,9 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
                     });
                     if (response.error) throw new ApiError(response);
                     showToast(t(response.data?.merged ? 'report-merged-thanks' : 'incident-reported-successfully'));
+                    // a merge confirms someone else's report, so no new-contribution points
+                    if (!response.data?.merged) showCampaignPointsEstimate('incident', location);
+                    onIncidentReported?.();
                 } else {
                     const report = await ruleService.reportRule({
                         lat: location.lat,
@@ -157,6 +164,7 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
                         ...(location.heading !== undefined && { heading: location.heading }),
                     });
                     showToast(t(report.merged ? 'report-merged-thanks' : 'traffic-rule-report-submitted'));
+                    if (!report.merged) showCampaignPointsEstimate('traffic_rule', location);
                 }
                 dashboardEventsService.contribute();
             } catch (error) {
@@ -164,7 +172,7 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
                 showReportError(t, reportErrorFrom(error));
             }
         },
-        [stopCountdown, onClose, t]
+        [stopCountdown, onClose, onIncidentReported, t]
     );
 
     const select = React.useCallback(

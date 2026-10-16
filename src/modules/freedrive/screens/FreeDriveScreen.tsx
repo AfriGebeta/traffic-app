@@ -60,7 +60,7 @@ const FreeDriveScreen: React.FC = () => {
         [reportLocation, fix]
     );
 
-    const { incidents } = useIncidents();
+    const { incidents, refetch: refetchIncidents } = useIncidents();
     const [rules, setRules] = useState<TrafficRuleReport[]>([]);
 
     useEffect(() => {
@@ -127,6 +127,7 @@ const FreeDriveScreen: React.FC = () => {
                     distance={activeIncidentAlert.distance}
                     distanceKm={activeIncidentAlert.distanceKm}
                     incidentType={activeIncidentAlert.incidentType}
+                    isOwnReport={activeIncidentAlert.isOwnReport}
                     voterLocation={reportLocation}
                     onDismiss={dismissIncidentAlert}
                     topOffset={12}
@@ -222,6 +223,7 @@ const FreeDriveScreen: React.FC = () => {
                 onClose={() => setShowReportOptions(false)}
                 userLocation={reportSheetLocation}
                 isNavigating={true}
+                onIncidentReported={refetchIncidents}
             />
         </View>
     );

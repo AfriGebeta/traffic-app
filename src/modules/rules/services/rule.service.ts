@@ -1,5 +1,6 @@
 import { apiService } from '../../../shared/services/api';
 import { ApiError } from '../../../shared/utils/apiErrors';
+import { getDeviceFields } from '../../../shared/utils/deviceFields';
 import { TrafficRuleType, TrafficRuleReport, TrafficRuleReportRequest } from '../types/rule.types';
 
 export const ruleService = {
@@ -33,7 +34,7 @@ export const ruleService = {
     },
 
     async reportRule(data: TrafficRuleReportRequest): Promise<TrafficRuleReport> {
-        const response = await apiService.post<TrafficRuleReport>('/api/rules/reports', data);
+        const response = await apiService.post<TrafficRuleReport>('/api/rules/reports', { ...data, ...(await getDeviceFields()) });
         if (response.error) {
             throw new ApiError(response);
         }

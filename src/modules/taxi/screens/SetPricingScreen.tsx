@@ -9,6 +9,8 @@ import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { routeCacheService } from '../services/route-cache.service';
 import { showToast } from '../../../shared/utils/toast';
+import { ApiError, isRestrictedError } from '../../../shared/utils/apiErrors';
+import { estimateCampaignPoints, showPointsPopup } from '../../campaigns/utils/pointsPopup';
 
 interface RouteStop {
     id: string;
@@ -139,6 +141,7 @@ export default function SetPricingScreen() {
             console.log('created route:', route);
 
             const nodeIds: number[] = [];
+            let pendingPoints = 0;
             for (const stop of stops) {
                 if (stop.isExisting && stop.existingNodeId) {
                     console.log('Using existing node:', stop.existingNodeId);
@@ -161,6 +164,9 @@ export default function SetPricingScreen() {
                         landmark: stop.landmark,
                     });
                     console.log('Created node response:', node);
+                    // a whole route shows one taxi-station's worth, whatever its stop count (product call);
+                    // merged stops confirm an existing one and don't qualify
+                    if (!node.merged) pendingPoints = Math.max(pendingPoints, estimateCampaignPoints('taxi_station', stop));
                     const unwrappedNode = (node as any).data || node;
                     console.log('Extracted node:', unwrappedNode);
                     nodeIds.push(unwrappedNode.id);
@@ -204,6 +210,7 @@ export default function SetPricingScreen() {
 
             console.log('Route creation complete!');
             showToast(t('route-created-successfully'));
+            showPointsPopup(pendingPoints);
 
             const segments = [];
             for (let i = 0; i < stops.length - 1; i++) {
@@ -225,6 +232,8 @@ export default function SetPricingScreen() {
             });
         } catch (error: any) {
             console.error('Route creation error:', error);
+            // E0017 already shows a global toast
+            if (error instanceof ApiError && isRestrictedError(error.code)) return;
             Alert.alert(
                 t('error'),
                 error.message || t('failed-to-create-route')
