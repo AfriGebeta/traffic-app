@@ -25,7 +25,6 @@ export const basePoints = (campaign: Campaign, kind: CampaignKind, now = new Dat
 
 export interface SubmissionQuality {
     hasPhoto?: boolean;
-    // all optional fields filled; the backend hasn't said which fields count yet, so callers pass false for now
     isComplete?: boolean;
 }
 

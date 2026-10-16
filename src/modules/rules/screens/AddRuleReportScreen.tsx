@@ -99,7 +99,10 @@ export default function AddRuleReportScreen() {
 
             dashboardEventsService.contribute();
             showToast(t(report.merged ? 'report-merged-thanks' : 'traffic-rule-report-submitted'));
-            if (!report.merged) showCampaignPointsEstimate('traffic_rule', coordinates, { hasPhoto: photos.length > 0 });
+            // "complete" for a rule = punishment filled plus a photo (backend's rule)
+            const hasPhoto = photos.length > 0;
+            const isComplete = hasPhoto && showPunishment && punishment.trim().length > 0;
+            if (!report.merged) showCampaignPointsEstimate('traffic_rule', coordinates, { hasPhoto, isComplete });
             router.back();
             if (!fromReportSheet) router.back();
         } catch (error) {
