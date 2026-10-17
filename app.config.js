@@ -12,6 +12,10 @@ if (!telegramClientId) {
 const telegramLoginHost = `app${telegramClientId}-login.tg.dev`;
 const [mapsIntentFilter, ...otherIntentFilters] = appJson.expo.android.intentFilters;
 
+// The APK we host ourselves installs beside the Play build, like Telegram's
+// separate download build: Play re-signs its build, so the two can't update each other.
+const isDirect = process.env.APP_VARIANT === 'direct';
+
 module.exports = {
   expo: {
     ...appJson.expo,
@@ -35,6 +39,7 @@ module.exports = {
     },
     android: {
       ...appJson.expo.android,
+      package: isDirect ? `${appJson.expo.android.package}.direct` : appJson.expo.android.package,
       googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? appJson.expo.android.googleServicesFile,
       queries: [
         { scheme: 'tg' },

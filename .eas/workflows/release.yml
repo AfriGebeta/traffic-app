@@ -1,0 +1,82 @@
+name: Release
+
+# Bump "version" in app.json, merge, then push a matching tag (e.g. v1.1.5) or
+# publish a GitHub release that creates it.
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  check_version:
+    name: Tag matches app.json version
+    env:
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: eas/checkout
+      - name: Compare tag and version
+        run: |
+          expected="v$(node -p "require('./app.json').expo.version")"
+          if [ "$TAG" != "$expected" ]; then
+            echo "Tag $TAG does not match app.json version ($expected)"
+            exit 1
+          fi
+
+  approve:
+    name: Approve release to stores and APK download
+    needs: [check_version]
+    type: require-approval
+
+  build_android:
+    name: Build Android (Play Store)
+    needs: [approve]
+    type: build
+    params:
+      platform: android
+      profile: production
+
+  build_ios:
+    name: Build iOS (App Store)
+    needs: [approve]
+    type: build
+    params:
+      platform: ios
+      profile: production
+
+  submit_android:
+    name: Submit to Play Store
+    needs: [build_android]
+    type: submit
+    params:
+      build_id: ${{ needs.build_android.outputs.build_id }}
+
+  submit_ios:
+    name: Submit to App Store
+    needs: [build_ios]
+    type: submit
+    params:
+      build_id: ${{ needs.build_ios.outputs.build_id }}
+
+  build_apk:
+    name: Build direct-download APK
+    needs: [approve]
+    type: build
+    params:
+      platform: android
+      profile: direct
+
+  publish_apk:
+    name: Publish APK to MinIO
+    needs: [build_apk]
+    environment: production
+    env:
+      APP_VERSION: ${{ needs.build_apk.outputs.app_version }}
+      APP_BUILD_VERSION: ${{ needs.build_apk.outputs.app_build_version }}
+    steps:
+      - uses: eas/checkout
+      - uses: eas/download_build
+        id: download
+        with:
+          build_id: ${{ needs.build_apk.outputs.build_id }}
+          extensions: [apk]
+      - name: Upload APK and latest.json
+        run: ./scripts/publish-apk.sh "${{ steps.download.outputs.artifact_path }}"
