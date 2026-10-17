@@ -15,14 +15,30 @@
       }
     },
     "production": {
+      "environment": "production",
       "autoIncrement": true,
       "android": {
         "buildType": "app-bundle",
         "gradleCommand": ":app:bundleRelease"
       }
+    },
+    "direct": {
+      "extends": "production",
+      "env": {
+        "APP_VARIANT": "direct",
+        "EXPO_PUBLIC_CHANNEL": "direct"
+      },
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease"
+      }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "android": {
+        "track": "internal"
+      }
+    }
   }
 }
