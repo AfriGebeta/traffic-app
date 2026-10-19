@@ -79,6 +79,29 @@ export default function ShareCodeScreen() {
             }
 
             const { location, sender } = data;
+
+            if (data.kind === 'route') {
+                const { origin } = data;
+                router.replace({
+                    pathname: '/',
+                    params: {
+                        routeDestLat: location.lat.toString(),
+                        routeDestLng: location.lng.toString(),
+                        routeDestName: location.name || '',
+                        routeOriginLat: origin ? origin.lat.toString() : '',
+                        routeOriginLng: origin ? origin.lng.toString() : '',
+                        routeOriginName: origin?.name || '',
+                        routeWaypoints: data.waypoints?.length
+                            ? JSON.stringify(data.waypoints.map(({ lat, lng, name }) => ({ lat, lng, name: name || undefined })))
+                            : '',
+                        routeMode: data.mode === 'walking' ? 'walking' : 'driving',
+                    },
+                });
+                const to = location.name || 'a place';
+                showToast(sender?.name ? `${sender.name} shared directions to ${to}` : `Directions to ${to}`);
+                return;
+            }
+
             router.replace({
                 pathname: '/',
                 params: {

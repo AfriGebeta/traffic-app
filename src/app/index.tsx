@@ -3,6 +3,7 @@ import { View, ActivityIndicator } from 'react-native';
 import * as Linking from 'expo-linking';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { TrafficMap } from '../modules/map';
+import type { SharedRoute } from '../modules/map/components/TrafficMap';
 import { useUserRegistration } from '../modules/register/hooks/useUserRegistration';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { resolveLocationUrl, type SharedLocation } from '../shared/utils/deepLinking';
@@ -29,6 +30,36 @@ function locationFromParams(params: RouteParams): SharedLocation | null {
     country: (params.country || params.sharedCountry) as string || undefined,
     type: (params.type || params.sharedType) as string || undefined,
   };
+}
+
+function routeFromParams(params: RouteParams): SharedRoute | undefined {
+  const destLat = parseFloat(params.routeDestLat as string);
+  const destLng = parseFloat(params.routeDestLng as string);
+  if (!Number.isFinite(destLat) || !Number.isFinite(destLng)) return undefined;
+
+  const originLat = parseFloat(params.routeOriginLat as string);
+  const originLng = parseFloat(params.routeOriginLng as string);
+  const hasOrigin = Number.isFinite(originLat) && Number.isFinite(originLng);
+
+  return {
+    destination: { lat: destLat, lng: destLng, name: (params.routeDestName as string) || undefined },
+    origin: hasOrigin
+      ? { lat: originLat, lng: originLng, name: (params.routeOriginName as string) || undefined }
+      : undefined,
+    waypoints: waypointsFromParam(params.routeWaypoints),
+    mode: params.routeMode === 'walking' ? 'walking' : 'driving',
+  };
+}
+
+function waypointsFromParam(raw: RouteParams[string]): SharedRoute['waypoints'] {
+  if (typeof raw !== 'string' || !raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((p) => Number.isFinite(p?.lat) && Number.isFinite(p?.lng));
+  } catch {
+    return [];
+  }
 }
 
 export default function Index() {
@@ -124,7 +155,7 @@ export default function Index() {
     );
   }
 
-  return <TrafficMap sharedLocation={sharedLocation} taxiDestination={params.taxiDestLat && params.taxiDestLng ? {
+  return <TrafficMap sharedLocation={sharedLocation} sharedRoute={routeFromParams(params)} taxiDestination={params.taxiDestLat && params.taxiDestLng ? {
     lat: parseFloat(params.taxiDestLat as string),
     lng: parseFloat(params.taxiDestLng as string),
     name: params.taxiDestName as string || 'Destination',

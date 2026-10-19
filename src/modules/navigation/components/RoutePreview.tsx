@@ -18,7 +18,7 @@ import { navigationService } from '../services/navigation.service';
 import { calculateDistance } from '../utils/navigationUtils';
 import type { TaxiNavigationResponse } from '../../taxi/types/taxi.types';
 import LekfelPaySheet from '../../taxi/components/LekfelPaySheet';
-import { shareLocation } from '../../../shared/utils/shareLocation';
+import { shareLocation, shareRoute } from '../../../shared/utils/shareLocation';
 import { DIALOG_MAX_STYLE } from '../../../shared/layout/modalStyles';
 
 interface RoutePreviewProps {
@@ -417,9 +417,19 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
 
     const handleShareDestination = async () => {
         if (!destination) return;
-        await shareLocation(
-            { lat: destination.latitude, lng: destination.longitude, name: destination.name },
-            { kind: 'route_dest' }
+        const target = { lat: destination.latitude, lng: destination.longitude, name: destination.name };
+
+        // taxi routes aren't shareable yet; share the destination instead
+        if (transportMode === 'taxi') {
+            await shareLocation(target, { kind: 'route_dest' });
+            return;
+        }
+
+        await shareRoute(
+            target,
+            origin ? { lat: origin.latitude, lng: origin.longitude, name: origin.name } : null,
+            waypoints.map((stop) => ({ lat: stop.latitude, lng: stop.longitude, name: stop.name })),
+            transportMode
         );
     };
 

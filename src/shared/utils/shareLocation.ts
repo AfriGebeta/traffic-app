@@ -1,6 +1,12 @@
 import { Clipboard, Linking, Platform, Share } from 'react-native';
 import { generateLocationUrl, type SharedLocation } from './deepLinking';
-import { shareService, type ShareKind } from '../services/share.service';
+import {
+    shareService,
+    type ShareKind,
+    type SharePoint,
+    type ShareRouteExtras,
+    type ShareRouteMode,
+} from '../services/share.service';
 import { showToast } from './toast';
 
 export const buildLocationShareMessage = (location: SharedLocation, url = generateLocationUrl(location)): string => {
@@ -11,10 +17,37 @@ export const buildLocationShareMessage = (location: SharedLocation, url = genera
 
 // short /s/<code> link from the backend; falls back to the legacy ?lat=&lng= link
 // when offline or the request fails, so sharing never blocks on the network.
-export const createShareUrl = async (location: SharedLocation, kind: ShareKind = 'place'): Promise<string> => {
-    const { data } = await shareService.create(location, kind);
+// a failed route share falls back to a destination-only legacy link (a pin, not a route)
+export const createShareUrl = async (
+    location: SharedLocation,
+    kind: ShareKind = 'place',
+    extras: ShareRouteExtras = {}
+): Promise<string> => {
+    const { data } = await shareService.create(location, kind, extras);
     // if (!data?.url) console.warn('[share] falling back to legacy lat/lng link');
     return data?.url ?? generateLocationUrl(location);
+};
+
+const openShareSheet = async (
+    { message, url, title, includeUrl }: { message: string; url: string; title: string; includeUrl: boolean }
+): Promise<boolean> => {
+    try {
+        const result = await Share.share({
+            message,
+            ...(includeUrl ? { url } : {}),
+            title,
+        });
+        return result.action === Share.sharedAction;
+    } catch (error) {
+        console.error('Share error:', error);
+        try {
+            Clipboard.setString(message);
+            showToast('Copied: Link copied to clipboard');
+        } catch {
+            showToast('Error: Could not share location');
+        }
+        return false;
+    }
 };
 
 interface ShareLocationOptions {
@@ -28,23 +61,34 @@ export const shareLocation = async (
     { message, includeUrl = true, kind = 'place' }: ShareLocationOptions = {}
 ): Promise<boolean> => {
     const url = message && !includeUrl ? generateLocationUrl(location) : await createShareUrl(location, kind);
-    try {
-        const result = await Share.share({
-            message: message ?? buildLocationShareMessage(location, url),
-            ...(includeUrl ? { url } : {}),
-            title: location.name || 'Shared Location',
-        });
-        return result.action === Share.sharedAction;
-    } catch (error) {
-        console.error('Share error:', error);
-        try {
-            Clipboard.setString(message ?? url);
-            showToast('Copied: Link copied to clipboard');
-        } catch {
-            showToast('Error: Could not share location');
-        }
-        return false;
-    }
+    return openShareSheet({
+        message: message ?? buildLocationShareMessage(location, url),
+        url,
+        title: location.name || 'Shared Location',
+        includeUrl,
+    });
+};
+
+// origin is only sent for a custom start point; without it the opener routes from their own location
+export const shareRoute = async (
+    destination: SharedLocation,
+    origin: SharePoint | null,
+    waypoints: SharePoint[],
+    mode: ShareRouteMode
+): Promise<boolean> => {
+    const url = await createShareUrl(destination, 'route', {
+        ...(origin ? { origin } : {}),
+        ...(waypoints.length ? { waypoints } : {}),
+        mode,
+    });
+    const to = destination.name || 'this location';
+    const from = origin?.name ? ` from ${origin.name}` : '';
+    return openShareSheet({
+        message: `Directions to ${to}${from} on Gebeta Maps: ${url}`,
+        url,
+        title: destination.name || 'Shared Route',
+        includeUrl: true,
+    });
 };
 
 export const openSmsComposer = (body: string, phone = ''): Promise<void> => {
