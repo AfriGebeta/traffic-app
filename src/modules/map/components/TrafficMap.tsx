@@ -54,17 +54,45 @@ import { resolvePlaceType } from '../../places/utils/placeTypeMapping';
 import { buildPreviewSteps, fitBoundsToCoords } from '../../navigation/utils/navigationPreviewUtils';
 import { toReportHeading } from '../../../shared/utils/reportHeading';
 
+export interface SharedRoute {
+    destination: { lat: number; lng: number; name?: string };
+    origin?: { lat: number; lng: number; name?: string };
+    waypoints: { lat: number; lng: number; name?: string }[];
+    mode: 'driving' | 'walking';
+}
+
 interface TrafficMapProps {
     sharedLocation?: SharedLocation | null;
+    sharedRoute?: SharedRoute;
     taxiDestination?: { lat: number; lng: number; name: string };
     showTaxiMode?: boolean;
     voiceDestination?: { lat: number; lng: number; name: string };
 }
 
-export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMode, voiceDestination }: TrafficMapProps) {
+const SHARED_ROUTE_LOCATION_WAIT_MS = 8000;
+
+const placeFromPoint = (idPrefix: string, point: { lat: number; lng: number; name?: string }): GeocodingPlace => {
+    const name = point.name || `${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}`;
+    return {
+        id: `${idPrefix}-${point.lat}-${point.lng}`,
+        name,
+        display_name: name,
+        category: 'destination',
+        location: { lat: point.lat, lng: point.lng },
+        address: { city: '', country: '', country_code: '' },
+        latitude: point.lat,
+        longitude: point.lng,
+        type: 'destination',
+        City: '',
+        Country: '',
+    };
+};
+
+export default function TrafficMap({ sharedLocation, sharedRoute, taxiDestination, showTaxiMode, voiceDestination }: TrafficMapProps) {
     const mapRef = useRef<TrafficMapRef>(null);
     const searchMarkerRef = useRef<any>(null);
     const processedSharedLocationRef = useRef<SharedLocation | null>(null);
+    const processedSharedRouteRef = useRef<string | null>(null);
     const processedVoiceDestRef = useRef<string | null>(null);
     const processedTaxiDestRef = useRef<string | null>(null);
     const processedTaxiRouteRef = useRef<number | null>(null);
@@ -814,6 +842,67 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
         handleSelectPlace(place, true, false, true);
     }, [voiceDestination, userLocation]);
 
+    const sharedRouteKey = sharedRoute
+        ? `${sharedRoute.destination.lat},${sharedRoute.destination.lng}|${sharedRoute.origin ? `${sharedRoute.origin.lat},${sharedRoute.origin.lng}` : 'me'}|${sharedRoute.waypoints.map((p) => `${p.lat},${p.lng}`).join(';')}|${sharedRoute.mode}`
+        : null;
+
+    useEffect(() => {
+        if (!sharedRoute || !sharedRouteKey || !isMapLoaded) return;
+        if (processedSharedRouteRef.current === sharedRouteKey) return;
+        // destination-only routes start from the opener's location; wait for a fix
+        if (!sharedRoute.origin && !userLocation) return;
+        processedSharedRouteRef.current = sharedRouteKey;
+
+        const destination = placeFromPoint('shared-route-dest', sharedRoute.destination);
+        const origin = sharedRoute.origin ? placeFromPoint('shared-route-origin', sharedRoute.origin) : null;
+        const stops = sharedRoute.waypoints.map((point, index) => placeFromPoint(`shared-route-stop-${index}`, point));
+        const costing = sharedRoute.mode === 'walking' ? 'pedestrian' : 'auto';
+
+        clearSearchMarker();
+        searchMarkerRef.current = mapRef.current?.addImageMarker(
+            [destination.longitude, destination.latitude],
+            '',
+            [40, 40],
+            () => { },
+            10,
+            undefined
+        );
+
+        if (showRoutePreview || routeGeoJSON) {
+            handleClearRoute();
+        }
+
+        dismissSearchPanel();
+        setShowPlaceDetail(false);
+        setIsFromTaxiSearch(false);
+        setTaxiRouteData(null);
+        setWaypoints(stops);
+        setSelectedDestination(destination);
+        setCurrentCosting(costing);
+        handleNavigate(setUserLocation, destination, costing, stops, origin);
+    }, [sharedRouteKey, isMapLoaded, userLocation]);
+
+    // no location permission/fix for a destination-only route: show the destination as a pin instead
+    useEffect(() => {
+        if (!sharedRoute || !sharedRouteKey || !isMapLoaded) return;
+        if (sharedRoute.origin || userLocation) return;
+
+        const timer = setTimeout(() => {
+            if (processedSharedRouteRef.current === sharedRouteKey) return;
+            processedSharedRouteRef.current = sharedRouteKey;
+            handleSelectSharedPlace(placeFromPoint('shared-route-dest', sharedRoute.destination));
+            setShowPlaceDetail(true);
+            mapRef.current?.flyTo({
+                center: [sharedRoute.destination.lng, sharedRoute.destination.lat],
+                zoom: 15,
+                duration: 1000,
+            });
+            showToast(t('route-unavailable'));
+        }, SHARED_ROUTE_LOCATION_WAIT_MS);
+
+        return () => clearTimeout(timer);
+    }, [sharedRouteKey, isMapLoaded, !!userLocation]);
+
     useFocusEffect(
         React.useCallback(() => {
             if ((globalThis as any).__voiceRoutePrefetch) {
@@ -1481,7 +1570,7 @@ export default function TrafficMap({ sharedLocation, taxiDestination, showTaxiMo
                             }
                         }
                     }}
-                    initialMode={isFromTaxiSearch ? 'taxi' : 'driving'}
+                    initialMode={isFromTaxiSearch ? 'taxi' : currentCosting === 'pedestrian' ? 'walking' : 'driving'}
                     waypoints={waypoints}
                     onWaypointsChange={(updated) => {
                         setWaypoints(updated);

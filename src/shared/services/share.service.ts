@@ -1,7 +1,20 @@
 import { apiService, type ApiResponse } from './api';
 import type { SharedLocation } from '../utils/deepLinking';
 
-export type ShareKind = 'place' | 'route_dest' | 'sos';
+export type ShareKind = 'place' | 'route_dest' | 'route' | 'sos';
+export type ShareRouteMode = 'driving' | 'walking';
+
+export interface SharePoint {
+    lat: number;
+    lng: number;
+    name?: string | null;
+}
+
+export interface ShareRouteExtras {
+    origin?: SharePoint;
+    waypoints?: SharePoint[];
+    mode?: ShareRouteMode;
+}
 
 export interface ShareUser {
     id: string;
@@ -27,6 +40,9 @@ export interface ResolvedShare {
         country?: string | null;
         type?: string | null;
     };
+    origin?: SharePoint | null;
+    waypoints?: SharePoint[] | null;
+    mode?: ShareRouteMode | null;
     sender?: ShareUser | null;
     recipient?: ShareUser | null;
     createdAt: string;
@@ -59,7 +75,7 @@ async function logged<T>(label: string, request: unknown, call: Promise<ApiRespo
 }
 
 export const shareService = {
-    create(location: SharedLocation, kind: ShareKind): Promise<ApiResponse<CreateShareResponse>> {
+    create(location: SharedLocation, kind: ShareKind, extras: ShareRouteExtras = {}): Promise<ApiResponse<CreateShareResponse>> {
         const body = {
             lat: location.lat,
             lng: location.lng,
@@ -68,6 +84,7 @@ export const shareService = {
             country: location.country,
             type: location.type,
             kind,
+            ...extras,
         };
         return logged(
             'POST /api/shares',
