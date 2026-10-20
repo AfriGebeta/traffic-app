@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image, ImageSourcePropType } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
+import { Video, ResizeMode } from 'expo-av';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
@@ -190,6 +191,36 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
         return require('../../../../assets/images/establishment-place-detail.png');
     };
 
+    // Animated header for types that have one; same match order as getPlaceImage
+    const getPlaceVideo = () => {
+        const placeType = (place.type || place.category || '').toLowerCase();
+
+        if (placeType.includes('coffee') || placeType.includes('cafe') || placeType.includes('teahouse')) return null;
+        if (placeType.includes('restaurant') || placeType.includes('hotel') || placeType.includes('food')) return null;
+        if (placeType.includes('bank')) return null;
+        if (placeType.includes('atm')) {
+            return require('../../../../assets/videos/0.2----d6-Gebeta-ATM-vecotr-anim---1200x400_1.mp4');
+        }
+        if (placeType.includes('gas') || placeType.includes('fuel') || placeType.includes('petrol')) {
+            return require('../../../../assets/videos/0.3----d6--B-Fuel station-bro--1200x400_1.mp4');
+        }
+        if (placeType.includes('parking')) return null;
+        if (placeType.includes('repair') || placeType.includes('garage') || placeType.includes('mechanic')) {
+            return require('../../../../assets/videos/0_2_d6_RED_Gebeta_repair_shop_vector_anim_gif_1200x400_1.mp4');
+        }
+        if (placeType.includes('taxi')) {
+            return require('../../../../assets/videos/0.2----Gebeta-Taxi-vector-anim-gif-1200x400_1.mp4');
+        }
+        if (placeType.includes('hospital') || placeType.includes('clinic') || placeType.includes('medical') || placeType.includes('health')) {
+            return require('../../../../assets/videos/0.2-mbps----Gebeta-hospital-vector-anim-gif---1200X400_1.mp4');
+        }
+        if (placeType.includes('school') || placeType.includes('university') || placeType.includes('college')) {
+            return require('../../../../assets/videos/0.2---d6-Gebeta-school-vector-anim-gif-1200x400_1.mp4');
+        }
+        return null;
+    };
+
+    const placeVideo = getPlaceVideo();
     const placeImage = getPlaceImage();
     const imageBoxHeight = 112;
     const { width: imageWidth, height: imageHeight } = Image.resolveAssetSource(placeImage);
@@ -226,17 +257,28 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
                             style={{ height: imageBoxHeight }}
                             onLayout={({ nativeEvent }) => setImageBoxWidth(nativeEvent.layout.width)}
                         >
-                            <Image
-                                source={placeImage}
-                                style={{
-                                    position: 'absolute',
-                                    left: 0,
-                                    top: (imageBoxHeight - displayedImageHeight) / 2,
-                                    width: imageWidth * imageScale,
-                                    height: displayedImageHeight,
-                                }}
-                                resizeMode="contain"
-                            />
+                            {placeVideo ? (
+                                <Video
+                                    source={placeVideo}
+                                    style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 }}
+                                    resizeMode={ResizeMode.COVER}
+                                    shouldPlay
+                                    isLooping
+                                    isMuted
+                                />
+                            ) : (
+                                <Image
+                                    source={placeImage}
+                                    style={{
+                                        position: 'absolute',
+                                        left: 0,
+                                        top: (imageBoxHeight - displayedImageHeight) / 2,
+                                        width: imageWidth * imageScale,
+                                        height: displayedImageHeight,
+                                    }}
+                                    resizeMode="contain"
+                                />
+                            )}
                             <TouchableOpacity
                                 onPress={handleContribute}
                                 activeOpacity={0.8}

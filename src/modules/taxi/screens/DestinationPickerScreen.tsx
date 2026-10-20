@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,6 +12,10 @@ import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
 import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 import { MapSearchBar } from '../../../shared/components';
 import { useLayout } from '../../../shared/layout/useLayout';
+import { useTheme } from '../../../shared/theme/ThemeContext';
+import { useMapTheme } from '../../map/context/MapThemeContext';
+import { MapLayersButton } from '../../map/components/MapLayersButton';
+import { MapThemeSelector } from '../../map/components/MapThemeSelector';
 
 export default function DestinationPickerScreen() {
     const router = useRouter();
@@ -21,6 +25,11 @@ export default function DestinationPickerScreen() {
     const { userLocation } = useUserLocation();
     const { apiKey } = useRemoteConfig();
     const mapRef = useRef<GebetaMapRef>(null);
+    const { currentTheme } = useMapTheme();
+    const { colors: theme } = useTheme();
+    const { height: windowHeight } = useWindowDimensions();
+    const [showThemeSelector, setShowThemeSelector] = useState(false);
+    const [layersButtonBottom, setLayersButtonBottom] = useState(0);
 
     const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number }>(
         userLocation
@@ -57,12 +66,17 @@ export default function DestinationPickerScreen() {
     };
 
     return (
-        <View className="flex-1 bg-gray-50">
+        <View className="flex-1" style={{ backgroundColor: theme.background }}>
             <View className="flex-1">
                 <GebetaMap
                     ref={mapRef}
                     apiKey={apiKey || ''}
-                    mapStyleUrl={`https://tiles.gebeta.app/styles/standard/style.json?apiKey=${apiKey}`}
+                    mapStyleUrl={
+                        !currentTheme.styleJson && currentTheme.styleUrl
+                            ? `${currentTheme.styleUrl}?apiKey=${apiKey}`
+                            : `https://tiles.gebeta.app/styles/standard/style.json?apiKey=${apiKey}`
+                    }
+                    mapStyleJson={currentTheme.styleJson}
                     center={userLocation ? [userLocation.lng, userLocation.lat] : [getAppConfig().defaultMapCenterLng, getAppConfig().defaultMapCenterLat]}
                     zoom={15}
                     onRegionCenterChange={([lng, lat]) => setSelectedLocation({ lat, lng })}
@@ -70,26 +84,35 @@ export default function DestinationPickerScreen() {
                 />
 
                 <View
-                    className="absolute left-4 bg-white rounded-full shadow-lg"
-                    style={{ top: insets.top + 16 }}
+                    className="absolute left-4 rounded-full shadow-lg"
+                    style={{ top: insets.top + 16, backgroundColor: theme.background }}
                 >
                     <TouchableOpacity
                         onPress={() => router.back()}
                         className="w-12 h-12 items-center justify-center"
                         activeOpacity={0.7}
                     >
-                        <Ionicons name="arrow-back" size={24} color="#374151" />
+                        <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
                     </TouchableOpacity>
                 </View>
 
                 <TouchableOpacity
-                    className="absolute right-4 bg-white rounded-full w-12 h-12 items-center justify-center shadow-lg"
-                    style={{ top: insets.top + 80 }}
+                    className="absolute right-4 rounded-full w-12 h-12 items-center justify-center shadow-lg"
+                    style={{ top: insets.top + 80, backgroundColor: theme.background }}
                     onPress={handleLocationPress}
                     activeOpacity={0.7}
                 >
                     <Ionicons name="locate" size={24} color={colors.primary.main} />
                 </TouchableOpacity>
+
+                <View className="absolute right-4" style={{ top: insets.top + 144 }}>
+                    <MapLayersButton
+                        onPress={({ y, height }) => {
+                            setLayersButtonBottom(windowHeight - (y + height));
+                            setShowThemeSelector(true);
+                        }}
+                    />
+                </View>
 
                 <MapSearchBar
                     onSelect={handleSearchSelect}
@@ -107,16 +130,16 @@ export default function DestinationPickerScreen() {
             </View>
 
             <View
-                className="absolute left-4 right-4 bg-white rounded-2xl shadow-lg p-4"
-                style={[{ bottom: insets.bottom + 16 }, panelPlacement()]}
+                className="absolute left-4 right-4 rounded-2xl shadow-lg p-4"
+                style={[{ bottom: insets.bottom + 16, backgroundColor: theme.background }, panelPlacement()]}
             >
                 <View className="flex-row items-center mb-3">
                     <Ionicons name="location" size={24} color={colors.primary.main} />
                     <View className="flex-1 ml-3">
-                        <Text className="text-gray-900 font-semibold">
+                        <Text className="font-semibold" style={{ color: theme.textPrimary }}>
                             {t('selected-location')}
                         </Text>
-                        <Text className="text-gray-500 text-sm">
+                        <Text className="text-sm" style={{ color: theme.textSecondary }}>
                             {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
                         </Text>
                     </View>
@@ -133,6 +156,12 @@ export default function DestinationPickerScreen() {
                     </Text>
                 </TouchableOpacity>
             </View>
+
+            <MapThemeSelector
+                visible={showThemeSelector}
+                onClose={() => setShowThemeSelector(false)}
+                bottomOffset={layersButtonBottom}
+            />
         </View>
     );
 }
