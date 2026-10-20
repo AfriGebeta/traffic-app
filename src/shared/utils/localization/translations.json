@@ -4320,6 +4320,11 @@
         "AM": "በቀን በአይነት የሚከፈልባቸው ብዛት"
     },
     {
+        "key": "campaign-follow-us",
+        "EN_US": "Follow us for updates",
+        "AM": "ለአዳዲስ መረጃዎች ይከተሉን"
+    },
+    {
         "key": "campaign-rules",
         "EN_US": "Rules",
         "AM": "ደንቦች"
