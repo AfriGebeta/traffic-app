@@ -29,6 +29,8 @@ import { useMapTheme } from '../../map/context/MapThemeContext';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { MapLayersButton } from '../../map/components/MapLayersButton';
 import { MapThemeSelector } from '../../map/components/MapThemeSelector';
+import { useScoringCampaign } from '../../campaigns/hooks/useScoringCampaign';
+import { addStationForRouteParams, isRouteSlot } from '../utils/routeStationHandoff';
 
 export default function MapPickerScreen() {
     const router = useRouter();
@@ -38,6 +40,8 @@ export default function MapPickerScreen() {
     const params = useLocalSearchParams();
     const { setPendingStop } = useRouteBuilder();
     const isCoordsMode = params.mode === 'coords';
+    // campaigns reject new stations without an in-app photo, so new route stops go through Add Station
+    const newStopsNeedPhoto = !!useScoringCampaign('taxi_station');
     const mapRef = useRef<GebetaMapRef>(null);
     const searchBarRef = useRef<MapSearchBarRef>(null);
     const { userLocation } = useUserLocation();
@@ -211,6 +215,27 @@ export default function MapPickerScreen() {
 
         if (!isCoordsMode && !stopName.trim()) {
             Alert.alert(t('error'), t('please-enter-stop-name'));
+            return;
+        }
+
+        const routeSlot = params.type;
+        if (!isCoordsMode && !selectedExisting && newStopsNeedPhoto && isRouteSlot(routeSlot)) {
+            showToast(t('campaign-new-station-needs-photo'));
+            // replace, so finishing Add Station lands back on the route builder
+            router.replace({
+                pathname: '/taxi/add-station',
+                params: addStationForRouteParams(
+                    routeSlot,
+                    {
+                        name: stopName.trim(),
+                        lat: selectedLocation.lat,
+                        lng: selectedLocation.lng,
+                        type: stopType,
+                        landmark: stopLandmark.trim() || undefined,
+                    },
+                    'map'
+                ),
+            });
             return;
         }
 
@@ -447,7 +472,11 @@ export default function MapPickerScreen() {
                                     onPress={handleConfirm}
                                     activeOpacity={0.7}
                                 >
-                                    <Text className="text-white text-center font-bold text-lg">{t('confirm-location')}</Text>
+                                    <Text className="text-white text-center font-bold text-lg">
+                                        {!isCoordsMode && newStopsNeedPhoto && !selectedExisting && stopName.trim() && isRouteSlot(params.type)
+                                            ? t('route-add-new-station')
+                                            : t('confirm-location')}
+                                    </Text>
                                 </TouchableOpacity>
                             </ScrollView>
                 </Animated.View>

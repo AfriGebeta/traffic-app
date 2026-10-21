@@ -8,10 +8,13 @@ import { useContentWidth } from '../layout/ResponsiveScreen';
 import { uploadToMinio } from '../utils/minio';
 import { showToast } from '../utils/toast';
 import { InAppCamera } from './InAppCamera';
+import { PhotoFix, gpsLog } from '../utils/photoFix';
 
 export interface UploadedPhoto {
     localUri: string;
     objectName: string;
+    // where the phone was when an in-app photo was taken; gallery photos have none
+    fix?: PhotoFix | null;
 }
 
 interface PhotoPickerProps {
@@ -21,11 +24,15 @@ interface PhotoPickerProps {
     folder: string;
     // horizontal padding of the parent screen, so three tiles fit per row
     horizontalPadding?: number;
+    // campaign contributions: photos must be taken now, so no gallery tile
+    cameraOnly?: boolean;
+    // campaign photos: camera waits for a good GPS fix before it can take the photo
+    requireLocation?: boolean;
 }
 
 // Camera + gallery tiles with thumbnails; uploads straight to MinIO and returns object names.
 // Same look as the incident report photo section.
-export function PhotoPicker({ photos, onChange, folder, horizontalPadding = 48 }: PhotoPickerProps) {
+export function PhotoPicker({ photos, onChange, folder, horizontalPadding = 48, cameraOnly = false, requireLocation = false }: PhotoPickerProps) {
     const { t } = useTranslation();
     const { colors: theme, isDark } = useTheme();
     const width = useContentWidth();
@@ -33,11 +40,15 @@ export function PhotoPicker({ photos, onChange, folder, horizontalPadding = 48 }
     const [uploading, setUploading] = useState(false);
     const [cameraOpen, setCameraOpen] = useState(false);
 
-    const upload = async (uris: string[]) => {
+    // uploads the files exactly as they are; no resizing or re-encoding, which would strip EXIF
+    const upload = async (items: { uri: string; fix?: PhotoFix | null }[]) => {
         setUploading(true);
         try {
             const uploaded = await Promise.all(
-                uris.map(async (uri) => ({ localUri: uri, objectName: await uploadToMinio(uri, folder) }))
+                items.map(async ({ uri, fix }) => ({ localUri: uri, objectName: await uploadToMinio(uri, folder), fix }))
+            );
+            uploaded.forEach(({ objectName, fix }) =>
+                gpsLog('uploaded', objectName, fix ? { lat: fix.lat, lng: fix.lng, accuracy: fix.accuracy } : 'no fix (gallery or no GPS)')
             );
             onChange([...photos, ...uploaded]);
             showToast(`${t('image-uploaded')}: ${t('photo-added-successfully')}`);
@@ -63,7 +74,7 @@ export function PhotoPicker({ photos, onChange, folder, horizontalPadding = 48 }
             selectionLimit: 0,
             quality: 0.8,
         });
-        if (!result.canceled && result.assets.length > 0) await upload(result.assets.map((asset) => asset.uri));
+        if (!result.canceled && result.assets.length > 0) await upload(result.assets.map((asset) => ({ uri: asset.uri })));
     };
 
     const tileStyle = {
@@ -92,13 +103,22 @@ export function PhotoPicker({ photos, onChange, folder, horizontalPadding = 48 }
 
     return (
         <View>
-            <InAppCamera visible={cameraOpen} onClose={() => setCameraOpen(false)} onCaptured={(uri) => void upload([uri])} />
+            <InAppCamera
+                visible={cameraOpen}
+                onClose={() => setCameraOpen(false)}
+                onCaptured={(uri, fix) => void upload([{ uri, fix }])}
+                requireLocation={requireLocation}
+            />
             <View className="flex-row flex-wrap gap-3">
                 {sourceTile('camera', t('camera'), takePhoto)}
-                {sourceTile('images', t('gallery'), pickFromGallery)}
+                {!cameraOnly && sourceTile('images', t('gallery'), pickFromGallery)}
                 {photos.map(({ localUri }, index) => (
                     <View key={`${localUri}-${index}`} className="relative">
-                        <Image source={{ uri: localUri }} style={{ width: tileSize, height: tileSize, borderRadius: 16 }} />
+                        <Image
+                            source={{ uri: localUri }}
+                            style={{ width: tileSize, height: tileSize, borderRadius: 16 }}
+                            resizeMethod="resize"
+                        />
                         <TouchableOpacity
                             className="absolute -top-2 -right-2 bg-red-500 rounded-full w-7 h-7 items-center justify-center shadow-lg"
                             onPress={() => onChange(photos.filter((_, i) => i !== index))}

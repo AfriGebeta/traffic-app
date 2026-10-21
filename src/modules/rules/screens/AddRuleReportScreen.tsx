@@ -11,6 +11,8 @@ import { useLocation } from '../../../shared/contexts/LocationContext';
 import { reportErrorFrom, showReportError } from '../../../shared/utils/reportErrors';
 import { toReportHeading } from '../../../shared/utils/reportHeading';
 import { showCampaignPointsEstimate } from '../../campaigns/utils/pointsPopup';
+import { useScoringCampaign } from '../../campaigns/hooks/useScoringCampaign';
+import { deviceFieldsFromFix, latestPhotoFix } from '../../../shared/utils/photoFix';
 import { useTranslation } from 'react-i18next';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { colors } from '../../../shared/theme/colors';
@@ -43,6 +45,7 @@ export default function AddRuleReportScreen() {
     );
     const [submitting, setSubmitting] = useState(false);
     const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
+    const inCampaign = !!useScoringCampaign('traffic_rule');
     const [usingCurrentLocation, setUsingCurrentLocation] = useState(isNavigating && !!navCoordinates);
 
     const autoFilledLocation = React.useRef(false);
@@ -84,6 +87,7 @@ export default function AddRuleReportScreen() {
             return;
         }
 
+        const photoFix = latestPhotoFix(photos);
         setSubmitting(true);
         try {
             // heading only applies to the spot the driver reported from, not a map-picked one
@@ -95,6 +99,7 @@ export default function AddRuleReportScreen() {
                 punishment: (showPunishment && punishment.trim()) || NO_PUNISHMENT_VALUE,
                 ...(atNavFix && navHeading !== undefined && { heading: navHeading }),
                 ...(photos.length > 0 && { image: photos.map((photo) => photo.objectName) }),
+                ...(photoFix && deviceFieldsFromFix(photoFix)),
             });
 
             dashboardEventsService.contribute();
@@ -286,7 +291,7 @@ export default function AddRuleReportScreen() {
                         <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
                             {t('photos')} <Text style={{ color: theme.textSecondary }}>({t('optional')})</Text>
                         </Text>
-                        <PhotoPicker photos={photos} onChange={setPhotos} folder="rules" />
+                        <PhotoPicker photos={photos} onChange={setPhotos} folder="rules" requireLocation={inCampaign} />
                     </View>
                 </View>
             </ScrollView>

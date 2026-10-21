@@ -4435,6 +4435,11 @@
         "AM": "ያለፈው ሳምንት"
     },
     {
+        "key": "campaign-leaderboard-provisional",
+        "EN_US": "This leaderboard is temporary. All points are reviewed before winners are announced, so rankings may change.",
+        "AM": "ይህ የደረጃ ሰንጠረዥ ጊዜያዊ ነው። አሸናፊዎች ከመገለጻቸው በፊት ሁሉም ነጥቦች ይገመገማሉ፤ ስለዚህ ደረጃዎች ሊቀየሩ ይችላሉ።"
+    },
+    {
         "key": "campaign-prizes",
         "EN_US": "Prizes",
         "AM": "ሽልማቶች"
@@ -4593,6 +4598,61 @@
         "key": "use-photo",
         "EN_US": "Use photo",
         "AM": "ፎቶውን ይጠቀሙ"
+    },
+    {
+        "key": "camera-location-waiting",
+        "EN_US": "Getting your location…",
+        "AM": "አካባቢዎን በማግኘት ላይ…"
+    },
+    {
+        "key": "camera-location-failed",
+        "EN_US": "Can't get your location. Move near a window or outside, and check that location is on.",
+        "AM": "አካባቢዎን ማግኘት አልተቻለም። ወደ መስኮት አጠገብ ወይም ወደ ውጭ ይሂዱ፣ እና የአካባቢ አገልግሎት (location) መብራቱን ያረጋግጡ።"
+    },
+    {
+        "key": "camera-location-permission",
+        "EN_US": "Campaign photos need your location so we can check where they were taken.",
+        "AM": "የዘመቻ ፎቶዎች የት እንደተነሱ ለማረጋገጥ አካባቢዎን ይፈልጋሉ።"
+    },
+    {
+        "key": "camera-allow-location",
+        "EN_US": "Allow location",
+        "AM": "አካባቢ ይፍቀዱ"
+    },
+    {
+        "key": "camera-location-off",
+        "EN_US": "Location is turned off. Turn it on so your photo includes where it was taken.",
+        "AM": "የአካባቢ አገልግሎት ጠፍቷል። ፎቶው የት እንደተነሳ እንዲያካትት ያብሩት።"
+    },
+    {
+        "key": "camera-turn-on-location",
+        "EN_US": "Turn on location",
+        "AM": "አካባቢን ያብሩ"
+    },
+    {
+        "key": "route-add-new-station",
+        "EN_US": "Add station",
+        "AM": "ጣቢያ ያክሉ"
+    },
+    {
+        "key": "campaign-new-station-needs-photo",
+        "EN_US": "New stations need a photo during the campaign. Add it here and you'll go back to your route.",
+        "AM": "በዘመቻው ወቅት አዲስ ጣቢያ ፎቶ ያስፈልገዋል። እዚህ ያክሉት፣ ከዚያ ወደ መስመርዎ ይመለሳሉ።"
+    },
+    {
+        "key": "campaign-photo-required",
+        "EN_US": "Add a photo taken with the camera to submit this for the campaign.",
+        "AM": "ለዘመቻው ለማስገባት በካሜራ የተነሳ ፎቶ ያክሉ።"
+    },
+    {
+        "key": "photo-location",
+        "EN_US": "Where you took the photo",
+        "AM": "ፎቶውን ያነሱበት ቦታ"
+    },
+    {
+        "key": "photo-pin-too-far",
+        "EN_US": "Your pin is {{distance}} m from where you took the photo. Keep it within {{limit}} m or this won't earn points.",
+        "AM": "ምልክቱ ፎቶውን ካነሱበት ቦታ {{distance}} ሜ ይርቃል። ነጥብ ለማግኘት በ{{limit}} ሜ ውስጥ ያድርጉት።"
     },
     {
         "key": "campaign-no-photo-title",

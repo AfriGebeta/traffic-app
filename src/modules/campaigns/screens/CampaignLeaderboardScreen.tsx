@@ -15,6 +15,8 @@ import { CampaignLeaderboard, CampaignPeriodKind, CampaignTrack } from '../types
 
 const NO_TRACKS: CampaignTrack[] = [];
 
+const PODIUM_HEIGHTS: Record<number, number> = { 1: 100, 2: 84, 3: 70 };
+
 // 1st/2nd/3rd/11th/22nd…; Amharic uses ኛ for every rank
 const ordinal = (rank: number, language: string): string => {
     if (language.startsWith('am')) return `${rank}ኛ`;
@@ -94,6 +96,8 @@ export default function CampaignLeaderboardScreen() {
         .map(([rank, amount]) => ({ rank: Number(rank), amount }))
         .filter(({ rank, amount }) => Number.isInteger(rank) && rank > 0 && typeof amount === 'number' && amount > 0)
         .sort((a, b) => a.rank - b.rank);
+    const podium = [2, 1, 3].flatMap((rank) => prizes.filter((prize) => prize.rank === rank));
+    const otherPrizes = prizes.filter((prize) => prize.rank > 3);
 
     const chip = (label: string, active: boolean, onPress: () => void) => (
         <TouchableOpacity
@@ -162,6 +166,14 @@ export default function CampaignLeaderboardScreen() {
                     ))}
                 </View>
             )}
+
+            {/* winners are picked by hand after review, so the board itself is never the final word */}
+            <View className="flex-row items-start mx-4 mb-3">
+                <Ionicons name="information-circle-outline" size={16} color={theme.textSecondary} style={{ marginTop: 1 }} />
+                <Text className="text-xs ml-1.5 flex-1" style={{ color: theme.textSecondary }}>
+                    {t('campaign-leaderboard-provisional')}
+                </Text>
+            </View>
 
             {!!status && status !== 'live' && (
                 <View className="mx-4 mb-3 rounded-xl px-4 py-3" style={{ backgroundColor: theme.primaryMuted }}>
@@ -234,22 +246,37 @@ export default function CampaignLeaderboardScreen() {
                     <Text className="font-bold text-base mb-3" style={{ color: theme.textPrimary }}>
                         {t('campaign-prizes')}
                     </Text>
-                    <View className="flex-row gap-3">
-                        {prizes.map(({ rank, amount }) => (
-                            <View
-                                key={rank}
-                                className="flex-1 items-center rounded-2xl py-3"
-                                style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
-                            >
-                                <Text className="font-semibold" style={{ color: theme.textSecondary }}>
-                                    {ordinal(rank, i18n.language)}
-                                </Text>
-                                <Text className="font-bold text-base" style={{ color: theme.textPrimary }} numberOfLines={1} adjustsFontSizeToFit>
-                                    {t('campaign-prize-amount', { amount: amount.toLocaleString('en-US') })}
-                                </Text>
-                            </View>
-                        ))}
+                    {/* podium: 2nd | 1st (taller) | 3rd */}
+                    <View className="flex-row items-end gap-3">
+                        {podium.map(({ rank, amount }) => {
+                            const first = rank === 1;
+                            return (
+                                <View
+                                    key={rank}
+                                    className="flex-1 items-center justify-center rounded-2xl px-2"
+                                    style={{ height: PODIUM_HEIGHTS[rank], backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
+                                >
+                                    <Text className="font-semibold" style={{ color: theme.textSecondary }}>
+                                        {ordinal(rank, i18n.language)}
+                                    </Text>
+                                    <Text
+                                        className={first ? 'font-bold text-lg' : 'font-bold text-base'}
+                                        style={{ color: theme.textPrimary }}
+                                        numberOfLines={1}
+                                    >
+                                        {t('campaign-prize-amount', { amount: amount.toLocaleString('en-US') })}
+                                    </Text>
+                                </View>
+                            );
+                        })}
                     </View>
+                    {otherPrizes.length > 0 && (
+                        <Text className="text-sm mt-3 text-center" style={{ color: theme.textSecondary }}>
+                            {otherPrizes
+                                .map(({ rank, amount }) => `${ordinal(rank, i18n.language)}: ${t('campaign-prize-amount', { amount: amount.toLocaleString('en-US') })}`)
+                                .join('  ·  ')}
+                        </Text>
+                    )}
                 </View>
             )}
         </View>

@@ -1,5 +1,5 @@
 import { apiService } from '../../../shared/services/api';
-import { getDeviceFields } from '../../../shared/utils/deviceFields';
+import { DeviceFields, getDeviceFields } from '../../../shared/utils/deviceFields';
 import { Incident, IncidentReportRequest, IncidentTypeFromAPI } from '../types/incident.types';
 
 export const incidentService = {
@@ -7,8 +7,9 @@ export const incidentService = {
         return apiService.get<IncidentTypeFromAPI[]>('/api/incidents/types');
     },
 
-    async report(data: IncidentReportRequest) {
-        return apiService.post<Incident>('/api/incidents/report', { ...data, ...(await getDeviceFields()) });
+    // device fields the caller passes (e.g. from the photo's fix) win over the last-known location
+    async report(data: IncidentReportRequest & DeviceFields) {
+        return apiService.post<Incident>('/api/incidents/report', { ...(await getDeviceFields()), ...data });
     },
 
     async getIncidents(filters?: string[]) {

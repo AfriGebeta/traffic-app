@@ -1,6 +1,6 @@
 import { apiService } from '../../../shared/services/api';
 import { ApiError } from '../../../shared/utils/apiErrors';
-import { getDeviceFields } from '../../../shared/utils/deviceFields';
+import { DeviceFields, getDeviceFields } from '../../../shared/utils/deviceFields';
 import {
     CreateTaxiNodeRequest,
     CreateTaxiEdgeRequest,
@@ -178,10 +178,12 @@ export const taxiService = {
     },
 
     // merged: the backend folded this into an existing stop nearby
-    async createNodeForRoute(data: { name: string; lat: number; lng: number; nodeType?: string; routeName?: string; landmark?: string }): Promise<TaxiNode & { merged?: boolean }> {
+    async createNodeForRoute(
+        data: { name: string; lat: number; lng: number; nodeType?: string; routeName?: string; landmark?: string; photos?: string[] } & DeviceFields
+    ): Promise<TaxiNode & { merged?: boolean }> {
         const response = await apiService.post<any>(
             '/api/taxi/nodes',
-            { ...data, ...(await getDeviceFields()) }
+            { ...(await getDeviceFields()), ...data }
         );
 
         if (response.error) {
