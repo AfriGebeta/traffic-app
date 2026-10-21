@@ -9,6 +9,7 @@ import { useTheme } from '../../../shared/theme/ThemeContext';
 import { showToast } from '../../../shared/utils/toast';
 import { ApiError, ApiErrorCode, isRestrictedError } from '../../../shared/utils/apiErrors';
 import { useAuthGate } from '../../register/hooks/useAuthGate';
+import { CampaignCountdown } from '../components/CampaignCountdown';
 import { campaignService } from '../services/campaign.service';
 import { hasCampaignEnded, isParticipating, markCampaignJoined, markCampaignLeft, refreshCampaigns, useCampaigns } from '../store/campaignStore';
 import { basePoints } from '../utils/campaignPoints';
@@ -189,6 +190,8 @@ export default function CampaignDetailScreen() {
                     </View>
                 )}
 
+                {!ended && !!campaign.endsAt && <CampaignCountdown endsAt={campaign.endsAt} />}
+
                 {ended && (
                     <View className="rounded-2xl p-4 mb-6" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
                         <Text className="font-bold text-base" style={{ color: theme.textPrimary }}>
@@ -221,6 +224,34 @@ export default function CampaignDetailScreen() {
                             );
                         })}
                     </View>
+                )}
+
+                {(participating || (ended && joined)) && (
+                    <TouchableOpacity
+                        onPress={() => router.push({ pathname: '/campaigns/[slug]/leaderboard', params: { slug: campaign.slug } })}
+                        activeOpacity={0.7}
+                        className="flex-row items-center justify-between rounded-2xl px-4 py-4 mb-3"
+                        style={cardStyle}
+                    >
+                        <Text className="font-semibold text-base" style={{ color: theme.textPrimary }}>
+                            {t('leaderboard')}
+                        </Text>
+                        <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+                    </TouchableOpacity>
+                )}
+
+                {(participating || (ended && joined)) && (
+                    <TouchableOpacity
+                        onPress={() => router.push({ pathname: '/my-contributions', params: { campaign: campaign.slug } })}
+                        activeOpacity={0.7}
+                        className="flex-row items-center justify-between rounded-2xl px-4 py-4 mb-6"
+                        style={cardStyle}
+                    >
+                        <Text className="font-semibold text-base" style={{ color: theme.textPrimary }}>
+                            {t('my-contributions')}
+                        </Text>
+                        <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+                    </TouchableOpacity>
                 )}
 
                 {scoredKinds.length > 0 && (
@@ -357,33 +388,6 @@ export default function CampaignDetailScreen() {
                     </>
                 )}
 
-                {(participating || (ended && joined)) && (
-                    <TouchableOpacity
-                        onPress={() => router.push({ pathname: '/campaigns/[slug]/leaderboard', params: { slug: campaign.slug } })}
-                        activeOpacity={0.7}
-                        className="flex-row items-center justify-between rounded-2xl px-4 py-4 mb-3"
-                        style={cardStyle}
-                    >
-                        <Text className="font-semibold text-base" style={{ color: theme.textPrimary }}>
-                            {t('leaderboard')}
-                        </Text>
-                        <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
-                    </TouchableOpacity>
-                )}
-
-                {(participating || (ended && joined)) && (
-                    <TouchableOpacity
-                        onPress={() => router.push({ pathname: '/my-contributions', params: { campaign: campaign.slug } })}
-                        activeOpacity={0.7}
-                        className="flex-row items-center justify-between rounded-2xl px-4 py-4 mb-6"
-                        style={cardStyle}
-                    >
-                        <Text className="font-semibold text-base" style={{ color: theme.textPrimary }}>
-                            {t('my-contributions')}
-                        </Text>
-                        <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
-                    </TouchableOpacity>
-                )}
 
                 <Text className="font-bold text-base mb-3" style={{ color: theme.textPrimary }}>
                     {t('campaign-follow-us')}

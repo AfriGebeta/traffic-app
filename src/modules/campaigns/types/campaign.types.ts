@@ -73,6 +73,8 @@ export interface Campaign {
     periods: CampaignPeriod[];
     pointsFormula?: CampaignPointsFormula;
     priorityCells?: string[];
+    // prize amount (ETB) by final rank, e.g. { "1": 5000, "2": 3000 }
+    prizes?: Record<string, number>;
     // which events pay; the formula only applies to submissions when SUBMISSION_VERIFIED is here
     scoring?: CampaignScoringRule[];
 }
@@ -114,6 +116,11 @@ export interface CampaignLeaderboard {
     track: string;
     period: { kind: CampaignPeriodKind; key: string; label?: string; status: CampaignPeriodStatus; freezeUntil?: string };
     data: CampaignLeaderboardEntry[];
+    // only present when ?page= is sent
+    total?: number;
+    page?: number;
+    pageSize?: number;
+    totalPages?: number;
 }
 
 export type SubmissionStatus = 'PENDING' | 'NEEDS_REVIEW' | 'VERIFIED' | 'REJECTED' | 'EXPIRED' | 'REVOKED';

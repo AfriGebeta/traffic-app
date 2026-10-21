@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 import type { RecentSearch } from '../../navigation/services/recentSearch.service';
-import type { SavedPlace, SavedPlaceType } from '../../places/types/place.types';
+import { hasSavedPlaceCoords, type SavedPlace, type SavedPlaceType } from '../../places/types/place.types';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import type { ThemeColors } from '../../../shared/theme/colors';
 
@@ -28,7 +28,9 @@ const normalizeSavedPlaceType = (type: string): SavedPlaceType | null => {
     return null;
 };
 
-const savedPlaceToGeocodingPlace = (place: SavedPlace): GeocodingPlace => ({
+type RoutableSavedPlace = SavedPlace & { lat: number; lng: number };
+
+const savedPlaceToGeocodingPlace = (place: RoutableSavedPlace): GeocodingPlace => ({
     id: `saved-${place.id}`,
     name: place.label,
     display_name: place.label,
@@ -135,8 +137,10 @@ const SavedPlaceChips = ({
     const [selectedType, setSelectedType] = React.useState<SavedPlaceType | null>(null);
 
     const placesByType = React.useMemo(() => {
-        const map: Partial<Record<SavedPlaceType, SavedPlace[]>> = {};
+        const map: Partial<Record<SavedPlaceType, RoutableSavedPlace[]>> = {};
         for (const p of savedPlaces) {
+            // no coords = nothing to route to; chip falls through to /saved-places
+            if (!hasSavedPlaceCoords(p)) continue;
             const type = normalizeSavedPlaceType(p.type);
             if (!type) continue;
             if (!map[type]) map[type] = [];
@@ -145,7 +149,7 @@ const SavedPlaceChips = ({
         return map;
     }, [savedPlaces]);
 
-    const handleSelectPlace = (place: SavedPlace) => {
+    const handleSelectPlace = (place: RoutableSavedPlace) => {
         onPrepareSelect?.();
         Keyboard.dismiss();
         setSelectedType(null);

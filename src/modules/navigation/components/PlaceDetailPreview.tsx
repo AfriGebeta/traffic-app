@@ -84,6 +84,8 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
     const { colors: theme, isDark } = useTheme();
     const [savedPlace, setSavedPlace] = useState<SavedPlace | null>(null);
     const [imageBoxWidth, setImageBoxWidth] = useState(0);
+    // which video asset has rendered its first frame; image shows until then
+    const [readyVideo, setReadyVideo] = useState<number | null>(null);
     const router = useRouter();
 
     useEffect(() => {
@@ -195,7 +197,9 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
     const getPlaceVideo = () => {
         const placeType = (place.type || place.category || '').toLowerCase();
 
-        if (placeType.includes('coffee') || placeType.includes('cafe') || placeType.includes('teahouse')) return null;
+        if (placeType.includes('coffee') || placeType.includes('cafe') || placeType.includes('teahouse')) {
+            return require('../../../../assets/videos/0.3--d1-Gebeta-coffeeshop-vector-anim-gif 2.mp4');
+        }
         if (placeType.includes('restaurant') || placeType.includes('hotel') || placeType.includes('food')) return null;
         if (placeType.includes('bank')) return null;
         if (placeType.includes('atm')) {
@@ -257,28 +261,34 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
                             style={{ height: imageBoxHeight }}
                             onLayout={({ nativeEvent }) => setImageBoxWidth(nativeEvent.layout.width)}
                         >
+                            <Image
+                                source={placeImage}
+                                style={{
+                                    position: 'absolute',
+                                    left: 0,
+                                    top: (imageBoxHeight - displayedImageHeight) / 2,
+                                    width: imageWidth * imageScale,
+                                    height: displayedImageHeight,
+                                }}
+                                resizeMode="contain"
+                            />
                             {placeVideo ? (
                                 <Video
+                                    // remount per asset so a source swap never reuses a stale player
+                                    key={placeVideo}
                                     source={placeVideo}
-                                    style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 }}
+                                    style={{
+                                        position: 'absolute', left: 0, top: 0, right: 0, bottom: 0,
+                                        opacity: readyVideo === placeVideo ? 1 : 0,
+                                    }}
                                     resizeMode={ResizeMode.COVER}
                                     shouldPlay
                                     isLooping
                                     isMuted
+                                    onReadyForDisplay={() => setReadyVideo(placeVideo)}
+                                    onError={(e) => console.warn('[PlaceDetailPreview] video error', e)}
                                 />
-                            ) : (
-                                <Image
-                                    source={placeImage}
-                                    style={{
-                                        position: 'absolute',
-                                        left: 0,
-                                        top: (imageBoxHeight - displayedImageHeight) / 2,
-                                        width: imageWidth * imageScale,
-                                        height: displayedImageHeight,
-                                    }}
-                                    resizeMode="contain"
-                                />
-                            )}
+                            ) : null}
                             <TouchableOpacity
                                 onPress={handleContribute}
                                 activeOpacity={0.8}
