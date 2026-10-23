@@ -4,6 +4,7 @@ import { Incident } from '../../incidents/types/incident.types';
 import { getIncidentTranslationKey } from '../../incidents/utils/incidentTranslations';
 import { useTranslation } from 'react-i18next';
 import { getAppConfig } from '../../../shared/config/remoteConfigValues';
+import { useUserRegistration } from '../../register/hooks/useUserRegistration';
 
 const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
     const R = 6371;
@@ -79,6 +80,7 @@ interface ActiveAlert {
     distance: string;
     distanceKm: number;
     incidentType: Incident['type'];
+    isOwnReport: boolean;
 }
 
 export const useIncidentAlerts = (
@@ -94,6 +96,19 @@ export const useIncidentAlerts = (
     const dismissedIncidents = useRef<Set<string>>(new Set());
     const previousDistances = useRef<Map<string, number>>(new Map());
     const previousLocation = useRef<{ lat: number; lng: number } | null>(null);
+    const { getStoredUser } = useUserRegistration();
+    const [myUserId, setMyUserId] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!navigationMode) return;
+        let cancelled = false;
+        getStoredUser().then((user) => {
+            if (!cancelled) setMyUserId(user?.id ?? null);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [navigationMode]);
 
     const dismissAlert = () => {
         if (activeAlert) {
@@ -115,6 +130,7 @@ export const useIncidentAlerts = (
             if (passedIncidents.current.has(incident.id) || dismissedIncidents.current.has(incident.id)) {
                 continue;
             }
+
 
             const distance = calculateDistance(
                 userLocation.lat,
@@ -168,6 +184,7 @@ export const useIncidentAlerts = (
                     distance: distanceText,
                     distanceKm: closestDistance,
                     incidentType: closestIncident.type,
+                    isOwnReport: !!myUserId && closestIncident.userId === myUserId,
                 });
 
                 previousDistances.current.set(incidentId, closestDistance);
@@ -178,7 +195,7 @@ export const useIncidentAlerts = (
 
         //update prev location
         previousLocation.current = userLocation;
-    }, [userLocation, incidents, navigationMode, t]);
+    }, [userLocation, incidents, navigationMode, myUserId, t]);
 
     //track clearing
     useEffect(() => {

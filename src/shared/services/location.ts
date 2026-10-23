@@ -10,6 +10,7 @@ import { hasPlayServices } from '../utils/playServices';
 export {
     Accuracy,
     getForegroundPermissionsAsync,
+    hasServicesEnabledAsync,
     requestForegroundPermissionsAsync,
 } from 'expo-location';
 export type {

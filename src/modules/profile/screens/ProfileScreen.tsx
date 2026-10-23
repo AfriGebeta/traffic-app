@@ -420,6 +420,56 @@ export const ProfileScreen = () => {
                         </View>
                     </View>
 
+                    <TouchableOpacity
+                        className="flex-row items-center justify-between px-4 py-4 mb-3"
+                        style={elevatedCardStyle}
+                        activeOpacity={0.7}
+                        onPress={() => router.push('/campaigns')}
+                    >
+                        <View className="flex-row items-center flex-1 mr-3">
+                            <View
+                                className="w-9 h-9 rounded-full items-center justify-center mr-3"
+                                style={{ backgroundColor: isDark ? '#4D3400' : '#FFF1D6' }}
+                            >
+                                <Ionicons name="megaphone-outline" size={18} color={colors.primary.main} />
+                            </View>
+                            <View className="flex-1">
+                                <Text className="text-sm font-semibold" style={{ color: theme.textPrimary }}>
+                                    {t('campaigns')}
+                                </Text>
+                                <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }} numberOfLines={1}>
+                                    {t('campaigns-profile-description')}
+                                </Text>
+                            </View>
+                        </View>
+                        <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        className="flex-row items-center justify-between px-4 py-4 mb-8"
+                        style={elevatedCardStyle}
+                        activeOpacity={0.7}
+                        onPress={() => router.push('/my-contributions')}
+                    >
+                        <View className="flex-row items-center flex-1 mr-3">
+                            <View
+                                className="w-9 h-9 rounded-full items-center justify-center mr-3"
+                                style={{ backgroundColor: isDark ? '#4D3400' : '#FFF1D6' }}
+                            >
+                                <Ionicons name="checkmark-done-outline" size={18} color={colors.primary.main} />
+                            </View>
+                            <View className="flex-1">
+                                <Text className="text-sm font-semibold" style={{ color: theme.textPrimary }}>
+                                    {t('my-contributions')}
+                                </Text>
+                                <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }} numberOfLines={1}>
+                                    {t('my-contributions-description')}
+                                </Text>
+                            </View>
+                        </View>
+                        <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
+                    </TouchableOpacity>
+
                     {/* Saved Places Section */}
                     <View className="flex-row items-center justify-between mb-3">
                         <Text className="font-bold text-base" style={{ color: theme.textPrimary }}>

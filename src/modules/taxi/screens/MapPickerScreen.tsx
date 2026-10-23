@@ -6,6 +6,7 @@ import {
     TouchableOpacity,
     Alert,
     ScrollView,
+    useWindowDimensions,
 } from 'react-native';
 import Animated, { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-reanimated';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -24,6 +25,12 @@ import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
 import { MapSearchBar } from '../../../shared/components';
 import type { MapSearchBarRef } from '../../../shared/components';
 import { useLayout } from '../../../shared/layout/useLayout';
+import { useMapTheme } from '../../map/context/MapThemeContext';
+import { useTheme } from '../../../shared/theme/ThemeContext';
+import { MapLayersButton } from '../../map/components/MapLayersButton';
+import { MapThemeSelector } from '../../map/components/MapThemeSelector';
+import { useScoringCampaign } from '../../campaigns/hooks/useScoringCampaign';
+import { addStationForRouteParams, isRouteSlot } from '../utils/routeStationHandoff';
 
 export default function MapPickerScreen() {
     const router = useRouter();
@@ -33,10 +40,17 @@ export default function MapPickerScreen() {
     const params = useLocalSearchParams();
     const { setPendingStop } = useRouteBuilder();
     const isCoordsMode = params.mode === 'coords';
+    // campaigns reject new stations without an in-app photo, so new route stops go through Add Station
+    const newStopsNeedPhoto = !!useScoringCampaign('taxi_station');
     const mapRef = useRef<GebetaMapRef>(null);
     const searchBarRef = useRef<MapSearchBarRef>(null);
     const { userLocation } = useUserLocation();
     const { apiKey } = useRemoteConfig();
+    const { currentTheme } = useMapTheme();
+    const { colors: theme } = useTheme();
+    const { height: windowHeight } = useWindowDimensions();
+    const [showThemeSelector, setShowThemeSelector] = useState(false);
+    const [layersButtonBottom, setLayersButtonBottom] = useState(0);
 
     const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [stopName, setStopName] = useState('');
@@ -204,6 +218,27 @@ export default function MapPickerScreen() {
             return;
         }
 
+        const routeSlot = params.type;
+        if (!isCoordsMode && !selectedExisting && newStopsNeedPhoto && isRouteSlot(routeSlot)) {
+            showToast(t('campaign-new-station-needs-photo'));
+            // replace, so finishing Add Station lands back on the route builder
+            router.replace({
+                pathname: '/taxi/add-station',
+                params: addStationForRouteParams(
+                    routeSlot,
+                    {
+                        name: stopName.trim(),
+                        lat: selectedLocation.lat,
+                        lng: selectedLocation.lng,
+                        type: stopType,
+                        landmark: stopLandmark.trim() || undefined,
+                    },
+                    'map'
+                ),
+            });
+            return;
+        }
+
         setPendingStop({
             id: Date.now().toString(),
             name: stopName.trim(),
@@ -236,13 +271,13 @@ export default function MapPickerScreen() {
     };
 
     return (
-        <View className="flex-1 bg-gray-50" style={{ paddingTop: insets.top }}>
-            <View className="px-4 py-4 bg-white border-b border-gray-200">
+        <View className="flex-1" style={{ paddingTop: insets.top, backgroundColor: theme.background }}>
+            <View className="px-4 py-4 border-b" style={{ backgroundColor: theme.background, borderColor: theme.border }}>
                 <View className="flex-row items-center justify-between">
                     <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
                         <Ionicons name="arrow-back" size={28} color="#FFA500" />
                     </TouchableOpacity>
-                    <Text className="text-lg font-bold text-gray-900">{getTitle()}</Text>
+                    <Text className="text-lg font-bold" style={{ color: theme.textPrimary }}>{getTitle()}</Text>
                     <View style={{ width: 28 }} />
                 </View>
             </View>
@@ -251,7 +286,12 @@ export default function MapPickerScreen() {
                 <GebetaMap
                     ref={mapRef}
                     apiKey={apiKey!}
-                    mapStyleUrl={`https://tiles.gebeta.app/styles/standard/style.json?apiKey=${apiKey}`}
+                    mapStyleUrl={
+                        !currentTheme.styleJson && currentTheme.styleUrl
+                            ? `${currentTheme.styleUrl}?apiKey=${apiKey}`
+                            : `https://tiles.gebeta.app/styles/standard/style.json?apiKey=${apiKey}`
+                    }
+                    mapStyleJson={currentTheme.styleJson}
                     center={[38.7525, 9.0192]}
                     zoom={13}
                     onMapClick={handleMapClick}
@@ -269,12 +309,22 @@ export default function MapPickerScreen() {
                 />
 
                 <TouchableOpacity
-                    className="absolute top-36 right-4 bg-white rounded-full w-12 h-12 items-center justify-center shadow-lg"
+                    className="absolute top-36 right-4 rounded-full w-12 h-12 items-center justify-center shadow-lg"
+                    style={{ backgroundColor: theme.background }}
                     onPress={handleLocationPress}
                     activeOpacity={0.7}
                 >
                     <Ionicons name="locate" size={24} color="#FFA500" />
                 </TouchableOpacity>
+
+                <View className="absolute top-52 right-4">
+                    <MapLayersButton
+                        onPress={({ y, height }) => {
+                            setLayersButtonBottom(windowHeight - (y + height));
+                            setShowThemeSelector(true);
+                        }}
+                    />
+                </View>
 
                 <MapSearchBar
                     ref={searchBarRef}
@@ -287,8 +337,8 @@ export default function MapPickerScreen() {
 
             {selectedLocation && (
                 <Animated.View
-                    className="bg-white border-t border-gray-200"
-                    style={[{ paddingBottom: insets.bottom + 16 }, sheetAnimatedStyle]}
+                    className="border-t"
+                    style={[{ paddingBottom: insets.bottom + 16, backgroundColor: theme.background, borderColor: theme.border }, sheetAnimatedStyle]}
                 >
                             <ScrollView
                                 style={{ maxHeight: 350 }}
@@ -298,12 +348,12 @@ export default function MapPickerScreen() {
                             >
                                 {!isCoordsMode && (
                                 <View className="mb-3">
-                                    <Text className="text-gray-700 font-semibold mb-2">{t('stop-name')} *</Text>
+                                    <Text className="font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('stop-name')} *</Text>
                                     {selectedExisting && (
-                                        <View className="bg-green-50 border border-green-200 rounded-xl p-3 mb-2 flex-row items-center justify-between">
+                                        <View className="border rounded-xl p-3 mb-2 flex-row items-center justify-between" style={{ backgroundColor: theme.greenMuted, borderColor: theme.green }}>
                                             <View className="flex-1">
-                                                <Text className="text-green-700 font-semibold"> {t('using-existing-station')}</Text>
-                                                <Text className="text-green-600 text-sm">{selectedExisting.name}</Text>
+                                                <Text className="font-semibold" style={{ color: theme.green }}> {t('using-existing-station')}</Text>
+                                                <Text className="text-sm" style={{ color: theme.green }}>{selectedExisting.name}</Text>
                                             </View>
                                             <TouchableOpacity
                                                 onPress={() => {
@@ -311,12 +361,14 @@ export default function MapPickerScreen() {
                                                     setStopName('');
                                                 }}
                                             >
-                                                <Ionicons name="close-circle" size={24} color="#10B981" />
+                                                <Ionicons name="close-circle" size={24} color={theme.green} />
                                             </TouchableOpacity>
                                         </View>
                                     )}
                                     <TextInput
-                                        className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900"
+                                        className="border rounded-xl px-4 py-3"
+                                        style={{ backgroundColor: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
+                                        placeholderTextColor={theme.textSecondary}
                                         placeholder={t('enter-stop-name')}
                                         value={stopName}
                                         onChangeText={setStopName}
@@ -324,28 +376,29 @@ export default function MapPickerScreen() {
                                     />
 
                                     {!selectedExisting && filteredStations.length > 0 && (
-                                        <View className="mt-2 bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
-                                            <View className="bg-blue-50 px-4 py-2 border-b border-blue-200">
+                                        <View className="mt-2 border rounded-xl overflow-hidden" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
+                                            <View className="px-4 py-2 border-b" style={{ backgroundColor: theme.primaryMuted, borderColor: theme.border }}>
                                                 <Text className="text-orange-500 font-semibold text-sm">{t('nearby-existing-stations')}</Text>
                                             </View>
                                             <View>
                                                 {filteredStations.slice(0, 5).map((station) => (
                                                     <TouchableOpacity
                                                         key={station.id}
-                                                        className="px-4 py-3 border-b border-gray-100"
+                                                        className="px-4 py-3 border-b"
+                                                        style={{ borderColor: theme.border }}
                                                         onPress={() => handleSelectExisting(station)}
                                                     >
                                                         <View className="flex-row items-center">
-                                                            <Text className="text-gray-900 font-semibold flex-1">{station.name}</Text>
+                                                            <Text className="font-semibold flex-1" style={{ color: theme.textPrimary }}>{station.name}</Text>
                                                             {station.nodeType && (
-                                                                <View className="px-2 py-1 rounded bg-orange-100">
-                                                                    <Text className="text-xs font-medium text-orange-700">
+                                                                <View className="px-2 py-1 rounded" style={{ backgroundColor: theme.primaryMuted }}>
+                                                                    <Text className="text-xs font-medium" style={{ color: theme.primary }}>
                                                                         {station.nodeType}
                                                                     </Text>
                                                                 </View>
                                                             )}
                                                         </View>
-                                                        <Text className="text-gray-500 text-xs mt-1">
+                                                        <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>
                                                             {(station as any).distance}m away
                                                             {station.routeName && ` • ${station.routeName}`}
                                                         </Text>
@@ -355,33 +408,40 @@ export default function MapPickerScreen() {
                                         </View>
                                     )}
 
-                                    {loadingStations && <Text className="text-gray-500 text-sm mt-2">{t('loading-nearby-stations-and-stops') || 'Loading nearby stations & stops...'}</Text>}
+                                    {loadingStations && <Text className="text-sm mt-2" style={{ color: theme.textSecondary }}>{t('loading-nearby-stations-and-stops') || 'Loading nearby stations & stops...'}</Text>}
                                 </View>
                                 )}
 
                                 {!isCoordsMode && params.type !== 'intermediate' && !selectedExisting && (
                                     <View className="mb-3">
-                                        <Text className="text-gray-700 font-semibold mb-2">{t('type')}</Text>
+                                        <Text className="font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('type')}</Text>
                                         <View className="flex-row gap-3">
                                             <TouchableOpacity
-                                                className={`flex-1 py-3 rounded-xl border-2 ${stopType === 'station' ? 'bg-orange-50 border-orange-500' : 'bg-gray-50 border-gray-200'
-                                                    }`}
+                                                className="flex-1 py-3 rounded-xl border-2"
+                                                style={{
+                                                    backgroundColor: stopType === 'station' ? theme.primaryMuted : theme.surface,
+                                                    borderColor: stopType === 'station' ? theme.primary : theme.border,
+                                                }}
                                                 onPress={() => setStopType('station')}
                                             >
                                                 <Text
-                                                    className={`text-center font-semibold ${stopType === 'station' ? 'text-orange-500' : 'text-gray-600'
-                                                        }`}
+                                                    className="text-center font-semibold"
+                                                    style={{ color: stopType === 'station' ? theme.primary : theme.textSecondary }}
                                                 >
                                                     {t('station')}
                                                 </Text>
                                             </TouchableOpacity>
                                             <TouchableOpacity
-                                                className={`flex-1 py-3 rounded-xl border-2 ${stopType === 'stop' ? 'bg-orange-50 border-orange-500' : 'bg-gray-50 border-gray-200'
-                                                    }`}
+                                                className="flex-1 py-3 rounded-xl border-2"
+                                                style={{
+                                                    backgroundColor: stopType === 'stop' ? theme.primaryMuted : theme.surface,
+                                                    borderColor: stopType === 'stop' ? theme.primary : theme.border,
+                                                }}
                                                 onPress={() => setStopType('stop')}
                                             >
                                                 <Text
-                                                    className={`text-center font-semibold ${stopType === 'stop' ? 'text-orange-500' : 'text-gray-600'}`}
+                                                    className="text-center font-semibold"
+                                                    style={{ color: stopType === 'stop' ? theme.primary : theme.textSecondary }}
                                                 >
                                                     {t('stop')}
                                                 </Text>
@@ -392,9 +452,11 @@ export default function MapPickerScreen() {
 
                                 {!isCoordsMode && !selectedExisting && (
                                     <View className="mb-3">
-                                        <Text className="text-gray-700 font-semibold mb-2">{t('landmark')}</Text>
+                                        <Text className="font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('landmark')}</Text>
                                         <TextInput
-                                            className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900"
+                                            className="border rounded-xl px-4 py-3"
+                                            style={{ backgroundColor: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
+                                            placeholderTextColor={theme.textSecondary}
                                             placeholder={t('enter-landmark-description')}
                                             value={stopLandmark}
                                             onChangeText={setStopLandmark}
@@ -410,11 +472,21 @@ export default function MapPickerScreen() {
                                     onPress={handleConfirm}
                                     activeOpacity={0.7}
                                 >
-                                    <Text className="text-white text-center font-bold text-lg">{t('confirm-location')}</Text>
+                                    <Text className="text-white text-center font-bold text-lg">
+                                        {!isCoordsMode && newStopsNeedPhoto && !selectedExisting && stopName.trim() && isRouteSlot(params.type)
+                                            ? t('route-add-new-station')
+                                            : t('confirm-location')}
+                                    </Text>
                                 </TouchableOpacity>
                             </ScrollView>
                 </Animated.View>
             )}
+
+            <MapThemeSelector
+                visible={showThemeSelector}
+                onClose={() => setShowThemeSelector(false)}
+                bottomOffset={layersButtonBottom}
+            />
         </View>
     );
 }

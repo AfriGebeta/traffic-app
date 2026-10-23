@@ -10,11 +10,16 @@ import { dashboardEventsService } from '../../../shared/services/dashboard-event
 import { useLocation } from '../../../shared/contexts/LocationContext';
 import { reportErrorFrom, showReportError } from '../../../shared/utils/reportErrors';
 import { toReportHeading } from '../../../shared/utils/reportHeading';
+import { showCampaignPointsEstimate } from '../../campaigns/utils/pointsPopup';
+import { useScoringCampaign } from '../../campaigns/hooks/useScoringCampaign';
+import { deviceFieldsFromFix, latestPhotoFix } from '../../../shared/utils/photoFix';
 import { useTranslation } from 'react-i18next';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { isPunishableRule, NO_PUNISHMENT_VALUE } from '../utils/ruleTranslations';
+import { PhotoPicker, UploadedPhoto } from '../../../shared/components/PhotoPicker';
+import { ConfirmDialog } from '../../../components/ConfirmDialog';
 
 export default function AddRuleReportScreen() {
     const router = useRouter();
@@ -40,6 +45,9 @@ export default function AddRuleReportScreen() {
         isNavigating ? navCoordinates ?? null : null
     );
     const [submitting, setSubmitting] = useState(false);
+    const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
+    const inCampaign = !!useScoringCampaign('traffic_rule');
+    const [noPhotoPrompt, setNoPhotoPrompt] = useState(false);
     const [usingCurrentLocation, setUsingCurrentLocation] = useState(isNavigating && !!navCoordinates);
 
     const autoFilledLocation = React.useRef(false);
@@ -75,12 +83,19 @@ export default function AddRuleReportScreen() {
         setUsingCurrentLocation(true);
     };
 
-    const handleSubmit = async () => {
+    const handleSubmit = async (skipPhotoPrompt = false) => {
         if (!coordinates) {
             showToast(`${t('location-required')}: ${t('pick-location')}`);
             return;
         }
 
+        // a photo is optional for rules, but it's worth more points, so nudge once before sending without one
+        if (inCampaign && photos.length === 0 && !skipPhotoPrompt) {
+            setNoPhotoPrompt(true);
+            return;
+        }
+
+        const photoFix = latestPhotoFix(photos);
         setSubmitting(true);
         try {
             // heading only applies to the spot the driver reported from, not a map-picked one
@@ -91,10 +106,16 @@ export default function AddRuleReportScreen() {
                 typeId: typeId as string,
                 punishment: (showPunishment && punishment.trim()) || NO_PUNISHMENT_VALUE,
                 ...(atNavFix && navHeading !== undefined && { heading: navHeading }),
+                ...(photos.length > 0 && { image: photos.map((photo) => photo.objectName) }),
+                ...(photoFix && deviceFieldsFromFix(photoFix)),
             });
 
             dashboardEventsService.contribute();
             showToast(t(report.merged ? 'report-merged-thanks' : 'traffic-rule-report-submitted'));
+            // "complete" for a rule = punishment filled plus a photo (backend's rule)
+            const hasPhoto = photos.length > 0;
+            const isComplete = hasPhoto && showPunishment && punishment.trim().length > 0;
+            if (!report.merged) showCampaignPointsEstimate('traffic_rule', coordinates, { hasPhoto, isComplete });
             router.back();
             if (!fromReportSheet) router.back();
         } catch (error) {
@@ -273,16 +294,36 @@ export default function AddRuleReportScreen() {
                             </View>
                         )}
                     </View>
+
+                    <View>
+                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
+                            {t('photos')} <Text style={{ color: theme.textSecondary }}>({t('optional')})</Text>
+                        </Text>
+                        <PhotoPicker photos={photos} onChange={setPhotos} folder="rules" requireLocation={inCampaign} />
+                    </View>
                 </View>
             </ScrollView>
 
             <View className="px-6 pt-4" style={{ paddingBottom: insets.bottom + 16, backgroundColor: theme.background, borderTopWidth: 1, borderTopColor: theme.border }}>
                 <Button
                     title={submitting ? t('submitting') : t('submit-report')}
-                    onPress={handleSubmit}
+                    onPress={() => void handleSubmit()}
                     disabled={submitting || !coordinates}
                 />
             </View>
+
+            <ConfirmDialog
+                visible={noPhotoPrompt}
+                title={t('campaign-no-photo-title')}
+                message={t('campaign-rule-no-photo-message')}
+                cancelLabel={t('add-photo')}
+                confirmLabel={t('submit-anyway')}
+                onCancel={() => setNoPhotoPrompt(false)}
+                onConfirm={() => {
+                    setNoPhotoPrompt(false);
+                    void handleSubmit(true);
+                }}
+            />
         </View>
     );
 }

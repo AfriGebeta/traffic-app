@@ -12,6 +12,12 @@ import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { showToast } from '../../../shared/utils/toast';
 import { taxiService } from '../services/taxi.service';
 import { TaxiNode } from '../types/taxi.types';
+import { ApiError, ApiErrorCode, getCampaignFailures, isRestrictedError } from '../../../shared/utils/apiErrors';
+import { showCampaignPointsEstimate } from '../../campaigns/utils/pointsPopup';
+import { useScoringCampaign } from '../../campaigns/hooks/useScoringCampaign';
+import { PhotoPicker, UploadedPhoto } from '../../../shared/components/PhotoPicker';
+import { PHOTO_PIN_LIMIT_M, deviceFieldsFromFix, latestPhotoFix, photoPinGap } from '../../../shared/utils/photoFix';
+import { isRouteSlot } from '../utils/routeStationHandoff';
 
 const NEARBY_RADIUS_METERS = 300;
 
@@ -34,13 +40,31 @@ export default function AddStationScreen() {
         marginBottom: keyboard.height.value,
     }));
 
-    const { prefillName } = useLocalSearchParams<{ prefillName?: string }>();
+    const params = useLocalSearchParams<{
+        prefillName?: string;
+        prefillLat?: string;
+        prefillLng?: string;
+        prefillType?: string;
+        prefillLandmark?: string;
+        prefillSource?: string;
+        routeSlot?: string;
+    }>();
+    // opened from the route builder for a new stop: the created station goes back to that slot
+    const routeSlot = isRouteSlot(params.routeSlot) ? params.routeSlot : null;
+    const prefillLat = Number(params.prefillLat);
+    const prefillLng = Number(params.prefillLng);
+    const prefillLocation =
+        params.prefillLat !== undefined && Number.isFinite(prefillLat) && Number.isFinite(prefillLng) ? { lat: prefillLat, lng: prefillLng } : null;
 
-    const [name, setName] = useState(typeof prefillName === 'string' ? prefillName : '');
-    const [landmark, setLandmark] = useState('');
-    const [nodeType, setNodeType] = useState<'station' | 'stop'>('station');
-    const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
-    const [locationSource, setLocationSource] = useState<'current' | 'map' | null>(null);
+    const [name, setName] = useState(typeof params.prefillName === 'string' ? params.prefillName : '');
+    const [landmark, setLandmark] = useState(typeof params.prefillLandmark === 'string' ? params.prefillLandmark : '');
+    const [nodeType, setNodeType] = useState<'station' | 'stop'>(params.prefillType === 'stop' ? 'stop' : 'station');
+    const [location, setLocation] = useState<{ lat: number; lng: number } | null>(prefillLocation);
+    const [locationSource, setLocationSource] = useState<'current' | 'map' | 'photo' | null>(
+        prefillLocation ? (params.prefillSource === 'map' ? 'map' : 'current') : null
+    );
+    const [images, setImages] = useState<UploadedPhoto[]>([]);
+    const inCampaign = !!useScoringCampaign('taxi_station');
     const [allNodes, setAllNodes] = useState<TaxiNode[]>([]);
     const [loadingNodes, setLoadingNodes] = useState(true);
     const [destinations, setDestinations] = useState<DestinationEntry[]>([]);
@@ -105,6 +129,17 @@ export default function AddStationScreen() {
 
         fetchNodes();
     }, []);
+
+    // a new photo moves the pin to where it was taken, unless the user placed the pin on the map
+    const photoFix = latestPhotoFix(images);
+    const photoFixTime = photoFix?.timestamp;
+    useEffect(() => {
+        if (!photoFix || locationSource === 'map') return;
+        setLocation({ lat: photoFix.lat, lng: photoFix.lng });
+        setLocationSource('photo');
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [photoFixTime]);
+    const pinGap = inCampaign ? photoPinGap(location, photoFix, PHOTO_PIN_LIMIT_M.taxi_station) : null;
 
     const nearby = useMemo(() => {
         if (!location) return [];
@@ -184,17 +219,48 @@ export default function AddStationScreen() {
             return;
         }
 
+        // campaigns only accept stations with a photo
+        if (inCampaign && images.length === 0) {
+            showToast(t('campaign-photo-required'));
+            return;
+        }
+
         setSubmitting(true);
         try {
+            let merged = false;
+            let created: Awaited<ReturnType<typeof taxiService.createNodeForRoute>> | null = null;
             if (createdNodeId.current == null) {
-                const created = await taxiService.createNodeForRoute({
+                created = await taxiService.createNodeForRoute({
                     name: name.trim(),
                     lat: location.lat,
                     lng: location.lng,
                     nodeType,
                     landmark: landmark.trim() || undefined,
+                    ...(images.length > 0 && { photos: images.map((img) => img.objectName) }),
+                    ...(photoFix && deviceFieldsFromFix(photoFix)),
                 });
                 createdNodeId.current = created?.id ?? null;
+                merged = created?.merged === true;
+                if (!merged) showCampaignPointsEstimate('taxi_station', location, { hasPhoto: images.length > 0 });
+            }
+
+            if (routeSlot) {
+                if (createdNodeId.current == null) throw new Error(t('failed-to-create-station'));
+                // back to the route builder with this as an existing station (merged = the nearby one it matched)
+                const node = created;
+                setPickType(routeSlot);
+                setPendingStop({
+                    id: String(createdNodeId.current),
+                    name: node?.name ?? name.trim(),
+                    lat: node?.lat ?? location.lat,
+                    lng: node?.lng ?? location.lng,
+                    type: node?.nodeType === 'stop' || node?.nodeType === 'station' ? node.nodeType : nodeType,
+                    existingNodeId: createdNodeId.current,
+                    isExisting: true,
+                });
+                showToast(t(merged ? 'report-merged-thanks' : 'station-created-successfully'));
+                router.back();
+                return;
             }
 
             if (destinations.length > 0) {
@@ -214,10 +280,17 @@ export default function AddStationScreen() {
                 }
             }
 
-            showToast(t('station-created-successfully'));
+            showToast(t(merged ? 'report-merged-thanks' : 'station-created-successfully'));
             router.back();
         } catch (error: any) {
             console.error('[AddStation] Error creating node:', error);
+            // E0017 already shows a global toast
+            if (error instanceof ApiError && isRestrictedError(error.code)) return;
+            if (error instanceof ApiError && error.code === ApiErrorCode.CampaignRulesNotMet) {
+                const failures = getCampaignFailures(error.additional);
+                Alert.alert(t('error'), failures.length > 0 ? failures.join('\n') : t('campaign-rules-not-met'));
+                return;
+            }
             Alert.alert(t('error'), error?.message || t('failed-to-create-station'));
         } finally {
             setSubmitting(false);
@@ -251,7 +324,11 @@ export default function AddStationScreen() {
                                     <View className="flex-row items-center justify-between">
                                         <View className="flex-1">
                                             <Text className="font-semibold" style={{ color: theme.textPrimary }}>
-                                                {locationSource === 'current' ? t('using-current-location') : t('picked-on-map')}
+                                                {locationSource === 'photo'
+                                                    ? t('photo-location')
+                                                    : locationSource === 'current'
+                                                      ? t('using-current-location')
+                                                      : t('picked-on-map')}
                                             </Text>
                                             <Text className="text-sm" style={{ color: theme.textSecondary }}>
                                                 {location.lat.toFixed(7)}, {location.lng.toFixed(7)}
@@ -261,6 +338,11 @@ export default function AddStationScreen() {
                                             <Ionicons name="close-circle" size={24} color={theme.error} />
                                         </TouchableOpacity>
                                     </View>
+                                    {pinGap != null && (
+                                        <Text className="text-xs mt-2" style={{ color: theme.error }}>
+                                            {t('photo-pin-too-far', { distance: pinGap, limit: PHOTO_PIN_LIMIT_M.taxi_station })}
+                                        </Text>
+                                    )}
                                 </View>
                             ) : (
                                 <View>
@@ -367,76 +449,94 @@ export default function AddStationScreen() {
                         </View>
 
                         <View className="mb-6">
-                            <Text className="font-semibold mb-1" style={{ color: theme.textPrimary }}>{t('destinations-terminals')}</Text>
-                            <Text className="text-xs mb-2" style={{ color: theme.textSecondary }}>{t('destinations-terminals-hint')}</Text>
-
-                            {destinations.length > 0 && (
-                                <View className="flex-row flex-wrap gap-2 mb-2">
-                                    {destinations.map((d) => (
-                                        <View
-                                            key={d.key}
-                                            className="flex-row items-center rounded-full pl-3 pr-1 py-1"
-                                            style={{ backgroundColor: theme.primaryMuted, borderWidth: 1, borderColor: theme.primary }}
-                                        >
-                                            {d.newStop && <Ionicons name="add-circle-outline" size={14} color={theme.primary} style={{ marginRight: 4 }} />}
-                                            <Text className="text-sm font-medium" style={{ color: theme.primary }}>{d.name}</Text>
-                                            <TouchableOpacity onPress={() => handleRemoveDestination(d.key)} className="ml-1" hitSlop={8}>
-                                                <Ionicons name="close-circle" size={18} color={theme.primary} />
-                                            </TouchableOpacity>
-                                        </View>
-                                    ))}
-                                </View>
-                            )}
-
-                            <TextInput
-                                className="rounded-xl px-4 py-3"
-                                style={{ backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border, color: theme.textPrimary }}
-                                placeholderTextColor={theme.textSecondary}
-                                placeholder={t('search-destination-station')}
-                                value={destinationQuery}
-                                onChangeText={setDestinationQuery}
+                            <Text className="font-semibold mb-2" style={{ color: theme.textPrimary }}>
+                                {t('photos')}
+                                {!inCampaign && <Text style={{ color: theme.textSecondary }}> ({t('optional')})</Text>}
+                            </Text>
+                            <PhotoPicker
+                                photos={images}
+                                onChange={setImages}
+                                folder="stations"
+                                horizontalPadding={80}
+                                cameraOnly={inCampaign}
+                                requireLocation={inCampaign}
                             />
-
-                            {destinationMatches.length > 0 && (
-                                <View className="mt-2 rounded-xl overflow-hidden" style={{ backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border }}>
-                                    <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled keyboardShouldPersistTaps="always">
-                                        {destinationMatches.map((node) => (
-                                            <TouchableOpacity
-                                                key={node.id}
-                                                className="px-4 py-3"
-                                                style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}
-                                                onPress={() => handleSelectDestination(node)}
-                                            >
-                                                <Text className="font-semibold" style={{ color: theme.textPrimary }}>{node.name}</Text>
-                                                {node.routeName && (
-                                                    <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>{node.routeName}</Text>
-                                                )}
-                                            </TouchableOpacity>
-                                        ))}
-                                    </ScrollView>
-                                </View>
-                            )}
-
-                            {trimmedDestinationQuery.length > 0 && !hasExactDestinationMatch && (
-                                <TouchableOpacity
-                                    className="mt-2 rounded-xl px-4 py-3 flex-row items-center"
-                                    style={{ backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border }}
-                                    onPress={handleAddNewDestination}
-                                    activeOpacity={0.7}
-                                >
-                                    <Ionicons name="add-circle-outline" size={20} color={colors.primary.main} />
-                                    <View className="ml-2 flex-1">
-                                        <Text className="font-semibold" numberOfLines={1} style={{ color: theme.textPrimary }}>
-                                            {`${t('add')} "${trimmedDestinationQuery}"`}
-                                        </Text>
-                                        <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }}>
-                                            {t('pick-new-destination-on-map')}
-                                        </Text>
-                                    </View>
-                                    <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
-                                </TouchableOpacity>
-                            )}
                         </View>
+
+                        {/* the route itself defines where a route-builder stop goes */}
+                        {!routeSlot && (
+                            <View className="mb-6">
+                                <Text className="font-semibold mb-1" style={{ color: theme.textPrimary }}>{t('destinations-terminals')}</Text>
+                                <Text className="text-xs mb-2" style={{ color: theme.textSecondary }}>{t('destinations-terminals-hint')}</Text>
+
+                                {destinations.length > 0 && (
+                                    <View className="flex-row flex-wrap gap-2 mb-2">
+                                        {destinations.map((d) => (
+                                            <View
+                                                key={d.key}
+                                                className="flex-row items-center rounded-full pl-3 pr-1 py-1"
+                                                style={{ backgroundColor: theme.primaryMuted, borderWidth: 1, borderColor: theme.primary }}
+                                            >
+                                                {d.newStop && <Ionicons name="add-circle-outline" size={14} color={theme.primary} style={{ marginRight: 4 }} />}
+                                                <Text className="text-sm font-medium" style={{ color: theme.primary }}>{d.name}</Text>
+                                                <TouchableOpacity onPress={() => handleRemoveDestination(d.key)} className="ml-1" hitSlop={8}>
+                                                    <Ionicons name="close-circle" size={18} color={theme.primary} />
+                                                </TouchableOpacity>
+                                            </View>
+                                        ))}
+                                    </View>
+                                )}
+
+                                <TextInput
+                                    className="rounded-xl px-4 py-3"
+                                    style={{ backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border, color: theme.textPrimary }}
+                                    placeholderTextColor={theme.textSecondary}
+                                    placeholder={t('search-destination-station')}
+                                    value={destinationQuery}
+                                    onChangeText={setDestinationQuery}
+                                />
+
+                                {destinationMatches.length > 0 && (
+                                    <View className="mt-2 rounded-xl overflow-hidden" style={{ backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border }}>
+                                        <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled keyboardShouldPersistTaps="always">
+                                            {destinationMatches.map((node) => (
+                                                <TouchableOpacity
+                                                    key={node.id}
+                                                    className="px-4 py-3"
+                                                    style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}
+                                                    onPress={() => handleSelectDestination(node)}
+                                                >
+                                                    <Text className="font-semibold" style={{ color: theme.textPrimary }}>{node.name}</Text>
+                                                    {node.routeName && (
+                                                        <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>{node.routeName}</Text>
+                                                    )}
+                                                </TouchableOpacity>
+                                            ))}
+                                        </ScrollView>
+                                    </View>
+                                )}
+
+                                {trimmedDestinationQuery.length > 0 && !hasExactDestinationMatch && (
+                                    <TouchableOpacity
+                                        className="mt-2 rounded-xl px-4 py-3 flex-row items-center"
+                                        style={{ backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border }}
+                                        onPress={handleAddNewDestination}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Ionicons name="add-circle-outline" size={20} color={colors.primary.main} />
+                                        <View className="ml-2 flex-1">
+                                            <Text className="font-semibold" numberOfLines={1} style={{ color: theme.textPrimary }}>
+                                                {`${t('add')} "${trimmedDestinationQuery}"`}
+                                            </Text>
+                                            <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }}>
+                                                {t('pick-new-destination-on-map')}
+                                            </Text>
+                                        </View>
+                                        <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                        )}
 
                         <TouchableOpacity
                             className="py-4 rounded-xl flex-row items-center justify-center"

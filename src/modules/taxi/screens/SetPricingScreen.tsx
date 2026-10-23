@@ -9,6 +9,8 @@ import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { routeCacheService } from '../services/route-cache.service';
 import { showToast } from '../../../shared/utils/toast';
+import { ApiError, isRestrictedError } from '../../../shared/utils/apiErrors';
+import { estimateCampaignPoints, showPointsPopup } from '../../campaigns/utils/pointsPopup';
 
 interface RouteStop {
     id: string;
@@ -49,43 +51,25 @@ export default function SetPricingScreen() {
                 setRouteName(params.routeName as string);
 
                 const lastIndex = parsedStops.length - 1;
-                const connectorIndices = parsedStops
-                    .map((stop: RouteStop, index: number) => ({ stop, index }))
-                    .filter(({ stop, index }: { stop: RouteStop; index: number }) =>
-                        stop.type === 'station' || index === 0 || index === lastIndex
-                    )
-                    .map(({ index }: { index: number }) => index);
-
-                const edges: EdgePrice[] = [];
-                for (let a = 0; a < connectorIndices.length; a++) {
-                    for (let b = a + 1; b < connectorIndices.length; b++) {
-                        const i = connectorIndices[a];
-                        const j = connectorIndices[b];
-                        edges.push({
-                            from: i,
-                            to: j,
-                            fromName: parsedStops[i].name,
-                            toName: parsedStops[j].name,
-                            cost: '',
-                        });
-                    }
-                }
-
-                edges.sort((a, b) => {
-                    const isMainA = a.from === 0 && a.to === parsedStops.length - 1;
-                    const isMainB = b.from === 0 && b.to === parsedStops.length - 1;
-                    if (isMainA) return -1;
-                    if (isMainB) return 1;
-                    return 0;
-                });
+                const edges: EdgePrice[] = [
+                    {
+                        from: 0,
+                        to: lastIndex,
+                        fromName: parsedStops[0].name,
+                        toName: parsedStops[lastIndex].name,
+                        cost: '',
+                    },
+                ];
 
                 setEdgePrices(edges);
             } else {
                 const cached = await routeCacheService.getRouteCache();
                 if (cached && cached.currentStep === 'pricing' && cached.edgePrices) {
                     setRouteName(cached.routeName);
-                    setStops([cached.startStation!, ...cached.intermediateStops, cached.endStation!].filter(Boolean));
-                    setEdgePrices(cached.edgePrices);
+                    const restoredStops = [cached.startStation!, ...cached.intermediateStops, cached.endStation!].filter(Boolean);
+                    setStops(restoredStops);
+                    // drafts from before keep only the start → end fare
+                    setEdgePrices(cached.edgePrices.filter((edge) => edge.from === 0 && edge.to === restoredStops.length - 1));
                     showToast(t('pricing-progress-restored'));
                 }
             }
@@ -139,6 +123,7 @@ export default function SetPricingScreen() {
             console.log('created route:', route);
 
             const nodeIds: number[] = [];
+            let pendingPoints = 0;
             for (const stop of stops) {
                 if (stop.isExisting && stop.existingNodeId) {
                     console.log('Using existing node:', stop.existingNodeId);
@@ -161,6 +146,9 @@ export default function SetPricingScreen() {
                         landmark: stop.landmark,
                     });
                     console.log('Created node response:', node);
+                    // a whole route shows one taxi-station's worth, whatever its stop count (product call);
+                    // merged stops confirm an existing one and don't qualify
+                    if (!node.merged) pendingPoints = Math.max(pendingPoints, estimateCampaignPoints('taxi_station', stop));
                     const unwrappedNode = (node as any).data || node;
                     console.log('Extracted node:', unwrappedNode);
                     nodeIds.push(unwrappedNode.id);
@@ -204,6 +192,7 @@ export default function SetPricingScreen() {
 
             console.log('Route creation complete!');
             showToast(t('route-created-successfully'));
+            showPointsPopup(pendingPoints);
 
             const segments = [];
             for (let i = 0; i < stops.length - 1; i++) {
@@ -225,6 +214,8 @@ export default function SetPricingScreen() {
             });
         } catch (error: any) {
             console.error('Route creation error:', error);
+            // E0017 already shows a global toast
+            if (error instanceof ApiError && isRestrictedError(error.code)) return;
             Alert.alert(
                 t('error'),
                 error.message || t('failed-to-create-route')

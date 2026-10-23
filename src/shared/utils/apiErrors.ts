@@ -54,6 +54,12 @@ export const getDuplicatePlaceNames = (additional: Record<string, any> | undefin
         .filter((name: string | undefined): name is string => !!name);
 };
 
+// E0019 additional.failed: [{ detail }] — each rule the contribution missed
+export const getCampaignFailures = (additional?: Record<string, any>): string[] =>
+    (Array.isArray(additional?.failed) ? additional.failed : [])
+        .map((failure: any) => failure?.detail)
+        .filter((detail: unknown): detail is string => typeof detail === 'string' && detail.trim().length > 0);
+
 export const isRestrictedError = (code?: string): boolean => code === ApiErrorCode.UserRestricted;
 
 // lets services that throw keep the backend code for callers

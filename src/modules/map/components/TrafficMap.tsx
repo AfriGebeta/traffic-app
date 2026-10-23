@@ -53,6 +53,7 @@ import { dashboardEventsService } from '../../../shared/services/dashboard-event
 import { resolvePlaceType } from '../../places/utils/placeTypeMapping';
 import { buildPreviewSteps, fitBoundsToCoords } from '../../navigation/utils/navigationPreviewUtils';
 import { toReportHeading } from '../../../shared/utils/reportHeading';
+import { CampaignBanner } from '../../campaigns/components/CampaignBanner';
 
 export interface SharedRoute {
     destination: { lat: number; lng: number; name?: string };
@@ -1378,6 +1379,7 @@ export default function TrafficMap({ sharedLocation, sharedRoute, taxiDestinatio
                     distance={activeIncidentAlert.distance}
                     distanceKm={activeIncidentAlert.distanceKm}
                     incidentType={activeIncidentAlert.incidentType}
+                    isOwnReport={activeIncidentAlert.isOwnReport}
                     voterLocation={userLocation}
                     onDismiss={dismissIncidentAlert}
                 />
@@ -1589,6 +1591,9 @@ export default function TrafficMap({ sharedLocation, sharedRoute, taxiDestinatio
                 />
             )}
 
+            {/* once per campaign; never over an active drive */}
+            {!navigationMode && <CampaignBanner />}
+
             <IncidentReportSheet
                 isVisible={showReportOptions}
                 onClose={() => {
@@ -1598,6 +1603,7 @@ export default function TrafficMap({ sharedLocation, sharedRoute, taxiDestinatio
                 userLocation={reportSheetLocation}
                 isNavigating={navigationMode}
                 onNavigateToReport={() => setIsOnIncidentReportScreen(true)}
+                onIncidentReported={refetch}
             />
 
             <ExploreSheet

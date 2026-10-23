@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, Image, ActivityIndicator, BackHandler, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, BackHandler, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
 
 import AccidentLightIcon from '../../../../assets/images/accident-light.svg';
 import AccidentDarkIcon from '../../../../assets/images/accident-dark.svg';
@@ -35,12 +34,15 @@ import { useTheme } from '../../../shared/theme/ThemeContext';
 import { showToast } from '../../../shared/utils/toast';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { getIncidentTranslationKey } from '../utils/incidentTranslations';
-import { uploadToMinio } from '../../../shared/utils/minio';
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import { useLocation } from '../../../shared/contexts/LocationContext';
 import { showReportError } from '../../../shared/utils/reportErrors';
 import { toReportHeading } from '../../../shared/utils/reportHeading';
-import { useContentWidth } from '../../../shared/layout/ResponsiveScreen';
+import { showCampaignPointsEstimate } from '../../campaigns/utils/pointsPopup';
+import { useScoringCampaign } from '../../campaigns/hooks/useScoringCampaign';
+import { PhotoPicker, UploadedPhoto } from '../../../shared/components/PhotoPicker';
+import { PHOTO_PIN_LIMIT_M, deviceFieldsFromFix, latestPhotoFix, photoPinGap } from '../../../shared/utils/photoFix';
+
 
 type IncidentIcon = React.FC<{ width?: number; height?: number }>;
 
@@ -63,8 +65,6 @@ export default function IncidentReportScreen() {
     const params = useLocalSearchParams();
     const { colors: theme, isDark } = useTheme();
     const insets = useSafeAreaInsets();
-    const windowWidth = useContentWidth();
-    const tileSize = Math.floor((windowWidth - 48 - 24) / 3);
     const incidentTypeName = params.typeName as string;
     // nav quick report passes the chosen level; the API requires one for traffic jams
     const congestionLevel: CongestionLevel | undefined =
@@ -82,8 +82,8 @@ export default function IncidentReportScreen() {
     const [pickedLocation, setPickedLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [description, setDescription] = useState('');
     const [direction, setDirection] = useState('');
-    const [images, setImages] = useState<{ localUri: string; objectName: string }[]>([]);
-    const [uploading, setUploading] = useState(false);
+    const [images, setImages] = useState<UploadedPhoto[]>([]);
+    const inCampaign = !!useScoringCampaign('incident');
     const { reportIncident, loading } = useIncidentReport();
 
     useEffect(() => {
@@ -104,63 +104,12 @@ export default function IncidentReportScreen() {
         }, [selectedLocation, setSelectedLocation])
     );
 
-    const location = pickedLocation ?? currentLocation;
+    // a campaign photo's fix is where the user really is; it beats the location passed in on open
+    const photoFix = latestPhotoFix(images);
+    const photoLocation = photoFix ? { lat: photoFix.lat, lng: photoFix.lng } : null;
+    const location = pickedLocation ?? photoLocation ?? currentLocation;
+    const pinGap = inCampaign ? photoPinGap(pickedLocation, photoFix, PHOTO_PIN_LIMIT_M.incident) : null;
 
-    const pickImage = async () => {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-        if (status !== 'granted') {
-            showToast(`${t('permission-denied')}: ${t('camera-roll-permission-required')}`);
-            return;
-        }
-
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: 'images',
-            allowsMultipleSelection: true,
-            selectionLimit: 0,
-            quality: 0.8,
-        });
-
-        if (!result.canceled && result.assets.length > 0) {
-            await uploadImages(result.assets.map((a) => a.uri));
-        }
-    };
-
-    const takePhoto = async () => {
-        const { status } = await ImagePicker.requestCameraPermissionsAsync();
-
-        if (status !== 'granted') {
-            showToast(`${t('permission-denied')}: ${t('camera-permission-required')}`);
-            return;
-        }
-
-        const result = await ImagePicker.launchCameraAsync({
-            quality: 0.8,
-        });
-
-        if (!result.canceled && result.assets[0]) {
-            await uploadImages([result.assets[0].uri]);
-        }
-    };
-
-    const uploadImages = async (uris: string[]) => {
-        setUploading(true);
-        try {
-            const uploaded = await Promise.all(
-                uris.map(async (uri) => ({ localUri: uri, objectName: await uploadToMinio(uri, 'incidents') }))
-            );
-            setImages((prev) => [...prev, ...uploaded]);
-            showToast(`${t('image-uploaded')}: ${t('photo-added-successfully')}`);
-        } catch (error) {
-            showToast(`${t('upload-failed')}: ${t('could-not-upload-image')}`);
-        } finally {
-            setUploading(false);
-        }
-    };
-
-    const removeImage = (index: number) => {
-        setImages((prev) => prev.filter((_, i) => i !== index));
-    };
 
     const handleSubmit = async () => {
         if (!location) {
@@ -168,7 +117,13 @@ export default function IncidentReportScreen() {
             return;
         }
 
-        const { incident, error, status, code } = await reportIncident(
+        // campaigns only accept incidents with a photo
+        if (inCampaign && images.length === 0) {
+            showToast(t('campaign-photo-required'));
+            return;
+        }
+
+        const { incident, error, status, code, additional } = await reportIncident(
             incidentTypeName,
             description.trim() || 'No description provided',
             location,
@@ -176,18 +131,20 @@ export default function IncidentReportScreen() {
             images.map((img) => img.objectName),
             congestionLevel,
             // a map-picked spot isn't where the driver is heading
-            pickedLocation ? undefined : passedHeading
+            pickedLocation ? undefined : passedHeading,
+            photoFix ? deviceFieldsFromFix(photoFix) : undefined
         );
 
         if (incident) {
             console.log('Incident created:', incident);
             dashboardEventsService.contribute();
             showToast(t(incident.merged ? 'report-merged-thanks' : 'incident-reported-successfully'));
+            if (!incident.merged) showCampaignPointsEstimate('incident', location, { hasPhoto: images.length > 0 });
             setTimeout(() => {
                 router.back();
             }, 500);
         } else {
-            showReportError(t, { message: error, status, code });
+            showReportError(t, { message: error, status, code, additional });
         }
     };
 
@@ -236,7 +193,7 @@ export default function IncidentReportScreen() {
                             />
                             <View className="ml-3 flex-1">
                                 <Text className="text-sm font-semibold" style={{ color: theme.textPrimary }}>
-                                    {pickedLocation ? t('location-selected') : t('current-location')}
+                                    {pickedLocation ? t('location-selected') : photoLocation ? t('photo-location') : t('current-location')}
                                 </Text>
                                 <Text className="text-sm" style={{ color: theme.textSecondary }}>
                                     {location
@@ -246,6 +203,11 @@ export default function IncidentReportScreen() {
                             </View>
                         </View>
 
+                        {pinGap != null && (
+                            <Text className="text-xs mt-3" style={{ color: theme.error }}>
+                                {t('photo-pin-too-far', { distance: pinGap, limit: PHOTO_PIN_LIMIT_M.incident })}
+                            </Text>
+                        )}
 
                         <View className="mt-3">
 
@@ -321,64 +283,12 @@ export default function IncidentReportScreen() {
                     />
 
                     <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
-                        {t('photos')} ({t('optional')})
+                        {t('photos')}
+                        {!inCampaign && <Text style={{ color: theme.textSecondary }}> ({t('optional')})</Text>}
                     </Text>
-
-                    <View className="flex-row flex-wrap gap-3 mb-6">
-                        <TouchableOpacity
-                            className="rounded-2xl items-center justify-center"
-                            style={{ width: tileSize, height: tileSize, backgroundColor: theme.surface, borderWidth: 2, borderStyle: 'dashed', borderColor: theme.border }}
-                            onPress={takePhoto}
-                            disabled={uploading}
-                            activeOpacity={0.7}
-                        >
-                            <View className="rounded-full p-3 mb-2" style={{ backgroundColor: isDark ? theme.background : '#F3F4F6' }}>
-                                <Ionicons name="camera" size={24} color={theme.textSecondary} />
-                            </View>
-                            <Text className="text-xs font-medium" style={{ color: theme.textSecondary }}>{t('camera')}</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            className="rounded-2xl items-center justify-center"
-                            style={{
-                                width: tileSize,
-                                height: tileSize,
-                                backgroundColor: theme.surface,
-                                borderWidth: 2,
-                                borderStyle: 'dashed',
-                                borderColor: theme.border
-                            }}
-                            onPress={pickImage}
-                            disabled={uploading}
-                            activeOpacity={0.7}
-                        >
-                            <View className="rounded-full p-3 mb-2" style={{ backgroundColor: isDark ? theme.background : '#F3F4F6' }}>
-                                <Ionicons name="images" size={24} color={theme.textSecondary} />
-                            </View>
-
-                            <Text className="text-xs font-medium" style={{ color: theme.textSecondary }}>{t('gallery')}</Text>
-                        </TouchableOpacity>
-
-                        {images.map(({ localUri }, index) => (
-                            <View key={index} className="relative">
-                                <Image source={{ uri: localUri }} style={{ width: tileSize, height: tileSize, borderRadius: 16 }} />
-                                <TouchableOpacity
-                                    className="absolute -top-2 -right-2 bg-red-500 rounded-full w-7 h-7 items-center justify-center shadow-lg"
-                                    onPress={() => removeImage(index)}
-                                    activeOpacity={0.8}
-                                >
-                                    <Ionicons name="close" size={16} color="white" />
-                                </TouchableOpacity>
-                            </View>
-                        ))}
+                    <View className="mb-6">
+                        <PhotoPicker photos={images} onChange={setImages} folder="incidents" cameraOnly={inCampaign} requireLocation={inCampaign} />
                     </View>
-
-                    {uploading && (
-                        <View className="flex-row items-center mb-3 rounded-xl p-3" style={{ backgroundColor: theme.blueMuted }}>
-                            <ActivityIndicator size="small" color={theme.blue} />
-                            <Text className="text-sm ml-2 font-medium" style={{ color: theme.blue }}>{t('uploading')}</Text>
-                        </View>
-                    )}
 
                     <Button
                         title={t('submit-report')}

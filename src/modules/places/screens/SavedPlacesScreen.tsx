@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { placeService } from '../services/place.service';
-import type { SavedPlace, SavedPlaceType } from '../types/place.types';
+import { hasSavedPlaceCoords, type SavedPlace, type SavedPlaceType } from '../types/place.types';
 import { showToast } from '../../../shared/utils/toast';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 
@@ -87,6 +87,10 @@ export const SavedPlacesScreen = () => {
     };
 
     const handleNavigateToPlace = (place: SavedPlace) => {
+        if (!hasSavedPlaceCoords(place)) {
+            showToast(t('location-unavailable'));
+            return;
+        }
         router.push({
             pathname: '/',
             params: {
@@ -281,7 +285,9 @@ export const SavedPlacesScreen = () => {
                                     {place.type}
                                 </Text>
                                 <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>
-                                    {place.lat.toFixed(4)}, {place.lng.toFixed(4)}
+                                    {hasSavedPlaceCoords(place)
+                                        ? `${place.lat.toFixed(4)}, ${place.lng.toFixed(4)}`
+                                        : [place.subCity, place.city].filter(Boolean).join(', ') || t('location-unavailable')}
                                 </Text>
                             </View>
                             <TouchableOpacity

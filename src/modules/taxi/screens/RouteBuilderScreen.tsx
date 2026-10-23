@@ -13,6 +13,8 @@ import { showToast } from '../../../shared/utils/toast';
 import { taxiService } from '../services/taxi.service';
 import { TaxiNode } from '../types/taxi.types';
 import { routeCacheService } from '../services/route-cache.service';
+import { useScoringCampaign } from '../../campaigns/hooks/useScoringCampaign';
+import { addStationForRouteParams, isRouteSlot } from '../utils/routeStationHandoff';
 
 interface RouteStop {
     id: string;
@@ -43,6 +45,8 @@ export default function RouteBuilderScreen() {
         endCollectorTracking,
     } = useRouteBuilder();
     const { userLocation } = useUserLocation();
+    // campaigns reject new stations without an in-app photo, so new stops go through Add Station
+    const newStopsNeedPhoto = !!useScoringCampaign('taxi_station');
     const keyboard = useAnimatedKeyboard();
     const keyboardAnimatedStyle = useAnimatedStyle(() => ({
         marginBottom: keyboard.height.value,
@@ -130,7 +134,7 @@ export default function RouteBuilderScreen() {
     }, [routeName, startStation, endStation, intermediateStops]);
 
     useEffect(() => {
-        if (pendingStop && pickType) {
+        if (pendingStop && isRouteSlot(pickType)) {
             if (pickType === 'start') {
                 setStartStation(pendingStop);
             } else if (pickType === 'end') {
@@ -143,6 +147,9 @@ export default function RouteBuilderScreen() {
             setPickType(null);
         }
     }, [pendingStop, pickType, setPendingStop, setPickType]);
+
+    const confirmLabel = (name: string) =>
+        newStopsNeedPhoto && !selectedExisting && name.trim() ? t('route-add-new-station') : t('confirm');
 
     const handlePickLocation = (type: 'start' | 'end' | 'intermediate') => {
         setPickType(type);
@@ -246,6 +253,18 @@ export default function RouteBuilderScreen() {
         const stopType = type === 'start' ? startStationType : type === 'end' ? endStationType : intermediateStopType;
 
         const landmarkValue = type === 'start' ? startStationLandmark : type === 'end' ? endStationLandmark : intermediateStopLandmark;
+
+        if (!selectedExisting && newStopsNeedPhoto) {
+            const params = addStationForRouteParams(
+                type,
+                { name: name.trim(), lat: userLocation.lat, lng: userLocation.lng, type: stopType, landmark: landmarkValue.trim() || undefined },
+                'current'
+            );
+            cancelCurrentLocation(type);
+            showToast(t('campaign-new-station-needs-photo'));
+            router.push({ pathname: '/taxi/add-station', params });
+            return;
+        }
 
         const newStop: RouteStop = {
             id: selectedExisting ? selectedExisting.id.toString() : Date.now().toString(),
@@ -531,7 +550,7 @@ export default function RouteBuilderScreen() {
                                         style={{ backgroundColor: colors.primary.main }}
                                         onPress={() => confirmCurrentLocation('start')}
                                     >
-                                        <Text className="text-white text-center font-semibold">{t('confirm')}</Text>
+                                        <Text className="text-white text-center font-semibold">{confirmLabel(startStationName)}</Text>
                                     </TouchableOpacity>
                                 </View>
                             </View>
@@ -698,7 +717,7 @@ export default function RouteBuilderScreen() {
                                         style={{ backgroundColor: colors.primary.main }}
                                         onPress={() => confirmCurrentLocation('intermediate')}
                                     >
-                                        <Text className="text-white text-center font-semibold">{t('confirm')}</Text>
+                                        <Text className="text-white text-center font-semibold">{confirmLabel(intermediateStopName)}</Text>
                                     </TouchableOpacity>
                                 </View>
                             </View>
@@ -862,7 +881,7 @@ export default function RouteBuilderScreen() {
                                         style={{ backgroundColor: colors.primary.main }}
                                         onPress={() => confirmCurrentLocation('end')}
                                     >
-                                        <Text className="text-white text-center font-semibold">{t('confirm')}</Text>
+                                        <Text className="text-white text-center font-semibold">{confirmLabel(endStationName)}</Text>
                                     </TouchableOpacity>
                                 </View>
                             </View>

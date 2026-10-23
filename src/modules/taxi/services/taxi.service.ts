@@ -1,4 +1,6 @@
 import { apiService } from '../../../shared/services/api';
+import { ApiError } from '../../../shared/utils/apiErrors';
+import { DeviceFields, getDeviceFields } from '../../../shared/utils/deviceFields';
 import {
     CreateTaxiNodeRequest,
     CreateTaxiEdgeRequest,
@@ -175,14 +177,20 @@ export const taxiService = {
         return response.data;
     },
 
-    async createNodeForRoute(data: { name: string; lat: number; lng: number; nodeType?: string; routeName?: string; landmark?: string }): Promise<TaxiNode> {
+    // merged: the backend folded this into an existing stop nearby
+    async createNodeForRoute(
+        data: { name: string; lat: number; lng: number; nodeType?: string; routeName?: string; landmark?: string; photos?: string[] } & DeviceFields
+    ): Promise<TaxiNode & { merged?: boolean }> {
         const response = await apiService.post<any>(
             '/api/taxi/nodes',
-            data
+            { ...(await getDeviceFields()), ...data }
         );
 
         if (response.error) {
-            throw new Error(response.status ? `${response.error} (HTTP ${response.status})` : response.error);
+            // keeps the code so screens can skip their own alert on E0017
+            const error = new ApiError(response);
+            if (response.status) error.message = `${response.error} (HTTP ${response.status})`;
+            throw error;
         }
 
         if (!response.data) {
@@ -190,7 +198,7 @@ export const taxiService = {
         }
 
         const result = response.data.data || response.data;
-        return result;
+        return { ...result, merged: response.data.merged === true };
     },
 
     async createDestinations(data: CreateTaxiDestinationsRequest): Promise<any> {

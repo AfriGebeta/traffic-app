@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
 import { Input, Button } from '../../../shared/components';
 import { PLACE_CATEGORY_IDS, PLACE_TYPES, PlaceContributionAddress, PlaceType } from '../types/place.types';
-import { uploadToMinio } from '../../../shared/utils/minio';
 import { placeService } from '../services/place.service';
 import { showToast } from '../../../shared/utils/toast';
 import { useLocation } from '../../../shared/contexts/LocationContext';
@@ -18,17 +16,19 @@ import { useTheme } from '../../../shared/theme/ThemeContext';
 import { getPlaceIcon } from '../utils/placeIcons';
 import { toE164 } from '../../../shared/utils/phone';
 import { getPlaceTranslationKey } from '../utils/placeTranslations';
-import { useContentWidth } from '../../../shared/layout/ResponsiveScreen';
+import { PhotoPicker, UploadedPhoto } from '../../../shared/components/PhotoPicker';
+import { useScoringCampaign } from '../../campaigns/hooks/useScoringCampaign';
 import { ConfirmDialog } from '../../../components/ConfirmDialog';
-import { ApiError, ApiErrorCode, getDuplicatePlaceNames, isRestrictedError } from '../../../shared/utils/apiErrors';
+import { ApiError, ApiErrorCode, getCampaignFailures, getDuplicatePlaceNames, isRestrictedError } from '../../../shared/utils/apiErrors';
+import { showCampaignPointsEstimate } from '../../campaigns/utils/pointsPopup';
+import { PHOTO_PIN_LIMIT_M, deviceFieldsFromFix, latestPhotoFix, photoPinGap } from '../../../shared/utils/photoFix';
+
 
 export default function AddPlaceScreen() {
     const { t, i18n } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { colors: theme, isDark } = useTheme();
-    const windowWidth = useContentWidth();
-    const tileSize = Math.floor((windowWidth - 48 - 24) / 3);
     const params = useLocalSearchParams();
     const placeType = params.type as PlaceType;
     const { selectedLocation, setSelectedLocation } = useLocation();
@@ -54,12 +54,13 @@ export default function AddPlaceScreen() {
     const [neighborhood, setNeighborhood] = useState('');
     const [streetName, setStreetName] = useState('');
     const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(prefillCoordinates);
-    const [images, setImages] = useState<{ localUri: string; objectName: string }[]>([]);
-    const [uploading, setUploading] = useState(false);
+    const inCampaign = !!useScoringCampaign('place');
+    const [images, setImages] = useState<UploadedPhoto[]>([]);
     const [submitting, setSubmitting] = useState(false);
     // E0016: names of similar places nearby; null when the dialog is closed
     const [duplicateNames, setDuplicateNames] = useState<string[] | null>(null);
     const [usingCurrentLocation, setUsingCurrentLocation] = useState(false);
+    const [pinFromPhoto, setPinFromPhoto] = useState(false);
     const autoFilledLocation = React.useRef(Boolean(prefillCoordinates));
 
     const placeInfo = PLACE_TYPES.find((p) => p.id === placeType);
@@ -80,66 +81,24 @@ export default function AddPlaceScreen() {
             if (selectedLocation) {
                 setCoordinates(selectedLocation);
                 setUsingCurrentLocation(false);
+                setPinFromPhoto(false);
                 setSelectedLocation(null);
             }
         }, [selectedLocation, setSelectedLocation])
     );
 
-    const pickImage = async () => {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    // a new photo moves the pin to where it was taken, unless the user placed the pin on the map
+    const photoFix = latestPhotoFix(images);
+    const photoFixTime = photoFix?.timestamp;
+    React.useEffect(() => {
+        if (!photoFix || (coordinates && !usingCurrentLocation && !pinFromPhoto)) return;
+        setCoordinates({ lat: photoFix.lat, lng: photoFix.lng });
+        setUsingCurrentLocation(false);
+        setPinFromPhoto(true);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [photoFixTime]);
+    const pinGap = inCampaign ? photoPinGap(coordinates, photoFix, PHOTO_PIN_LIMIT_M.place) : null;
 
-        if (status !== 'granted') {
-            showToast(`${t('permission-denied')}: ${t('camera-roll-permission-required')}`);
-            return;
-        }
-
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: 'images',
-            allowsMultipleSelection: true,
-            selectionLimit: 0,
-            quality: 0.8,
-        });
-
-        if (!result.canceled && result.assets.length > 0) {
-            await uploadImages(result.assets.map((a) => a.uri));
-        }
-    };
-
-    const takePhoto = async () => {
-        const { status } = await ImagePicker.requestCameraPermissionsAsync();
-
-        if (status !== 'granted') {
-            showToast(`${t('permission-denied')}: ${t('camera-permission-required')}`);
-            return;
-        }
-
-        const result = await ImagePicker.launchCameraAsync({
-            quality: 0.8,
-        });
-
-        if (!result.canceled && result.assets[0]) {
-            await uploadImages([result.assets[0].uri]);
-        }
-    };
-
-    const uploadImages = async (uris: string[]) => {
-        setUploading(true);
-        try {
-            const uploaded = await Promise.all(
-                uris.map(async (uri) => ({ localUri: uri, objectName: await uploadToMinio(uri, 'places') }))
-            );
-            setImages((prev) => [...prev, ...uploaded]);
-            showToast(t('photo-added-successfully'));
-        } catch (error) {
-            showToast(`${t('upload-failed')}: ${t('could-not-upload-image')}`);
-        } finally {
-            setUploading(false);
-        }
-    };
-
-    const removeImage = (index: number) => {
-        setImages((prev) => prev.filter((_, i) => i !== index));
-    };
 
     const handlePickLocation = () => {
         router.push('/places/map-picker');
@@ -153,6 +112,7 @@ export default function AddPlaceScreen() {
 
         setCoordinates(userLocation);
         setUsingCurrentLocation(true);
+        setPinFromPhoto(false);
     };
 
     const leaveScreen = () => {
@@ -182,6 +142,12 @@ export default function AddPlaceScreen() {
             return;
         }
 
+        // campaigns only accept places with a photo
+        if (inCampaign && images.length === 0) {
+            showToast(t('campaign-photo-required'));
+            return;
+        }
+
         setSubmitting(true);
         try {
             const trimmedDescription = description.trim();
@@ -206,11 +172,13 @@ export default function AddPlaceScreen() {
                 phone: phoneE164 ?? undefined,
                 images: images.map((img) => img.objectName),
                 address: hasAddress ? address : undefined,
-                ...(userLocation && { deviceLat: userLocation.lat, deviceLng: userLocation.lng }),
+                // the photo's fix is where the user stood; otherwise the live location
+                ...(photoFix ? deviceFieldsFromFix(photoFix) : userLocation && { deviceLat: userLocation.lat, deviceLng: userLocation.lng }),
             });
 
             dashboardEventsService.contribute();
             showToast(t('place-contribution-submitted'));
+            showCampaignPointsEstimate('place', coordinates, { hasPhoto: images.length > 0 });
 
             leaveScreen();
         } catch (error) {
@@ -223,6 +191,11 @@ export default function AddPlaceScreen() {
             }
             if (code === ApiErrorCode.PhotoLocationMismatch) {
                 showToast(t('photo-location-mismatch'));
+                return;
+            }
+            if (code === ApiErrorCode.CampaignRulesNotMet) {
+                const failures = getCampaignFailures((error as ApiError).additional);
+                showToast(failures.length > 0 ? failures.join('\n') : t('campaign-rules-not-met'));
                 return;
             }
             const errorMessage = error instanceof Error ? error.message : t('could-not-submit-contribution');
@@ -349,17 +322,22 @@ export default function AddPlaceScreen() {
                                     <View className="flex-row items-center justify-between">
                                         <View className="flex-1">
                                             <Text className="font-semibold" style={{ color: theme.textPrimary }}>
-                                                {usingCurrentLocation ? t('current-location') : t('location-selected')}
+                                                {pinFromPhoto ? t('photo-location') : usingCurrentLocation ? t('current-location') : t('location-selected')}
                                             </Text>
                                             <Text className="text-sm" style={{ color: theme.textSecondary }}>
                                                 {coordinates.lat.toFixed(7)}, {coordinates.lng.toFixed(7)}
                                             </Text>
                                         </View>
-                                        <TouchableOpacity onPress={() => { setCoordinates(null); setUsingCurrentLocation(false); }}>
+                                        <TouchableOpacity onPress={() => { setCoordinates(null); setUsingCurrentLocation(false); setPinFromPhoto(false); }}>
                                             <Ionicons name="close-circle" size={24} color={theme.error} />
                                         </TouchableOpacity>
                                     </View>
                                 </View>
+                                {pinGap != null && (
+                                    <Text className="text-xs mt-2" style={{ color: theme.error }}>
+                                        {t('photo-pin-too-far', { distance: pinGap, limit: PHOTO_PIN_LIMIT_M.place })}
+                                    </Text>
+                                )}
                                 <View className="flex-row items-center justify-center my-2">
                                     <View className="flex-1 h-px" style={{ backgroundColor: theme.border }} />
                                     <Text className="text-sm mx-3" style={{ color: theme.textSecondary }}>{t('or')}</Text>
@@ -442,59 +420,12 @@ export default function AddPlaceScreen() {
                     </View>
 
                     <View>
-                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('photos')}</Text>
-
-                        <View className="flex-row flex-wrap gap-3 mb-3">
-                            <TouchableOpacity
-                                className="rounded-2xl items-center justify-center"
-                                style={{ width: tileSize, height: tileSize, backgroundColor: theme.surface, borderWidth: 2, borderStyle: 'dashed', borderColor: theme.border }}
-                                onPress={takePhoto}
-                                disabled={uploading}
-                                activeOpacity={0.7}
-                            >
-                                <View className="rounded-full p-3 mb-2" style={{ backgroundColor: isDark ? theme.background : '#F3F4F6' }}>
-                                    <Ionicons name="camera" size={24} color={theme.textSecondary} />
-                                </View>
-                                <Text className="text-xs font-medium" style={{ color: theme.textSecondary }}>{t('camera')}</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                className="rounded-2xl items-center justify-center"
-                                style={{ width: tileSize, height: tileSize, backgroundColor: theme.surface, borderWidth: 2, borderStyle: 'dashed', borderColor: theme.border }}
-                                onPress={pickImage}
-                                disabled={uploading}
-                                activeOpacity={0.7}
-                            >
-                                <View className="rounded-full p-3 mb-2" style={{ backgroundColor: isDark ? theme.background : '#F3F4F6' }}>
-                                    <Ionicons name="images" size={24} color={theme.textSecondary} />
-                                </View>
-                                <Text className="text-xs font-medium" style={{ color: theme.textSecondary }}>{t('gallery')}</Text>
-                            </TouchableOpacity>
-
-                            {images.map((img, index) => (
-                                <View key={index} className="relative">
-                                    <Image
-                                        source={{ uri: img.localUri }}
-                                        style={{ width: tileSize, height: tileSize, borderRadius: 16 }}
-                                        resizeMode="cover"
-                                    />
-                                    <TouchableOpacity
-                                        className="absolute -top-2 -right-2 bg-red-500 rounded-full w-7 h-7 items-center justify-center shadow-lg"
-                                        onPress={() => removeImage(index)}
-                                        activeOpacity={0.8}
-                                    >
-                                        <Ionicons name="close" size={16} color="white" />
-                                    </TouchableOpacity>
-                                </View>
-                            ))}
-                        </View>
-
-                        {uploading && (
-                            <View className="flex-row items-center mb-3 rounded-xl p-3" style={{ backgroundColor: theme.blueMuted }}>
-                                <ActivityIndicator size="small" color={theme.blue} />
-                                <Text className="text-sm ml-2 font-medium" style={{ color: theme.blue }}>{t('uploading')}</Text>
-                            </View>
-                        )}
+                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
+                            {t('photos')}
+                            {/* campaigns reject places without a photo, so don't call it optional there */}
+                            {!inCampaign && <Text style={{ color: theme.textSecondary }}> ({t('optional')})</Text>}
+                        </Text>
+                        <PhotoPicker photos={images} onChange={setImages} folder="places" cameraOnly={inCampaign} requireLocation={inCampaign} />
                     </View>
                 </View>
             </ScrollView>
@@ -502,7 +433,7 @@ export default function AddPlaceScreen() {
             <View className="px-6 pt-4" style={{ paddingBottom: insets.bottom + 16, backgroundColor: theme.background, borderTopWidth: 1, borderTopColor: theme.border }}>
                 <Button
                     title={submitting ? t('submitting') : t('submit-contribution')}
-                    onPress={handleSubmit}
+                    onPress={() => void handleSubmit()}
                     disabled={submitting || !name.trim() || !coordinates || phoneInvalid || (needsCustomCategory && !customCategory.trim())}
                 />
             </View>

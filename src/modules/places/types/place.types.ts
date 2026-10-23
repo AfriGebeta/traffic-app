@@ -55,13 +55,19 @@ export interface SavedPlaceAddress {
 export interface SavedPlace extends SavedPlaceAddress {
     id: string;
     type: SavedPlaceType;
-    lat: number;
-    lng: number;
+    // null when saved without a GPS fix (e.g. home address entered with location off)
+    lat: number | null;
+    lng: number | null;
     isPrivate: boolean;
     label: string;
     createdAt: string;
     updatedAt: string;
 }
+
+export const hasSavedPlaceCoords = (
+    place: SavedPlace
+): place is SavedPlace & { lat: number; lng: number } =>
+    typeof place.lat === 'number' && typeof place.lng === 'number';
 
 export interface SavePlaceRequest extends SavedPlaceAddress {
     type: SavedPlaceType;

@@ -1,11 +1,13 @@
 import { apiService } from '../../../shared/services/api';
-import { Place, PlaceContributionRequest, SavedPlace, SavePlaceRequest, SavePlaceVoiceRequest, SavePlaceAudioResponse } from '../types/place.types';
+import { Place, PlaceContributionRequest, SavedPlace, SavePlaceRequest, SavePlaceVoiceRequest, SavePlaceAudioResponse, hasSavedPlaceCoords } from '../types/place.types';
 import { ClaimBusinessRequest, ClaimBusinessResponse } from '../types/claim.types';
 import { ApiError } from '../../../shared/utils/apiErrors';
+import { DeviceFields, getDeviceFields } from '../../../shared/utils/deviceFields';
 
 export const placeService = {
-    async contributePlace(data: PlaceContributionRequest): Promise<Place> {
-        const response = await apiService.post<Place>('/api/places', data);
+    async contributePlace(data: PlaceContributionRequest & DeviceFields): Promise<Place> {
+        // caller's live deviceLat/deviceLng win over the last-known fix
+        const response = await apiService.post<Place>('/api/places', { ...(await getDeviceFields()), ...data });
 
         if (response.error || !response.data) {
             // keeps the code so the screen can handle E0016 / E0018
@@ -145,7 +147,7 @@ export const placeService = {
 
             const threshold = 0.0001;
             return savedPlaces.find(
-                place => Math.abs(place.lat - lat) < threshold && Math.abs(place.lng - lng) < threshold
+                place => hasSavedPlaceCoords(place) && Math.abs(place.lat - lat) < threshold && Math.abs(place.lng - lng) < threshold
             ) || null;
         } catch (error) {
             return null;
