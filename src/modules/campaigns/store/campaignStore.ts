@@ -21,8 +21,9 @@ const setState = (next: Partial<CampaignState>) => {
     listeners.forEach((listener) => listener());
 };
 
-// /running only drops a campaign on the next refresh; until then, end it locally at endsAt
+// ended = phase past live (backend), or endsAt passed before the next refresh says so
 export const hasCampaignEnded = (campaign: Campaign, now = Date.now()): boolean => {
+    if (campaign.phase && campaign.phase !== 'live') return true;
     const end = campaign.endsAt ? new Date(campaign.endsAt).getTime() : NaN;
     return !Number.isNaN(end) && now >= end;
 };

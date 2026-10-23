@@ -2,6 +2,7 @@ import { useState } from 'react';
 import * as Location from '../../../shared/services/location';
 import { incidentService } from '../services/incident.service';
 import { CongestionLevel, Incident } from '../types/incident.types';
+import { DeviceFields } from '../../../shared/utils/deviceFields';
 
 export interface IncidentReportResult {
     incident: Incident | null;
@@ -50,7 +51,8 @@ export const useIncidentReport = () => {
         direction?: string,
         images?: string[],
         congestionLevel?: CongestionLevel,
-        heading?: number
+        heading?: number,
+        deviceFields?: DeviceFields
     ): Promise<IncidentReportResult> => {
         setLoading(true);
         setError(null);
@@ -72,6 +74,7 @@ export const useIncidentReport = () => {
                 ...(heading !== undefined && { heading }),
                 ...(images && images.length > 0 && { image: images }),
                 ...(congestionLevel && { congestionLevel }),
+                ...deviceFields,
             });
 
             if (response.error) {

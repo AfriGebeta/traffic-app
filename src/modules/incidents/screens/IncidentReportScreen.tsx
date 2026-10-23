@@ -39,7 +39,9 @@ import { useLocation } from '../../../shared/contexts/LocationContext';
 import { showReportError } from '../../../shared/utils/reportErrors';
 import { toReportHeading } from '../../../shared/utils/reportHeading';
 import { showCampaignPointsEstimate } from '../../campaigns/utils/pointsPopup';
+import { useScoringCampaign } from '../../campaigns/hooks/useScoringCampaign';
 import { PhotoPicker, UploadedPhoto } from '../../../shared/components/PhotoPicker';
+import { PHOTO_PIN_LIMIT_M, deviceFieldsFromFix, latestPhotoFix, photoPinGap } from '../../../shared/utils/photoFix';
 
 
 type IncidentIcon = React.FC<{ width?: number; height?: number }>;
@@ -81,6 +83,7 @@ export default function IncidentReportScreen() {
     const [description, setDescription] = useState('');
     const [direction, setDirection] = useState('');
     const [images, setImages] = useState<UploadedPhoto[]>([]);
+    const inCampaign = !!useScoringCampaign('incident');
     const { reportIncident, loading } = useIncidentReport();
 
     useEffect(() => {
@@ -101,12 +104,22 @@ export default function IncidentReportScreen() {
         }, [selectedLocation, setSelectedLocation])
     );
 
-    const location = pickedLocation ?? currentLocation;
+    // a campaign photo's fix is where the user really is; it beats the location passed in on open
+    const photoFix = latestPhotoFix(images);
+    const photoLocation = photoFix ? { lat: photoFix.lat, lng: photoFix.lng } : null;
+    const location = pickedLocation ?? photoLocation ?? currentLocation;
+    const pinGap = inCampaign ? photoPinGap(pickedLocation, photoFix, PHOTO_PIN_LIMIT_M.incident) : null;
 
 
     const handleSubmit = async () => {
         if (!location) {
             showToast('Location not available');
+            return;
+        }
+
+        // campaigns only accept incidents with a photo
+        if (inCampaign && images.length === 0) {
+            showToast(t('campaign-photo-required'));
             return;
         }
 
@@ -118,7 +131,8 @@ export default function IncidentReportScreen() {
             images.map((img) => img.objectName),
             congestionLevel,
             // a map-picked spot isn't where the driver is heading
-            pickedLocation ? undefined : passedHeading
+            pickedLocation ? undefined : passedHeading,
+            photoFix ? deviceFieldsFromFix(photoFix) : undefined
         );
 
         if (incident) {
@@ -179,7 +193,7 @@ export default function IncidentReportScreen() {
                             />
                             <View className="ml-3 flex-1">
                                 <Text className="text-sm font-semibold" style={{ color: theme.textPrimary }}>
-                                    {pickedLocation ? t('location-selected') : t('current-location')}
+                                    {pickedLocation ? t('location-selected') : photoLocation ? t('photo-location') : t('current-location')}
                                 </Text>
                                 <Text className="text-sm" style={{ color: theme.textSecondary }}>
                                     {location
@@ -189,6 +203,11 @@ export default function IncidentReportScreen() {
                             </View>
                         </View>
 
+                        {pinGap != null && (
+                            <Text className="text-xs mt-3" style={{ color: theme.error }}>
+                                {t('photo-pin-too-far', { distance: pinGap, limit: PHOTO_PIN_LIMIT_M.incident })}
+                            </Text>
+                        )}
 
                         <View className="mt-3">
 
@@ -264,10 +283,11 @@ export default function IncidentReportScreen() {
                     />
 
                     <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
-                        {t('photos')} <Text style={{ color: theme.textSecondary }}>({t('optional')})</Text>
+                        {t('photos')}
+                        {!inCampaign && <Text style={{ color: theme.textSecondary }}> ({t('optional')})</Text>}
                     </Text>
                     <View className="mb-6">
-                        <PhotoPicker photos={images} onChange={setImages} folder="incidents" />
+                        <PhotoPicker photos={images} onChange={setImages} folder="incidents" cameraOnly={inCampaign} requireLocation={inCampaign} />
                     </View>
 
                     <Button

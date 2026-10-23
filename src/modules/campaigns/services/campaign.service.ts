@@ -44,10 +44,16 @@ export const campaignService = {
         if (response.error) throw new ApiError(response, 'Failed to leave campaign');
     },
 
-    async getLeaderboard(slug: string, track: string | null, period: CampaignPeriodKind, key?: string): Promise<CampaignLeaderboard> {
+    async getLeaderboard(
+        slug: string,
+        track: string | null,
+        period: CampaignPeriodKind,
+        options: { key?: string; page?: number } = {}
+    ): Promise<CampaignLeaderboard> {
         const params = new URLSearchParams({ period });
         if (track) params.set('track', track);
-        if (key) params.set('key', key);
+        if (options.key) params.set('key', options.key);
+        if (options.page) params.set('page', String(options.page));
         const response = await apiService.get<CampaignLeaderboard>(
             `/api/campaigns/${encodeURIComponent(slug)}/leaderboard?${params.toString()}`
         );

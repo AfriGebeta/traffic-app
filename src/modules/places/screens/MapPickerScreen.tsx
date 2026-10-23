@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, useWindowDimensions } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import CustomGebetaMap from '../../../components/GebetaMap';
@@ -16,6 +16,10 @@ import { colors } from '../../../shared/theme/colors';
 import { useRemoteConfig } from '../../../shared/contexts/RemoteConfigContext';
 import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 import { useLayout } from '../../../shared/layout/useLayout';
+import { useMapTheme } from '../../map/context/MapThemeContext';
+import { useTheme } from '../../../shared/theme/ThemeContext';
+import { MapLayersButton } from '../../map/components/MapLayersButton';
+import { MapThemeSelector } from '../../map/components/MapThemeSelector';
 
 export default function MapPickerScreen() {
     const router = useRouter();
@@ -31,6 +35,11 @@ export default function MapPickerScreen() {
     const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
     const searchBarRef = useRef<MapSearchBarRef>(null);
+    const { currentTheme } = useMapTheme();
+    const { colors: theme } = useTheme();
+    const { height: windowHeight } = useWindowDimensions();
+    const [showThemeSelector, setShowThemeSelector] = useState(false);
+    const [layersButtonBottom, setLayersButtonBottom] = useState(0);
 
     const initialCenterRef = useRef<[number, number] | null>(null);
     if (!initialCenterRef.current && userLocation) {
@@ -172,7 +181,12 @@ export default function MapPickerScreen() {
             <CustomGebetaMap
                 ref={mapRef}
                 apiKey={apiKey!}
-                mapStyleUrl={`https://tiles.gebeta.app/styles/standard/style.json?apiKey=${apiKey}`}
+                mapStyleUrl={
+                    !currentTheme.styleJson && currentTheme.styleUrl
+                        ? `${currentTheme.styleUrl}?apiKey=${apiKey}`
+                        : `https://tiles.gebeta.app/styles/standard/style.json?apiKey=${apiKey}`
+                }
+                mapStyleJson={currentTheme.styleJson}
                 center={initialCenter}
                 zoom={15}
                 onMapClick={handleMapClick}
@@ -185,12 +199,22 @@ export default function MapPickerScreen() {
 
             {/* Rendered before the search overlay so the results dropdown draws on top of it */}
             <TouchableOpacity
-                className="absolute top-56 right-4 bg-white rounded-full w-12 h-12 items-center justify-center shadow-lg"
+                className="absolute top-56 right-4 rounded-full w-12 h-12 items-center justify-center shadow-lg"
+                style={{ backgroundColor: theme.background }}
                 onPress={handleLocationPress}
                 activeOpacity={0.7}
             >
                 <Ionicons name="locate" size={24} color="#FFA500" />
             </TouchableOpacity>
+
+            <View className="absolute top-72 right-4">
+                <MapLayersButton
+                    onPress={({ y, height }) => {
+                        setLayersButtonBottom(windowHeight - (y + height));
+                        setShowThemeSelector(true);
+                    }}
+                />
+            </View>
 
             <MapSearchBar
                 ref={searchBarRef}
@@ -201,9 +225,9 @@ export default function MapPickerScreen() {
 
             {selectedLocation && (
                 <View className="absolute left-4 right-4" style={[{ bottom: insets.bottom + 32 }, panelPlacement()]}>
-                    <View className="bg-white rounded-2xl p-4 shadow-lg mb-3">
-                        <Text className="text-sm font-medium text-gray-700">{t('selected-location')}</Text>
-                        <Text className="text-gray-600 mt-1">
+                    <View className="rounded-2xl p-4 shadow-lg mb-3" style={{ backgroundColor: theme.background }}>
+                        <Text className="text-sm font-medium" style={{ color: theme.textPrimary }}>{t('selected-location')}</Text>
+                        <Text className="mt-1" style={{ color: theme.textSecondary }}>
                             {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
                         </Text>
                     </View>
@@ -231,6 +255,12 @@ export default function MapPickerScreen() {
                     )}
                 </View>
             )}
+
+            <MapThemeSelector
+                visible={showThemeSelector}
+                onClose={() => setShowThemeSelector(false)}
+                bottomOffset={layersButtonBottom}
+            />
         </View>
     );
 }

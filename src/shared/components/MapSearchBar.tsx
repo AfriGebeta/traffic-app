@@ -6,6 +6,7 @@ import { navigationService } from '../../modules/navigation/services/navigation.
 import type { GeocodingPlace } from '../../modules/navigation/types/navigation.types';
 import { parseCoordinates } from '../utils/coordinates';
 import { colors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 
 const SEARCH_DEBOUNCE_MS = 500;
 
@@ -21,6 +22,8 @@ interface MapSearchBarProps {
 
 export const MapSearchBar = forwardRef<MapSearchBarRef, MapSearchBarProps>(({ onSelect, hint, style }, ref) => {
     const { t } = useTranslation();
+    const { colors: theme } = useTheme();
+    const cardStyle = { backgroundColor: theme.background };
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<GeocodingPlace[]>([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -101,12 +104,13 @@ export const MapSearchBar = forwardRef<MapSearchBarRef, MapSearchBarProps>(({ on
 
     return (
         <View style={style}>
-            <View className="bg-white rounded-2xl px-4 shadow-lg flex-row items-center">
-                <Ionicons name="search" size={20} color="#6B7280" />
+            <View className="rounded-2xl px-4 shadow-lg flex-row items-center" style={cardStyle}>
+                <Ionicons name="search" size={20} color={theme.textSecondary} />
                 <TextInput
-                    className="flex-1 ml-2 py-3 text-gray-900"
+                    className="flex-1 ml-2 py-3"
+                    style={{ color: theme.textPrimary }}
                     placeholder={t('search-place-or-coordinates')}
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={theme.textSecondary}
                     value={searchQuery}
                     onChangeText={setSearchQuery}
                     onSubmitEditing={() => runSearch(searchQuery, true)}
@@ -117,40 +121,42 @@ export const MapSearchBar = forwardRef<MapSearchBarRef, MapSearchBarProps>(({ on
                     <ActivityIndicator size="small" color={colors.primary.main} />
                 ) : searchQuery.length > 0 ? (
                     <TouchableOpacity onPress={clearSearch} hitSlop={8}>
-                        <Ionicons name="close-circle" size={20} color="#9CA3AF" />
+                        <Ionicons name="close-circle" size={20} color={theme.textSecondary} />
                     </TouchableOpacity>
                 ) : null}
             </View>
 
             {coordMatch ? (
                 <TouchableOpacity
-                    className="bg-white rounded-2xl mt-2 px-4 py-3 shadow-lg flex-row items-center"
+                    className="rounded-2xl mt-2 px-4 py-3 shadow-lg flex-row items-center"
+                    style={cardStyle}
                     onPress={() => selectLocation(coordMatch)}
                     activeOpacity={0.7}
                 >
                     <Ionicons name="navigate-outline" size={20} color={colors.primary.main} />
                     <View className="ml-3 flex-1">
-                        <Text className="font-semibold text-gray-900">{t('go-to-coordinates')}</Text>
-                        <Text className="text-xs text-gray-500 mt-0.5">
+                        <Text className="font-semibold" style={{ color: theme.textPrimary }}>{t('go-to-coordinates')}</Text>
+                        <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }}>
                             {coordMatch.lat.toFixed(6)}, {coordMatch.lng.toFixed(6)}
                         </Text>
                     </View>
                 </TouchableOpacity>
             ) : searchResults.length > 0 ? (
-                <View className="bg-white rounded-2xl mt-2 shadow-lg overflow-hidden">
+                <View className="rounded-2xl mt-2 shadow-lg overflow-hidden" style={cardStyle}>
                     <ScrollView style={{ maxHeight: 280 }} keyboardShouldPersistTaps="handled">
                         {searchResults.map((place, index) => (
                             <TouchableOpacity
                                 key={`${place.id}-${index}`}
-                                className="px-4 py-3 flex-row items-center border-b border-gray-100"
+                                className="px-4 py-3 flex-row items-center border-b"
+                                style={{ borderColor: theme.border }}
                                 onPress={() => selectLocation({ lat: place.location.lat, lng: place.location.lng })}
                                 activeOpacity={0.7}
                             >
                                 <Ionicons name="location-outline" size={20} color={colors.primary.main} />
                                 <View className="ml-3 flex-1">
-                                    <Text className="font-semibold text-gray-900" numberOfLines={1}>{place.name}</Text>
+                                    <Text className="font-semibold" style={{ color: theme.textPrimary }} numberOfLines={1}>{place.name}</Text>
                                     {!!place.display_name && place.display_name !== place.name && (
-                                        <Text className="text-xs text-gray-500 mt-0.5" numberOfLines={1}>{place.display_name}</Text>
+                                        <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }} numberOfLines={1}>{place.display_name}</Text>
                                     )}
                                 </View>
                             </TouchableOpacity>
@@ -158,13 +164,13 @@ export const MapSearchBar = forwardRef<MapSearchBarRef, MapSearchBarProps>(({ on
                     </ScrollView>
                 </View>
             ) : noResults ? (
-                <View className="bg-white rounded-2xl mt-2 px-4 py-3 shadow-lg">
-                    <Text className="text-sm text-gray-500">{t('no-results-found')}</Text>
+                <View className="rounded-2xl mt-2 px-4 py-3 shadow-lg" style={cardStyle}>
+                    <Text className="text-sm" style={{ color: theme.textSecondary }}>{t('no-results-found')}</Text>
                 </View>
             ) : hint ? (
-                <View className="bg-white rounded-2xl mt-2 px-4 py-3 shadow-lg flex-row items-center">
-                    <Ionicons name="information-circle" size={20} color="#3B82F6" />
-                    <Text className="text-sm text-gray-700 ml-2 flex-1">{hint}</Text>
+                <View className="rounded-2xl mt-2 px-4 py-3 shadow-lg flex-row items-center" style={cardStyle}>
+                    <Ionicons name="information-circle" size={20} color={theme.blue} />
+                    <Text className="text-sm ml-2 flex-1" style={{ color: theme.textPrimary }}>{hint}</Text>
                 </View>
             ) : null}
         </View>

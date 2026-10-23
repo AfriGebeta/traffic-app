@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image, ImageSourcePropType } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
+import { Video, ResizeMode } from 'expo-av';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
@@ -83,6 +84,8 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
     const { colors: theme, isDark } = useTheme();
     const [savedPlace, setSavedPlace] = useState<SavedPlace | null>(null);
     const [imageBoxWidth, setImageBoxWidth] = useState(0);
+    // which video asset has rendered its first frame; image shows until then
+    const [readyVideo, setReadyVideo] = useState<number | null>(null);
     const router = useRouter();
 
     useEffect(() => {
@@ -190,6 +193,40 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
         return require('../../../../assets/images/establishment-place-detail.png');
     };
 
+    // Animated header for types that have one; same match order as getPlaceImage
+    const getPlaceVideo = () => {
+        const placeType = (place.type || place.category || '').toLowerCase();
+
+        if (placeType.includes('coffee') || placeType.includes('cafe') || placeType.includes('teahouse')) {
+            return require('../../../../assets/videos/0.3--d1-Gebeta-coffeeshop-vector-anim-gif 2.mp4');
+        }
+        if (placeType.includes('restaurant') || placeType.includes('hotel') || placeType.includes('food')) {
+            return require('../../../../assets/videos/d2-Gebeta-restaurant-vector-anim-gif.mp4');
+        }
+        if (placeType.includes('bank')) return null;
+        if (placeType.includes('atm')) {
+            return require('../../../../assets/videos/0.2----d6-Gebeta-ATM-vecotr-anim---1200x400_1.mp4');
+        }
+        if (placeType.includes('gas') || placeType.includes('fuel') || placeType.includes('petrol')) {
+            return require('../../../../assets/videos/0.3----d6--B-Fuel station-bro--1200x400_1.mp4');
+        }
+        if (placeType.includes('parking')) return null;
+        if (placeType.includes('repair') || placeType.includes('garage') || placeType.includes('mechanic')) {
+            return require('../../../../assets/videos/0_2_d6_RED_Gebeta_repair_shop_vector_anim_gif_1200x400_1.mp4');
+        }
+        if (placeType.includes('taxi')) {
+            return require('../../../../assets/videos/0.2----Gebeta-Taxi-vector-anim-gif-1200x400_1.mp4');
+        }
+        if (placeType.includes('hospital') || placeType.includes('clinic') || placeType.includes('medical') || placeType.includes('health')) {
+            return require('../../../../assets/videos/0.2-mbps----Gebeta-hospital-vector-anim-gif---1200X400_1.mp4');
+        }
+        if (placeType.includes('school') || placeType.includes('university') || placeType.includes('college')) {
+            return require('../../../../assets/videos/0.2---d6-Gebeta-school-vector-anim-gif-1200x400_1.mp4');
+        }
+        return null;
+    };
+
+    const placeVideo = getPlaceVideo();
     const placeImage = getPlaceImage();
     const imageBoxHeight = 112;
     const { width: imageWidth, height: imageHeight } = Image.resolveAssetSource(placeImage);
@@ -237,6 +274,23 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
                                 }}
                                 resizeMode="contain"
                             />
+                            {placeVideo ? (
+                                <Video
+                                    // remount per asset so a source swap never reuses a stale player
+                                    key={placeVideo}
+                                    source={placeVideo}
+                                    style={{
+                                        position: 'absolute', left: 0, top: 0, right: 0, bottom: 0,
+                                        opacity: readyVideo === placeVideo ? 1 : 0,
+                                    }}
+                                    resizeMode={ResizeMode.COVER}
+                                    shouldPlay
+                                    isLooping
+                                    isMuted
+                                    onReadyForDisplay={() => setReadyVideo(placeVideo)}
+                                    onError={(e) => console.warn('[PlaceDetailPreview] video error', e)}
+                                />
+                            ) : null}
                             <TouchableOpacity
                                 onPress={handleContribute}
                                 activeOpacity={0.8}

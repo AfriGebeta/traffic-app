@@ -21,6 +21,7 @@ import { useScoringCampaign } from '../../campaigns/hooks/useScoringCampaign';
 import { ConfirmDialog } from '../../../components/ConfirmDialog';
 import { ApiError, ApiErrorCode, getCampaignFailures, getDuplicatePlaceNames, isRestrictedError } from '../../../shared/utils/apiErrors';
 import { showCampaignPointsEstimate } from '../../campaigns/utils/pointsPopup';
+import { PHOTO_PIN_LIMIT_M, deviceFieldsFromFix, latestPhotoFix, photoPinGap } from '../../../shared/utils/photoFix';
 
 
 export default function AddPlaceScreen() {
@@ -58,8 +59,8 @@ export default function AddPlaceScreen() {
     const [submitting, setSubmitting] = useState(false);
     // E0016: names of similar places nearby; null when the dialog is closed
     const [duplicateNames, setDuplicateNames] = useState<string[] | null>(null);
-    const [showNoPhotoWarning, setShowNoPhotoWarning] = useState(false);
     const [usingCurrentLocation, setUsingCurrentLocation] = useState(false);
+    const [pinFromPhoto, setPinFromPhoto] = useState(false);
     const autoFilledLocation = React.useRef(Boolean(prefillCoordinates));
 
     const placeInfo = PLACE_TYPES.find((p) => p.id === placeType);
@@ -80,10 +81,23 @@ export default function AddPlaceScreen() {
             if (selectedLocation) {
                 setCoordinates(selectedLocation);
                 setUsingCurrentLocation(false);
+                setPinFromPhoto(false);
                 setSelectedLocation(null);
             }
         }, [selectedLocation, setSelectedLocation])
     );
+
+    // a new photo moves the pin to where it was taken, unless the user placed the pin on the map
+    const photoFix = latestPhotoFix(images);
+    const photoFixTime = photoFix?.timestamp;
+    React.useEffect(() => {
+        if (!photoFix || (coordinates && !usingCurrentLocation && !pinFromPhoto)) return;
+        setCoordinates({ lat: photoFix.lat, lng: photoFix.lng });
+        setUsingCurrentLocation(false);
+        setPinFromPhoto(true);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [photoFixTime]);
+    const pinGap = inCampaign ? photoPinGap(coordinates, photoFix, PHOTO_PIN_LIMIT_M.place) : null;
 
 
     const handlePickLocation = () => {
@@ -98,6 +112,7 @@ export default function AddPlaceScreen() {
 
         setCoordinates(userLocation);
         setUsingCurrentLocation(true);
+        setPinFromPhoto(false);
     };
 
     const leaveScreen = () => {
@@ -106,8 +121,7 @@ export default function AddPlaceScreen() {
         }
     };
 
-    // skipPhotoCheck: the user already saw the "no photo" warning and chose to submit anyway
-    const handleSubmit = async (skipPhotoCheck = false) => {
+    const handleSubmit = async () => {
         if (!name.trim()) {
             showToast(`${t('name-required')}: ${t('please-enter-place-name')}`);
             return;
@@ -128,9 +142,9 @@ export default function AddPlaceScreen() {
             return;
         }
 
-        // campaigns reject places without a photo; warn before it's sent rather than after
-        if (inCampaign && images.length === 0 && !skipPhotoCheck) {
-            setShowNoPhotoWarning(true);
+        // campaigns only accept places with a photo
+        if (inCampaign && images.length === 0) {
+            showToast(t('campaign-photo-required'));
             return;
         }
 
@@ -158,7 +172,8 @@ export default function AddPlaceScreen() {
                 phone: phoneE164 ?? undefined,
                 images: images.map((img) => img.objectName),
                 address: hasAddress ? address : undefined,
-                ...(userLocation && { deviceLat: userLocation.lat, deviceLng: userLocation.lng }),
+                // the photo's fix is where the user stood; otherwise the live location
+                ...(photoFix ? deviceFieldsFromFix(photoFix) : userLocation && { deviceLat: userLocation.lat, deviceLng: userLocation.lng }),
             });
 
             dashboardEventsService.contribute();
@@ -307,17 +322,22 @@ export default function AddPlaceScreen() {
                                     <View className="flex-row items-center justify-between">
                                         <View className="flex-1">
                                             <Text className="font-semibold" style={{ color: theme.textPrimary }}>
-                                                {usingCurrentLocation ? t('current-location') : t('location-selected')}
+                                                {pinFromPhoto ? t('photo-location') : usingCurrentLocation ? t('current-location') : t('location-selected')}
                                             </Text>
                                             <Text className="text-sm" style={{ color: theme.textSecondary }}>
                                                 {coordinates.lat.toFixed(7)}, {coordinates.lng.toFixed(7)}
                                             </Text>
                                         </View>
-                                        <TouchableOpacity onPress={() => { setCoordinates(null); setUsingCurrentLocation(false); }}>
+                                        <TouchableOpacity onPress={() => { setCoordinates(null); setUsingCurrentLocation(false); setPinFromPhoto(false); }}>
                                             <Ionicons name="close-circle" size={24} color={theme.error} />
                                         </TouchableOpacity>
                                     </View>
                                 </View>
+                                {pinGap != null && (
+                                    <Text className="text-xs mt-2" style={{ color: theme.error }}>
+                                        {t('photo-pin-too-far', { distance: pinGap, limit: PHOTO_PIN_LIMIT_M.place })}
+                                    </Text>
+                                )}
                                 <View className="flex-row items-center justify-center my-2">
                                     <View className="flex-1 h-px" style={{ backgroundColor: theme.border }} />
                                     <Text className="text-sm mx-3" style={{ color: theme.textSecondary }}>{t('or')}</Text>
@@ -405,7 +425,7 @@ export default function AddPlaceScreen() {
                             {/* campaigns reject places without a photo, so don't call it optional there */}
                             {!inCampaign && <Text style={{ color: theme.textSecondary }}> ({t('optional')})</Text>}
                         </Text>
-                        <PhotoPicker photos={images} onChange={setImages} folder="places" />
+                        <PhotoPicker photos={images} onChange={setImages} folder="places" cameraOnly={inCampaign} requireLocation={inCampaign} />
                     </View>
                 </View>
             </ScrollView>
@@ -429,19 +449,6 @@ export default function AddPlaceScreen() {
                     setDuplicateNames(null);
                     leaveScreen();
                 }}
-            />
-
-            <ConfirmDialog
-                visible={showNoPhotoWarning}
-                title={t('campaign-no-photo-title')}
-                message={t('campaign-no-photo-message')}
-                cancelLabel={t('submit-anyway')}
-                confirmLabel={t('add-photo')}
-                onCancel={() => {
-                    setShowNoPhotoWarning(false);
-                    void handleSubmit(true);
-                }}
-                onConfirm={() => setShowNoPhotoWarning(false)}
             />
         </View>
     );

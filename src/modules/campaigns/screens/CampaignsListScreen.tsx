@@ -77,12 +77,13 @@ export default function CampaignsListScreen() {
                                             ? [
                                                   t(joined ? 'campaign-joined-short' : 'campaign-open-short'),
                                                   weekly?.rank ? `#${weekly.rank}` : null,
-                                                  weekly?.rank ? `${weekly.score} ${t('campaign-points')}` : null,
+                                                  // rank is null while the board is hidden near the period's end; the score still counts
+                                                  weekly && (weekly.rank || weekly.score > 0) ? `${weekly.score} ${t('campaign-points')}` : null,
                                               ]
                                                   .filter(Boolean)
                                                   .join(' · ')
                                             : hasCampaignEnded(campaign)
-                                              ? t('campaign-ended')
+                                              ? t(campaign.phase === 'final' ? 'campaign-phase-final-short' : campaign.phase === 'auditing' ? 'campaign-phase-auditing-short' : 'campaign-ended')
                                               : t('campaign-not-joined')}
                                     </Text>
                                 </View>

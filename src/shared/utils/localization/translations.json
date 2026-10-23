@@ -4320,6 +4320,36 @@
         "AM": "በቀን በአይነት የሚከፈልባቸው ብዛት"
     },
     {
+        "key": "campaign-ends-in",
+        "EN_US": "Ends in",
+        "AM": "የሚያበቃው በ"
+    },
+    {
+        "key": "campaign-countdown-days",
+        "EN_US": "Days",
+        "AM": "ቀን"
+    },
+    {
+        "key": "campaign-countdown-hours",
+        "EN_US": "Hours",
+        "AM": "ሰዓት"
+    },
+    {
+        "key": "campaign-countdown-minutes",
+        "EN_US": "Minutes",
+        "AM": "ደቂቃ"
+    },
+    {
+        "key": "campaign-countdown-seconds",
+        "EN_US": "Seconds",
+        "AM": "ሰከንድ"
+    },
+    {
+        "key": "campaign-follow-us",
+        "EN_US": "Follow us for updates",
+        "AM": "ለአዳዲስ መረጃዎች ይከተሉን"
+    },
+    {
         "key": "campaign-rules",
         "EN_US": "Rules",
         "AM": "ደንቦች"
@@ -4370,19 +4400,94 @@
         "AM": "በዚህ ወር"
     },
     {
+        "key": "campaign-status-live",
+        "EN_US": "Live leaderboard",
+        "AM": "ቀጥታ የደረጃ ሰንጠረዥ"
+    },
+    {
         "key": "campaign-status-auditing",
-        "EN_US": "Results are being checked",
-        "AM": "ውጤቶቹ እየተረጋገጡ ነው"
+        "EN_US": "Checking results…",
+        "AM": "ውጤቶች እየተረጋገጡ ነው…"
+    },
+    {
+        "key": "campaign-status-auditing-note",
+        "EN_US": "This week has ended and points are being reviewed. Ranks can still change if a submission is rejected or someone is disqualified.",
+        "AM": "ይህ ሳምንት አብቅቷል፤ ነጥቦች እየተገመገሙ ነው። ደረጃዎች አሁንም ሊቀየሩ ይችላሉ።"
     },
     {
         "key": "campaign-status-final",
-        "EN_US": "Final results",
-        "AM": "የመጨረሻ ውጤቶች"
+        "EN_US": "Winners",
+        "AM": "አሸናፊዎች"
+    },
+    {
+        "key": "campaign-status-final-note",
+        "EN_US": "Review is done and these results are final.",
+        "AM": "ግምገማው ተጠናቋል፤ እነዚህ የመጨረሻ ውጤቶች ናቸው።"
+    },
+    {
+        "key": "campaign-leaderboard-hidden-note",
+        "EN_US": "The leaderboard is hidden near the end of each period while results are checked. Winners are announced once the review is done.",
+        "AM": "ውጤቶች በሚረጋገጡበት ወቅት የደረጃ ሰንጠረዡ በእያንዳንዱ ጊዜ መጨረሻ አካባቢ ይደበቃል። ግምገማው ሲጠናቀቅ አሸናፊዎች ይገለጻሉ።"
+    },
+    {
+        "key": "campaign-results-coming-note",
+        "EN_US": "Results are being checked. Winners will be announced once the review is done.",
+        "AM": "ውጤቶች እየተረጋገጡ ነው። ግምገማው ሲጠናቀቅ አሸናፊዎች ይገለጻሉ።"
+    },
+    {
+        "key": "campaign-winners-note",
+        "EN_US": "Final results are in. See the winners on the leaderboard.",
+        "AM": "የመጨረሻ ውጤቶች ወጥተዋል። አሸናፊዎቹን በደረጃ ሰንጠረዡ ላይ ይመልከቱ።"
+    },
+    {
+        "key": "campaign-phase-auditing-short",
+        "EN_US": "Ended · Checking results",
+        "AM": "ተጠናቋል። ውጤቶች እየተረጋገጡ ነው"
+    },
+    {
+        "key": "campaign-phase-final-short",
+        "EN_US": "Ended · Winners announced",
+        "AM": "ተጠናቋል። አሸናፊዎች ተገልጸዋል"
     },
     {
         "key": "campaign-leaderboard-empty",
         "EN_US": "No one on the board yet",
         "AM": "እስካሁን በሰንጠረዡ ላይ ማንም የለም"
+    },
+    {
+        "key": "campaign-page-previous",
+        "EN_US": "Previous",
+        "AM": "ቀዳሚ"
+    },
+    {
+        "key": "campaign-page-next",
+        "EN_US": "Next",
+        "AM": "ቀጣይ"
+    },
+    {
+        "key": "campaign-page-of",
+        "EN_US": "Page {{page}} of {{total}}",
+        "AM": "ገጽ {{page}} ከ {{total}}"
+    },
+    {
+        "key": "campaign-last-week",
+        "EN_US": "Last week",
+        "AM": "ያለፈው ሳምንት"
+    },
+    {
+        "key": "campaign-leaderboard-provisional",
+        "EN_US": "This leaderboard is temporary. All points are reviewed before winners are announced, so rankings may change.",
+        "AM": "ይህ የደረጃ ሰንጠረዥ ጊዜያዊ ነው። አሸናፊዎች ከመገለጻቸው በፊት ሁሉም ነጥቦች ይገመገማሉ፤ ስለዚህ ደረጃዎች ሊቀየሩ ይችላሉ።"
+    },
+    {
+        "key": "campaign-prizes",
+        "EN_US": "Prizes",
+        "AM": "ሽልማቶች"
+    },
+    {
+        "key": "campaign-prize-amount",
+        "EN_US": "{{amount}} ETB",
+        "AM": "{{amount}} ብር"
     },
     {
         "key": "campaign-leaderboard-failed",
@@ -4535,6 +4640,76 @@
         "AM": "ፎቶውን ይጠቀሙ"
     },
     {
+        "key": "camera-location-waiting",
+        "EN_US": "Getting your location…",
+        "AM": "አካባቢዎን በማግኘት ላይ…"
+    },
+    {
+        "key": "camera-location-failed",
+        "EN_US": "Can't get your location. Move near a window or outside, and check that location is on.",
+        "AM": "አካባቢዎን ማግኘት አልተቻለም። ወደ መስኮት አጠገብ ወይም ወደ ውጭ ይሂዱ፣ እና የአካባቢ አገልግሎት (location) መብራቱን ያረጋግጡ።"
+    },
+    {
+        "key": "camera-location-permission",
+        "EN_US": "Campaign photos need your location so we can check where they were taken.",
+        "AM": "የዘመቻ ፎቶዎች የት እንደተነሱ ለማረጋገጥ አካባቢዎን ይፈልጋሉ።"
+    },
+    {
+        "key": "camera-allow-location",
+        "EN_US": "Allow location",
+        "AM": "አካባቢ ይፍቀዱ"
+    },
+    {
+        "key": "camera-location-off",
+        "EN_US": "Location is turned off. Turn it on so your photo includes where it was taken.",
+        "AM": "የአካባቢ አገልግሎት ጠፍቷል። ፎቶው የት እንደተነሳ እንዲያካትት ያብሩት።"
+    },
+    {
+        "key": "camera-turn-on-location",
+        "EN_US": "Turn on location",
+        "AM": "አካባቢን ያብሩ"
+    },
+    {
+        "key": "route-add-new-station",
+        "EN_US": "Add station",
+        "AM": "ጣቢያ ያክሉ"
+    },
+    {
+        "key": "campaign-new-station-needs-photo",
+        "EN_US": "New stations need a photo during the campaign. Add it here and you'll go back to your route.",
+        "AM": "በዘመቻው ወቅት አዲስ ጣቢያ ፎቶ ያስፈልገዋል። እዚህ ያክሉት፣ ከዚያ ወደ መስመርዎ ይመለሳሉ።"
+    },
+    {
+        "key": "campaign-photo-required",
+        "EN_US": "Add a photo taken with the camera to submit this for the campaign.",
+        "AM": "ለዘመቻው ለማስገባት በካሜራ የተነሳ ፎቶ ያክሉ።"
+    },
+    {
+        "key": "campaign-report-with-photo",
+        "EN_US": "Take photo & report",
+        "AM": "ፎቶ አንስተው ሪፖርት ያድርጉ"
+    },
+    {
+        "key": "campaign-photo-earns-points",
+        "EN_US": "Only reports with a photo earn campaign points",
+        "AM": "የዘመቻ ነጥብ የሚያገኙት ፎቶ ያላቸው ሪፖርቶች ብቻ ናቸው"
+    },
+    {
+        "key": "campaign-photo-safety",
+        "EN_US": "Stay safe: don't take photos while driving. Let a passenger take it, or wait until you've stopped.",
+        "AM": "ደህንነትዎን ይጠብቁ፦ እያሽከረከሩ ፎቶ አያንሱ። ተሳፋሪ እንዲያነሳ ያድርጉ ወይም እስኪቆሙ ይጠብቁ።"
+    },
+    {
+        "key": "photo-location",
+        "EN_US": "Where you took the photo",
+        "AM": "ፎቶውን ያነሱበት ቦታ"
+    },
+    {
+        "key": "photo-pin-too-far",
+        "EN_US": "Your pin is {{distance}} m from where you took the photo. Keep it within {{limit}} m or this won't earn points.",
+        "AM": "ምልክቱ ፎቶውን ካነሱበት ቦታ {{distance}} ሜ ይርቃል። ነጥብ ለማግኘት በ{{limit}} ሜ ውስጥ ያድርጉት።"
+    },
+    {
         "key": "campaign-no-photo-title",
         "EN_US": "No photo added",
         "AM": "ፎቶ አልተጨመረም"
@@ -4543,6 +4718,11 @@
         "key": "campaign-no-photo-message",
         "EN_US": "Places without a photo don't earn campaign points. Add a photo taken at the place?",
         "AM": "ፎቶ የሌላቸው ቦታዎች የውድድር ነጥብ አያገኙም። በቦታው የተነሳ ፎቶ ይጨምሩ?"
+    },
+    {
+        "key": "campaign-rule-no-photo-message",
+        "EN_US": "Reports with a photo earn more campaign points. Add a photo taken at the spot?",
+        "AM": "ፎቶ ያላቸው ሪፖርቶች ተጨማሪ የዘመቻ ነጥብ ያገኛሉ። በቦታው የተነሳ ፎቶ ይጨምሩ?"
     },
     {
         "key": "submit-anyway",
