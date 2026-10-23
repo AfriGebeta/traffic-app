@@ -162,6 +162,7 @@ export default function CampaignDetailScreen() {
     // /running only lists open campaigns, and E0020 covers one that closed meanwhile
     const ended = hasCampaignEnded(campaign);
     const canJoin = campaign.requiresJoin && !joined && !ended;
+    const openLeaderboard = () => router.push({ pathname: '/campaigns/[slug]/leaderboard', params: { slug: campaign.slug } });
 
     return (
         <View className="flex-1" style={{ paddingTop: insets.top, backgroundColor: theme.background }}>
@@ -192,18 +193,37 @@ export default function CampaignDetailScreen() {
 
                 {!ended && !!campaign.endsAt && <CampaignCountdown endsAt={campaign.endsAt} />}
 
-                {ended && (
+                {ended && campaign.phase === 'final' && (
+                    <TouchableOpacity
+                        onPress={openLeaderboard}
+                        activeOpacity={0.7}
+                        className="flex-row items-center rounded-2xl p-4 mb-6"
+                        style={{ borderWidth: 1, borderColor: colors.primary.main }}
+                    >
+                        <View className="flex-1 mr-3">
+                            <Text className="font-bold text-base" style={{ color: theme.textPrimary }}>
+                                {t('campaign-status-final')}
+                            </Text>
+                            <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>
+                                {t('campaign-winners-note')}
+                            </Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+                    </TouchableOpacity>
+                )}
+
+                {ended && campaign.phase !== 'final' && (
                     <View className="rounded-2xl p-4 mb-6" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
                         <Text className="font-bold text-base" style={{ color: theme.textPrimary }}>
                             {t('campaign-ended')}
                         </Text>
                         <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>
-                            {t('campaign-ended-description')}
+                            {t(campaign.phase === 'auditing' ? 'campaign-results-coming-note' : 'campaign-ended-description')}
                         </Text>
                     </View>
                 )}
 
-                {participating && (
+                {(participating || (ended && joined)) && (
                     <View className="rounded-2xl p-4 mb-6" style={{ backgroundColor: theme.primaryMuted }}>
                         <Text className="font-bold text-base" style={{ color: theme.textPrimary }}>
                             {t(joined ? 'campaign-you-joined' : 'campaign-open-to-all')}
@@ -226,9 +246,9 @@ export default function CampaignDetailScreen() {
                     </View>
                 )}
 
-                {(participating || (ended && joined)) && (
+                {(participating || ended) && (
                     <TouchableOpacity
-                        onPress={() => router.push({ pathname: '/campaigns/[slug]/leaderboard', params: { slug: campaign.slug } })}
+                        onPress={openLeaderboard}
                         activeOpacity={0.7}
                         className="flex-row items-center justify-between rounded-2xl px-4 py-4 mb-3"
                         style={cardStyle}

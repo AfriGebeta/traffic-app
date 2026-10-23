@@ -24,6 +24,10 @@ import { reportErrorFrom, showReportError } from '../../../shared/utils/reportEr
 import { ApiError } from '../../../shared/utils/apiErrors';
 import { ReportLocation } from '../../../shared/utils/reportHeading';
 import { showCampaignPointsEstimate } from '../../campaigns/utils/pointsPopup';
+import { useScoringCampaign } from '../../campaigns/hooks/useScoringCampaign';
+import { InAppCamera } from '../../../shared/components/InAppCamera';
+import { uploadToMinio } from '../../../shared/utils/minio';
+import { PhotoFix, deviceFieldsFromFix, gpsLog } from '../../../shared/utils/photoFix';
 import { incidentService } from '../../incidents/services/incident.service';
 import { getIncidentTranslationKey } from '../../incidents/utils/incidentTranslations';
 import { CONGESTION_LEVELS, CongestionLevel, DEFAULT_CONGESTION_LEVEL } from '../../incidents/types/incident.types';
@@ -43,6 +47,11 @@ type Tab = 'incidents' | 'rules';
 type Selection =
     | { kind: 'incident'; typeName: string }
     | { kind: 'rule'; rule: TrafficRuleType };
+
+interface IncidentPhoto {
+    objectName: string;
+    fix: PhotoFix | null;
+}
 
 interface QuickReportSheetProps {
     incidentTypes: readonly { name: string; icon: string; color: string }[];
@@ -74,6 +83,10 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
     const [congestionLevel, setCongestionLevel] = React.useState<CongestionLevel>(DEFAULT_CONGESTION_LEVEL);
     // the auto-report timer closes over the selection, so it reads the level from here
     const congestionLevelRef = React.useRef<CongestionLevel>(DEFAULT_CONGESTION_LEVEL);
+    // campaign incidents only score with an in-app photo, so offer the camera right here
+    const photoCampaign = !!useScoringCampaign('incident');
+    const [cameraOpen, setCameraOpen] = React.useState(false);
+    const [uploading, setUploading] = React.useState(false);
 
     const progress = useSharedValue(0);
     const autoReportTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -116,25 +129,30 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
 
     const close = React.useCallback(() => {
         stopCountdown();
+        // a photo still uploading must not report after the user closed the sheet
+        submitted.current = true;
         onClose();
     }, [stopCountdown, onClose]);
 
     React.useEffect(() => {
         const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+            if (uploading) return true;
             if (selection) backToGrid();
             else close();
             return true;
         });
         return () => backHandler.remove();
-    }, [selection, backToGrid, close]);
+    }, [selection, uploading, backToGrid, close]);
 
     const submit = React.useCallback(
-        async (sel: Selection, location: ReportLocation | null) => {
+        async (sel: Selection, reportedAt: ReportLocation | null, photo?: IncidentPhoto) => {
             if (submitted.current) return;
             submitted.current = true;
             stopCountdown();
             onClose();
 
+            // the photo's fix is where the driver really saw it; the heading still comes from the drive
+            const location = photo?.fix ? { ...reportedAt, lat: photo.fix.lat, lng: photo.fix.lng } : reportedAt;
             if (!location) {
                 showToast(t('location-unavailable'));
                 return;
@@ -149,11 +167,13 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
                         description: 'No description provided',
                         ...(location.heading !== undefined && { heading: location.heading }),
                         ...(sel.typeName === TRAFFIC_JAM && { congestionLevel: congestionLevelRef.current }),
+                        ...(photo && { image: [photo.objectName] }),
+                        ...(photo?.fix && deviceFieldsFromFix(photo.fix)),
                     });
                     if (response.error) throw new ApiError(response);
                     showToast(t(response.data?.merged ? 'report-merged-thanks' : 'incident-reported-successfully'));
                     // a merge confirms someone else's report, so no new-contribution points
-                    if (!response.data?.merged) showCampaignPointsEstimate('incident', location);
+                    if (!response.data?.merged) showCampaignPointsEstimate('incident', location, { hasPhoto: !!photo });
                     onIncidentReported?.();
                 } else {
                     const report = await ruleService.reportRule({
@@ -191,6 +211,30 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
             }, AUTO_REPORT_MS);
         },
         [userLocation, progress, submit]
+    );
+
+    const openCamera = React.useCallback(() => {
+        stopCountdown();
+        setCameraOpen(true);
+    }, [stopCountdown]);
+
+    // upload first, then report in one go; on failure the user stays here and can retry or report without it
+    const reportWithPhoto = React.useCallback(
+        async (uri: string, fix: PhotoFix | null) => {
+            if (!selection) return;
+            setCameraOpen(false);
+            setUploading(true);
+            try {
+                const objectName = await uploadToMinio(uri, 'incidents');
+                gpsLog('quick report photo uploaded', objectName, fix ? { lat: fix.lat, lng: fix.lng, accuracy: fix.accuracy } : 'no fix');
+                await submit(selection, reportLocation, { objectName, fix });
+            } catch {
+                showToast(`${t('upload-failed')}: ${t('could-not-upload-image')}`);
+            } finally {
+                setUploading(false);
+            }
+        },
+        [selection, reportLocation, submit, t]
     );
 
     const pickCongestionLevel = React.useCallback((level: CongestionLevel) => {
@@ -399,12 +443,37 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
 
                 {sel.kind === 'incident' && sel.typeName === TRAFFIC_JAM && renderCongestionPicker()}
 
-                <TouchableOpacity onPress={openDetails} style={styles.detailsLink} hitSlop={8} activeOpacity={0.7}>
+                {photoCampaign && sel.kind === 'incident' && (
+                    <>
+                        <TouchableOpacity
+                            style={[styles.photoButton, { backgroundColor: theme.primary, opacity: uploading ? 0.6 : 1 }]}
+                            onPress={openCamera}
+                            disabled={uploading}
+                            activeOpacity={0.8}
+                        >
+                            {uploading ? (
+                                <ActivityIndicator color="#FFFFFF" />
+                            ) : (
+                                <Ionicons name="camera" size={24} color="#FFFFFF" />
+                            )}
+                            <Text style={[styles.buttonText, { color: '#FFFFFF', marginLeft: 10 }]}>
+                                {t(uploading ? 'uploading' : 'campaign-report-with-photo')}
+                            </Text>
+                        </TouchableOpacity>
+                        <Text style={[styles.photoHint, { color: theme.textSecondary }]}>{t('campaign-photo-earns-points')}</Text>
+                        <View style={[styles.safetyNote, { backgroundColor: isDark ? 'rgba(245,158,11,0.15)' : '#FEF3C7' }]}>
+                            <Ionicons name="warning" size={18} color="#D97706" />
+                            <Text style={[styles.safetyText, { color: isDark ? '#FCD34D' : '#92400E' }]}>{t('campaign-photo-safety')}</Text>
+                        </View>
+                    </>
+                )}
+
+                <TouchableOpacity onPress={openDetails} style={styles.detailsLink} hitSlop={8} activeOpacity={0.7} disabled={uploading}>
                     <Ionicons name="create-outline" size={18} color={theme.blue} />
                     <Text style={[styles.detailsText, { color: theme.blue }]}>{t('add-details')}</Text>
                 </TouchableOpacity>
 
-                <View style={styles.actions}>
+                <View style={styles.actions} pointerEvents={uploading ? 'none' : 'auto'}>
                     <TouchableOpacity
                         style={[styles.button, { backgroundColor: circleBg }]}
                         onPress={close}
@@ -450,6 +519,11 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
                 </View>
                 {selection ? renderConfirm(selection) : renderPicker()}
             </Animated.View>
+
+            {/* mounted once an incident is picked so GPS warms up while the driver decides */}
+            {photoCampaign && selection?.kind === 'incident' && (
+                <InAppCamera visible={cameraOpen} onClose={() => setCameraOpen(false)} onCaptured={reportWithPhoto} requireLocation />
+            )}
         </View>
     );
 };
@@ -584,6 +658,33 @@ const styles = StyleSheet.create({
     congestionText: {
         fontSize: 15,
         fontWeight: '600',
+    },
+    photoButton: {
+        flexDirection: 'row',
+        height: 58,
+        borderRadius: 29,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 20,
+    },
+    photoHint: {
+        fontSize: 13,
+        textAlign: 'center',
+        marginTop: 8,
+    },
+    safetyNote: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        marginTop: 12,
+    },
+    safetyText: {
+        flex: 1,
+        marginLeft: 8,
+        fontSize: 13,
+        fontWeight: '500',
     },
     detailsLink: {
         flexDirection: 'row',

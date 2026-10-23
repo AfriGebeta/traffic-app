@@ -19,6 +19,7 @@ import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { isPunishableRule, NO_PUNISHMENT_VALUE } from '../utils/ruleTranslations';
 import { PhotoPicker, UploadedPhoto } from '../../../shared/components/PhotoPicker';
+import { ConfirmDialog } from '../../../components/ConfirmDialog';
 
 export default function AddRuleReportScreen() {
     const router = useRouter();
@@ -46,6 +47,7 @@ export default function AddRuleReportScreen() {
     const [submitting, setSubmitting] = useState(false);
     const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
     const inCampaign = !!useScoringCampaign('traffic_rule');
+    const [noPhotoPrompt, setNoPhotoPrompt] = useState(false);
     const [usingCurrentLocation, setUsingCurrentLocation] = useState(isNavigating && !!navCoordinates);
 
     const autoFilledLocation = React.useRef(false);
@@ -81,9 +83,15 @@ export default function AddRuleReportScreen() {
         setUsingCurrentLocation(true);
     };
 
-    const handleSubmit = async () => {
+    const handleSubmit = async (skipPhotoPrompt = false) => {
         if (!coordinates) {
             showToast(`${t('location-required')}: ${t('pick-location')}`);
+            return;
+        }
+
+        // a photo is optional for rules, but it's worth more points, so nudge once before sending without one
+        if (inCampaign && photos.length === 0 && !skipPhotoPrompt) {
+            setNoPhotoPrompt(true);
             return;
         }
 
@@ -299,10 +307,23 @@ export default function AddRuleReportScreen() {
             <View className="px-6 pt-4" style={{ paddingBottom: insets.bottom + 16, backgroundColor: theme.background, borderTopWidth: 1, borderTopColor: theme.border }}>
                 <Button
                     title={submitting ? t('submitting') : t('submit-report')}
-                    onPress={handleSubmit}
+                    onPress={() => void handleSubmit()}
                     disabled={submitting || !coordinates}
                 />
             </View>
+
+            <ConfirmDialog
+                visible={noPhotoPrompt}
+                title={t('campaign-no-photo-title')}
+                message={t('campaign-rule-no-photo-message')}
+                cancelLabel={t('add-photo')}
+                confirmLabel={t('submit-anyway')}
+                onCancel={() => setNoPhotoPrompt(false)}
+                onConfirm={() => {
+                    setNoPhotoPrompt(false);
+                    void handleSubmit(true);
+                }}
+            />
         </View>
     );
 }

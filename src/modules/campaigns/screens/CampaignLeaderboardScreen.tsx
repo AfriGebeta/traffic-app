@@ -16,6 +16,7 @@ import { CampaignLeaderboard, CampaignPeriodKind, CampaignTrack } from '../types
 const NO_TRACKS: CampaignTrack[] = [];
 
 const PODIUM_HEIGHTS: Record<number, number> = { 1: 100, 2: 84, 3: 70 };
+const LIVE_GREEN = '#22C55E';
 
 // 1st/2nd/3rd/11th/22nd…; Amharic uses ኛ for every rank
 const ordinal = (rank: number, language: string): string => {
@@ -89,9 +90,12 @@ export default function CampaignLeaderboardScreen() {
     };
 
     const totalPages = board?.totalPages ?? 1;
-    const showPager = totalPages > 1;
+    // hidden: 24 h before the period ends until review is done; data is empty on purpose, so it's not "no one yet"
+    const hidden = board?.period?.hidden === true;
+    const showPager = totalPages > 1 && !hidden;
 
-    const status = board?.period?.status;
+    // a hidden board reads as "checking results" even while the period is technically still live
+    const status = hidden ? 'auditing' : board?.period?.status;
     const prizes = Object.entries(campaign?.prizes ?? {})
         .map(([rank, amount]) => ({ rank: Number(rank), amount }))
         .filter(({ rank, amount }) => Number.isInteger(rank) && rank > 0 && typeof amount === 'number' && amount > 0)
@@ -167,19 +171,29 @@ export default function CampaignLeaderboardScreen() {
                 </View>
             )}
 
-            {/* winners are picked by hand after review, so the board itself is never the final word */}
-            <View className="flex-row items-start mx-4 mb-3">
-                <Ionicons name="information-circle-outline" size={16} color={theme.textSecondary} style={{ marginTop: 1 }} />
-                <Text className="text-xs ml-1.5 flex-1" style={{ color: theme.textSecondary }}>
-                    {t('campaign-leaderboard-provisional')}
-                </Text>
-            </View>
-
-            {!!status && status !== 'live' && (
-                <View className="mx-4 mb-3 rounded-xl px-4 py-3" style={{ backgroundColor: theme.primaryMuted }}>
-                    <Text className="font-semibold" style={{ color: theme.textPrimary }}>
-                        {t(status === 'auditing' ? 'campaign-status-auditing' : 'campaign-status-final')}
-                    </Text>
+            {/* live: still running · auditing: ended, ranks can change after review · final: winners locked */}
+            {!!status && (
+                <View
+                    className="flex-row items-start mx-4 mb-3 rounded-xl px-4 py-3"
+                    style={
+                        status === 'final'
+                            ? { borderWidth: 1, borderColor: colors.primary.main }
+                            : { backgroundColor: status === 'live' ? theme.surface : theme.primaryMuted, borderWidth: 1, borderColor: theme.border }
+                    }
+                >
+                    {status === 'live' && <View className="w-2.5 h-2.5 rounded-full mt-1.5" style={{ backgroundColor: LIVE_GREEN }} />}
+                    <View className={status === 'live' ? 'flex-1 ml-2.5' : 'flex-1'}>
+                        <Text className="font-semibold" style={{ color: theme.textPrimary }}>
+                            {t(`campaign-status-${status}`)}
+                        </Text>
+                        <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>
+                            {hidden
+                                ? t('campaign-leaderboard-hidden-note')
+                                : status === 'live'
+                                  ? t('campaign-leaderboard-provisional')
+                                  : t(`campaign-status-${status}-note`)}
+                        </Text>
+                    </View>
                 </View>
             )}
 
@@ -191,7 +205,7 @@ export default function CampaignLeaderboardScreen() {
                     </Text>
                 )}
 
-                {!loading && !failed && (
+                {!loading && !failed && !hidden && (
                     <FlatList
                         data={board?.data ?? []}
                         keyExtractor={(entry) => entry.userId}

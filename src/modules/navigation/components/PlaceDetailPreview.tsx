@@ -200,7 +200,9 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
         if (placeType.includes('coffee') || placeType.includes('cafe') || placeType.includes('teahouse')) {
             return require('../../../../assets/videos/0.3--d1-Gebeta-coffeeshop-vector-anim-gif 2.mp4');
         }
-        if (placeType.includes('restaurant') || placeType.includes('hotel') || placeType.includes('food')) return null;
+        if (placeType.includes('restaurant') || placeType.includes('hotel') || placeType.includes('food')) {
+            return require('../../../../assets/videos/d2-Gebeta-restaurant-vector-anim-gif.mp4');
+        }
         if (placeType.includes('bank')) return null;
         if (placeType.includes('atm')) {
             return require('../../../../assets/videos/0.2----d6-Gebeta-ATM-vecotr-anim---1200x400_1.mp4');
