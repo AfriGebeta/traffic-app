@@ -4445,6 +4445,16 @@
         "AM": "ተጠናቋል። ውጤቶች እየተረጋገጡ ነው"
     },
     {
+        "key": "campaign-you-won-title",
+        "EN_US": "Congratulations!",
+        "AM": "እንኳን ደስ አለዎት!"
+    },
+    {
+        "key": "campaign-you-won-total",
+        "EN_US": "You placed {{place}} overall in this campaign.",
+        "AM": "በዚህ ውድድር በአጠቃላይ {{place}} ደረጃ አግኝተዋል።"
+    },
+    {
         "key": "campaign-phase-final-short",
         "EN_US": "Ended · Winners announced",
         "AM": "ተጠናቋል። አሸናፊዎች ተገልጸዋል"

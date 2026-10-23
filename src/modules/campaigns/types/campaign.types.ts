@@ -91,7 +91,8 @@ export interface CampaignScoringRule {
 }
 
 export interface CampaignStandingPeriod {
-    period: { kind: CampaignPeriodKind; key: string; label?: string; status?: CampaignPeriodStatus } | string;
+    period: { kind: CampaignPeriodKind; key: string; label?: string; status?: CampaignPeriodStatus; hidden?: boolean } | string;
+    // null while the period is hidden near its end
     rank: number | null;
     score: number;
     participants: number;

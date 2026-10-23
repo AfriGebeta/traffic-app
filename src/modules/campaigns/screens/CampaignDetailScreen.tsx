@@ -16,6 +16,7 @@ import { basePoints } from '../utils/campaignPoints';
 import { getLastTrackKey, setLastTrackKey } from '../utils/campaignPrefs';
 import { pickLocalized } from '../utils/localizedText';
 import { periodLabel } from '../utils/periodLabel';
+import { ordinal } from '../utils/ordinal';
 import { CampaignKind, CampaignTrack } from '../types/campaign.types';
 
 const NO_TRACKS: CampaignTrack[] = [];
@@ -164,6 +165,17 @@ export default function CampaignDetailScreen() {
     const canJoin = campaign.requiresJoin && !joined && !ended;
     const openLeaderboard = () => router.push({ pathname: '/campaigns/[slug]/leaderboard', params: { slug: campaign.slug } });
 
+    // grand total win, straight from /me: only once results are final and visible, and only for a prize rank
+    const totalStanding = (me?.periods ?? []).find(
+        (standing) => typeof standing.period !== 'string' && standing.period.kind === 'total'
+    );
+    const totalPeriod = typeof totalStanding?.period === 'object' ? totalStanding.period : null;
+    const totalRank = totalStanding?.rank;
+    const totalPrize = totalRank ? campaign.prizes?.[String(totalRank)] : undefined;
+    // no joined check: open campaigns count everyone, and a rank already means they're on the board
+    const wonTotal =
+        totalPeriod?.status === 'final' && !totalPeriod.hidden && !!totalRank && typeof totalPrize === 'number' && totalPrize > 0;
+
     return (
         <View className="flex-1" style={{ paddingTop: insets.top, backgroundColor: theme.background }}>
             <View className="px-4 py-4 flex-row items-center">
@@ -176,6 +188,28 @@ export default function CampaignDetailScreen() {
             </View>
 
             <ScrollView className="flex-1 px-4" contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}>
+                {wonTotal && (
+                    <TouchableOpacity
+                        onPress={() => router.push({ pathname: '/campaigns/[slug]/leaderboard', params: { slug: campaign.slug, period: 'total' } })}
+                        activeOpacity={0.7}
+                        className="flex-row items-center rounded-2xl p-4 mb-4"
+                        style={{ borderWidth: 1, borderColor: colors.primary.main }}
+                    >
+                        <View className="flex-1 mr-3">
+                            <Text className="font-bold text-base" style={{ color: theme.textPrimary }}>
+                                {t('campaign-you-won-title')}
+                            </Text>
+                            <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>
+                                {t('campaign-you-won-total', { place: ordinal(totalRank, i18n.language) })}
+                            </Text>
+                            <Text className="font-bold text-base mt-1" style={{ color: colors.primary.main }}>
+                                {t('campaign-prize-amount', { amount: totalPrize.toLocaleString('en-US') })}
+                            </Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+                    </TouchableOpacity>
+                )}
+
                 {!!description && (
                     <Text className="text-base leading-6 mb-4" style={{ color: theme.textSecondary }}>
                         {description}
