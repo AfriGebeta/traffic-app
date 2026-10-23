@@ -11,25 +11,21 @@ import { useCampaigns } from '../store/campaignStore';
 import { pickLocalized } from '../utils/localizedText';
 import { periodLabel } from '../utils/periodLabel';
 import { previousWeekKey } from '../utils/previousWeekKey';
+import { ordinal } from '../utils/ordinal';
 import { CampaignLeaderboard, CampaignPeriodKind, CampaignTrack } from '../types/campaign.types';
 
 const NO_TRACKS: CampaignTrack[] = [];
 
 const PODIUM_HEIGHTS: Record<number, number> = { 1: 100, 2: 84, 3: 70 };
+// winners podium: the block holds place + score, name and prize sit underneath
+const WINNER_HEIGHTS: Record<number, number> = { 1: 150, 2: 118, 3: 100 };
 const LIVE_GREEN = '#22C55E';
-
-// 1st/2nd/3rd/11th/22nd…; Amharic uses ኛ for every rank
-const ordinal = (rank: number, language: string): string => {
-    if (language.startsWith('am')) return `${rank}ኛ`;
-    const lastTwo = rank % 100;
-    if (lastTwo >= 11 && lastTwo <= 13) return `${rank}th`;
-    return `${rank}${['th', 'st', 'nd', 'rd'][rank % 10] ?? 'th'}`;
-};
 
 // Separate from the app-wide /leaderboard: only joined users, per track, verified campaign points
 export default function CampaignLeaderboardScreen() {
     const router = useRouter();
-    const { slug } = useLocalSearchParams<{ slug: string }>();
+    // period: open on that tab, e.g. 'total' from the detail screen's win card
+    const { slug, period: initialPeriod } = useLocalSearchParams<{ slug: string; period?: string }>();
     const { t, i18n } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors: theme } = useTheme();
@@ -42,7 +38,9 @@ export default function CampaignLeaderboardScreen() {
     const myTrack = slug ? state.me[slug]?.enrollment?.track : undefined;
 
     const [track, setTrack] = useState<string | null>(myTrack ?? tracks[0]?.key ?? null);
-    const [period, setPeriod] = useState<CampaignPeriodKind>(periodKinds[0] ?? 'weekly');
+    const [period, setPeriod] = useState<CampaignPeriodKind>(
+        initialPeriod && periodKinds.includes(initialPeriod) ? initialPeriod : periodKinds[0] ?? 'weekly'
+    );
     const [board, setBoard] = useState<CampaignLeaderboard | null>(null);
     const [loading, setLoading] = useState(false);
     const [failed, setFailed] = useState(false);
@@ -102,6 +100,79 @@ export default function CampaignLeaderboardScreen() {
         .sort((a, b) => a.rank - b.rank);
     const podium = [2, 1, 3].flatMap((rank) => prizes.filter((prize) => prize.rank === rank));
     const otherPrizes = prizes.filter((prize) => prize.rank > 3);
+    const prizeFor = (rank: number) => prizes.find((prize) => prize.rank === rank)?.amount;
+
+    // final: the top 3 move from the list onto a podium at the top, with their prizes; the list carries on from 4th
+    const winners = status === 'final';
+    const entries = board?.data ?? [];
+    const topThree = winners && page === 1 ? entries.filter((entry) => entry.rank <= 3).slice(0, 3) : [];
+    const listEntries = topThree.length > 0 ? entries.slice(topThree.length) : entries;
+    const winnerPodium = [topThree[1], topThree[0], topThree[2]].filter((entry) => !!entry);
+    const showPrizeFooter = prizes.length > 0 && !winners;
+
+    const winnersHeader =
+        winnerPodium.length > 0 ? (
+            <View className="pt-1 pb-3">
+                <View className="flex-row items-end gap-3">
+                    {winnerPodium.map((entry) => {
+                        // place on the podium, not entry.rank, so a tie can't make two blocks the tallest
+                        const place = topThree.indexOf(entry) + 1;
+                        const prize = prizeFor(entry.rank);
+                        const first = place === 1;
+                        return (
+                            <View key={entry.userId} className="flex-1 items-center">
+                                <View
+                                    className="w-full items-center justify-center rounded-2xl px-1.5"
+                                    // only 1st gets the brand tint; 2nd and 3rd stay plain
+                                    style={{
+                                        height: WINNER_HEIGHTS[place],
+                                        backgroundColor: first ? theme.primaryMuted : theme.surface,
+                                        borderWidth: 1,
+                                        borderColor: first ? colors.primary.main : theme.border,
+                                    }}
+                                >
+                                    <Text className="text-4xl font-bold" style={{ color: first ? colors.primary.main : theme.textPrimary }}>
+                                        {place}
+                                    </Text>
+                                    <View className="rounded-full px-2.5 py-1 mt-2" style={{ backgroundColor: theme.background }}>
+                                        {/* prize goes in the block; without one, the score takes its place */}
+                                        <Text
+                                            className="text-xs font-bold"
+                                            style={{ color: prize ? colors.primary.main : theme.textSecondary }}
+                                            numberOfLines={1}
+                                        >
+                                            {prize
+                                                ? t('campaign-prize-amount', { amount: prize.toLocaleString('en-US') })
+                                                : `${entry.campaignScore} ${t('campaign-points')}`}
+                                        </Text>
+                                    </View>
+                                </View>
+                                <Text
+                                    className="text-sm font-semibold mt-2"
+                                    // a long name wraps; without this the second line hugs the left
+                                    style={{ color: theme.textPrimary, textAlign: 'center' }}
+                                    numberOfLines={2}
+                                >
+                                    {entry.name}
+                                </Text>
+                                {!!prize && (
+                                    <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }} numberOfLines={1}>
+                                        {entry.campaignScore} {t('campaign-points')}
+                                    </Text>
+                                )}
+                            </View>
+                        );
+                    })}
+                </View>
+                {otherPrizes.length > 0 && (
+                    <Text className="text-sm mt-3 text-center" style={{ color: theme.textSecondary }}>
+                        {otherPrizes
+                            .map(({ rank, amount }) => `${ordinal(rank, i18n.language)}: ${t('campaign-prize-amount', { amount: amount.toLocaleString('en-US') })}`)
+                            .join('  ·  ')}
+                    </Text>
+                )}
+            </View>
+        ) : null;
 
     const chip = (label: string, active: boolean, onPress: () => void) => (
         <TouchableOpacity
@@ -207,13 +278,16 @@ export default function CampaignLeaderboardScreen() {
 
                 {!loading && !failed && !hidden && (
                     <FlatList
-                        data={board?.data ?? []}
+                        data={listEntries}
                         keyExtractor={(entry) => entry.userId}
-                        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: prizes.length > 0 || showPager ? 16 : insets.bottom + 24 }}
+                        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: showPrizeFooter || showPager ? 16 : insets.bottom + 24 }}
+                        ListHeaderComponent={winnersHeader}
                         ListEmptyComponent={
-                            <Text className="text-center mt-8" style={{ color: theme.textSecondary }}>
-                                {t('campaign-leaderboard-empty')}
-                            </Text>
+                            topThree.length > 0 ? null : (
+                                <Text className="text-center mt-8" style={{ color: theme.textSecondary }}>
+                                    {t('campaign-leaderboard-empty')}
+                                </Text>
+                            )
                         }
                         renderItem={({ item }) => (
                             <View
@@ -241,7 +315,7 @@ export default function CampaignLeaderboardScreen() {
                     style={{
                         borderTopWidth: 1,
                         borderTopColor: theme.border,
-                        paddingBottom: prizes.length > 0 ? 12 : insets.bottom + 12,
+                        paddingBottom: showPrizeFooter ? 12 : insets.bottom + 12,
                     }}
                 >
                     {pageButton(t('campaign-page-previous'), 'chevron-back', page > 1, () => setPage(page - 1))}
@@ -252,7 +326,7 @@ export default function CampaignLeaderboardScreen() {
                 </View>
             )}
 
-            {prizes.length > 0 && (
+            {showPrizeFooter && (
                 <View
                     className="px-4 pt-4"
                     style={{ paddingBottom: insets.bottom + 16, borderTopWidth: 1, borderTopColor: theme.border, backgroundColor: theme.background }}
