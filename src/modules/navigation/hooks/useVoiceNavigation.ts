@@ -98,6 +98,8 @@ export const useVoiceNavigation = ({
     const [canReplay, setCanReplay] = useState(false);
     const [messages, setMessages] = useState<ConversationMessage[]>([]);
     const [taxiPlan, setTaxiPlan] = useState<TaxiPlan | null>(null);
+    const [sessionLimitReached, setSessionLimitReached] = useState(false);
+    const sessionLimitRef = useRef(false);
 
     const messageSeqRef = useRef(0);
     const appendMessage = useCallback((role: ConversationMessage['role'], text: string) => {
@@ -338,6 +340,16 @@ export const useVoiceNavigation = ({
                 vlog('busy:', data?.message);
                 break;
 
+            // backend caps AI messages per chat; the `speak` that follows carries the
+            // text, so only lock input here until the user starts a new chat.
+            case 'session_limit':
+                vlog('session_limit:', data?.message);
+                sessionLimitRef.current = true;
+                setSessionLimitReached(true);
+                setShowOptions(false);
+                finishProcessing();
+                break;
+
             case 'ready':
                 vlog(`ready ${sinceReq()} — request complete`);
                 finishProcessing();
@@ -508,6 +520,10 @@ export const useVoiceNavigation = ({
             vlog('record start ignored (recording or processing already)');
             return;
         }
+        if (sessionLimitRef.current) {
+            vlog('record start ignored (session limit reached)');
+            return;
+        }
 
         playerRef.current?.stopPlayback();
         setIsSpeaking(false);
@@ -601,7 +617,7 @@ export const useVoiceNavigation = ({
 
     const sendTextMessage = useCallback(async (raw: string) => {
         const text = raw.trim();
-        if (!text || isProcessing || isRecording) return;
+        if (!text || isProcessing || isRecording || sessionLimitRef.current) return;
 
         appendMessage('user', text);
         playerRef.current?.stopPlayback();
@@ -636,6 +652,19 @@ export const useVoiceNavigation = ({
         vlog(`chat: reset session ${sessionIdRef.current}`);
         void resetChatSession(sessionIdRef.current);
     }, []);
+
+    // reset clears history/place list for that id.
+    const startNewChat = useCallback(async () => {
+        vlog(`chat: new chat (reset session ${sessionIdRef.current})`);
+        socketRef.current?.sendJson('stop_tts');
+        clearVoiceNavigation();
+        setOptions([]);
+        setCurrentOption(null);
+        setDisambiguationMessage('');
+        await resetChatSession(sessionIdRef.current);
+        sessionLimitRef.current = false;
+        setSessionLimitReached(false);
+    }, [clearVoiceNavigation]);
 
     const startTaxiRoute = useCallback((route: TaxiNavigationResponse): boolean => {
         if (startedRouteRef.current === route.timestamp) {
@@ -727,6 +756,8 @@ export const useVoiceNavigation = ({
         handlePlaceSelect,
         clearVoiceNavigation,
         resetSession,
+        sessionLimitReached,
+        startNewChat,
         replayResponse,
         stopSpeaking,
         cancelRecording,

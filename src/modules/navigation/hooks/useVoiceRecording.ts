@@ -36,7 +36,11 @@ export const useVoiceRecording = () => {
     const startRecording = async (): Promise<boolean> => {
         try {
             await releaseActiveRecording();
-            const { status } = await Audio.requestPermissionsAsync();
+            let { status } = await Audio.getPermissionsAsync();
+            console.log('voicenav: mic permission (get)', status);
+            if (status !== 'granted') {
+                ({ status } = await Audio.requestPermissionsAsync());
+            }
             if (status !== 'granted') {
                 showToast('Permission Denied: Microphone permission is required');
                 return false;

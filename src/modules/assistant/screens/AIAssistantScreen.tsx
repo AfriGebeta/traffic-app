@@ -242,6 +242,8 @@ export default function AIAssistantScreen() {
         startTaxiRoute,
         sendTextMessage,
         resetSession,
+        sessionLimitReached,
+        startNewChat,
     } = useVoiceNavigation({
         mapRef: dummyMapRef,
         userLocation,
@@ -403,7 +405,7 @@ export default function AIAssistantScreen() {
                                     <TouchableOpacity
                                         key={option.id}
                                         onPress={() => handleOptionSelect(option.id)}
-                                        disabled={message.id !== lastOptionsId}
+                                        disabled={message.id !== lastOptionsId || sessionLimitReached}
                                         className="flex-row items-center p-4 mb-2 rounded-xl"
                                         style={{ backgroundColor: theme.surface }}
                                         activeOpacity={0.7}
@@ -503,7 +505,24 @@ export default function AIAssistantScreen() {
             )}
 
             <Reanimated.View className="items-center pt-2" style={bottomBarStyle}>
-                {inputMode !== 'text' ? (
+                {sessionLimitReached ? (
+                    <TouchableOpacity
+                        onPress={() => {
+                            setDraft('');
+                            void startNewChat();
+                        }}
+                        className="flex-row items-center px-6 py-3 mb-2 rounded-full"
+                        style={{ backgroundColor: colors.primary.main }}
+                        activeOpacity={0.8}
+                    >
+                        <Ionicons name="add" size={20} color="white" />
+                        <Text className="text-base ml-1.5" style={{ color: 'white', fontFamily: 'PlusJakartaSans-Medium' }}>
+                            {t('new-chat')}
+                        </Text>
+                    </TouchableOpacity>
+                ) : null}
+
+                {!sessionLimitReached && inputMode !== 'text' ? (
                     <>
                         <View style={{ width: MIC_SIZE, height: MIC_SIZE, alignItems: 'center', justifyContent: 'center' }}>
                             <View style={{ position: 'absolute' }}>
@@ -548,7 +567,7 @@ export default function AIAssistantScreen() {
                     </>
                 ) : null}
 
-                {inputMode !== 'voice' ? (
+                {!sessionLimitReached && inputMode !== 'voice' ? (
                     <View className="flex-row items-center w-full px-5 mt-4">
                         <TextInput
                             value={draft}
