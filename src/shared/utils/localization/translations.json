@@ -3560,6 +3560,11 @@
         "AM": "መልእክት ይጻፉ"
     },
     {
+        "key": "new-chat",
+        "EN_US": "New chat",
+        "AM": "አዲስ ውይይት"
+    },
+    {
         "key": "nearby-places",
         "EN_US": "Nearby places",
         "AM": "በአቅራቢያ ያሉ ቦታዎች"
