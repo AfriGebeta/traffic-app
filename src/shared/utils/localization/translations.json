@@ -4758,5 +4758,50 @@
         "key": "campaign-ended-description",
         "EN_US": "New contributions no longer earn points in this campaign.",
         "AM": "አዲስ አስተዋጽኦዎች በዚህ ውድድሩ ነጥብ አያገኙም።"
+    },
+    {
+        "key": "preferences",
+        "EN_US": "Preferences",
+        "AM": "ምርጫዎች"
+    },
+    {
+        "key": "navigation-marker",
+        "EN_US": "Choose vehicle icon",
+        "AM": "የተሽከርካሪ ምልክት ይምረጡ"
+    },
+    {
+        "key": "marker-color-white",
+        "EN_US": "White car",
+        "AM": "ነጭ መኪና"
+    },
+    {
+        "key": "marker-color-black",
+        "EN_US": "Black car",
+        "AM": "ጥቁር መኪና"
+    },
+    {
+        "key": "marker-color-blue",
+        "EN_US": "Blue car",
+        "AM": "ሰማያዊ መኪና"
+    },
+    {
+        "key": "marker-color-brown",
+        "EN_US": "Brown car",
+        "AM": "ቡናማ መኪና"
+    },
+    {
+        "key": "marker-color-red",
+        "EN_US": "Red car",
+        "AM": "ቀይ መኪና"
+    },
+    {
+        "key": "marker-classic-puck",
+        "EN_US": "Default",
+        "AM": "የነበረ"
+    },
+    {
+        "key": "map-preferences",
+        "EN_US": "Map",
+        "AM": "ካርታ"
     }
 ]

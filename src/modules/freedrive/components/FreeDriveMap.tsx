@@ -21,8 +21,7 @@ import { useRoadSnapper } from '../hooks/useRoadSnapper';
 import { angleDelta, haversine } from '../utils/geo';
 import { FreeDriveMotion, MotionFix, MotionSample } from '../utils/motionModel';
 import { TravelDirection } from '../utils/travelDirection';
-
-const PUCK_IMAGE = require('../../../../assets/images/Mappin.png');
+import { NAV_MARKER_MAP_IMAGES, useNavMarker } from '../../preferences/store/navMarkerStore';
 
 const cameraPaddingTop = (mapHeight: number): number => {
     const desiredDp = (2 * PUCK_SCREEN_FRACTION - 1) * mapHeight;
@@ -317,16 +316,17 @@ const FreeDriveMapInner = forwardRef<FreeDriveMapHandle, FreeDriveMapProps>(({
         []
     );
 
-    const overlayStyle = useMemo(
-        () => ({
+    const marker = useNavMarker();
+    const overlayStyle = useMemo(() => {
+        const overlaySize = PUCK_OVERLAY_SIZE * marker.overlayScale;
+        return {
             position: 'absolute' as const,
-            left: size.width / 2 - PUCK_OVERLAY_SIZE / 2,
-            top: size.height * PUCK_SCREEN_FRACTION - PUCK_OVERLAY_SIZE / 2,
-            width: PUCK_OVERLAY_SIZE,
-            height: PUCK_OVERLAY_SIZE,
-        }),
-        [size.width, size.height]
-    );
+            left: size.width / 2 - overlaySize / 2,
+            top: size.height * PUCK_SCREEN_FRACTION - overlaySize / 2,
+            width: overlaySize,
+            height: overlaySize,
+        };
+    }, [size.width, size.height, marker.overlayScale]);
 
     const openAt = lastSampleRef.current
         ? { center: [lastSampleRef.current.lng, lastSampleRef.current.lat], framed: true }
@@ -381,7 +381,7 @@ const FreeDriveMapInner = forwardRef<FreeDriveMapHandle, FreeDriveMapProps>(({
                         }}
                     />
                 )}
-                <MapLibreGL.Images images={{ freeDrivePuck: PUCK_IMAGE }} />
+                <MapLibreGL.Images images={NAV_MARKER_MAP_IMAGES} />
 
                 <MapLibreGL.ShapeSource
                     ref={puckSrcRef}
@@ -391,8 +391,8 @@ const FreeDriveMapInner = forwardRef<FreeDriveMapHandle, FreeDriveMapProps>(({
                     <MapLibreGL.SymbolLayer
                         id="free-drive-puck-layer"
                         style={{
-                            iconImage: 'freeDrivePuck',
-                            iconSize: 1.1,
+                            iconImage: marker.mapImage,
+                            iconSize: marker.iconSize,
                             iconRotate: ['get', 'heading'],
                             iconRotationAlignment: 'map',
                             iconAllowOverlap: true,
@@ -407,7 +407,7 @@ const FreeDriveMapInner = forwardRef<FreeDriveMapHandle, FreeDriveMapProps>(({
             {showOverlayPuck && (
                 <View style={overlayStyle} pointerEvents="none">
                     <Image
-                        source={PUCK_IMAGE}
+                        source={marker.image}
                         style={styles.overlayPuckImage}
                         resizeMode="contain"
                     />

@@ -10,9 +10,6 @@ import { changeLanguage } from '../../../shared/utils/localization/i18n';
 import { leaderboardService } from '../../leaderboard/services/leaderboard.service';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
-import { IncidentFiltersModal } from '../../incidents/components/IncidentFiltersModal';
-import { useRulePreferences } from '../../rules/hooks/useRulePreferences';
-import { showToast } from '../../../shared/utils/toast';
 import { useResolvedImageUri } from '../../../shared/hooks/useResolvedImageUri';
 
 import PointsIcon from '../../../../assets/images/profile-points.svg';
@@ -22,8 +19,6 @@ import LeaderboardIcon from '../../../../assets/images/profile-leaderboard.svg';
 import HomeIcon from '../../../../assets/images/profile-home.svg';
 import WorkIcon from '../../../../assets/images/profile-work.svg';
 import OthersIcon from '../../../../assets/images/profile-others.svg';
-import IncidentFiltersIcon from '../../../../assets/images/profile-incident-filters.svg';
-import RulesIcon from '../../../../assets/images/profile-rules.svg';
 import LogoutIcon from '../../../../assets/images/profile-logout.svg';
 
 const LANGUAGES = [
@@ -48,7 +43,6 @@ export const ProfileScreen = () => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const insets = useSafeAreaInsets();
-    const [showFiltersModal, setShowFiltersModal] = useState(false);
     const [showLanguages, setShowLanguages] = useState(false);
     const [remoteAvatarFailed, setRemoteAvatarFailed] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
@@ -59,8 +53,6 @@ export const ProfileScreen = () => {
     const [reportsCount, setReportsCount] = useState(0);
     const [points, setPoints] = useState(0);
     const [statsLoading, setStatsLoading] = useState(true);
-
-    const { preferences: rulePreferences, toggleShowOnMap } = useRulePreferences();
 
     const elevatedCardStyle = {
         backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
@@ -546,51 +538,17 @@ export const ProfileScreen = () => {
                         <TouchableOpacity
                             className="flex-row items-center justify-between px-4 py-4"
                             activeOpacity={0.7}
-                            onPress={() => setShowFiltersModal(true)}
+                            onPress={() => router.push('/preferences')}
                         >
                             <View className="flex-row items-center flex-1 mr-2">
                                 <View className="mr-3">
-                                    <IncidentFiltersIcon width={18} height={18} color="#EF4444" />
+                                    <Ionicons name="options-outline" size={18} color="#10B981" />
                                 </View>
                                 <Text className="text-sm font-medium" style={{ color: theme.textPrimary }} numberOfLines={1}>
-                                    {t('incident-filters') || 'Incident Filters'}
+                                    {t('preferences')}
                                 </Text>
                             </View>
                             <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
-                        </TouchableOpacity>
-
-                        <View className="h-px mx-4" style={dividerStyle} />
-
-                        <TouchableOpacity
-                            className="flex-row items-center justify-between px-4 py-4"
-                            activeOpacity={0.7}
-                            onPress={async () => {
-                                try {
-                                    const newValue = await toggleShowOnMap();
-                                    showToast(
-                                        newValue
-                                            ? t('rules-shown-on-map')
-                                            : t('rules-hidden-on-map')
-                                    );
-                                } catch {
-                                    showToast(t('failed-to-update-settings'));
-                                }
-                            }}
-                        >
-                            <View className="flex-row items-center flex-1 mr-2">
-                                <View className="mr-3">
-                                    <RulesIcon width={18} height={18} color="#F59E0B" />
-                                </View>
-                                <Text className="text-sm font-medium" style={{ color: theme.textPrimary }} numberOfLines={1}>
-                                    {t('show-rules-on-map')}
-                                </Text>
-                            </View>
-                            <View
-                                className="w-11 h-6 rounded-full justify-center"
-                                style={{ backgroundColor: rulePreferences.showOnMap ? '#F59E0B' : (isDark ? '#333333' : '#E5E7EB') }}
-                            >
-                                <View className={`w-5 h-5 rounded-full bg-white ${rulePreferences.showOnMap ? 'ml-5' : 'ml-0.5'}`} />
-                            </View>
                         </TouchableOpacity>
 
                         <View className="h-px mx-4" style={dividerStyle} />
@@ -648,11 +606,6 @@ export const ProfileScreen = () => {
                     </View>
                 </View>
             </ScrollView>
-
-            <IncidentFiltersModal
-                visible={showFiltersModal}
-                onClose={() => setShowFiltersModal(false)}
-            />
 
             {showMenu && (
                 <Pressable
