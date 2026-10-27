@@ -4450,6 +4450,131 @@
         "AM": "ተጠናቋል። ውጤቶች እየተረጋገጡ ነው"
     },
     {
+        "key": "campaign-how-to-take-part",
+        "EN_US": "How to take part",
+        "AM": "እንዴት እንደሚሳተፉ"
+    },
+    {
+        "key": "tour-contribute-title",
+        "EN_US": "You're in! Here's how to earn points",
+        "AM": "ተቀላቅለዋል! ነጥብ እንዴት እንደሚያገኙ ይማሩ"
+    },
+    {
+        "key": "tour-contribute-text",
+        "EN_US": "Tap Contribute to add {{kinds}}.",
+        "AM": "{{kinds}} ለመጨመር ‘ይጠቁሙ’ን ይንኩ።"
+    },
+    {
+        "key": "tour-taxi-text",
+        "EN_US": "Add taxi stations and routes. Each new station earns {{points}} points.",
+        "AM": "የታክሲ ጣቢያዎችን እና መስመሮችን ይጠቁሙ:: እያንዳንዱ አዲስ ጣቢያ {{points}} ነጥብ ያስገኛል።"
+    },
+    {
+        "key": "tour-rule-text",
+        "EN_US": "Report traffic rules such as no-parking or speed limits. {{points}} points each.",
+        "AM": "እንደ ማቆም ክልከላ ወይም የፍጥነት ገደብ ያሉ የትራፊክ ደንቦችን ሪፖርት ያድርጉ። እያንዳንዱ {{points}} ነጥብ።"
+    },
+    {
+        "key": "tour-place-text",
+        "EN_US": "Add shops, cafés, offices and other places. {{points}} points each.",
+        "AM": "ሱቆችን፣ ካፌዎችን፣ ቢሮዎችን እና ሌሎች ቦታዎችን ይጠቁሙ። እያንዳንዱ {{points}} ነጥብ።"
+    },
+    {
+        "key": "tour-rules-title",
+        "EN_US": "Before you add",
+        "AM": "ከመጨመርዎ በፊት"
+    },
+    {
+        "key": "tour-rules-text",
+        "EN_US": "Be at the spot (within {{meters}} m) and take the photo with the in-app camera.",
+        "AM": "በቦታው ላይ ይሁኑ ({{meters}} ሜትር ውስጥ) እና ፎቶውን በመተግበሪያው ካሜራ ያንሱ።"
+    },
+    {
+        "key": "tour-rules-text-anywhere",
+        "EN_US": "Be at the spot and take the photo with the in-app camera.",
+        "AM": "በቦታው ላይ ይሁኑ እና ፎቶውን በመተግበሪያው ካሜራ ያንሱ።"
+    },
+    {
+        "key": "tour-report-title",
+        "EN_US": "Report incidents",
+        "AM": "አደጋዎችን ሪፖርት ያድርጉ"
+    },
+    {
+        "key": "tour-report-text",
+        "EN_US": "Seen an accident or a traffic jam? Report it here for {{points}} points.",
+        "AM": "አደጋ ወይም የትራፊክ መጨናነቅ አይተዋል? እዚህ ሪፖርት በማድረግ {{points}} ነጥብ ያግኙ።"
+    },
+    {
+        "key": "tour-kind-place",
+        "EN_US": "places",
+        "AM": "ቦታዎችን"
+    },
+    {
+        "key": "tour-kind-traffic-rule",
+        "EN_US": "traffic rules",
+        "AM": "የትራፊክ ደንቦችን"
+    },
+    {
+        "key": "tour-kind-taxi-station",
+        "EN_US": "taxi stations",
+        "AM": "የታክሲ ጣቢያዎችን"
+    },
+    {
+        "key": "tour-list-separator",
+        "EN_US": ", ",
+        "AM": "፣ "
+    },
+    {
+        "key": "tour-list-and",
+        "EN_US": "and",
+        "AM": "እና"
+    },
+    {
+        "key": "tour-report-nav-rules",
+        "EN_US": "You can also report incidents and traffic rules while navigating, from the report button.",
+        "AM": "በመንገድ ላይ ሆነውም ከሪፖርት ቁልፉ አደጋዎችን እና የትራፊክ ደንቦችን ሪፖርት ማድረግ ይችላሉ።"
+    },
+    {
+        "key": "tour-report-nav",
+        "EN_US": "You can also report incidents while navigating, from the report button.",
+        "AM": "በመንገድ ላይ ሆነውም ከሪፖርት ቁልፉ አደጋዎችን ሪፖርት ማድረግ ይችላሉ።"
+    },
+    {
+        "key": "tour-photo-bonus",
+        "EN_US": "Photos earn more points.",
+        "AM": "ፎቶ ያላቸው ተጨማሪ ነጥብ ያገኛሉ።"
+    },
+    {
+        "key": "tour-track-points",
+        "EN_US": "Track your points in Profile → Campaigns.",
+        "AM": "ነጥቦችዎን በመገለጫ → ዘመቻዎች ይከታተሉ።"
+    },
+    {
+        "key": "tour-skip-all",
+        "EN_US": "Skip tour",
+        "AM": "ጉብኝቱን ዝለል"
+    },
+    {
+        "key": "tour-skip",
+        "EN_US": "Skip",
+        "AM": "ዝለል"
+    },
+    {
+        "key": "tour-next",
+        "EN_US": "Next",
+        "AM": "ቀጣይ"
+    },
+    {
+        "key": "tour-open-contribute",
+        "EN_US": "Open Contribute",
+        "AM": "‘ይጠቁሙ’ን ክፈት"
+    },
+    {
+        "key": "tour-done",
+        "EN_US": "Done",
+        "AM": "ጨርሻለሁ"
+    },
+    {
         "key": "campaign-you-won-title",
         "EN_US": "Congratulations!",
         "AM": "እንኳን ደስ አለዎት!"

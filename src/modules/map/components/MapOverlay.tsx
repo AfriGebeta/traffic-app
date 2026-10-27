@@ -12,6 +12,8 @@ import { SearchResults } from './SearchResults';
 import { DestinationCard } from './DestinationCard';
 import { FloatingActions } from './FloatingActions';
 import { BottomNavigation } from './BottomNavigation';
+import { CampaignTourProvider } from '../../campaigns/tour/CampaignTourProvider';
+import { MapCampaignTour, useMapTourActions } from '../../campaigns/tour/MapCampaignTour';
 import { MapThemeSelector } from './MapThemeSelector';
 import { RoutePointsBar } from '../../navigation/components/RoutePointsBar';
 import { showToast } from '../../../shared/utils/toast';
@@ -154,6 +156,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
             : null;
     // wide: the rail stays visible next to place details / route preview, phones hide the bottom bar
     const showNavigationTabs = isWide || (!showRoutePreview && !showPlaceDetail);
+    const tourActions = useMapTourActions();
 
     const handleProfilePress = () => {
         router.push('/profile');
@@ -310,26 +313,29 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
             )}
 
             {showNavigationTabs && (
-                <BottomNavigation
-                    onTabPress={(tabId) => {
-                        void requireAuth(() => {
-                            if (tabId === 'report') {
-                                onReportPress();
-                            } else if (tabId === 'explore') {
-                                onExplorePress();
-                            } else if (tabId === 'saved') {
-                                router.push('/saved-places');
-                            } else if (tabId === 'ai') {
-                                router.push('/ai-assistant');
-                            } else {
-                                showToast(`${t('coming-soon')}: ${tabId}`);
-                            }
-                        });
-                    }}
-                    onAddPress={() => {
-                        void requireAuth(onAddPlacePress);
-                    }}
-                />
+                <CampaignTourProvider actions={tourActions}>
+                    <BottomNavigation
+                        onTabPress={(tabId) => {
+                            void requireAuth(() => {
+                                if (tabId === 'report') {
+                                    onReportPress();
+                                } else if (tabId === 'explore') {
+                                    onExplorePress();
+                                } else if (tabId === 'saved') {
+                                    router.push('/saved-places');
+                                } else if (tabId === 'ai') {
+                                    router.push('/ai-assistant');
+                                } else {
+                                    showToast(`${t('coming-soon')}: ${tabId}`);
+                                }
+                            });
+                        }}
+                        onAddPress={() => {
+                            void requireAuth(onAddPlacePress);
+                        }}
+                    />
+                    <MapCampaignTour />
+                </CampaignTourProvider>
             )}
 
             <MapThemeSelector
