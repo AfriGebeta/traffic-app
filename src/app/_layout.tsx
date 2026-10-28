@@ -33,6 +33,8 @@ import { installClientHeaders } from '../shared/utils/clientHeaders';
 import { initializeCrashlytics, logBreadcrumb } from '../shared/utils/crashlytics';
 import { useOrientationPolicy } from '../shared/layout/useOrientationPolicy';
 import { createScreenLayout } from '../shared/layout/ResponsiveScreen';
+import { initPush, registerPushDevice } from '../shared/services/push';
+import { usePushNotificationTaps } from '../shared/hooks/usePushNotificationTaps';
 
 import '../modules/navigation/services/nav-foreground-service';
 
@@ -119,7 +121,10 @@ function AppShell() {
     dashboardEventsService.sessionStart();
     void refreshCampaigns();
     void dashboardEventsService.installOnce();
+    initPush();
   }, []);
+
+  usePushNotificationTaps(pathname, isNavigationPath);
 
   useEffect(() => {
     const handleAppStateChange = (nextState: AppStateStatus) => {
@@ -185,7 +190,11 @@ function AppShell() {
       Promise.race([locationPermissionSettled, timeout]).then(() => {
         PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
-        ).catch(() => undefined);
+        )
+          .then((result) => {
+            if (result === PermissionsAndroid.RESULTS.GRANTED) void registerPushDevice();
+          })
+          .catch(() => undefined);
       });
     }
   }, []);

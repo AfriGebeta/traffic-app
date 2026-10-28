@@ -104,4 +104,44 @@ export const RULE_TRANSLATION_MAP: Record<string, { name: string; description: s
         name: 'rule-two-way',
         description: 'rule-two-way-description',
     },
+    'Turn Left': {
+        name: 'rule-turn-left',
+        description: 'rule-turn-left-description',
+    },
+    'Turn Right': {
+        name: 'rule-turn-right',
+        description: 'rule-turn-right-description',
+    },
+    'Parking Allowed': {
+        name: 'rule-parking-allowed',
+        description: 'rule-parking-allowed-description',
+    },
+    'Dead End': {
+        name: 'rule-dead-end',
+        description: 'rule-dead-end-description',
+    },
+    'Zebra Crossing': {
+        name: 'rule-zebra-crossing',
+        description: 'rule-zebra-crossing-description',
+    },
+    'School Zone': {
+        name: 'rule-school-zone',
+        description: 'rule-school-zone-description',
+    },
+    'Speed Bump': {
+        name: 'rule-speed-bump',
+        description: 'rule-speed-bump-description',
+    },
+    'Roundabout': {
+        name: 'rule-roundabout',
+        description: 'rule-roundabout-description',
+    },
+    'No Trucks': {
+        name: 'rule-no-trucks',
+        description: 'rule-no-trucks-description',
+    },
+    'No Entry': {
+        name: 'rule-no-entry',
+        description: 'rule-no-entry-description',
+    },
 };

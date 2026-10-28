@@ -9,9 +9,12 @@ import RouteLightIcon from '../../../../assets/images/taxi-route-light.svg';
 import RouteDarkIcon from '../../../../assets/images/taxi-route-dark.svg';
 import StationLightIcon from '../../../../assets/images/taxi-station-light.svg';
 import StationDarkIcon from '../../../../assets/images/taxi-station-dark.svg';
+import { useCampaignGpsWarmup } from '../../campaigns/hooks/useCampaignGpsWarmup';
 
 export default function TaxiContributionChoiceScreen() {
     const router = useRouter();
+    // GPS starts here so the camera's location is ready when the photo is taken
+    useCampaignGpsWarmup(['taxi_station']);
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors: theme, isDark } = useTheme();

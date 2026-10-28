@@ -86,24 +86,13 @@ export function CampaignBanner() {
                         {description || t('campaign-banner-pitch')}
                     </Text>
 
-                    <View className="flex-row gap-3 mt-6 w-full">
-                        <TouchableOpacity
-                            onPress={dismiss}
-                            className="flex-1 rounded-xl py-3.5 items-center"
-                            style={{ borderWidth: 1, borderColor: theme.border }}
-                        >
-                            <Text className="font-semibold text-base" style={{ color: theme.textPrimary }}>
-                                {t('not-now')}
-                            </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={view}
-                            className="flex-1 rounded-xl py-3.5 items-center"
-                            style={{ backgroundColor: colors.primary.main }}
-                        >
-                            <Text className="text-white font-semibold text-base">{t('campaign-view')}</Text>
-                        </TouchableOpacity>
-                    </View>
+                    <TouchableOpacity
+                        onPress={view}
+                        className="w-full rounded-xl py-3.5 items-center mt-6"
+                        style={{ backgroundColor: colors.primary.main }}
+                    >
+                        <Text className="text-white font-semibold text-base">{t('campaign-view')}</Text>
+                    </TouchableOpacity>
                 </View>
             </View>
         </Modal>

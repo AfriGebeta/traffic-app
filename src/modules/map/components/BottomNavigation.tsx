@@ -17,6 +17,11 @@ import { GlassSheen } from '../../../shared/components/GlassSheen';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { useMapTheme } from '../context/MapThemeContext';
 import { useLayout, LAYOUT_GUTTER, RAIL_EDGE_INSET, RAIL_WIDTH } from '../../../shared/layout/useLayout';
+import { CopilotStep } from 'react-native-copilot';
+import { useTourCampaign } from '../../campaigns/tour/useTourCampaign';
+import { kindList, sentences } from '../../campaigns/tour/tourText';
+import { TourTouchable } from '../../campaigns/tour/walkthroughables';
+
 
 type TabId = 'explore' | 'contribute' | 'ai' | 'saved' | 'report';
 
@@ -57,6 +62,46 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
         'PlusJakartaSans-Light': require('../../../../assets/fonts/plus-jakarta-sans/PlusJakartaSans-Light.ttf'),
         'PlusJakartaSans-Bold': require('../../../../assets/fonts/plus-jakarta-sans/PlusJakartaSans-Bold.ttf'),
     });
+
+    const tour = useTourCampaign();
+    const incidentPoints = tour.points('incident');
+    // only name what this campaign pays for; rules can also be reported from navigation
+    const contributeText = t('tour-contribute-text', { kinds: kindList(tour.contributeKinds, t) });
+    const reportText = sentences(
+        t('tour-report-text', { points: incidentPoints }),
+        t(tour.points('traffic_rule') > 0 ? 'tour-report-nav-rules' : 'tour-report-nav'),
+        // first-timers are shown Profile → Campaigns right after, so only returning players are told
+        !tour.firstTime && t('tour-track-points')
+    );
+    const tourStep = (tabId: TabId, button: React.ReactElement) => {
+        if (tabId === 'contribute') {
+            return (
+                <CopilotStep
+                    key={tabId}
+                    name="contribute"
+                    order={1}
+                    text={contributeText}
+                    active={tour.stage === 'map-contribute' && tour.contributeKinds.length > 0}
+                >
+                    {button}
+                </CopilotStep>
+            );
+        }
+        if (tabId === 'report') {
+            return (
+                <CopilotStep
+                    key={tabId}
+                    name="report"
+                    order={2}
+                    text={reportText}
+                    active={tour.stage === 'map-report' && incidentPoints > 0}
+                >
+                    {button}
+                </CopilotStep>
+            );
+        }
+        return button;
+    };
 
     const handleTabPress = (tabId: TabId) => {
         if (tabId === 'contribute') {
@@ -101,8 +146,8 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
                             {tabs.map((tab) => {
                                 const isAi = tab.id === 'ai';
                                 const SvgIcon = isDark && tab.DarkSvgIcon ? tab.DarkSvgIcon : tab.SvgIcon;
-                                return (
-                                    <TouchableOpacity
+                                return tourStep(tab.id,
+                                    <TourTouchable
                                         key={tab.id}
                                         onPress={() => handleTabPress(tab.id)}
                                         className="items-center justify-center"
@@ -132,7 +177,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
                                                 </Text>
                                             </>
                                         )}
-                                    </TouchableOpacity>
+                                    </TourTouchable>
                                 );
                             })}
                         </View>
@@ -175,8 +220,8 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
                     {tabs.map((tab) => {
                         const isAi = tab.id === 'ai';
                         const SvgIcon = isDark && tab.DarkSvgIcon ? tab.DarkSvgIcon : tab.SvgIcon;
-                        return (
-                            <TouchableOpacity
+                        return tourStep(tab.id,
+                            <TourTouchable
                                 key={tab.id}
                                 onPress={() => handleTabPress(tab.id)}
                                 className="flex-1 items-center justify-center"
@@ -214,7 +259,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
                                         </Text>
                                     </>
                                 )}
-                            </TouchableOpacity>
+                            </TourTouchable>
                         );
                     })}
                 </View>

@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image, Pressable, BackHandler } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Image, Pressable, BackHandler, useWindowDimensions } from 'react-native';
+import { CopilotStep, useCopilot } from 'react-native-copilot';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,9 +11,6 @@ import { changeLanguage } from '../../../shared/utils/localization/i18n';
 import { leaderboardService } from '../../leaderboard/services/leaderboard.service';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
-import { IncidentFiltersModal } from '../../incidents/components/IncidentFiltersModal';
-import { useRulePreferences } from '../../rules/hooks/useRulePreferences';
-import { showToast } from '../../../shared/utils/toast';
 import { useResolvedImageUri } from '../../../shared/hooks/useResolvedImageUri';
 
 import PointsIcon from '../../../../assets/images/profile-points.svg';
@@ -22,9 +20,12 @@ import LeaderboardIcon from '../../../../assets/images/profile-leaderboard.svg';
 import HomeIcon from '../../../../assets/images/profile-home.svg';
 import WorkIcon from '../../../../assets/images/profile-work.svg';
 import OthersIcon from '../../../../assets/images/profile-others.svg';
-import IncidentFiltersIcon from '../../../../assets/images/profile-incident-filters.svg';
-import RulesIcon from '../../../../assets/images/profile-rules.svg';
 import LogoutIcon from '../../../../assets/images/profile-logout.svg';
+import { CampaignTourProvider } from '../../campaigns/tour/CampaignTourProvider';
+import { endCampaignTour } from '../../campaigns/tour/campaignTour';
+import { TourActions } from '../../campaigns/tour/TourTooltip';
+import { useTourCampaign } from '../../campaigns/tour/useTourCampaign';
+import { TourTouchable } from '../../campaigns/tour/walkthroughables';
 
 const LANGUAGES = [
     { code: 'en' as const, label: 'English', flag: '🇬🇧' },
@@ -39,8 +40,23 @@ const SAVED_PLACE_CARDS = [
 
 const CARD_RADIUS = 12;
 const INNER_RADIUS = 8;
+const TOUR_START_DELAY_MS = 500;
 
 export const ProfileScreen = () => {
+    const { t } = useTranslation();
+    const tourActions: TourActions = {
+        titleFor: (name) => (name === 'campaigns' ? t('tour-campaigns-title') : undefined),
+        lastLabel: t('tour-done'),
+        onLast: endCampaignTour,
+    };
+    return (
+        <CampaignTourProvider actions={tourActions}>
+            <ProfileContent />
+        </CampaignTourProvider>
+    );
+};
+
+const ProfileContent = () => {
     const router = useRouter();
     const { t, language } = useTranslation();
     const { colors: theme, isDark } = useTheme();
@@ -48,19 +64,25 @@ export const ProfileScreen = () => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const insets = useSafeAreaInsets();
-    const [showFiltersModal, setShowFiltersModal] = useState(false);
     const [showLanguages, setShowLanguages] = useState(false);
     const [remoteAvatarFailed, setRemoteAvatarFailed] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+    // campaign tour: highlight the Campaigns row, scrolled into view first (copilot can't scroll on its first step)
+    const { start } = useCopilot();
+    const startRef = useRef(start);
+    startRef.current = start;
+    const touring = useTourCampaign().stage === 'profile-campaigns';
+    const scrollRef = useRef<ScrollView>(null);
+    const campaignsRowRef = useRef<View>(null);
+    const { height: windowHeight } = useWindowDimensions();
 
     const [level, setLevel] = useState('');
     const [rank, setRank] = useState(0);
     const [reportsCount, setReportsCount] = useState(0);
     const [points, setPoints] = useState(0);
     const [statsLoading, setStatsLoading] = useState(true);
-
-    const { preferences: rulePreferences, toggleShowOnMap } = useRulePreferences();
 
     const elevatedCardStyle = {
         backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
@@ -160,6 +182,29 @@ export const ProfileScreen = () => {
         ?? user?.profileImageLocal
         ?? null;
 
+    useFocusEffect(
+        useCallback(() => {
+            if (!touring || loading || statsLoading) return;
+            let cancelled = false;
+            const timer = setTimeout(() => {
+                campaignsRowRef.current?.measureInWindow((_x, y, _width, height) => {
+                    if (cancelled) return;
+                    // the screen just opened at the top, so window y is also the scroll offset to reach it
+                    if (y + height > windowHeight * 0.7) {
+                        scrollRef.current?.scrollTo({ y: Math.max(0, y - windowHeight * 0.35), animated: false });
+                    }
+                    setTimeout(() => {
+                        if (!cancelled) void startRef.current();
+                    }, 250);
+                });
+            }, TOUR_START_DELAY_MS);
+            return () => {
+                cancelled = true;
+                clearTimeout(timer);
+            };
+        }, [touring, loading, statsLoading, windowHeight])
+    );
+
     if (loading) {
         return (
             <View className="flex-1" style={{ paddingTop: insets.top + 12, backgroundColor: theme.background }}>
@@ -229,6 +274,11 @@ export const ProfileScreen = () => {
                     >
                         <Text className="text-white font-semibold text-base text-center">{t('register-or-login')}</Text>
                     </TouchableOpacity>
+                    <TouchableOpacity onPress={() => router.push('/contact-support')} className="mt-5 py-2 px-4" activeOpacity={0.7}>
+                        <Text className="text-sm font-semibold" style={{ color: theme.textSecondary }}>
+                            {t('contact-support')}
+                        </Text>
+                    </TouchableOpacity>
                 </View>
             </View>
         );
@@ -237,6 +287,7 @@ export const ProfileScreen = () => {
     return (
         <View className="flex-1" style={{ backgroundColor: theme.background }}>
             <ScrollView
+                ref={scrollRef}
                 className="flex-1"
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{
@@ -420,30 +471,34 @@ export const ProfileScreen = () => {
                         </View>
                     </View>
 
-                    <TouchableOpacity
-                        className="flex-row items-center justify-between px-4 py-4 mb-3"
-                        style={elevatedCardStyle}
-                        activeOpacity={0.7}
-                        onPress={() => router.push('/campaigns')}
-                    >
-                        <View className="flex-row items-center flex-1 mr-3">
-                            <View
-                                className="w-9 h-9 rounded-full items-center justify-center mr-3"
-                                style={{ backgroundColor: isDark ? '#4D3400' : '#FFF1D6' }}
+                    <View ref={campaignsRowRef} collapsable={false} className="mb-3">
+                        <CopilotStep name="campaigns" order={1} text={t('tour-campaigns-text')} active={touring}>
+                            <TourTouchable
+                                className="flex-row items-center justify-between px-4 py-4"
+                                style={elevatedCardStyle}
+                                activeOpacity={0.7}
+                                onPress={() => router.push('/campaigns')}
                             >
-                                <Ionicons name="megaphone-outline" size={18} color={colors.primary.main} />
-                            </View>
-                            <View className="flex-1">
-                                <Text className="text-sm font-semibold" style={{ color: theme.textPrimary }}>
-                                    {t('campaigns')}
-                                </Text>
-                                <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }} numberOfLines={1}>
-                                    {t('campaigns-profile-description')}
-                                </Text>
-                            </View>
-                        </View>
-                        <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
-                    </TouchableOpacity>
+                                <View className="flex-row items-center flex-1 mr-3">
+                                    <View
+                                        className="w-9 h-9 rounded-full items-center justify-center mr-3"
+                                        style={{ backgroundColor: isDark ? '#4D3400' : '#FFF1D6' }}
+                                    >
+                                        <Ionicons name="megaphone-outline" size={18} color={colors.primary.main} />
+                                    </View>
+                                    <View className="flex-1">
+                                        <Text className="text-sm font-semibold" style={{ color: theme.textPrimary }}>
+                                            {t('campaigns')}
+                                        </Text>
+                                        <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }} numberOfLines={1}>
+                                            {t('campaigns-profile-description')}
+                                        </Text>
+                                    </View>
+                                </View>
+                                <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
+                            </TourTouchable>
+                        </CopilotStep>
+                    </View>
 
                     <TouchableOpacity
                         className="flex-row items-center justify-between px-4 py-4 mb-8"
@@ -546,51 +601,17 @@ export const ProfileScreen = () => {
                         <TouchableOpacity
                             className="flex-row items-center justify-between px-4 py-4"
                             activeOpacity={0.7}
-                            onPress={() => setShowFiltersModal(true)}
+                            onPress={() => router.push('/preferences')}
                         >
                             <View className="flex-row items-center flex-1 mr-2">
                                 <View className="mr-3">
-                                    <IncidentFiltersIcon width={18} height={18} color="#EF4444" />
+                                    <Ionicons name="options-outline" size={18} color="#10B981" />
                                 </View>
                                 <Text className="text-sm font-medium" style={{ color: theme.textPrimary }} numberOfLines={1}>
-                                    {t('incident-filters') || 'Incident Filters'}
+                                    {t('preferences')}
                                 </Text>
                             </View>
                             <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
-                        </TouchableOpacity>
-
-                        <View className="h-px mx-4" style={dividerStyle} />
-
-                        <TouchableOpacity
-                            className="flex-row items-center justify-between px-4 py-4"
-                            activeOpacity={0.7}
-                            onPress={async () => {
-                                try {
-                                    const newValue = await toggleShowOnMap();
-                                    showToast(
-                                        newValue
-                                            ? t('rules-shown-on-map')
-                                            : t('rules-hidden-on-map')
-                                    );
-                                } catch {
-                                    showToast(t('failed-to-update-settings'));
-                                }
-                            }}
-                        >
-                            <View className="flex-row items-center flex-1 mr-2">
-                                <View className="mr-3">
-                                    <RulesIcon width={18} height={18} color="#F59E0B" />
-                                </View>
-                                <Text className="text-sm font-medium" style={{ color: theme.textPrimary }} numberOfLines={1}>
-                                    {t('show-rules-on-map')}
-                                </Text>
-                            </View>
-                            <View
-                                className="w-11 h-6 rounded-full justify-center"
-                                style={{ backgroundColor: rulePreferences.showOnMap ? '#F59E0B' : (isDark ? '#333333' : '#E5E7EB') }}
-                            >
-                                <View className={`w-5 h-5 rounded-full bg-white ${rulePreferences.showOnMap ? 'ml-5' : 'ml-0.5'}`} />
-                            </View>
                         </TouchableOpacity>
 
                         <View className="h-px mx-4" style={dividerStyle} />
@@ -635,6 +656,31 @@ export const ProfileScreen = () => {
                         ))}
                     </View>
 
+                    <TouchableOpacity
+                        className="flex-row items-center justify-between px-4 py-4 mb-8"
+                        style={elevatedCardStyle}
+                        activeOpacity={0.7}
+                        onPress={() => router.push('/contact-support')}
+                    >
+                        <View className="flex-row items-center flex-1 mr-3">
+                            <View
+                                className="w-9 h-9 rounded-full items-center justify-center mr-3"
+                                style={{ backgroundColor: isDark ? '#4D3400' : '#FFF1D6' }}
+                            >
+                                <Ionicons name="call-outline" size={18} color={colors.primary.main} />
+                            </View>
+                            <View className="flex-1">
+                                <Text className="text-sm font-semibold" style={{ color: theme.textPrimary }}>
+                                    {t('contact-support')}
+                                </Text>
+                                <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }} numberOfLines={1}>
+                                    {t('contact-support-description')}
+                                </Text>
+                            </View>
+                        </View>
+                        <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
+                    </TouchableOpacity>
+
                     <View className="items-center mb-4">
                         <View className="flex-row items-center">
                             <TouchableOpacity onPress={() => router.push('/privacy-policy')}>
@@ -648,11 +694,6 @@ export const ProfileScreen = () => {
                     </View>
                 </View>
             </ScrollView>
-
-            <IncidentFiltersModal
-                visible={showFiltersModal}
-                onClose={() => setShowFiltersModal(false)}
-            />
 
             {showMenu && (
                 <Pressable

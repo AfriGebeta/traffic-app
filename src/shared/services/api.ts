@@ -185,9 +185,10 @@ class ApiService {
         });
     }
 
-    async delete<T>(endpoint: string, headers?: HeadersInit): Promise<ApiResponse<T>> {
+    async delete<T>(endpoint: string, headers?: HeadersInit, body?: unknown): Promise<ApiResponse<T>> {
         return this.request<T>(endpoint, {
             method: 'DELETE',
+            body: body ? JSON.stringify(body) : undefined,
             headers,
         });
     }

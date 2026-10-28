@@ -12,6 +12,8 @@ import { SearchResults } from './SearchResults';
 import { DestinationCard } from './DestinationCard';
 import { FloatingActions } from './FloatingActions';
 import { BottomNavigation } from './BottomNavigation';
+import { CampaignTourProvider } from '../../campaigns/tour/CampaignTourProvider';
+import { MapCampaignTour, useMapTourActions } from '../../campaigns/tour/MapCampaignTour';
 import { MapThemeSelector } from './MapThemeSelector';
 import { RoutePointsBar } from '../../navigation/components/RoutePointsBar';
 import { showToast } from '../../../shared/utils/toast';
@@ -154,13 +156,14 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
             : null;
     // wide: the rail stays visible next to place details / route preview, phones hide the bottom bar
     const showNavigationTabs = isWide || (!showRoutePreview && !showPlaceDetail);
+    const tourActions = useMapTourActions();
 
     const handleProfilePress = () => {
         router.push('/profile');
     };
 
     return (
-        <>
+        <CampaignTourProvider actions={tourActions}>
             {showSearchContainer && showRecentSearches && (
                 <TouchableOpacity
                     activeOpacity={1}
@@ -183,6 +186,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                             onProfilePress={handleProfilePress}
                             isLoading={isExploring}
                             hideProfile={isWide}
+                            profileTourStep
                         />
                     </View>
 
@@ -241,7 +245,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
 
             {!showRoutePreview && isWide && (
                 <View className="absolute items-end" style={{ top: insets.top + 10, right: insets.right + 16, zIndex: 20 }}>
-                    <ProfileButton onPress={handleProfilePress} size={48} />
+                    <ProfileButton onPress={handleProfilePress} size={48} tourStep />
                     {!showSearchContainer && <SosButton userLocation={userLocation} />}
                 </View>
             )}
@@ -337,6 +341,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                 onClose={() => setShowThemeSelector(false)}
                 bottomOffset={layersButtonBottom}
             />
-        </>
+            <MapCampaignTour />
+        </CampaignTourProvider>
     );
 };

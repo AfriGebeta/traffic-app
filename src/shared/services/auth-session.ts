@@ -32,6 +32,7 @@ let sessionEpoch = 0;
 let inflightRefresh: Promise<string | null> | null = null;
 
 const expiredListeners = new Set<() => void>();
+const startedListeners = new Set<() => void>();
 
 const preview = (token: string | null | undefined): string =>
     token ? `…${token.slice(-6)}` : 'none';
@@ -58,6 +59,13 @@ export const onSessionExpired = (listener: () => void) => {
     expiredListeners.add(listener);
     return () => {
         expiredListeners.delete(listener);
+    };
+};
+
+export const onSessionStarted = (listener: () => void) => {
+    startedListeners.add(listener);
+    return () => {
+        startedListeners.delete(listener);
     };
 };
 
@@ -107,6 +115,7 @@ async function writeTokens(tokens: SessionTokens): Promise<void> {
 export async function saveSession(tokens: SessionTokens): Promise<void> {
     sessionEpoch++;
     await writeTokens(tokens);
+    startedListeners.forEach((listener) => listener());
 }
 
 export async function clearSession(): Promise<void> {

@@ -8,9 +8,12 @@ import { getPlaceTranslationKey } from '../utils/placeTranslations';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { getPlaceIcon } from '../utils/placeIcons';
+import { useCampaignGpsWarmup } from '../../campaigns/hooks/useCampaignGpsWarmup';
 
 export default function PlaceContributionScreen() {
     const router = useRouter();
+    // GPS starts here so the camera's location is ready when the photo is taken
+    useCampaignGpsWarmup(['place']);
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors: theme, isDark } = useTheme();

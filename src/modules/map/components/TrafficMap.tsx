@@ -68,6 +68,8 @@ interface TrafficMapProps {
     taxiDestination?: { lat: number; lng: number; name: string };
     showTaxiMode?: boolean;
     voiceDestination?: { lat: number; lng: number; name: string };
+    // a push asked to open the report sheet; a new value opens it again
+    openReport?: string;
 }
 
 const SHARED_ROUTE_LOCATION_WAIT_MS = 8000;
@@ -89,7 +91,7 @@ const placeFromPoint = (idPrefix: string, point: { lat: number; lng: number; nam
     };
 };
 
-export default function TrafficMap({ sharedLocation, sharedRoute, taxiDestination, showTaxiMode, voiceDestination }: TrafficMapProps) {
+export default function TrafficMap({ sharedLocation, sharedRoute, taxiDestination, showTaxiMode, voiceDestination, openReport }: TrafficMapProps) {
     const mapRef = useRef<TrafficMapRef>(null);
     const searchMarkerRef = useRef<any>(null);
     const processedSharedLocationRef = useRef<SharedLocation | null>(null);
@@ -106,6 +108,10 @@ export default function TrafficMap({ sharedLocation, sharedRoute, taxiDestinatio
 
     const initialMapCenterRef = useRef<[number, number] | null>(null);
     const [showReportOptions, setShowReportOptions] = useState(false);
+
+    useEffect(() => {
+        if (openReport) setShowReportOptions(true);
+    }, [openReport]);
     const { requireAuthInPlace } = useAuthGate();
     const [incidentReportLocation, setIncidentReportLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [showExploreSheet, setShowExploreSheet] = useState(false);
