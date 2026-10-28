@@ -221,6 +221,11 @@ export const ProfileScreen = () => {
                     >
                         <Text className="text-white font-semibold text-base text-center">{t('register-or-login')}</Text>
                     </TouchableOpacity>
+                    <TouchableOpacity onPress={() => router.push('/contact-support')} className="mt-5 py-2 px-4" activeOpacity={0.7}>
+                        <Text className="text-sm font-semibold" style={{ color: theme.textSecondary }}>
+                            {t('contact-support')}
+                        </Text>
+                    </TouchableOpacity>
                 </View>
             </View>
         );
@@ -592,6 +597,31 @@ export const ProfileScreen = () => {
                             </TouchableOpacity>
                         ))}
                     </View>
+
+                    <TouchableOpacity
+                        className="flex-row items-center justify-between px-4 py-4 mb-8"
+                        style={elevatedCardStyle}
+                        activeOpacity={0.7}
+                        onPress={() => router.push('/contact-support')}
+                    >
+                        <View className="flex-row items-center flex-1 mr-3">
+                            <View
+                                className="w-9 h-9 rounded-full items-center justify-center mr-3"
+                                style={{ backgroundColor: isDark ? '#4D3400' : '#FFF1D6' }}
+                            >
+                                <Ionicons name="call-outline" size={18} color={colors.primary.main} />
+                            </View>
+                            <View className="flex-1">
+                                <Text className="text-sm font-semibold" style={{ color: theme.textPrimary }}>
+                                    {t('contact-support')}
+                                </Text>
+                                <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }} numberOfLines={1}>
+                                    {t('contact-support-description')}
+                                </Text>
+                            </View>
+                        </View>
+                        <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
+                    </TouchableOpacity>
 
                     <View className="items-center mb-4">
                         <View className="flex-row items-center">

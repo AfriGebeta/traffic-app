@@ -4928,5 +4928,70 @@
         "key": "map-preferences",
         "EN_US": "Map",
         "AM": "ካርታ"
+    },
+    {
+        "key": "contact-support",
+        "EN_US": "Contact support",
+        "AM": "ድጋፍ ያግኙ"
+    },
+    {
+        "key": "contact-support-description",
+        "EN_US": "Report a problem or suggest a feature",
+        "AM": "ችግር ያሳውቁ ወይም አዲስ ሀሳብ ያቅርቡ"
+    },
+    {
+        "key": "contact-support-intro",
+        "EN_US": "Tell us what went wrong or what you'd like to see. Our team reads every message.",
+        "AM": "ምን ችግር እንደገጠመዎት ወይም ምን ማየት እንደሚፈልጉ ይንገሩን። ቡድናችን እያንዳንዱን መልዕክት ያነባል።"
+    },
+    {
+        "key": "support-category",
+        "EN_US": "Category",
+        "AM": "ዓይነት"
+    },
+    {
+        "key": "support-category-bug",
+        "EN_US": "Problem",
+        "AM": "ችግር"
+    },
+    {
+        "key": "support-category-feature",
+        "EN_US": "Suggestion",
+        "AM": "ሀሳብ"
+    },
+    {
+        "key": "support-message",
+        "EN_US": "Message",
+        "AM": "መልዕክት"
+    },
+    {
+        "key": "support-message-placeholder",
+        "EN_US": "Describe the issue or idea…",
+        "AM": "ችግሩን ወይም ሀሳቡን ይግለጹ…"
+    },
+    {
+        "key": "support-send",
+        "EN_US": "Send",
+        "AM": "ላክ"
+    },
+    {
+        "key": "support-sent",
+        "EN_US": "Thanks! Your message was sent.",
+        "AM": "እናመሰግናለን! መልዕክትዎ ተልኳል።"
+    },
+    {
+        "key": "support-send-failed",
+        "EN_US": "Could not send your message. Try again.",
+        "AM": "መልዕክትዎን መላክ አልተቻለም። እንደገና ይሞክሩ።"
+    },
+    {
+        "key": "community",
+        "EN_US": "Community",
+        "AM": "ማህበረሰብ"
+    },
+    {
+        "key": "personalisation",
+        "EN_US": "Personalisation",
+        "AM": "ፍላጎቶች"
     }
 ]
