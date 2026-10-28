@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
-import { router } from 'expo-router';
 import {
     getInitialNotification,
     getMessaging,
@@ -11,23 +10,26 @@ import {
 import { hasPlayServices } from '../utils/playServices';
 import { showToast } from '../utils/toast';
 import { logBreadcrumb } from '../utils/crashlytics';
+import { notificationService } from '../../modules/notifications/services/notification.service';
+import { openNotificationTarget } from '../../modules/notifications/utils/notificationTarget';
+import { NotificationData } from '../../modules/notifications/types/notification.types';
 
 type RemoteMessage = FirebaseMessagingTypes.RemoteMessage;
 
+// Where a tap goes, by data.event (see push-events.md and openNotificationTarget)
 const openForMessage = (message: RemoteMessage) => {
-    const event = message.data?.event;
-    logBreadcrumb(`push: opened ${event ?? 'unknown'}`);
-    switch (event) {
-        case 'submission.verified':
-        case 'submission.rejected':
-            router.push('/my-contributions');
-            return;
-        case 'account.restricted':
-            if (message.notification?.body) showToast(message.notification.body);
-            return;
-        default:
-            return;
-    }
+    const data = message.data as NotificationData | undefined;
+    logBreadcrumb(`push: opened ${typeof data?.event === 'string' ? data.event : 'unknown'}`);
+    openNotificationTarget(data, 'push', typeof data?.deliveryId === 'string' ? data.deliveryId : undefined);
+    if (data?.event === 'account.restricted' && message.notification?.body) showToast(message.notification.body);
+};
+
+// tells the backend the push was opened (its delivery tracker); fire and forget
+const markOpened = (message: RemoteMessage) => {
+    const deliveryId = message.data?.deliveryId;
+    if (typeof deliveryId !== 'string' || !deliveryId) return;
+    // the service logs the result in dev builds
+    void notificationService.markRead(deliveryId, 'push').catch(() => undefined);
 };
 
 const toastText = ({ notification }: RemoteMessage): string | null => {
@@ -46,6 +48,8 @@ export const usePushNotificationTaps = (pathname: string, isNavigationPath: (pat
 
         const open = (message: RemoteMessage | null) => {
             if (!message) return;
+            // counted as opened even if routing waits for navigation to end
+            markOpened(message);
             if (isNavigationPath(pathnameRef.current)) {
                 pendingRef.current = message;
                 return;

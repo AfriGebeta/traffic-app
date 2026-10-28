@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import * as Location from '../services/location';
 import { colors } from '../theme/colors';
 import { PhotoFix, gpsLog, toPhotoFix } from '../utils/photoFix';
+import { getWarmFix } from '../services/gpsWarmup';
 
 // Campaign photos must carry GPS, capture time, camera make/model and "GebetaMaps" in
 // ImageDescription/UserComment, or the backend treats them as gallery photos.
@@ -150,7 +151,10 @@ export function InAppCamera({ visible, onClose, onCaptured, requireLocation = fa
     // watch position and keep the best recent fix
     useEffect(() => {
         if (!watchActive || locationPermission !== 'granted') return;
-        setFix(null);
+        // start from the warm-up's recent fix (contribute page) instead of from nothing
+        const warm = getWarmFix();
+        if (warm) gpsLog(`seeded from warm-up ±${Math.round(warm.coords.accuracy ?? -1)} m`);
+        setFix(warm);
         setWatchStartedAt(Date.now());
         setNow(Date.now());
         let cancelled = false;

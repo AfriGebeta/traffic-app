@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../../shared/theme/colors';
@@ -9,6 +9,7 @@ import { useTheme } from '../../../shared/theme/ThemeContext';
 import { campaignService } from '../services/campaign.service';
 import { refreshCampaigns, useCampaigns } from '../store/campaignStore';
 import { getStoredUserId } from '../../register/utils/profileGate';
+import { notificationService } from '../../notifications/services/notification.service';
 import { pickLocalized } from '../utils/localizedText';
 import { periodLabel } from '../utils/periodLabel';
 import { previousWeekKey } from '../utils/previousWeekKey';
@@ -38,6 +39,17 @@ export default function CampaignLeaderboardScreen() {
     const periodKinds = periods.map((p) => p.kind);
     const myTrack = slug ? state.me[slug]?.enrollment?.track : undefined;
     const [myUserId, setMyUserId] = useState<string | null>(null);
+    const [unreadNotifications, setUnreadNotifications] = useState(0);
+
+    // the status card opens the notifications inbox; refreshed on return so the badge clears after reading
+    useFocusEffect(
+        useCallback(() => {
+            notificationService
+                .getUnreadCount()
+                .then(setUnreadNotifications)
+                .catch(() => undefined);
+        }, [])
+    );
 
     // fresh /me, so the "You" bar's rank matches the board just fetched
     useEffect(() => {
@@ -263,8 +275,11 @@ export default function CampaignLeaderboardScreen() {
             )}
 
             {/* live: still running · auditing: ended, ranks can change after review · final: winners locked */}
+            {/* tapping it opens the notifications inbox (admin messages and updates) */}
             {!!status && (
-                <View
+                <TouchableOpacity
+                    onPress={() => router.push('/notifications')}
+                    activeOpacity={0.7}
                     className="flex-row items-start mx-4 mb-3 rounded-xl px-4 py-3"
                     style={
                         status === 'final'
@@ -285,7 +300,19 @@ export default function CampaignLeaderboardScreen() {
                                   : t(`campaign-status-${status}-note`)}
                         </Text>
                     </View>
-                </View>
+                    <View className="flex-row items-center self-center ml-3">
+                        <Ionicons name="notifications-outline" size={20} color={theme.textPrimary} />
+                        {unreadNotifications > 0 && (
+                            <View
+                                className="rounded-full items-center justify-center px-1.5 ml-1"
+                                style={{ minWidth: 20, height: 20, backgroundColor: colors.primary.main }}
+                            >
+                                <Text className="text-xs font-bold text-white">{unreadNotifications > 99 ? '99+' : unreadNotifications}</Text>
+                            </View>
+                        )}
+                        <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} style={{ marginLeft: 2 }} />
+                    </View>
+                </TouchableOpacity>
             )}
 
             <View className="flex-1">

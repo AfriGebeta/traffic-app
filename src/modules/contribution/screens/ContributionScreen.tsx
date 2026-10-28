@@ -22,6 +22,7 @@ import { endCampaignTour, setCampaignTourStage } from '../../campaigns/tour/camp
 import { sentences } from '../../campaigns/tour/tourText';
 import { TourActions } from '../../campaigns/tour/TourTooltip';
 import { TourTouchable, TourView } from '../../campaigns/tour/walkthroughables';
+import { useCampaignGpsWarmup } from '../../campaigns/hooks/useCampaignGpsWarmup';
 
 // lets the tooltip after the map's Contribute step land here
 const START_DELAY_MS = 500;
@@ -68,6 +69,7 @@ const TOUR_TEXT_KEYS: Partial<Record<CampaignKind, string>> = {
 
 function ContributionOptions() {
     const router = useRouter();
+    useCampaignGpsWarmup(['place', 'traffic_rule', 'taxi_station']);
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors: theme, isDark } = useTheme();

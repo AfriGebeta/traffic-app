@@ -1440,6 +1440,106 @@
         "AM": "በዚህ መንገድ ትራፊክ በሁለት አቅጣጫ ይንቀሳቀሳል።"
     },
     {
+        "key": "rule-turn-left",
+        "EN_US": "Turn Left",
+        "AM": "ወደ ግራ ይዙሩ"
+    },
+    {
+        "key": "rule-turn-left-description",
+        "EN_US": "Left turn only.",
+        "AM": "ወደ ግራ መዞር ብቻ ይፈቀዳል።"
+    },
+    {
+        "key": "rule-turn-right",
+        "EN_US": "Turn Right",
+        "AM": "ወደ ቀኝ ይዙሩ"
+    },
+    {
+        "key": "rule-turn-right-description",
+        "EN_US": "Right turn only.",
+        "AM": "ወደ ቀኝ መዞር ብቻ ይፈቀዳል።"
+    },
+    {
+        "key": "rule-parking-allowed",
+        "EN_US": "Parking Allowed",
+        "AM": "ማቆም ይፈቀዳል"
+    },
+    {
+        "key": "rule-parking-allowed-description",
+        "EN_US": "Parking is permitted here.",
+        "AM": "እዚህ ማቆም ይፈቀዳል።"
+    },
+    {
+        "key": "rule-dead-end",
+        "EN_US": "Dead End",
+        "AM": "መውጫ የሌለው መንገድ"
+    },
+    {
+        "key": "rule-dead-end-description",
+        "EN_US": "The road has no through exit.",
+        "AM": "ይህ መንገድ በሌላኛው ጫፍ መውጫ የለውም።"
+    },
+    {
+        "key": "rule-zebra-crossing",
+        "EN_US": "Zebra Crossing",
+        "AM": "የእግረኛ ማቋረጫ"
+    },
+    {
+        "key": "rule-zebra-crossing-description",
+        "EN_US": "Pedestrian crossing ahead, give way.",
+        "AM": "ከፊት የእግረኛ ማቋረጫ አለ፤ ለእግረኞች ቅድሚያ ይስጡ።"
+    },
+    {
+        "key": "rule-school-zone",
+        "EN_US": "School Zone",
+        "AM": "የትምህርት ቤት አካባቢ"
+    },
+    {
+        "key": "rule-school-zone-description",
+        "EN_US": "School area, slow down and watch for children.",
+        "AM": "የትምህርት ቤት አካባቢ ነው፤ ፍጥነት ይቀንሱ እና ለልጆች ጥንቃቄ ያድርጉ።"
+    },
+    {
+        "key": "rule-speed-bump",
+        "EN_US": "Speed Bump",
+        "AM": "የፍጥነት መቀነሻ"
+    },
+    {
+        "key": "rule-speed-bump-description",
+        "EN_US": "Speed bump ahead.",
+        "AM": "ከፊት የፍጥነት መቀነሻ ጉብታ አለ።"
+    },
+    {
+        "key": "rule-roundabout",
+        "EN_US": "Roundabout",
+        "AM": "አደባባይ"
+    },
+    {
+        "key": "rule-roundabout-description",
+        "EN_US": "Roundabout ahead, give way to traffic on it.",
+        "AM": "ከፊት አደባባይ አለ፤ በአደባባዩ ላይ ላሉ ተሽከርካሪዎች ቅድሚያ ይስጡ።"
+    },
+    {
+        "key": "rule-no-trucks",
+        "EN_US": "No Trucks",
+        "AM": "የጭነት መኪና አይፈቀድም"
+    },
+    {
+        "key": "rule-no-trucks-description",
+        "EN_US": "Trucks are not allowed.",
+        "AM": "የጭነት መኪናዎች አይፈቀዱም።"
+    },
+    {
+        "key": "rule-no-entry",
+        "EN_US": "No Entry",
+        "AM": "መግባት ክልክል ነው"
+    },
+    {
+        "key": "rule-no-entry-description",
+        "EN_US": "Entry is prohibited.",
+        "AM": "መግባት የተከለከለ ነው።"
+    },
+    {
         "key": "incident-filters",
         "EN_US": "Incident Filters",
         "AM": "የማስጠንቀቂያ ማጣሪያዎች"
@@ -4598,6 +4698,71 @@
         "key": "tour-done",
         "EN_US": "Done",
         "AM": "ጨርሻለሁ"
+    },
+    {
+        "key": "notifications",
+        "EN_US": "Notifications",
+        "AM": "ማሳወቂያዎች"
+    },
+    {
+        "key": "notifications-open",
+        "EN_US": "Open",
+        "AM": "ክፈት"
+    },
+    {
+        "key": "notifications-mark-all-read",
+        "EN_US": "Mark all read",
+        "AM": "ሁሉንም እንደተነበበ ምልክት አድርግ"
+    },
+    {
+        "key": "notifications-empty",
+        "EN_US": "No notifications yet",
+        "AM": "እስካሁን ምንም ማሳወቂያ የለም"
+    },
+    {
+        "key": "notifications-failed",
+        "EN_US": "Could not load notifications",
+        "AM": "ማሳወቂያዎችን መጫን አልተቻለም"
+    },
+    {
+        "key": "notification-category-announcement",
+        "EN_US": "Announcement",
+        "AM": "ማስታወቂያ"
+    },
+    {
+        "key": "notification-category-competition",
+        "EN_US": "Competition",
+        "AM": "ውድድር"
+    },
+    {
+        "key": "notification-category-tip",
+        "EN_US": "Tip",
+        "AM": "ጠቃሚ ምክር"
+    },
+    {
+        "key": "notification-category-system",
+        "EN_US": "Update",
+        "AM": "ዝማኔ"
+    },
+    {
+        "key": "time-just-now",
+        "EN_US": "Just now",
+        "AM": "አሁን"
+    },
+    {
+        "key": "time-minutes-ago",
+        "EN_US": "{{count}} min ago",
+        "AM": "ከ{{count}} ደቂቃ በፊት"
+    },
+    {
+        "key": "time-hours-ago",
+        "EN_US": "{{count}} h ago",
+        "AM": "ከ{{count}} ሰዓት በፊት"
+    },
+    {
+        "key": "time-days-ago",
+        "EN_US": "{{count}} d ago",
+        "AM": "ከ{{count}} ቀን በፊት"
     },
     {
         "key": "campaign-you",

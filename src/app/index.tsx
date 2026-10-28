@@ -163,5 +163,5 @@ export default function Index() {
     lat: parseFloat(params.voiceDestLat as string),
     lng: parseFloat(params.voiceDestLng as string),
     name: params.voiceDestName as string || 'Destination',
-  } : undefined} />;
+  } : undefined} openReport={typeof params.openReport === 'string' ? params.openReport : undefined} />;
 }
