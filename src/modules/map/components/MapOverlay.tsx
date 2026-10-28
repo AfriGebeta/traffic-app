@@ -163,7 +163,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
     };
 
     return (
-        <>
+        <CampaignTourProvider actions={tourActions}>
             {showSearchContainer && showRecentSearches && (
                 <TouchableOpacity
                     activeOpacity={1}
@@ -186,6 +186,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                             onProfilePress={handleProfilePress}
                             isLoading={isExploring}
                             hideProfile={isWide}
+                            profileTourStep
                         />
                     </View>
 
@@ -244,7 +245,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
 
             {!showRoutePreview && isWide && (
                 <View className="absolute items-end" style={{ top: insets.top + 10, right: insets.right + 16, zIndex: 20 }}>
-                    <ProfileButton onPress={handleProfilePress} size={48} />
+                    <ProfileButton onPress={handleProfilePress} size={48} tourStep />
                     {!showSearchContainer && <SosButton userLocation={userLocation} />}
                 </View>
             )}
@@ -313,29 +314,26 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
             )}
 
             {showNavigationTabs && (
-                <CampaignTourProvider actions={tourActions}>
-                    <BottomNavigation
-                        onTabPress={(tabId) => {
-                            void requireAuth(() => {
-                                if (tabId === 'report') {
-                                    onReportPress();
-                                } else if (tabId === 'explore') {
-                                    onExplorePress();
-                                } else if (tabId === 'saved') {
-                                    router.push('/saved-places');
-                                } else if (tabId === 'ai') {
-                                    router.push('/ai-assistant');
-                                } else {
-                                    showToast(`${t('coming-soon')}: ${tabId}`);
-                                }
-                            });
-                        }}
-                        onAddPress={() => {
-                            void requireAuth(onAddPlacePress);
-                        }}
-                    />
-                    <MapCampaignTour />
-                </CampaignTourProvider>
+                <BottomNavigation
+                    onTabPress={(tabId) => {
+                        void requireAuth(() => {
+                            if (tabId === 'report') {
+                                onReportPress();
+                            } else if (tabId === 'explore') {
+                                onExplorePress();
+                            } else if (tabId === 'saved') {
+                                router.push('/saved-places');
+                            } else if (tabId === 'ai') {
+                                router.push('/ai-assistant');
+                            } else {
+                                showToast(`${t('coming-soon')}: ${tabId}`);
+                            }
+                        });
+                    }}
+                    onAddPress={() => {
+                        void requireAuth(onAddPlacePress);
+                    }}
+                />
             )}
 
             <MapThemeSelector
@@ -343,6 +341,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                 onClose={() => setShowThemeSelector(false)}
                 bottomOffset={layersButtonBottom}
             />
-        </>
+            <MapCampaignTour />
+        </CampaignTourProvider>
     );
 };

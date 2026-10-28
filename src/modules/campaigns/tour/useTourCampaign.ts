@@ -12,6 +12,7 @@ export interface TourCampaign {
     points: (kind: CampaignKind) => number;
     contributeKinds: CampaignKind[];
     photoBonus: boolean;
+    firstTime: boolean;
 }
 
 // the campaign the running tour is about, with its points; never hardcoded
@@ -26,5 +27,6 @@ export const useTourCampaign = (): TourCampaign => {
         points,
         contributeKinds: CONTRIBUTE_KINDS.filter((kind) => points(kind) > 0),
         photoBonus: (campaign?.pointsFormula?.quality?.photo ?? 1) > 1,
+        firstTime: !tour.returning,
     };
 };

@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image, Pressable, BackHandler } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Image, Pressable, BackHandler, useWindowDimensions } from 'react-native';
+import { CopilotStep, useCopilot } from 'react-native-copilot';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,6 +21,11 @@ import HomeIcon from '../../../../assets/images/profile-home.svg';
 import WorkIcon from '../../../../assets/images/profile-work.svg';
 import OthersIcon from '../../../../assets/images/profile-others.svg';
 import LogoutIcon from '../../../../assets/images/profile-logout.svg';
+import { CampaignTourProvider } from '../../campaigns/tour/CampaignTourProvider';
+import { endCampaignTour } from '../../campaigns/tour/campaignTour';
+import { TourActions } from '../../campaigns/tour/TourTooltip';
+import { useTourCampaign } from '../../campaigns/tour/useTourCampaign';
+import { TourTouchable } from '../../campaigns/tour/walkthroughables';
 
 const LANGUAGES = [
     { code: 'en' as const, label: 'English', flag: '🇬🇧' },
@@ -34,8 +40,23 @@ const SAVED_PLACE_CARDS = [
 
 const CARD_RADIUS = 12;
 const INNER_RADIUS = 8;
+const TOUR_START_DELAY_MS = 500;
 
 export const ProfileScreen = () => {
+    const { t } = useTranslation();
+    const tourActions: TourActions = {
+        titleFor: (name) => (name === 'campaigns' ? t('tour-campaigns-title') : undefined),
+        lastLabel: t('tour-done'),
+        onLast: endCampaignTour,
+    };
+    return (
+        <CampaignTourProvider actions={tourActions}>
+            <ProfileContent />
+        </CampaignTourProvider>
+    );
+};
+
+const ProfileContent = () => {
     const router = useRouter();
     const { t, language } = useTranslation();
     const { colors: theme, isDark } = useTheme();
@@ -47,6 +68,15 @@ export const ProfileScreen = () => {
     const [remoteAvatarFailed, setRemoteAvatarFailed] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+    // campaign tour: highlight the Campaigns row, scrolled into view first (copilot can't scroll on its first step)
+    const { start } = useCopilot();
+    const startRef = useRef(start);
+    startRef.current = start;
+    const touring = useTourCampaign().stage === 'profile-campaigns';
+    const scrollRef = useRef<ScrollView>(null);
+    const campaignsRowRef = useRef<View>(null);
+    const { height: windowHeight } = useWindowDimensions();
 
     const [level, setLevel] = useState('');
     const [rank, setRank] = useState(0);
@@ -152,6 +182,29 @@ export const ProfileScreen = () => {
         ?? user?.profileImageLocal
         ?? null;
 
+    useFocusEffect(
+        useCallback(() => {
+            if (!touring || loading || statsLoading) return;
+            let cancelled = false;
+            const timer = setTimeout(() => {
+                campaignsRowRef.current?.measureInWindow((_x, y, _width, height) => {
+                    if (cancelled) return;
+                    // the screen just opened at the top, so window y is also the scroll offset to reach it
+                    if (y + height > windowHeight * 0.7) {
+                        scrollRef.current?.scrollTo({ y: Math.max(0, y - windowHeight * 0.35), animated: false });
+                    }
+                    setTimeout(() => {
+                        if (!cancelled) void startRef.current();
+                    }, 250);
+                });
+            }, TOUR_START_DELAY_MS);
+            return () => {
+                cancelled = true;
+                clearTimeout(timer);
+            };
+        }, [touring, loading, statsLoading, windowHeight])
+    );
+
     if (loading) {
         return (
             <View className="flex-1" style={{ paddingTop: insets.top + 12, backgroundColor: theme.background }}>
@@ -234,6 +287,7 @@ export const ProfileScreen = () => {
     return (
         <View className="flex-1" style={{ backgroundColor: theme.background }}>
             <ScrollView
+                ref={scrollRef}
                 className="flex-1"
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{
@@ -417,30 +471,34 @@ export const ProfileScreen = () => {
                         </View>
                     </View>
 
-                    <TouchableOpacity
-                        className="flex-row items-center justify-between px-4 py-4 mb-3"
-                        style={elevatedCardStyle}
-                        activeOpacity={0.7}
-                        onPress={() => router.push('/campaigns')}
-                    >
-                        <View className="flex-row items-center flex-1 mr-3">
-                            <View
-                                className="w-9 h-9 rounded-full items-center justify-center mr-3"
-                                style={{ backgroundColor: isDark ? '#4D3400' : '#FFF1D6' }}
+                    <View ref={campaignsRowRef} collapsable={false} className="mb-3">
+                        <CopilotStep name="campaigns" order={1} text={t('tour-campaigns-text')} active={touring}>
+                            <TourTouchable
+                                className="flex-row items-center justify-between px-4 py-4"
+                                style={elevatedCardStyle}
+                                activeOpacity={0.7}
+                                onPress={() => router.push('/campaigns')}
                             >
-                                <Ionicons name="megaphone-outline" size={18} color={colors.primary.main} />
-                            </View>
-                            <View className="flex-1">
-                                <Text className="text-sm font-semibold" style={{ color: theme.textPrimary }}>
-                                    {t('campaigns')}
-                                </Text>
-                                <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }} numberOfLines={1}>
-                                    {t('campaigns-profile-description')}
-                                </Text>
-                            </View>
-                        </View>
-                        <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
-                    </TouchableOpacity>
+                                <View className="flex-row items-center flex-1 mr-3">
+                                    <View
+                                        className="w-9 h-9 rounded-full items-center justify-center mr-3"
+                                        style={{ backgroundColor: isDark ? '#4D3400' : '#FFF1D6' }}
+                                    >
+                                        <Ionicons name="megaphone-outline" size={18} color={colors.primary.main} />
+                                    </View>
+                                    <View className="flex-1">
+                                        <Text className="text-sm font-semibold" style={{ color: theme.textPrimary }}>
+                                            {t('campaigns')}
+                                        </Text>
+                                        <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }} numberOfLines={1}>
+                                            {t('campaigns-profile-description')}
+                                        </Text>
+                                    </View>
+                                </View>
+                                <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
+                            </TourTouchable>
+                        </CopilotStep>
+                    </View>
 
                     <TouchableOpacity
                         className="flex-row items-center justify-between px-4 py-4 mb-8"

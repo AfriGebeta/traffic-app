@@ -1,7 +1,7 @@
 import React, { useCallback, useRef } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { CopilotStep, useCopilot, walkthroughable } from 'react-native-copilot';
+import { CopilotStep, useCopilot } from 'react-native-copilot';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,10 +21,7 @@ import { useTourCampaign } from '../../campaigns/tour/useTourCampaign';
 import { endCampaignTour, setCampaignTourStage } from '../../campaigns/tour/campaignTour';
 import { sentences } from '../../campaigns/tour/tourText';
 import { TourActions } from '../../campaigns/tour/TourTooltip';
-
-// own components so NativeWind still handles className (walkthroughable creates the element itself)
-const TourTouchable = walkthroughable((props: React.ComponentProps<typeof TouchableOpacity>) => <TouchableOpacity {...props} />);
-const TourView = walkthroughable((props: React.ComponentProps<typeof View>) => <View {...props} />);
+import { TourTouchable, TourView } from '../../campaigns/tour/walkthroughables';
 
 // lets the tooltip after the map's Contribute step land here
 const START_DELAY_MS = 500;
@@ -32,13 +29,15 @@ const START_DELAY_MS = 500;
 export default function ContributionScreen() {
     const router = useRouter();
     const { t } = useTranslation();
-    const reportsPay = useTourCampaign().points('incident') > 0;
+    const tour = useTourCampaign();
+    // back on the map there's the Report step (if incidents pay) and, for first-timers, the Profile step
+    const mapStepsLeft = tour.points('incident') > 0 || tour.firstTime;
 
     const tourActions: TourActions = {
         titleFor: (name) => (name === 'requirements' ? t('tour-rules-title') : TOUR_TITLE_KEYS[name] ? t(TOUR_TITLE_KEYS[name]) : undefined),
-        lastLabel: t(reportsPay ? 'tour-next' : 'tour-done'),
+        lastLabel: t(mapStepsLeft ? 'tour-next' : 'tour-done'),
         onLast: () => {
-            if (!reportsPay) {
+            if (!mapStepsLeft) {
                 endCampaignTour();
                 return;
             }
@@ -130,7 +129,7 @@ function ContributionOptions() {
     const rulesText = sentences(
         withinM ? t('tour-rules-text', { meters: withinM }) : t('tour-rules-text-anywhere'),
         tour.photoBonus && t('tour-photo-bonus'),
-        tour.points('incident') <= 0 && t('tour-track-points')
+        tour.points('incident') <= 0 && !tour.firstTime && t('tour-track-points')
     );
 
     return (

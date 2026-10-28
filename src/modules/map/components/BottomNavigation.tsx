@@ -17,11 +17,11 @@ import { GlassSheen } from '../../../shared/components/GlassSheen';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { useMapTheme } from '../context/MapThemeContext';
 import { useLayout, LAYOUT_GUTTER, RAIL_EDGE_INSET, RAIL_WIDTH } from '../../../shared/layout/useLayout';
-import { CopilotStep, walkthroughable } from 'react-native-copilot';
+import { CopilotStep } from 'react-native-copilot';
 import { useTourCampaign } from '../../campaigns/tour/useTourCampaign';
 import { kindList, sentences } from '../../campaigns/tour/tourText';
+import { TourTouchable } from '../../campaigns/tour/walkthroughables';
 
-const TourTouchable = walkthroughable((props: React.ComponentProps<typeof TouchableOpacity>) => <TouchableOpacity {...props} />);
 
 type TabId = 'explore' | 'contribute' | 'ai' | 'saved' | 'report';
 
@@ -70,7 +70,8 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
     const reportText = sentences(
         t('tour-report-text', { points: incidentPoints }),
         t(tour.points('traffic_rule') > 0 ? 'tour-report-nav-rules' : 'tour-report-nav'),
-        t('tour-track-points')
+        // first-timers are shown Profile → Campaigns right after, so only returning players are told
+        !tour.firstTime && t('tour-track-points')
     );
     const tourStep = (tabId: TabId, button: React.ReactElement) => {
         if (tabId === 'contribute') {

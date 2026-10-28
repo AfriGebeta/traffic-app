@@ -7,7 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { campaignService } from '../services/campaign.service';
-import { useCampaigns } from '../store/campaignStore';
+import { refreshCampaigns, useCampaigns } from '../store/campaignStore';
+import { getStoredUserId } from '../../register/utils/profileGate';
 import { pickLocalized } from '../utils/localizedText';
 import { periodLabel } from '../utils/periodLabel';
 import { previousWeekKey } from '../utils/previousWeekKey';
@@ -36,6 +37,13 @@ export default function CampaignLeaderboardScreen() {
     const periods = campaign?.periods ?? [];
     const periodKinds = periods.map((p) => p.kind);
     const myTrack = slug ? state.me[slug]?.enrollment?.track : undefined;
+    const [myUserId, setMyUserId] = useState<string | null>(null);
+
+    // fresh /me, so the "You" bar's rank matches the board just fetched
+    useEffect(() => {
+        void refreshCampaigns();
+        void getStoredUserId().then(setMyUserId);
+    }, []);
 
     const [track, setTrack] = useState<string | null>(myTrack ?? tracks[0]?.key ?? null);
     const [period, setPeriod] = useState<CampaignPeriodKind>(
@@ -109,6 +117,18 @@ export default function CampaignLeaderboardScreen() {
     const listEntries = topThree.length > 0 ? entries.slice(topThree.length) : entries;
     const winnerPodium = [topThree[1], topThree[0], topThree[2]].filter((entry) => !!entry);
     const showPrizeFooter = prizes.length > 0 && !winners;
+
+    const boardPeriod = board?.period;
+    const onMyTrack = tracks.length === 0 || !board?.track || board.track === myTrack;
+    const meStanding = (slug ? state.me[slug]?.periods ?? [] : []).find(
+        (standing) =>
+            typeof standing.period === 'object' && standing.period.kind === boardPeriod?.kind && standing.period.key === boardPeriod?.key
+    );
+    const meOnPage = myUserId ? entries.find((entry) => entry.userId === myUserId) : undefined;
+    const myRank = meStanding?.rank ?? meOnPage?.rank ?? null;
+    const myScore = meStanding?.score ?? meOnPage?.campaignScore ?? null;
+    const showMe = !loading && !failed && onMyTrack && myScore !== null && !meOnPage;
+    const myPage = myRank && board?.pageSize ? Math.ceil(myRank / board.pageSize) : null;
 
     const winnersHeader =
         winnerPodium.length > 0 ? (
@@ -280,7 +300,7 @@ export default function CampaignLeaderboardScreen() {
                     <FlatList
                         data={listEntries}
                         keyExtractor={(entry) => entry.userId}
-                        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: showPrizeFooter || showPager ? 16 : insets.bottom + 24 }}
+                        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: showPrizeFooter || showPager || showMe ? 16 : insets.bottom + 24 }}
                         ListHeaderComponent={winnersHeader}
                         ListEmptyComponent={
                             topThree.length > 0 ? null : (
@@ -292,7 +312,16 @@ export default function CampaignLeaderboardScreen() {
                         renderItem={({ item }) => (
                             <View
                                 className="flex-row items-center py-3"
-                                style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}
+                                style={[
+                                    { borderBottomWidth: 1, borderBottomColor: theme.border },
+                                    item.userId === myUserId && {
+                                        borderWidth: 1,
+                                        borderColor: colors.primary.main,
+                                        borderBottomColor: colors.primary.main,
+                                        borderRadius: 10,
+                                        paddingHorizontal: 8,
+                                    },
+                                ]}
                             >
                                 <Text className="w-10 font-bold" style={{ color: item.rank <= 3 ? colors.primary.main : theme.textSecondary }}>
                                     #{item.rank}
@@ -315,7 +344,7 @@ export default function CampaignLeaderboardScreen() {
                     style={{
                         borderTopWidth: 1,
                         borderTopColor: theme.border,
-                        paddingBottom: showPrizeFooter ? 12 : insets.bottom + 12,
+                        paddingBottom: showPrizeFooter || showMe ? 12 : insets.bottom + 12,
                     }}
                 >
                     {pageButton(t('campaign-page-previous'), 'chevron-back', page > 1, () => setPage(page - 1))}
@@ -323,6 +352,28 @@ export default function CampaignLeaderboardScreen() {
                         {t('campaign-page-of', { page, total: totalPages })}
                     </Text>
                     {pageButton(t('campaign-page-next'), 'chevron-forward', page < totalPages, () => setPage(page + 1))}
+                </View>
+            )}
+
+            {showMe && (
+                <View className="px-4 pt-3" style={{ paddingBottom: showPrizeFooter ? 12 : insets.bottom + 12 }}>
+                    <TouchableOpacity
+                        onPress={() => myPage && setPage(myPage)}
+                        disabled={!myPage || myPage === page}
+                        activeOpacity={0.7}
+                        className="flex-row items-center rounded-xl px-4 py-3"
+                        style={{ borderWidth: 1, borderColor: colors.primary.main }}
+                    >
+                        <Text className="w-12 font-bold" style={{ color: colors.primary.main }}>
+                            {myRank ? `#${myRank}` : '—'}
+                        </Text>
+                        <Text className="flex-1 text-base font-semibold" style={{ color: theme.textPrimary }} numberOfLines={1}>
+                            {t('campaign-you')}
+                        </Text>
+                        <Text className="font-bold text-base" style={{ color: theme.textPrimary }}>
+                            {myScore}
+                        </Text>
+                    </TouchableOpacity>
                 </View>
             )}
 

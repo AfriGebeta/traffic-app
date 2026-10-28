@@ -4547,12 +4547,37 @@
     {
         "key": "tour-track-points",
         "EN_US": "Track your points in Profile → Campaigns.",
-        "AM": "ነጥቦችዎን በመገለጫ → ዘመቻዎች ይከታተሉ።"
+        "AM": "ነጥቦችዎን በመገለጫ → ውድድሮች ይከታተሉ።"
     },
     {
         "key": "tour-skip-all",
         "EN_US": "Skip tour",
         "AM": "ጉብኝቱን ዝለል"
+    },
+    {
+        "key": "tour-profile-title",
+        "EN_US": "Your profile",
+        "AM": "የእርስዎ መገለጫ"
+    },
+    {
+        "key": "tour-profile-text",
+        "EN_US": "Your campaigns, points and leaderboards are in your profile.",
+        "AM": "ውድድሮችዎ፣ ነጥቦችዎ እና የደረጃ ሰንጠረዦች በመገለጫዎ ውስጥ ይገኛሉ።"
+    },
+    {
+        "key": "tour-open-profile",
+        "EN_US": "Open Profile",
+        "AM": "መገለጫን ክፈት"
+    },
+    {
+        "key": "tour-campaigns-title",
+        "EN_US": "Your campaigns",
+        "AM": "ውድድሮችዎ"
+    },
+    {
+        "key": "tour-campaigns-text",
+        "EN_US": "Tap here anytime to see your points, your rank and the leaderboard for each campaign.",
+        "AM": "የእያንዳንዱን ውድድር ነጥቦችዎን፣ ደረጃዎን እና የደረጃ ሰንጠረዡን ለማየት በማንኛውም ጊዜ እዚህ ይንኩ።"
     },
     {
         "key": "tour-skip",
@@ -4573,6 +4598,11 @@
         "key": "tour-done",
         "EN_US": "Done",
         "AM": "ጨርሻለሁ"
+    },
+    {
+        "key": "campaign-you",
+        "EN_US": "You",
+        "AM": "እርስዎ"
     },
     {
         "key": "campaign-you-won-title",
