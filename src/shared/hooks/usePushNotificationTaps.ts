@@ -48,6 +48,7 @@ export const usePushNotificationTaps = (pathname: string, isNavigationPath: (pat
 
         const open = (message: RemoteMessage | null) => {
             if (!message) return;
+            console.log('[push] opened', message.data?.event ?? 'no event', message.data?.deliveryId ?? '');
             // counted as opened even if routing waits for navigation to end
             markOpened(message);
             if (isNavigationPath(pathnameRef.current)) {
@@ -64,6 +65,7 @@ export const usePushNotificationTaps = (pathname: string, isNavigationPath: (pat
 
         const unsubscribeOpened = onNotificationOpenedApp(messaging, open);
         const unsubscribeForeground = onMessage(messaging, (message) => {
+            console.log('[push] received while open', message.data?.event ?? 'no event', message.data?.deliveryId ?? '');
             const text = toastText(message);
             if (text) showToast(text);
         });

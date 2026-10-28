@@ -21,7 +21,7 @@ export const notificationService = {
     // callers fire and forget; a failure only means it stays unread
     async markRead(deliveryId: string, via: ReadVia): Promise<boolean> {
         const response = await apiService.post(`${INBOX_PATH}/${encodeURIComponent(deliveryId)}/read`, { via });
-        if (__DEV__) console.log('[notifications] marked read', deliveryId, `via ${via}`, response.error ? `failed ${response.status}` : 'ok');
+        console.log('[notifications] marked read', deliveryId, `via ${via}`, response.error ? `failed ${response.status}` : 'ok');
         return !response.error;
     },
 

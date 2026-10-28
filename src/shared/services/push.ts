@@ -10,11 +10,13 @@ import i18n from '../utils/localization/i18n';
 import { hasPlayServices } from '../utils/playServices';
 import { apiService } from './api';
 import { getAccessToken, onSessionExpired, onSessionStarted } from './auth-session';
+import { logBreadcrumb } from '../utils/crashlytics';
 
 const DEVICES_PATH = '/api/notifications/devices';
 
 const log = (...args: unknown[]) => {
-    if (__DEV__) console.log('[push]', ...args);
+    console.log('[push]', ...args);
+    logBreadcrumb(`push: ${args.map((arg) => (typeof arg === 'string' ? arg : JSON.stringify(arg))).join(' ')}`);
 };
 
 const supported = () => Platform.OS === 'android' && hasPlayServices();
@@ -32,7 +34,9 @@ let lastRegistered: string | null = null;
 export const registerPushDevice = async (fcmToken?: string): Promise<void> => {
     try {
         const accessToken = await getAccessToken();
-        if (!supported() || !accessToken || !(await notificationsAllowed())) return;
+        if (!supported()) return log('register skipped: no Play Services or not Android');
+        if (!accessToken) return log('register skipped: not signed in');
+        if (!(await notificationsAllowed())) return log('register skipped: notifications not allowed');
         const token = fcmToken ?? (await getToken(getMessaging()));
         const language = appLanguage();
         const key = `${token}|${language}|${accessToken}`;
