@@ -22,6 +22,17 @@ import {
     calculateDistance,
     calculateBearing,
 } from '../../modules/navigation/utils/navigationUtils';
+import {
+    buildCongestionPieces,
+    buildCongestionShapes,
+    computeCongestionSpans,
+    congestionClipKey,
+    congestionShapeAt,
+    congestionShapesAt,
+    type CongestionIncident,
+} from '../../modules/navigation/utils/routeCongestion';
+import type { CongestionLevel } from '../../modules/incidents/types/incident.types';
+import { NAV_MARKER_MAP_IMAGES, useNavMarker } from '../../modules/preferences/store/navMarkerStore';
 import MapIncidentAccidentIcon from '../../../assets/images/map-incident-accident.svg';
 import MapIncidentBadWeatherIcon from '../../../assets/images/map-incident-bad-weather.svg';
 import MapIncidentBrokenRoadIcon from '../../../assets/images/map-incident-broken-road.svg';
@@ -50,6 +61,55 @@ const HOME_PAN_PIXEL_TOLERANCE = 30;
 const HOME_ZOOM_TOLERANCE = 0.25;
 
 const EMPTY_FEATURE_COLLECTION = { type: 'FeatureCollection' as const, features: [] };
+
+// drawn bottom to top so a worse level's fade-in blends over the level beside it
+const CONGESTION_LEVELS_BY_RANK: CongestionLevel[] = ['low', 'medium', 'high'];
+const CONGESTION_RGB: Record<CongestionLevel, string> = {
+    low: '250, 204, 21',
+    medium: '245, 158, 11',
+    high: '220, 38, 38',
+};
+
+// an array, not a component: ShapeSource only hands its id to direct children
+const congestionLayers = (
+    idPrefix: string,
+    level: CongestionLevel,
+    style: { lineWidth: number; lineOpacity: number },
+    belowLayerID?: string
+) => {
+    const rgb = CONGESTION_RGB[level];
+    // round caps would stack where the pieces meet
+    const base = { ...style, lineCap: 'butt' as const, lineJoin: 'round' as const };
+    return [
+        <MapLibreGL.LineLayer
+            key="solid"
+            id={`${idPrefix}-${level}-solid-layer`}
+            belowLayerID={belowLayerID}
+            filter={['==', ['get', 'part'], 'solid']}
+            style={{ ...base, lineColor: `rgb(${rgb})` }}
+        />,
+        <MapLibreGL.LineLayer
+            key="in"
+            id={`${idPrefix}-${level}-in-layer`}
+            belowLayerID={belowLayerID}
+            filter={['==', ['get', 'part'], 'in']}
+            style={{
+                ...base,
+                lineGradient: ['interpolate', ['linear'], ['line-progress'], 0, `rgba(${rgb}, 0)`, 1, `rgba(${rgb}, 1)`],
+            }}
+        />,
+        <MapLibreGL.LineLayer
+            key="out"
+            id={`${idPrefix}-${level}-out-layer`}
+            belowLayerID={belowLayerID}
+            filter={['==', ['get', 'part'], 'out']}
+            style={{
+                ...base,
+                lineGradient: ['interpolate', ['linear'], ['line-progress'], 0, `rgba(${rgb}, 1)`, 1, `rgba(${rgb}, 0)`],
+            }}
+        />,
+    ];
+};
 
 const HOME_FOLLOW_MAX_DRIFT_METERS = 120;
 
@@ -171,6 +231,9 @@ interface ExtendedGebetaMapProps extends Omit<GebetaMapProps, 'center'> {
             icon: string | null;
         };
         description: string;
+        congestionLevel?: CongestionLevel | null;
+        heading?: number | null;
+        expiresAt?: string;
     }>;
     rules?: Array<{
         id: string;
@@ -268,6 +331,7 @@ const NavigationMarker = memo(forwardRef<any, {
     visible,
     hidden,
 }, ref) => {
+    const marker = useNavMarker();
     const shape = useMemo(() => ({
         type: 'Feature' as const,
         properties: { heading },
@@ -281,8 +345,8 @@ const NavigationMarker = memo(forwardRef<any, {
             <MapLibreGL.SymbolLayer
                 id="nav-marker-layer"
                 style={{
-                    iconImage: 'navPuck',
-                    iconSize: 1.1,
+                    iconImage: marker.mapImage,
+                    iconSize: marker.iconSize,
                     iconRotate: ['get', 'heading'],
                     iconRotationAlignment: 'map',
                     iconAllowOverlap: true,
@@ -437,6 +501,7 @@ interface AnimatedNavLayerProps {
     moveCamera?: (center: [number, number], heading: number) => void;
     cameraLocked: boolean;
     maneuvers?: Array<{ begin_shape_index: number; type?: number }>;
+    incidents?: CongestionIncident[];
 }
 
 
@@ -498,6 +563,7 @@ const AnimatedNavLayer = memo(({
     moveCamera,
     cameraLocked,
     maneuvers,
+    incidents,
 }: AnimatedNavLayerProps) => {
     const taxiRoad = useMemo(() => createTaxiRoad(taxiActiveRouteGeoJSON?.geometry?.coordinates),
         [taxiActiveRouteGeoJSON]);
@@ -529,6 +595,20 @@ const AnimatedNavLayer = memo(({
             })
             .sort((a, b) => a - b);
     }, [coords, cum, rawCoords, maneuvers]);
+
+    const isDashed = !!routeLineStyle.lineDasharray;
+    const congestionPieces = useMemo(() => {
+        if (!useRouteModel || !coords || !cum || isDashed || !incidents?.length) return [];
+        return buildCongestionPieces(computeCongestionSpans(coords, cum, incidents));
+    }, [useRouteModel, coords, cum, isDashed, incidents]);
+    // the tick reads pieces from a ref so new incidents don't restart the animation loop
+    const congestionPiecesRef = useRef(congestionPieces);
+    const congestionSrcRefs = useRef<Record<CongestionLevel, any>>({ low: null, medium: null, high: null });
+    const congestionKeysRef = useRef<Record<CongestionLevel, string>>({ low: '', medium: '', high: '' });
+    useEffect(() => {
+        congestionPiecesRef.current = congestionPieces;
+        congestionKeysRef.current = { low: '', medium: '', high: '' };
+    }, [congestionPieces]);
 
     const puckSrcRef = useRef<any>(null);
     const lineSrcRef = useRef<any>(null);
@@ -797,20 +877,29 @@ const AnimatedNavLayer = memo(({
 
             if (useRouteModel && !isTaxiNavigation && coords && cum && now - lastLine >= NAV_LINE_MS) {
                 lastLine = now;
+                const lineFromS = s + NAV_LINE_TRIM_AHEAD_M + vRef.current * NAV_LINE_LAG_COMP_S;
                 lineSrcRef.current?.setNativeProps({
                     shape: JSON.stringify({
                         type: 'Feature',
                         properties: {},
                         geometry: {
                             type: 'LineString',
-                            coordinates: sliceFromDistance(
-                                coords,
-                                cum,
-                                s + NAV_LINE_TRIM_AHEAD_M + vRef.current * NAV_LINE_LAG_COMP_S
-                            ),
+                            coordinates: sliceFromDistance(coords, cum, lineFromS),
                         },
                     }),
                 });
+
+                const pieces = congestionPiecesRef.current;
+                if (pieces.length > 0) {
+                    for (const level of CONGESTION_LEVELS_BY_RANK) {
+                        const key = congestionClipKey(pieces, level, lineFromS);
+                        if (key === congestionKeysRef.current[level]) continue;
+                        congestionKeysRef.current[level] = key;
+                        congestionSrcRefs.current[level]?.setNativeProps({
+                            shape: JSON.stringify(congestionShapeAt(coords, cum, pieces, level, lineFromS)),
+                        });
+                    }
+                }
             }
 
             if (useRouteModel && maneuverS.length > 0) {
@@ -871,6 +960,11 @@ const AnimatedNavLayer = memo(({
         };
     }, [useRouteModel, isTaxiNavigation, coords, cum, lineS]);
 
+    const congestionShapes = useMemo(
+        () => (coords && cum ? congestionShapesAt(coords, cum, congestionPieces, lineS + NAV_LINE_TRIM_AHEAD_M) : null),
+        [coords, cum, congestionPieces, lineS]
+    );
+
     return (
         <>
             {isNavigating && isTaxiNavigation && segmentedRoutes && segmentedRoutes.length > 0 && (
@@ -906,6 +1000,21 @@ const AnimatedNavLayer = memo(({
                     />
                 </MapLibreGL.ShapeSource>
             )}
+            {/* mounted after the nav line so these layers land above it, under the puck */}
+            {isNavigating && lineShape && !isDashed && CONGESTION_LEVELS_BY_RANK.map((level) => (
+                <MapLibreGL.ShapeSource
+                    key={`route-nav-congestion-${level}-source`}
+                    ref={(source: any) => { congestionSrcRefs.current[level] = source; }}
+                    id={`route-nav-congestion-${level}-source`}
+                    shape={congestionShapes?.[level] ?? EMPTY_FEATURE_COLLECTION}
+                    lineMetrics
+                >
+                    {congestionLayers('route-nav-congestion', level, {
+                        lineWidth: routeLineStyle.lineWidth ?? 16,
+                        lineOpacity: 1,
+                    }, 'nav-marker-layer')}
+                </MapLibreGL.ShapeSource>
+            ))}
             {isNavigating && arrowShapes && imagesLoaded && (
                 <>
                     <MapLibreGL.ShapeSource id="nav-arrow-shaft-source" shape={arrowShapes.shaft}>
@@ -969,6 +1078,7 @@ export type TrafficMapRef = GebetaMapRef & {
 const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
     ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, routeEpoch, taxiActiveRouteGeoJSON, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, isHomeMap, staticInitialCamera, freeCamera, maneuvers, boundingBox, alternativeRoutesGeoJSON, routeTimeLabels }, ref) => {
         const navPuckFraction = isTaxiNavigation ? 0.52 : NAV_PUCK_SCREEN_FRACTION;
+        const navMarker = useNavMarker();
         const { isDark } = useTheme();
         const foregroundEpoch = useForegroundEpoch();
         const [mapStyleState, setMapStyleState] = useState<Record<string, unknown> | null>(() =>
@@ -1621,6 +1731,15 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
             };
         }, [isNavigating, routeGeoJSON, segmentedRoutes, routeStyle?.isDotted]);
 
+        const congestionShapes = useMemo(() => {
+            if (isNavigating || !routeGeoJSON || segmentedRoutes || routeStyle?.isDotted || !incidents?.length) return null;
+            const coords: [number, number][] | undefined = routeGeoJSON.geometry?.coordinates;
+            if (!coords || coords.length < 2) return null;
+            const cum = buildCumulativeDistances(coords);
+            const spans = computeCongestionSpans(coords, cum, incidents);
+            return spans.length > 0 ? buildCongestionShapes(coords, cum, spans) : null;
+        }, [isNavigating, routeGeoJSON, segmentedRoutes, routeStyle?.isDotted, incidents]);
+
         const hasAlternativeRoutes = !isNavigating
             && !segmentedRoutes
             && !routeStyle?.isDotted
@@ -2156,7 +2275,7 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
                             />
                         )}
 
-                        <MapLibreGL.Images images={{ navPuck: MAPPIN_IMAGE, navArrowHead: NAV_ARROWHEAD_IMAGE, taxiStation: TAXI_MARKER_IMAGE }} />
+                        <MapLibreGL.Images images={{ ...NAV_MARKER_MAP_IMAGES, navArrowHead: NAV_ARROWHEAD_IMAGE, taxiStation: TAXI_MARKER_IMAGE }} />
 
 
                         {!(isNavigating && isTaxiNavigation) && segmentedRoutes && segmentedRoutes.length > 0 && segmentedRoutes.map((route) => {
@@ -2223,6 +2342,21 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
                                 }}
                             />
                         </MapLibreGL.ShapeSource>
+
+                        {CONGESTION_LEVELS_BY_RANK.map((level) => (
+                            // keyed like the preview layer so a remount of that layer can't land on top of this one
+                            <MapLibreGL.ShapeSource
+                                key={`route-congestion-${level}-source-${routeStyle?.isDotted ? 'dotted' : 'solid'}`}
+                                id={`route-congestion-${level}-source`}
+                                shape={congestionShapes?.[level] ?? EMPTY_FEATURE_COLLECTION}
+                                lineMetrics
+                            >
+                                {congestionLayers('route-congestion', level, {
+                                    lineWidth: defaultRouteStyle.width,
+                                    lineOpacity: activeSegmentGeoJSON ? 0.35 : 1,
+                                })}
+                            </MapLibreGL.ShapeSource>
+                        ))}
 
                         {!isNavigating && activeSegmentGeoJSON && (
                             <MapLibreGL.ShapeSource
@@ -2488,6 +2622,7 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
                             moveCamera={moveCamera}
                             cameraLocked={!!showFollowCamera}
                             maneuvers={maneuvers}
+                            incidents={incidents}
                         />
 
                         {!isNavigating && routeOrigin && imagesLoaded && (
@@ -2755,12 +2890,15 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
                             pointerEvents="none"
                             style={[
                                 styles.navPuckOverlay,
-                                { top: mapHeight * navPuckFraction - NAV_PUCK_OVERLAY_SIZE / 2 - NAV_PUCK_FORWARD_PX },
+                                { top: mapHeight * navPuckFraction - (NAV_PUCK_OVERLAY_SIZE * navMarker.overlayScale) / 2 - NAV_PUCK_FORWARD_PX },
                             ]}
                         >
                             <Image
-                                source={MAPPIN_IMAGE}
-                                style={styles.navPuckImage}
+                                source={navMarker.image}
+                                style={{
+                                    width: NAV_PUCK_OVERLAY_SIZE * 1.25 * navMarker.overlayScale,
+                                    height: NAV_PUCK_OVERLAY_SIZE * navMarker.overlayScale,
+                                }}
                                 resizeMode="stretch"
                             />
                         </View>
@@ -2783,10 +2921,6 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         alignItems: 'center',
-    },
-    navPuckImage: {
-        width: NAV_PUCK_OVERLAY_SIZE * 1.25,
-        height: NAV_PUCK_OVERLAY_SIZE,
     },
 });
 

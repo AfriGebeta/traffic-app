@@ -17,6 +17,7 @@ import { getLastTrackKey, setLastTrackKey } from '../utils/campaignPrefs';
 import { pickLocalized } from '../utils/localizedText';
 import { periodLabel } from '../utils/periodLabel';
 import { ordinal } from '../utils/ordinal';
+import { startCampaignTour } from '../tour/campaignTour';
 import { CampaignKind, CampaignTrack } from '../types/campaign.types';
 
 const NO_TRACKS: CampaignTrack[] = [];
@@ -93,6 +94,13 @@ export default function CampaignDetailScreen() {
 
     const needsTrack = tracks.length > 0;
 
+    // back to the map, where the walkthrough starts; pops everything (banner → detail, or profile → list → detail)
+    const showMeAround = () => {
+        if (!campaign) return;
+        startCampaignTour(campaign.slug);
+        router.dismissTo('/');
+    };
+
     const join = async () => {
         if (!campaign || (needsTrack && !selectedTrack) || joining) return;
         if (!(await requireAuth())) return;
@@ -104,9 +112,7 @@ export default function CampaignDetailScreen() {
             markCampaignJoined(campaign.slug, track);
             showToast(t('campaign-joined'));
             void refreshCampaigns();
-            // back to the map to start contributing; pops everything (banner → detail, or profile → list → detail)
-            if (router.canDismiss()) router.dismissAll();
-            else router.replace('/');
+            showMeAround();
         } catch (error) {
             const code = error instanceof ApiError ? error.code : undefined;
             if (isRestrictedError(code)) return;
@@ -305,6 +311,15 @@ export default function CampaignDetailScreen() {
                             {t('my-contributions')}
                         </Text>
                         <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+                    </TouchableOpacity>
+                )}
+
+                {participating && (
+                    <TouchableOpacity onPress={showMeAround} activeOpacity={0.7} className="flex-row items-center self-start mb-6 -mt-3">
+                        <Ionicons name="help-circle-outline" size={18} color={colors.primary.main} />
+                        <Text className="font-semibold ml-1.5" style={{ color: colors.primary.main }}>
+                            {t('campaign-how-to-take-part')}
+                        </Text>
                     </TouchableOpacity>
                 )}
 

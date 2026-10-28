@@ -46,6 +46,11 @@ export interface AppConfigValues {
   // incident refresh
   incidentPollIntervalMs: number;
 
+  // route line jam overlay: span length per congestion level
+  congestionLowLengthM: number;
+  congestionMediumLengthM: number;
+  congestionHighLengthM: number;
+
   // proxiimity alerts
   incidentAlertDistanceKm: number;
   incidentClearDistanceKm: number;
@@ -115,6 +120,10 @@ export const APP_CONFIG_DEFAULTS: AppConfigValues = {
 
   incidentPollIntervalMs: 45000,
 
+  congestionLowLengthM: 200,
+  congestionMediumLengthM: 400,
+  congestionHighLengthM: 700,
+
   incidentAlertDistanceKm: 1,
   incidentClearDistanceKm: 0.2,
   ruleAlertDistanceKm: 0.2,
@@ -177,6 +186,10 @@ export const RC_KEYS: Record<keyof AppConfigValues, string> = {
   taxiSuggestRearmGrowth: 'taxi_suggest_rearm_growth',
 
   incidentPollIntervalMs: 'incident_poll_interval_ms',
+
+  congestionLowLengthM: 'congestion_low_length_m',
+  congestionMediumLengthM: 'congestion_medium_length_m',
+  congestionHighLengthM: 'congestion_high_length_m',
 
   incidentAlertDistanceKm: 'incident_alert_distance_km',
   incidentClearDistanceKm: 'incident_clear_distance_km',

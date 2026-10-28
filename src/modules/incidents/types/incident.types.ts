@@ -6,6 +6,7 @@ export interface IncidentTypeFromAPI {
     defaultRadius: number;
     defaultDuration: number;
     severity: number;
+    directional?: boolean;
     createdAt: string;
     updatedAt: string;
 }
@@ -22,6 +23,7 @@ export interface Incident {
     type: IncidentTypeFromAPI;
     description: string;
     direction?: string;
+    heading?: number | null;
     confirmed: boolean;
     createdAt: string;
     upvotes: number;
@@ -29,9 +31,7 @@ export interface Incident {
     congestionLevel?: CongestionLevel | null;
     reliability?: number;
     expiresAt?: string;
-    // reporter; null for anonymous reports
     userId?: string | null;
-    // true when the backend folded this report into an existing one (HTTP 200 instead of 201)
     merged?: boolean;
 }
 
@@ -41,10 +41,8 @@ export interface IncidentReportRequest {
     type: string;
     description: string;
     direction?: string;
-    // driving direction 0–360
     heading?: number;
     image?: string[];
-    // required by the API when type is TRAFFIC_JAM
     congestionLevel?: CongestionLevel;
 }
 

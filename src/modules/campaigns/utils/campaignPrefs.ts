@@ -26,3 +26,11 @@ export const getLastTrackKey = async (): Promise<string | null> =>
 
 export const setLastTrackKey = (key: string): Promise<void> =>
     AsyncStorage.setItem(LAST_TRACK_KEY, key).catch(() => undefined);
+
+const TOUR_SEEN_KEY = '@campaign_tour_seen';
+
+export const hasSeenCampaignTour = async (): Promise<boolean> =>
+    (await AsyncStorage.getItem(TOUR_SEEN_KEY).catch(() => null)) === 'true';
+
+export const markCampaignTourSeen = (): Promise<void> =>
+    AsyncStorage.setItem(TOUR_SEEN_KEY, 'true').catch(() => undefined);

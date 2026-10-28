@@ -7,9 +7,12 @@ import { TrafficRuleType } from '../types/rule.types';
 import { useTranslation } from 'react-i18next';
 import { RULE_TRANSLATION_MAP, sortRuleTypes } from '../utils/ruleTranslations';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { useCampaignGpsWarmup } from '../../campaigns/hooks/useCampaignGpsWarmup';
 
 export default function RuleContributionScreen() {
     const router = useRouter();
+    // GPS starts here so the camera's location is ready when the photo is taken
+    useCampaignGpsWarmup(['traffic_rule']);
     const { t } = useTranslation();
     const { colors: theme, isDark } = useTheme();
     const { isNavigating, lat, lng } = useLocalSearchParams<{ isNavigating?: string; lat?: string; lng?: string }>();

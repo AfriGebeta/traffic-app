@@ -6,6 +6,7 @@ import { AuthResponse, UserRegistrationRequest } from '../types/user.types';
 import { resetHomeOnboarding } from '../../places/utils/homeOnboarding';
 import { AuthErrorCode, toFriendlyAuthError } from '../utils/authErrors';
 import { clearSession, getAccessToken } from '../../../shared/services/auth-session';
+import { unregisterPushDevice } from '../../../shared/services/push';
 
 const USER_STORAGE_KEY = '@traffic_app_user';
 
@@ -92,6 +93,7 @@ export const useUserRegistration = () => {
     const getStoredToken = (): Promise<string | null> => getAccessToken();
 
     const clearAuth = async (): Promise<void> => {
+        await unregisterPushDevice();
         await clearSession();
         await resetHomeOnboarding();
     };
