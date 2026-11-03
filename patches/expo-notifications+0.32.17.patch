@@ -1,0 +1,13 @@
+diff --git a/node_modules/expo-notifications/android/src/main/java/expo/modules/notifications/service/NotificationsService.kt b/node_modules/expo-notifications/android/src/main/java/expo/modules/notifications/service/NotificationsService.kt
+index ed4c7b1..b1942f5 100644
+--- a/node_modules/expo-notifications/android/src/main/java/expo/modules/notifications/service/NotificationsService.kt
++++ b/node_modules/expo-notifications/android/src/main/java/expo/modules/notifications/service/NotificationsService.kt
+@@ -375,6 +375,8 @@ open class NotificationsService : BroadcastReceiver() {
+     fun doWork(context: Context, intent: Intent) {
+       findDesignatedBroadcastReceiver(context, intent)?.let {
+         intent.component = ComponentName(it.packageName, it.name)
++        // foreground queue: the background one is shared by every app and can hold this for minutes
++        intent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
+         context.sendBroadcast(intent)
+         return
+       }
