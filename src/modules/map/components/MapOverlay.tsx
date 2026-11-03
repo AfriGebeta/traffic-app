@@ -13,6 +13,7 @@ import { DestinationCard } from './DestinationCard';
 import { FloatingActions } from './FloatingActions';
 import { BottomNavigation } from './BottomNavigation';
 import { CampaignTourProvider } from '../../campaigns/tour/CampaignTourProvider';
+import { CampaignEndingBanner } from '../../campaigns/components/CampaignEndingBanner';
 import { MapCampaignTour, useMapTourActions } from '../../campaigns/tour/MapCampaignTour';
 import { MapThemeSelector } from './MapThemeSelector';
 import { RoutePointsBar } from '../../navigation/components/RoutePointsBar';
@@ -197,6 +198,8 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                             selectedCategory={selectedExploreCategory}
                         />
                     )}
+
+                    {!showSearchContainer && !isNavigationMinimized && <CampaignEndingBanner />}
 
                     {!showSearchContainer && !isWide && (
                         <>

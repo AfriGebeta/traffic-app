@@ -5188,5 +5188,35 @@
         "key": "personalisation",
         "EN_US": "Personalisation",
         "AM": "ፍላጎቶች"
+    },
+    {
+        "key": "campaign-ending-title",
+        "EN_US": "{{name}} ends in {{time}}",
+        "AM": "{{name}} በ{{time}} ውስጥ ያበቃል"
+    },
+    {
+        "key": "campaign-ending-rank",
+        "EN_US": "You're #{{rank}} — keep contributing",
+        "AM": "#{{rank}} ላይ ነዎት - ውድድሩን ይቀጥሉ"
+    },
+    {
+        "key": "campaign-ending-keep-going",
+        "EN_US": "Keep contributing to climb the board",
+        "AM": "ደረጃዎን ለማሻሻል ውድድሩን ይቀጥሉ"
+    },
+    {
+        "key": "campaign-ending-join",
+        "EN_US": "Last chance to join",
+        "AM": "ለመቀላቀል የመጨረሻ ዕድል"
+    },
+    {
+        "key": "campaign-ending-time-hm",
+        "EN_US": "{{h}} h {{m}} m",
+        "AM": "{{h}} ሰዓት {{m}} ደቂቃ"
+    },
+    {
+        "key": "campaign-ending-time-m",
+        "EN_US": "{{m}} m",
+        "AM": "{{m}} ደቂቃ"
     }
 ]
