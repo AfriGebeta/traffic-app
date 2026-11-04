@@ -35,6 +35,7 @@ import { ruleService } from '../../rules/services/rule.service';
 import { TrafficRuleType } from '../../rules/types/rule.types';
 import { RULE_TRANSLATION_MAP, sortRuleTypes, NO_PUNISHMENT_VALUE } from '../../rules/utils/ruleTranslations';
 import { INCIDENT_SVG_ICON_MAP } from './incidentIcons';
+import { askForNotifications } from '../../../shared/services/notificationPermission';
 
 const AUTO_REPORT_MS = 5000;
 const TILE_CIRCLE = 76;
@@ -174,6 +175,7 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
                     showToast(t(response.data?.merged ? 'report-merged-thanks' : 'incident-reported-successfully'));
                     // a merge confirms someone else's report, so no new-contribution points
                     if (!response.data?.merged) showCampaignPointsEstimate('incident', location, { hasPhoto: !!photo });
+                    void askForNotifications('contribution');
                     onIncidentReported?.();
                 } else {
                     const report = await ruleService.reportRule({
@@ -185,6 +187,7 @@ export const QuickReportSheet: React.FC<QuickReportSheetProps> = ({
                     });
                     showToast(t(report.merged ? 'report-merged-thanks' : 'traffic-rule-report-submitted'));
                     if (!report.merged) showCampaignPointsEstimate('traffic_rule', location);
+                    void askForNotifications('contribution');
                 }
                 dashboardEventsService.contribute();
             } catch (error) {

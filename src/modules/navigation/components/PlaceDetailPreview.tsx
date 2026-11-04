@@ -37,14 +37,16 @@ const ActionPill: React.FC<ActionPillProps> = ({ icon, imageSource, label, onPre
     <TouchableOpacity
         onPress={onPress}
         activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel={label}
         style={{
             flexDirection: 'row',
             alignItems: 'center',
-            paddingVertical: 9,
-            paddingHorizontal: 12,
-            borderRadius: 999,
+            borderRadius: 10,
             backgroundColor: primary ? colors.primary.main : colors.primary.light,
             marginRight: 8,
+            paddingVertical: 9,
+            paddingHorizontal: 12,
         }}
     >
         {imageSource ? (
@@ -60,8 +62,13 @@ const ActionPill: React.FC<ActionPillProps> = ({ icon, imageSource, label, onPre
             style={{
                 marginLeft: 6,
                 fontSize: 13,
+                lineHeight: 18,
                 fontWeight: '600',
-                color: primary ? '#FFFFFF' : colors.primary.main,
+                // Android pads text above the glyphs, which drops it below the icon's center
+                includeFontPadding: false,
+                textAlignVertical: 'center',
+                // pill bg is light peach in both themes, so black stays readable in dark mode too
+                color: primary ? '#FFFFFF' : '#000000',
             }}
         >
             {label}
@@ -247,19 +254,19 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
         >
             <BlurView intensity={100} tint={isDark ? 'dark' : 'light'} style={{ flex: 1, borderRadius: 24 }}>
                 <View style={{ backgroundColor: isDark ? 'rgba(30, 30, 30, 0.6)' : 'rgba(255, 255, 255, 0.4)', borderRadius: 24 }}>
-                    <View className="px-5 pt-4 flex-row items-center justify-end">
+                    <View className="px-5 pt-3 pb-1 flex-row items-center justify-end">
                         <TouchableOpacity
                             onPress={onClose}
-                            className="w-9 h-9 items-center justify-center rounded-full"
+                            className="w-8 h-8 items-center justify-center rounded-full"
                             style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : '#F3F4F6' }}
                         >
-                            <Ionicons name="close" size={22} color={theme.textPrimary} />
+                            <Ionicons name="close" size={20} color={theme.textPrimary} />
                         </TouchableOpacity>
                     </View>
 
-                    <View className="px-5 pb-2">
+                    <View className="px-5 pb-1">
                         <View
-                            className="rounded-2xl overflow-hidden mb-3"
+                            className="rounded-2xl overflow-hidden mb-2"
                             style={{ height: imageBoxHeight }}
                             onLayout={({ nativeEvent }) => setImageBoxWidth(nativeEvent.layout.width)}
                         >
@@ -291,36 +298,9 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
                                     onError={(e) => console.warn('[PlaceDetailPreview] video error', e)}
                                 />
                             ) : null}
-                            <TouchableOpacity
-                                onPress={handleContribute}
-                                activeOpacity={0.8}
-                                accessibilityRole="button"
-                                accessibilityLabel={t('edit')}
-                                style={{
-                                    position: 'absolute',
-                                    bottom: 16,
-                                    left: 0,
-                                    maxWidth: '95%',
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    backgroundColor: colors.primary.main,
-                                    borderTopRightRadius: 6,
-                                    borderBottomRightRadius: 6,
-                                    paddingVertical: 5,
-                                    paddingHorizontal: 11,
-                                }}
-                            >
-                                <Text
-                                    style={{ color: '#fff', fontSize: 11, fontWeight: '600', flexShrink: 1 }}
-                                    numberOfLines={1}
-                                    ellipsizeMode="tail"
-                                >
-                                    {t('edit')}
-                                </Text>
-                            </TouchableOpacity>
                         </View>
 
-                        <Text className="text-xl font-bold mb-1" style={{ color: theme.textPrimary }} numberOfLines={2}>
+                        <Text className="text-xl font-bold mb-0.5" style={{ color: theme.textPrimary }} numberOfLines={2}>
                             {place.name}
                         </Text>
 
@@ -335,8 +315,8 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
                         showsHorizontalScrollIndicator={false}
                         contentContainerStyle={{
                             paddingHorizontal: 20,
-                            paddingBottom: 14,
-                            paddingTop: 6,
+                            paddingBottom: 8,
+                            paddingTop: 4,
                         }}
                     >
                         <ActionPill
@@ -371,6 +351,42 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
                             onPress={handleShare}
                         />
                     </ScrollView>
+
+                    <View
+                        style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            marginHorizontal: 20,
+                            paddingTop: 8,
+                            paddingBottom: 10,
+                            borderTopWidth: 1,
+                            borderTopColor: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.08)',
+                        }}
+                    >
+                        <Text
+                            style={{ color: theme.textSecondary, fontSize: 13, lineHeight: 18, includeFontPadding: false, flexShrink: 1, marginRight: 12 }}
+                            numberOfLines={1}
+                        >
+                            {t('know-this-place')}
+                        </Text>
+                        <TouchableOpacity
+                            onPress={handleContribute}
+                            activeOpacity={0.7}
+                            accessibilityRole="button"
+                            accessibilityLabel={t('suggest-an-edit')}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            style={{ flexDirection: 'row', alignItems: 'center' }}
+                        >
+                            <Ionicons name="create-outline" size={16} color={colors.primary.main} />
+                            <Text
+                                style={{ marginLeft: 6, color: colors.primary.main, fontSize: 13, lineHeight: 18, fontWeight: '600', includeFontPadding: false, textAlignVertical: 'center' }}
+                                numberOfLines={1}
+                            >
+                                {t('suggest-an-edit')}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </BlurView>
         </View>

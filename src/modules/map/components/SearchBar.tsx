@@ -7,10 +7,6 @@ import { useGlass } from '../../../shared/theme/glass';
 import { GlassSheen } from '../../../shared/components/GlassSheen';
 import { useUserRegistration } from '../../register/hooks/useUserRegistration';
 import { useResolvedImageUri } from '../../../shared/hooks/useResolvedImageUri';
-import { useTranslation } from '../../../shared/hooks/useTranslation';
-import { CopilotStep } from 'react-native-copilot';
-import { useTourCampaign } from '../../campaigns/tour/useTourCampaign';
-import { TourTouchable } from '../../campaigns/tour/walkthroughables';
 
 interface SearchBarProps {
     value: string;
@@ -22,10 +18,9 @@ interface SearchBarProps {
     onProfilePress?: () => void;
     isLoading?: boolean;
     hideProfile?: boolean;
-    profileTourStep?: boolean;
 }
 
-export const ProfileButton: React.FC<{ onPress?: () => void; size?: number; tourStep?: boolean }> = ({ onPress, size = 39, tourStep = false }) => {
+export const ProfileButton: React.FC<{ onPress?: () => void; size?: number }> = ({ onPress, size = 39 }) => {
     const { colors: theme } = useTheme();
     const glass = useGlass();
     const { getStoredUser } = useUserRegistration();
@@ -43,7 +38,7 @@ export const ProfileButton: React.FC<{ onPress?: () => void; size?: number; tour
     );
 
     const button = (
-        <TourTouchable
+        <TouchableOpacity
             className="rounded-2xl"
             style={[glass.surface, { width: size, height: size, alignItems: 'center', justifyContent: 'center' }]}
             onPress={onPress}
@@ -55,22 +50,12 @@ export const ProfileButton: React.FC<{ onPress?: () => void; size?: number; tour
             ) : (
                 <Ionicons name="person" size={Math.round(size * 0.6)} color={theme.textPrimary} />
             )}
-        </TourTouchable>
+        </TouchableOpacity>
     );
 
-    return tourStep ? <ProfileTourStep>{button}</ProfileTourStep> : button;
+    return button;
 };
 
-// last map step of a first-timer's campaign tour: where their campaigns live
-const ProfileTourStep = ({ children }: { children: React.ReactElement }) => {
-    const { t } = useTranslation();
-    const tour = useTourCampaign();
-    return (
-        <CopilotStep name="profile" order={3} text={t('tour-profile-text')} active={tour.stage === 'map-report' && tour.firstTime}>
-            {children}
-        </CopilotStep>
-    );
-};
 
 export const SearchBar: React.FC<SearchBarProps> = ({
     value,
@@ -82,14 +67,13 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     onProfilePress,
     isLoading = false,
     hideProfile = false,
-    profileTourStep = false,
 }) => {
     const { colors: theme } = useTheme();
     const glass = useGlass();
 
     return (
         <View className="flex-row items-center gap-3">
-            {!hideProfile && <ProfileButton onPress={onProfilePress} tourStep={profileTourStep} />}
+            {!hideProfile && <ProfileButton onPress={onProfilePress} />}
 
             <View
                 className="flex-1 rounded-2xl flex-row items-center px-3 py-0.5"

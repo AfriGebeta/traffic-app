@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { hasSeenCampaignTour, markCampaignTourSeen } from '../utils/campaignPrefs';
 
-export type CampaignTourStage = 'map-contribute' | 'contribute-page' | 'map-report' | 'profile-campaigns';
+export type CampaignTourStage = 'map-contribute' | 'contribute-page' | 'map-report';
 
 interface CampaignTourState {
     slug: string | null;

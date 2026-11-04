@@ -22,6 +22,7 @@ import { angleDelta, haversine } from '../utils/geo';
 import { FreeDriveMotion, MotionFix, MotionSample } from '../utils/motionModel';
 import { TravelDirection } from '../utils/travelDirection';
 import { NAV_MARKER_MAP_IMAGES, useNavMarker } from '../../preferences/store/navMarkerStore';
+import { MapCompass, type MapCompassRef } from '../../../shared/components/MapCompass';
 
 const cameraPaddingTop = (mapHeight: number): number => {
     const desiredDp = (2 * PUCK_SCREEN_FRACTION - 1) * mapHeight;
@@ -135,7 +136,19 @@ const FreeDriveMapInner = forwardRef<FreeDriveMapHandle, FreeDriveMapProps>(({
         handleTouchStart();
         return false;
     }, [handleTouchStart]);
+    const compassRef = useRef<MapCompassRef>(null);
+    const [compassResetKey, setCompassResetKey] = useState(0);
+    useEffect(() => {
+        if (!compassResetKey) return;
+        const timer = setTimeout(() => setCompassResetKey(0), 700);
+        return () => clearTimeout(timer);
+    }, [compassResetKey]);
+    const handleRegionDidChange = useCallback((e: any) => {
+        compassRef.current?.setHeading(e?.properties?.heading ?? 0);
+    }, []);
+
     const handleRegionIsChanging = useCallback((e: any) => {
+        compassRef.current?.setHeading(e?.properties?.heading ?? 0);
         if (cameraFreeRef.current || !hasLockedOnRef.current) return;
 
         const now = Date.now();
@@ -358,15 +371,14 @@ const FreeDriveMapInner = forwardRef<FreeDriveMapHandle, FreeDriveMapProps>(({
                 mapStyle={styleJson ?? styleUrl}
                 logoEnabled={false}
                 attributionEnabled={false}
-                compassEnabled={cameraFree}
-                compassViewPosition={1}
-                compassViewMargins={{ x: 16, y: 130 }}
+                compassEnabled={false}
                 scrollEnabled
                 zoomEnabled
                 rotateEnabled
                 pitchEnabled
                 onDidFinishLoadingMap={() => setReady(true)}
                 onRegionIsChanging={handleRegionIsChanging}
+                onRegionDidChange={handleRegionDidChange}
                 {...({ onTouchStart: handleTouchStart } as Record<string, unknown>)}
             >
                 {!cameraFree && (
@@ -379,6 +391,16 @@ const FreeDriveMapInner = forwardRef<FreeDriveMapHandle, FreeDriveMapProps>(({
                             pitch: openAt.framed ? FREE_DRIVE_PITCH : WAITING_PITCH,
                             heading: lastSampleRef.current?.heading ?? 0,
                         }}
+                    />
+                )}
+                {cameraFree && !!compassResetKey && (
+                    // the follow camera is unmounted while free; a heading-only camera
+                    // lives just long enough to level the map back to north
+                    <MapLibreGL.Camera
+                        key={`free-drive-compass-reset-${compassResetKey}`}
+                        heading={0}
+                        animationDuration={400}
+                        animationMode="easeTo"
                     />
                 )}
                 <MapLibreGL.Images images={NAV_MARKER_MAP_IMAGES} />
@@ -403,6 +425,14 @@ const FreeDriveMapInner = forwardRef<FreeDriveMapHandle, FreeDriveMapProps>(({
                     />
                 </MapLibreGL.ShapeSource>
             </MapLibreGL.MapView>
+
+            {cameraFree && (
+                <MapCompass
+                    ref={compassRef}
+                    onPress={() => setCompassResetKey(k => k + 1)}
+                    style={{ top: 130, right: 16 }}
+                />
+            )}
 
             {showOverlayPuck && (
                 <View style={overlayStyle} pointerEvents="none">

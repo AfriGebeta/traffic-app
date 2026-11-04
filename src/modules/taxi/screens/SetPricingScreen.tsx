@@ -11,6 +11,7 @@ import { routeCacheService } from '../services/route-cache.service';
 import { showToast } from '../../../shared/utils/toast';
 import { ApiError, isRestrictedError } from '../../../shared/utils/apiErrors';
 import { estimateCampaignPoints, showPointsPopup } from '../../campaigns/utils/pointsPopup';
+import { askForNotifications } from '../../../shared/services/notificationPermission';
 
 interface RouteStop {
     id: string;
@@ -193,6 +194,7 @@ export default function SetPricingScreen() {
             console.log('Route creation complete!');
             showToast(t('route-created-successfully'));
             showPointsPopup(pendingPoints);
+            void askForNotifications('contribution');
 
             const segments = [];
             for (let i = 0; i < stops.length - 1; i++) {

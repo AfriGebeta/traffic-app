@@ -3425,6 +3425,16 @@
         "AM": "ነፃ ጉዞ"
     },
     {
+        "key": "gallery-points-warning",
+        "EN_US": "Photos from your gallery may not earn campaign points. Use the camera to be sure.",
+        "AM": "ከጋለሪ የተመረጡ ፎቶዎች የውድድር ነጥብ ላያስገኙ ይችላሉ። እርግጠኛ ለመሆን ካሜራውን ይጠቀሙ።"
+    },
+    {
+        "key": "reset-north",
+        "EN_US": "Reset map to north",
+        "AM": "ካርታውን ወደ ሰሜን መልስ"
+    },
+    {
         "key": "free-drive-on-road",
         "EN_US": "On road",
         "AM": "በጉዞ ላይ"
@@ -4228,6 +4238,16 @@
         "key": "edit",
         "EN_US": "Edit",
         "AM": "አስተካክል"
+    },
+    {
+        "key": "know-this-place",
+        "EN_US": "Know this place?",
+        "AM": "ይህን ቦታ ያውቁታል?"
+    },
+    {
+        "key": "suggest-an-edit",
+        "EN_US": "Suggest an edit",
+        "AM": "ማስተካከያ ይጠቁሙ"
     },
     {
         "key": "session-expired",
@@ -5188,5 +5208,110 @@
         "key": "personalisation",
         "EN_US": "Personalisation",
         "AM": "ፍላጎቶች"
+    },
+    {
+        "key": "campaign-ending-title",
+        "EN_US": "{{name}} ends in {{time}}",
+        "AM": "{{name}} በ{{time}} ውስጥ ያበቃል"
+    },
+    {
+        "key": "campaign-ending-rank",
+        "EN_US": "You're #{{rank}} — keep contributing",
+        "AM": "#{{rank}} ላይ ነዎት - ውድድሩን ይቀጥሉ"
+    },
+    {
+        "key": "campaign-ending-keep-going",
+        "EN_US": "Keep contributing to climb the board",
+        "AM": "ደረጃዎን ለማሻሻል ውድድሩን ይቀጥሉ"
+    },
+    {
+        "key": "campaign-ending-join",
+        "EN_US": "Last chance to join",
+        "AM": "ለመቀላቀል የመጨረሻ ዕድል"
+    },
+    {
+        "key": "campaign-ending-time-hm",
+        "EN_US": "{{h}} h {{m}} m",
+        "AM": "{{h}} ሰዓት {{m}} ደቂቃ"
+    },
+    {
+        "key": "campaign-ending-time-m",
+        "EN_US": "{{m}} m",
+        "AM": "{{m}} ደቂቃ"
+    },
+    {
+        "key": "notif-ask-title",
+        "EN_US": "Turn on notifications",
+        "AM": "ማሳወቂያዎችን ያብሩ"
+    },
+    {
+        "key": "notif-ask-body-home",
+        "EN_US": "Get told when your contributions are verified, when campaigns start and when you win.",
+        "AM": "አስተዋጽኦዎ ሲረጋገጥ፣ ውድድሮች ሲጀምሩ እና ሲያሸንፉ ይነገርዎታል።"
+    },
+    {
+        "key": "notif-ask-body-contribution",
+        "EN_US": "We'll tell you when this contribution is verified and your points are added.",
+        "AM": "ይህ አስተዋጽኦ ሲረጋገጥ እና ነጥቦችዎ ሲጨመሩ እናሳውቅዎታለን።"
+    },
+    {
+        "key": "notif-ask-body-campaign",
+        "EN_US": "We'll tell you about your rank, the final day and the winners.",
+        "AM": "ስለ ደረጃዎ፣ ስለ መጨረሻው ቀን እና ስለ አሸናፊዎች እናሳውቅዎታለን።"
+    },
+    {
+        "key": "notif-turn-on",
+        "EN_US": "Turn on",
+        "AM": "ያብሩ"
+    },
+    {
+        "key": "notif-not-now",
+        "EN_US": "Not now",
+        "AM": "አሁን አይደለም"
+    },
+    {
+        "key": "notif-strip-title",
+        "EN_US": "Notifications are off",
+        "AM": "ማሳወቂያዎች ጠፍተዋል"
+    },
+    {
+        "key": "notif-strip-body",
+        "EN_US": "You'll miss verifications, campaign news and prizes.",
+        "AM": "ማረጋገጫዎች፣ የውድድር ዜናዎች እና ሽልማቶች ያመልጥዎታል።"
+    },
+    {
+        "key": "campaign-next-title",
+        "EN_US": "Next campaign",
+        "AM": "ቀጣይ ውድድር"
+    },
+    {
+        "key": "campaign-starts-in",
+        "EN_US": "Starts in",
+        "AM": "የሚጀምረው በ"
+    },
+    {
+        "key": "campaign-starts-on",
+        "EN_US": "Starts {{date}}",
+        "AM": "የሚጀምረው {{date}}"
+    },
+    {
+        "key": "campaign-next-soon-title",
+        "EN_US": "Next campaign coming soon",
+        "AM": "ቀጣዩ ውድድር በቅርቡ ይመጣል"
+    },
+    {
+        "key": "campaign-next-soon-body",
+        "EN_US": "We'll let you know as soon as it's announced.",
+        "AM": "ልክ እንደታወቀ እናሳውቅዎታለን።"
+    },
+    {
+        "key": "map-load-failed-title",
+        "EN_US": "Couldn't load the map",
+        "AM": "ካርታውን መጫን አልተቻለም"
+    },
+    {
+        "key": "map-load-failed-body",
+        "EN_US": "Check your internet connection and try again.",
+        "AM": "የኢንተርኔት ግንኙነትዎን ያረጋግጡና እንደገና ይሞክሩ።"
     }
 ]

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +8,9 @@ import { useLeaderboard } from '../hooks/useLeaderboard';
 import { LeaderboardPeriod } from '../types/leaderboard.types';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { colors } from '../../../shared/theme/colors';
+import { refreshCampaigns, useCampaigns } from '../../campaigns/store/campaignStore';
+import { pickLocalized } from '../../campaigns/utils/localizedText';
+import { CampaignLeaderboardView } from '../../campaigns/components/CampaignLeaderboardView';
 
 const TABS: { id: LeaderboardPeriod; translationKey: string }[] = [
     { id: 'global', translationKey: 'all-time' },
@@ -19,9 +22,18 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4, 5];
 export const LeaderboardScreen = () => {
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const { t } = useTranslation();
+    const { t, language } = useTranslation();
     const [selectedPeriod, setSelectedPeriod] = useState<LeaderboardPeriod>('global');
+    // campaigns come first and open by default; null = a normal period tab is picked
+    const { campaigns } = useCampaigns();
+    const [pickedCampaign, setPickedCampaign] = useState<string | null | undefined>(undefined);
+    const campaignSlug =
+        pickedCampaign === null ? null : campaigns.find((c) => c.slug === pickedCampaign)?.slug ?? campaigns[0]?.slug ?? null;
     const { leaderboard, loading } = useLeaderboard(selectedPeriod);
+
+    useEffect(() => {
+        void refreshCampaigns();
+    }, []);
     const { colors: theme, isDark } = useTheme();
     const skeletonColor = isDark ? '#2B2B2B' : '#E9E9E9';
 
@@ -47,24 +59,44 @@ export const LeaderboardScreen = () => {
                     <Text className="text-2xl font-bold" style={{ color: theme.textPrimary }}>{t('leaderboard-screen')}</Text>
                 </View>
                 <View className="flex-row rounded-2xl p-1" style={{ backgroundColor: isDark ? theme.surface : '#F3F4F6' }}>
-                    {TABS.map((tab) => (
+                    {[
+                        ...campaigns.map((c) => ({
+                            key: `campaign:${c.slug}`,
+                            label: pickLocalized(c.name, language),
+                            active: campaignSlug === c.slug,
+                            onPress: () => setPickedCampaign(c.slug),
+                        })),
+                        ...TABS.map((tab) => ({
+                            key: tab.id,
+                            label: t(tab.translationKey),
+                            active: !campaignSlug && selectedPeriod === tab.id,
+                            onPress: () => {
+                                setPickedCampaign(null);
+                                setSelectedPeriod(tab.id);
+                            },
+                        })),
+                    ].map((tab) => (
                         <TouchableOpacity
-                            key={tab.id}
-                            onPress={() => setSelectedPeriod(tab.id)}
-                            className="flex-1 py-2 rounded-xl"
-                            style={{ backgroundColor: selectedPeriod === tab.id ? theme.background : 'transparent' }}
+                            key={tab.key}
+                            onPress={tab.onPress}
+                            className="flex-1 py-2 px-1 rounded-xl"
+                            style={{ backgroundColor: tab.active ? theme.background : 'transparent' }}
                         >
                             <Text
                                 className="text-center font-semibold"
-                                style={{ color: selectedPeriod === tab.id ? theme.textPrimary : theme.textSecondary }}
+                                style={{ color: tab.active ? theme.textPrimary : theme.textSecondary }}
+                                numberOfLines={1}
                             >
-                                {t(tab.translationKey)}
+                                {tab.label}
                             </Text>
                         </TouchableOpacity>
                     ))}
                 </View>
             </View>
-            {loading ? (
+            {campaignSlug ? (
+                // keyed so switching campaigns starts the board fresh
+                <CampaignLeaderboardView key={campaignSlug} slug={campaignSlug} />
+            ) : loading ? (
                 <ScrollView
                     className="flex-1 px-6"
                     scrollEnabled={false}

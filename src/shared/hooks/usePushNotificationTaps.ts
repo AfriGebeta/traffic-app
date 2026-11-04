@@ -7,9 +7,11 @@ import {
     onNotificationOpenedApp,
     type FirebaseMessagingTypes,
 } from '@react-native-firebase/messaging';
+import * as Notifications from 'expo-notifications';
 import { hasPlayServices } from '../utils/playServices';
 import { showToast } from '../utils/toast';
 import { logBreadcrumb } from '../utils/crashlytics';
+import { PUSH_CHANNEL } from '../services/push';
 import { notificationService } from '../../modules/notifications/services/notification.service';
 import { openNotificationTarget } from '../../modules/notifications/utils/notificationTarget';
 import { NotificationData } from '../../modules/notifications/types/notification.types';
@@ -35,6 +37,25 @@ const markOpened = (message: RemoteMessage) => {
 const toastText = ({ notification }: RemoteMessage): string | null => {
     if (!notification?.body) return notification?.title ?? null;
     return notification.title ? `${notification.title}: ${notification.body}` : notification.body;
+};
+
+// Firebase doesn't show pushes while the app is open, so post the same notification ourselves
+const showWhileOpen = (message: RemoteMessage) => {
+    const { title, body } = message.notification ?? {};
+    if (!title && !body) return;
+    Notifications.scheduleNotificationAsync({
+        content: { title: title ?? undefined, body: body ?? undefined, data: message.data ?? {} },
+        trigger: { channelId: PUSH_CHANNEL },
+    }).catch(() => {
+        const text = toastText(message);
+        if (text) showToast(text);
+    });
+};
+
+// a tap on one of those, shaped like the push it came from
+const fromResponse = (response: Notifications.NotificationResponse): RemoteMessage => {
+    const { title, body, data } = response.notification.request.content;
+    return { data, notification: { title: title ?? undefined, body: body ?? undefined } } as RemoteMessage;
 };
 
 export const usePushNotificationTaps = (pathname: string, isNavigationPath: (path: string) => boolean) => {
@@ -63,16 +84,29 @@ export const usePushNotificationTaps = (pathname: string, isNavigationPath: (pat
             if (message) setTimeout(() => open(message), 800);
         });
 
+        // taps on notifications we posted while open; the listener and the cold-start lookup can both see the same one
+        let lastTapped: string | null = null;
+        const openTapped = (response: Notifications.NotificationResponse | null) => {
+            if (!response || response.notification.request.identifier === lastTapped) return;
+            lastTapped = response.notification.request.identifier;
+            void Notifications.clearLastNotificationResponseAsync().catch(() => undefined);
+            open(fromResponse(response));
+        };
+        void Notifications.getLastNotificationResponseAsync().then((response) => {
+            if (response) setTimeout(() => openTapped(response), 800);
+        });
+        const tapSubscription = Notifications.addNotificationResponseReceivedListener(openTapped);
+
         const unsubscribeOpened = onNotificationOpenedApp(messaging, open);
         const unsubscribeForeground = onMessage(messaging, (message) => {
             console.log('[push] received while open', message.data?.event ?? 'no event', message.data?.deliveryId ?? '');
-            const text = toastText(message);
-            if (text) showToast(text);
+            showWhileOpen(message);
         });
 
         return () => {
             unsubscribeOpened();
             unsubscribeForeground();
+            tapSubscription.remove();
         };
     }, []);
 

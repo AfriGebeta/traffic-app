@@ -1,11 +1,14 @@
 import { MapGlassTarget } from '../../../modules/map-glass';
 import React, { forwardRef, useState, useImperativeHandle, useRef, useEffect, useLayoutEffect, memo, useMemo, useCallback } from 'react';
-import { View, StyleSheet, Alert, Text, Image, PixelRatio, AppState, Dimensions, Platform } from 'react-native';
+import { View, StyleSheet, Text, Image, PixelRatio, AppState, Dimensions, Platform } from 'react-native';
 import MapLibreGL from '@maplibre/maplibre-react-native';
 import { GebetaMapRef, GebetaMapProps } from '@gebeta/tiles-react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../shared/theme/colors';
 import { useTheme } from '../../shared/theme/ThemeContext';
+import { MapCompass, type MapCompassRef } from '../../shared/components/MapCompass';
+import { useHomeCompassSlot } from '../../shared/utils/homeCompassSlot';
+import { MapLoadError } from './MapLoadError';
 import { getAppConfig } from '../../shared/config/remoteConfigValues';
 import { showToast } from '../../shared/utils/toast';
 import { decodePolyline } from '../../shared/utils/polyline';
@@ -1775,6 +1778,30 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
             neutralizeCameraStopRef.current = neutralizeCameraStop;
         }, [neutralizeCameraStop]);
 
+        // themed replacement for MapLibre's native compass (which can't be styled)
+        const compassRef = useRef<MapCompassRef>(null);
+        const homeCompassSlot = useHomeCompassSlot();
+        const [compassResetKey, setCompassResetKey] = useState(0);
+        const resetNorth = useCallback(() => {
+            if (cameraRef.current) {
+                cameraRef.current.setCamera({
+                    heading: 0,
+                    animationDuration: 400,
+                    animationMode: 'easeTo',
+                });
+                neutralizeCameraStop(800);
+                return;
+            }
+            // no Camera mounted (free nav camera, pages without camera control):
+            // mount a heading-only one just for this tap, then drop it
+            setCompassResetKey(k => k + 1);
+        }, [neutralizeCameraStop]);
+        useEffect(() => {
+            if (!compassResetKey) return;
+            const timer = setTimeout(() => setCompassResetKey(0), 700);
+            return () => clearTimeout(timer);
+        }, [compassResetKey]);
+
         useEffect(() => () => {
             if (neutralizeStopTimerRef.current) {
                 clearTimeout(neutralizeStopTimerRef.current);
@@ -1949,13 +1976,43 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
             isNavigating: () => false,
         }), [applyFlyTo, markAnimatedProgrammaticCamera, markHomeCommand, rebuildCameraInPlace, NAV_ZOOM, zoom, mapStyleState]);
 
+        // style download failures (usually no internet): a card with Try again instead of a raw alert,
+        // plus automatic retries (backoff, and when the app comes back to the foreground)
+        const [styleFailed, setStyleFailed] = useState(false);
+        const [styleLoading, setStyleLoading] = useState(false);
+        const [styleAttempt, setStyleAttempt] = useState(0);
+        const styleRetriesRef = useRef(0);
+        const retryStyle = useCallback(() => setStyleAttempt((n) => n + 1), []);
+
+        useEffect(() => {
+            if (!styleFailed) {
+                styleRetriesRef.current = 0;
+                return;
+            }
+            const delay = Math.min(30_000, 5_000 * 2 ** styleRetriesRef.current);
+            const timer = setTimeout(() => {
+                styleRetriesRef.current += 1;
+                retryStyle();
+            }, delay);
+            const subscription = AppState.addEventListener('change', (state) => {
+                if (state === 'active') retryStyle();
+            });
+            return () => {
+                clearTimeout(timer);
+                subscription.remove();
+            };
+        }, [styleFailed, styleAttempt, retryStyle]);
+
         useEffect(() => {
             if (mapStyleJson) {
                 setMapStyleState(ensureStyleBackgroundLayer(mapStyleJson as Record<string, any>, isDark));
+                setStyleFailed(false);
                 return;
             }
 
+            let cancelled = false;
             async function processStyle() {
+                setStyleLoading(true);
                 try {
                     let styleJson: any;
 
@@ -1982,15 +2039,24 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
                         }
                     }
 
+                    if (cancelled) return;
                     setMapStyleState(ensureStyleBackgroundLayer(styleJson, isDark));
+                    setStyleFailed(false);
                 } catch (error) {
-                    console.error("Error loading style JSON:", error);
-                    Alert.alert("Map Style Load Error", String(error));
+                    if (cancelled) return;
+                    // a map that already has a style keeps it (e.g. a failed theme switch); the card only shows on a blank map
+                    console.warn("Error loading style JSON:", error);
+                    setStyleFailed(true);
+                } finally {
+                    if (!cancelled) setStyleLoading(false);
                 }
             }
 
             processStyle();
-        }, [apiKey, mapStyleUrl, mapStyleJson, isDark]);
+            return () => {
+                cancelled = true;
+            };
+        }, [apiKey, mapStyleUrl, mapStyleJson, isDark, styleAttempt]);
 
         useLayoutEffect(() => {
             if (!center || isNavigating || !mapStyleState || externalCameraControl) return;
@@ -2131,13 +2197,11 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
                         mapStyle={mapStyleState}
                         attributionEnabled={false}
                         logoEnabled={false}
-                        compassEnabled={!isNavigating || navCameraFree}
+                        compassEnabled={false}
                         scrollEnabled={true}
                         zoomEnabled={true}
                         rotateEnabled={true}
                         pitchEnabled={true}
-                        compassViewPosition={1}
-                        compassViewMargins={{ x: isHomeMap ? 10 : 16, y: isHomeMap ? 260 : 130 }}
                         {...({ onTouchStart: handleMapTouchForUnlock } as Record<string, unknown>)}
                         onRegionWillChange={handleRegionWillChange}
                         onPress={async (e) => {
@@ -2166,6 +2230,7 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
                         }}
                         onRegionIsChanging={(e: any) => {
                             lastRegionEventAtRef.current = Date.now();
+                            compassRef.current?.setHeading(e.properties?.heading ?? 0);
                             const c = e.geometry?.coordinates;
                             if (Array.isArray(c)) {
                                 lastRegionCenterRef.current = [c[0], c[1]];
@@ -2195,6 +2260,7 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
                         }}
                         onRegionDidChange={(e: any) => {
                             updateMarkerViewport(e);
+                            compassRef.current?.setHeading(e.properties?.heading ?? 0);
 
                             const centerCoords = e.geometry?.coordinates;
                             if (Array.isArray(centerCoords)) {
@@ -2272,6 +2338,15 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
                                 maxBounds={undefined}
                                 followUserLocation={isHomeMap || freeCamera ? false : undefined}
                                 defaultSettings={cameraDefaultSettings}
+                            />
+                        )}
+
+                        {!!compassResetKey && !(showFollowCamera || showExploreCamera) && (
+                            <MapLibreGL.Camera
+                                key={`compass-reset-${compassResetKey}`}
+                                heading={0}
+                                animationDuration={400}
+                                animationMode="easeTo"
                             />
                         )}
 
@@ -2884,6 +2959,20 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
                         )}
                     </MapLibreGL.MapView>
                     </MapGlassTarget>
+
+                    {styleFailed && !mapStyleState && <MapLoadError retrying={styleLoading} onRetry={retryStyle} />}
+
+                    {(!isNavigating || navCameraFree) && (
+                        <MapCompass
+                            ref={compassRef}
+                            onPress={resetNorth}
+                            // home: same 50dp size / 16dp inset as the glass buttons column, 12dp under its
+                            // last button (measured by CampaignMapButton); needle and ticks kept within the ~24dp icon area
+                            size={isHomeMap ? 50 : 44}
+                            glyphSize={isHomeMap ? 32 : undefined}
+                            style={isHomeMap ? { top: homeCompassSlot?.top ?? 330, right: homeCompassSlot?.right ?? 16 } : { top: 130, right: 16 }}
+                        />
+                    )}
 
                     {showFollowCamera && !!userLocation && imagesLoaded && mapHeight > 0 && (
                         <View

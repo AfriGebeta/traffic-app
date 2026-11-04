@@ -8,6 +8,8 @@ import { useTheme } from '../../../shared/theme/ThemeContext';
 import { DIALOG_MAX_STYLE } from '../../../shared/layout/modalStyles';
 import { hasCampaignEnded, isParticipating, useCampaigns } from '../store/campaignStore';
 import { getSeenBannerSlugs, markBannerSeen } from '../utils/campaignPrefs';
+import { askForNotifications } from '../../../shared/services/notificationPermission';
+import { locationPermissionSettled } from '../../../shared/utils/permissionSequence';
 import { pickLocalized } from '../utils/localizedText';
 import { Campaign } from '../types/campaign.types';
 
@@ -37,6 +39,20 @@ export function CampaignBanner() {
             .filter((c) => !seen.includes(c.slug) && !hasCampaignEnded(c) && !(c.requiresJoin && isParticipating(c, state)))
             .sort((a, b) => startTime(b) - startTime(a))[0] ?? null;
     }, [state, seen]);
+
+    // home's turn-on-notifications ask waits for the location prompt and never stacks on a campaign announcement
+    const idle = state.loaded && !!seen && !campaign;
+    useEffect(() => {
+        if (!idle) return;
+        let cancelled = false;
+        const timeout = new Promise<void>((resolve) => setTimeout(resolve, 30_000));
+        void Promise.race([locationPermissionSettled, timeout]).then(() => {
+            if (!cancelled) void askForNotifications('home');
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [idle]);
 
     if (!campaign) return null;
 
@@ -86,13 +102,24 @@ export function CampaignBanner() {
                         {description || t('campaign-banner-pitch')}
                     </Text>
 
-                    <TouchableOpacity
-                        onPress={view}
-                        className="w-full rounded-xl py-3.5 items-center mt-6"
-                        style={{ backgroundColor: colors.primary.main }}
-                    >
-                        <Text className="text-white font-semibold text-base">{t('campaign-view')}</Text>
-                    </TouchableOpacity>
+                    <View className="flex-row gap-3 mt-6 w-full">
+                        <TouchableOpacity
+                            onPress={dismiss}
+                            className="flex-1 rounded-xl py-3.5 items-center"
+                            style={{ borderWidth: 1, borderColor: theme.border }}
+                        >
+                            <Text className="font-semibold text-base" style={{ color: theme.textPrimary }}>
+                                {t('not-now')}
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={view}
+                            className="flex-1 rounded-xl py-3.5 items-center"
+                            style={{ backgroundColor: colors.primary.main }}
+                        >
+                            <Text className="text-white font-semibold text-base">{t('campaign-view')}</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </View>
         </Modal>

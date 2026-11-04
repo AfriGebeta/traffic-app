@@ -13,6 +13,14 @@ export const campaignService = {
         return Array.isArray(campaigns) ? campaigns : [];
     },
 
+    // the next scheduled campaign (active, not started yet); null when none is planned
+    async getNext(): Promise<Campaign | null> {
+        const response = await apiService.get<{ data: Campaign | null }>('/api/campaigns/next');
+        if (response.error || !response.data) throw new ApiError(response, 'Failed to load next campaign');
+        const campaign = unwrap<Campaign | null>(response.data);
+        return campaign && typeof campaign === 'object' && campaign.slug ? campaign : null;
+    },
+
     async getMe(slug: string): Promise<CampaignMe> {
         const response = await apiService.get<CampaignMe>(`/api/campaigns/${encodeURIComponent(slug)}/me`);
         console.log('[campaigns] me raw', slug, JSON.stringify(response.data ?? response.error));

@@ -17,6 +17,7 @@ import { ForceUpdateModal } from '../components/ForceUpdateModal';
 import { UpdateBanner } from '../components/UpdateBanner';
 import { ToastHost } from '../shared/components/ToastHost';
 import { PointsPopupHost } from '../modules/campaigns/components/PointsPopupHost';
+import { NotificationPromptHost } from '../shared/components/NotificationPromptHost';
 import { refreshCampaigns } from '../modules/campaigns/store/campaignStore';
 import { showToast } from '../shared/utils/toast';
 import { onSessionExpired } from '../shared/services/auth-session';
@@ -26,7 +27,6 @@ import { resetHomeOnboarding } from '../modules/places/utils/homeOnboarding';
 import i18n from '../shared/utils/localization/i18n';
 import telemetryApiService from '../shared/services/telemetry-api.service';
 import { dashboardEventsService } from '../shared/services/dashboard-events.service';
-import { locationPermissionSettled } from '../shared/utils/permissionSequence';
 import './globals.css';
 import { applyGlobalFont } from '../shared/utils/globalFont';
 import { installClientHeaders } from '../shared/utils/clientHeaders';
@@ -34,6 +34,8 @@ import { initializeCrashlytics, logBreadcrumb } from '../shared/utils/crashlytic
 import { useOrientationPolicy } from '../shared/layout/useOrientationPolicy';
 import { createScreenLayout } from '../shared/layout/ResponsiveScreen';
 import { initPush, registerPushDevice } from '../shared/services/push';
+import { locationPermissionSettled } from '../shared/utils/permissionSequence';
+import { getNotificationStatus, recordLaunchDenial } from '../shared/services/notificationPermission';
 import { usePushNotificationTaps } from '../shared/hooks/usePushNotificationTaps';
 
 import '../modules/navigation/services/nav-foreground-service';
@@ -187,12 +189,16 @@ function AppShell() {
   useEffect(() => {
     if (Platform.OS === 'android' && Number(Platform.Version) >= 33) {
       const timeout = new Promise<void>((resolve) => setTimeout(resolve, 30000));
-      Promise.race([locationPermissionSettled, timeout]).then(() => {
+      Promise.race([locationPermissionSettled, timeout]).then(async () => {
+        // skipped once Android stops showing it, so a "no" below is always the user's answer
+        const { enabled, canAsk } = await getNotificationStatus();
+        if (enabled || !canAsk) return;
         PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
         )
           .then((result) => {
             if (result === PermissionsAndroid.RESULTS.GRANTED) void registerPushDevice();
+            else void recordLaunchDenial();
           })
           .catch(() => undefined);
       });
@@ -216,6 +222,7 @@ function AppShell() {
                   />
                   <ToastHost />
                   <PointsPopupHost />
+                  <NotificationPromptHost blocked={isNavigationPath(pathname)} />
                   <UpdateBanner
                     visible={showUpdateBanner}
                     latestVersion={latestVersion}

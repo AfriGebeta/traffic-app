@@ -22,6 +22,7 @@ import { ConfirmDialog } from '../../../components/ConfirmDialog';
 import { ApiError, ApiErrorCode, getCampaignFailures, getDuplicatePlaceNames, isRestrictedError } from '../../../shared/utils/apiErrors';
 import { showCampaignPointsEstimate } from '../../campaigns/utils/pointsPopup';
 import { PHOTO_PIN_LIMIT_M, deviceFieldsFromFix, latestPhotoFix, photoPinGap } from '../../../shared/utils/photoFix';
+import { askForNotifications } from '../../../shared/services/notificationPermission';
 
 
 export default function AddPlaceScreen() {
@@ -179,6 +180,7 @@ export default function AddPlaceScreen() {
             dashboardEventsService.contribute();
             showToast(t('place-contribution-submitted'));
             showCampaignPointsEstimate('place', coordinates, { hasPhoto: images.length > 0 });
+            void askForNotifications('contribution');
 
             leaveScreen();
         } catch (error) {
@@ -425,7 +427,7 @@ export default function AddPlaceScreen() {
                             {/* campaigns reject places without a photo, so don't call it optional there */}
                             {!inCampaign && <Text style={{ color: theme.textSecondary }}> ({t('optional')})</Text>}
                         </Text>
-                        <PhotoPicker photos={images} onChange={setImages} folder="places" cameraOnly={inCampaign} requireLocation={inCampaign} />
+                        <PhotoPicker photos={images} onChange={setImages} folder="places" requireLocation={inCampaign} />
                     </View>
                 </View>
             </ScrollView>

@@ -44,6 +44,7 @@
     "expo-linking": "~8.0.9",
     "expo-location": "^19.0.7",
     "expo-navigation-bar": "^5.0.10",
+    "expo-notifications": "~0.32.17",
     "expo-router": "~6.0.15",
     "expo-screen-orientation": "~9.0.9",
     "expo-secure-store": "~15.0.7",
@@ -85,5 +86,14 @@
     "react-native-svg-transformer": "^1.5.3",
     "typescript": "~5.9.2"
   },
-  "private": true
+  "private": true,
+  "expo": {
+    "autolinking": {
+      "android": {
+        "buildFromSource": [
+          "expo-notifications"
+        ]
+      }
+    }
+  }
 }

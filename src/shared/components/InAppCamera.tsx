@@ -9,6 +9,7 @@ import * as Location from '../services/location';
 import { colors } from '../theme/colors';
 import { PhotoFix, gpsLog, toPhotoFix } from '../utils/photoFix';
 import { getWarmFix } from '../services/gpsWarmup';
+import { useUserLocation } from '../../modules/map/hooks/useUserLocation';
 
 // Campaign photos must carry GPS, capture time, camera make/model and "GebetaMaps" in
 // ImageDescription/UserComment, or the backend treats them as gallery photos.
@@ -49,6 +50,13 @@ const buildExif = (fix: Location.LocationObject | null): Record<string, string |
 
 const isFresh = (fix: Location.LocationObject | null, now: number) => !!fix && now - fix.timestamp <= FIX_MAX_AGE_MS;
 
+// the current location as a fix, stamped now
+const fixFromPoint = ({ lat, lng, accuracy }: { lat: number; lng: number; accuracy?: number }): Location.LocationObject =>
+    ({
+        coords: { latitude: lat, longitude: lng, altitude: null, accuracy: accuracy ?? null, altitudeAccuracy: null, heading: null, speed: null },
+        timestamp: Date.now(),
+    }) as Location.LocationObject;
+
 const openLocationSettings = () => {
     if (Platform.OS === 'android') {
         Linking.sendIntent('android.settings.LOCATION_SOURCE_SETTINGS').catch(() => Linking.openSettings());
@@ -69,6 +77,7 @@ interface InAppCameraProps {
 export function InAppCamera({ visible, onClose, onCaptured, requireLocation = false }: InAppCameraProps) {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
+    const { userLocation: fallbackLocation } = useUserLocation();
     const cameraRef = useRef<CameraView>(null);
     const [permission, requestPermission] = useCameraPermissions();
     const [ready, setReady] = useState(false);
@@ -212,7 +221,9 @@ export function InAppCamera({ visible, onClose, onCaptured, requireLocation = fa
     // give up 20 s after whichever came later: opening the camera or (re)starting the watch
     const waitingSince = Math.max(cameraOpenedAt, watchStartedAt);
     const locationFailed = !locationReady && waitingSince > 0 && now - waitingSince > GIVE_UP_AFTER_MS;
-    const shutterEnabled = ready && !capturing && (!requireLocation || locationReady);
+    // good GPS fix first, then the current location, then any recent fix
+    const hasLocation = locationReady || !!fallbackLocation || isFresh(fix, now);
+    const shutterEnabled = ready && !capturing && (!requireLocation || hasLocation);
 
     useEffect(() => {
         if (!visible) return;
@@ -235,8 +246,15 @@ export function InAppCamera({ visible, onClose, onCaptured, requireLocation = fa
 
     const capture = async () => {
         if (!cameraRef.current || !shutterEnabled) return;
-        // campaign photos only go out with a good fix; others take whatever recent fix there is
-        const captureFix = requireLocation ? fix : isFresh(fix, Date.now()) ? fix : null;
+        // campaign photos: good fix, else the current location, else a recent fix; others take whatever recent fix there is
+        const freshFix = isFresh(fix, Date.now()) ? fix : null;
+        const captureFix = requireLocation
+            ? locationReady
+                ? fix
+                : fallbackLocation
+                  ? fixFromPoint(fallbackLocation)
+                  : freshFix
+            : freshFix;
         if (requireLocation && !captureFix) return;
         setCapturing(true);
         try {
@@ -289,7 +307,7 @@ export function InAppCamera({ visible, onClose, onCaptured, requireLocation = fa
 
     const renderLocationStatus = () => {
         // nothing to say in the normal case: the fix was warmed up while the form was open
-        if (!requireLocation || locationReady) return null;
+        if (!requireLocation || hasLocation) return null;
         if (locationFailed) {
             return (
                 <View className="items-center rounded-2xl px-4 py-3 mb-4 mx-6" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>

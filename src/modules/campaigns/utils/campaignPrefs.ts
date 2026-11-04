@@ -34,3 +34,21 @@ export const hasSeenCampaignTour = async (): Promise<boolean> =>
 
 export const markCampaignTourSeen = (): Promise<void> =>
     AsyncStorage.setItem(TOUR_SEEN_KEY, 'true').catch(() => undefined);
+
+const ENDING_SEEN_KEY = '@campaign_ending_seen';
+
+export const getSeenEndingBanners = async (): Promise<string[]> => {
+    try {
+        const raw = await AsyncStorage.getItem(ENDING_SEEN_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+};
+
+export const markEndingBannerSeen = async (id: string): Promise<void> => {
+    const seen = await getSeenEndingBanners();
+    if (seen.includes(id)) return;
+    await AsyncStorage.setItem(ENDING_SEEN_KEY, JSON.stringify([...seen, id])).catch(() => undefined);
+};

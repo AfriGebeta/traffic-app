@@ -11,6 +11,7 @@ import { notificationService } from '../services/notification.service';
 import { InboxNotification } from '../types/notification.types';
 import { hasNotificationTarget, openNotificationTarget } from '../utils/notificationTarget';
 import { timeAgo } from '../utils/timeAgo';
+import { NotificationsOffStrip } from '../../../shared/components/NotificationsOffStrip';
 
 const PAGE_SIZE = 20;
 
@@ -211,6 +212,8 @@ export default function NotificationsScreen() {
                     </TouchableOpacity>
                 )}
             </View>
+
+            <NotificationsOffStrip style={{ marginHorizontal: 16, marginBottom: 12 }} />
 
             {loading ? (
                 <ActivityIndicator className="mt-8" color={colors.primary.main} />

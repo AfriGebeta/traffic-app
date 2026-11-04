@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../shared/theme/ThemeContext';
@@ -15,12 +15,21 @@ const COUNTDOWN_BG = '#26272B';
 
 const secondsUntil = (endMs: number) => Math.max(0, Math.floor((endMs - Date.now()) / 1000));
 
+interface Props {
+    endsAt: string;
+    // heading above the boxes; defaults to "Ends in"
+    label?: string;
+    onDone?: () => void;
+}
+
 // live time left until endsAt; renders nothing once it's over (the store flips the campaign to ended)
-export function CampaignCountdown({ endsAt }: { endsAt: string }) {
+export function CampaignCountdown({ endsAt, label, onDone }: Props) {
     const { t } = useTranslation();
     const { colors: theme, isDark } = useTheme();
     const endMs = new Date(endsAt).getTime();
     const [left, setLeft] = useState(() => (Number.isNaN(endMs) ? 0 : secondsUntil(endMs)));
+    const onDoneRef = useRef(onDone);
+    onDoneRef.current = onDone;
 
     useEffect(() => {
         if (Number.isNaN(endMs)) return;
@@ -28,7 +37,10 @@ export function CampaignCountdown({ endsAt }: { endsAt: string }) {
         const timer = setInterval(() => {
             const next = secondsUntil(endMs);
             setLeft(next);
-            if (next === 0) clearInterval(timer);
+            if (next === 0) {
+                clearInterval(timer);
+                onDoneRef.current?.();
+            }
         }, 1000);
         return () => clearInterval(timer);
     }, [endMs]);
@@ -45,7 +57,7 @@ export function CampaignCountdown({ endsAt }: { endsAt: string }) {
     return (
         <View className="mb-6">
             <Text className="font-bold text-base mb-3" style={{ color: theme.textPrimary }}>
-                {t('campaign-ends-in')}
+                {label ?? t('campaign-ends-in')}
             </Text>
             <View
                 className="flex-row items-center rounded-3xl py-4 px-2"

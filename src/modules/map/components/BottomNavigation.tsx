@@ -69,9 +69,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
     const contributeText = t('tour-contribute-text', { kinds: kindList(tour.contributeKinds, t) });
     const reportText = sentences(
         t('tour-report-text', { points: incidentPoints }),
-        t(tour.points('traffic_rule') > 0 ? 'tour-report-nav-rules' : 'tour-report-nav'),
-        // first-timers are shown Profile → Campaigns right after, so only returning players are told
-        !tour.firstTime && t('tour-track-points')
+        t(tour.points('traffic_rule') > 0 ? 'tour-report-nav-rules' : 'tour-report-nav')
     );
     const tourStep = (tabId: TabId, button: React.ReactElement) => {
         if (tabId === 'contribute') {
