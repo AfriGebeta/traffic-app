@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Image, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -8,6 +8,9 @@ import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { hasCampaignEnded, isParticipating, refreshCampaigns, useCampaigns } from '../store/campaignStore';
 import { pickLocalized } from '../utils/localizedText';
+import { campaignService } from '../services/campaign.service';
+import { CampaignCountdown } from '../components/CampaignCountdown';
+import { Campaign } from '../types/campaign.types';
 import { NotificationsOffStrip } from '../../../shared/components/NotificationsOffStrip';
 
 const AnnouncementLight = require('../../../../assets/images/announcement-light.png');
@@ -20,12 +23,32 @@ export default function CampaignsListScreen() {
     const insets = useSafeAreaInsets();
     const { colors: theme, isDark } = useTheme();
     const state = useCampaigns();
+    // undefined while loading, null when nothing is scheduled; a failed call shows nothing about it
+    const [next, setNext] = useState<Campaign | null | undefined>(undefined);
+    const [nextFailed, setNextFailed] = useState(false);
 
-    useFocusEffect(
-        useCallback(() => {
-            void refreshCampaigns();
-        }, [])
-    );
+    const loadNext = useCallback(() => {
+        campaignService
+            .getNext()
+            .then((campaign) => {
+                setNext(campaign);
+                setNextFailed(false);
+            })
+            .catch(() => setNextFailed(true));
+    }, []);
+
+    const reload = useCallback(() => {
+        void refreshCampaigns();
+        loadNext();
+    }, [loadNext]);
+
+    useFocusEffect(reload);
+
+    const nextStart = next?.startsAt ? new Date(next.startsAt) : null;
+    const nextUpcoming = !!nextStart && !Number.isNaN(nextStart.getTime()) && nextStart.getTime() > Date.now();
+    const anyLive = state.campaigns.some((campaign) => !hasCampaignEnded(campaign));
+    // "coming soon" only when nothing is running and nothing is scheduled
+    const showComingSoon = next === null && !nextFailed && !anyLive;
 
     return (
         <View className="flex-1" style={{ paddingTop: insets.top, backgroundColor: theme.background }}>
@@ -41,13 +64,43 @@ export default function CampaignsListScreen() {
             <ScrollView
                 className="flex-1 px-4"
                 contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
-                refreshControl={<RefreshControl refreshing={state.loading} onRefresh={() => void refreshCampaigns()} />}
+                refreshControl={<RefreshControl refreshing={state.loading} onRefresh={reload} />}
             >
                 <NotificationsOffStrip style={{ marginBottom: 12 }} />
 
                 {!state.loaded && <ActivityIndicator className="mt-8" color={colors.primary.main} />}
 
-                {state.loaded && state.campaigns.length === 0 && (
+                {nextUpcoming && next && nextStart && (
+                    <View className="rounded-2xl p-4 mb-3" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: colors.primary.main }}>
+                        <Text className="text-xs font-bold uppercase mb-1" style={{ color: colors.primary.main, letterSpacing: 1 }}>
+                            {t('campaign-next-title')}
+                        </Text>
+                        <Text className="text-lg font-bold" style={{ color: theme.textPrimary }} numberOfLines={2}>
+                            {pickLocalized(next.name, i18n.language)}
+                        </Text>
+                        <Text className="text-sm mt-0.5 mb-4" style={{ color: theme.textSecondary }}>
+                            {t('campaign-starts-on', {
+                                date: nextStart.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
+                            })}
+                        </Text>
+                        {/* at zero it has started: it moves into the running list below */}
+                        <CampaignCountdown endsAt={nextStart.toISOString()} label={t('campaign-starts-in')} onDone={reload} />
+                    </View>
+                )}
+
+                {showComingSoon && (
+                    <View className="items-center rounded-2xl px-6 py-8 mb-3" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
+                        <Image source={isDark ? AnnouncementDark : AnnouncementLight} style={{ width: 72, height: 72 }} />
+                        <Text className="text-base font-bold text-center mt-4" style={{ color: theme.textPrimary }}>
+                            {t('campaign-next-soon-title')}
+                        </Text>
+                        <Text className="text-sm text-center mt-1" style={{ color: theme.textSecondary }}>
+                            {t('campaign-next-soon-body')}
+                        </Text>
+                    </View>
+                )}
+
+                {state.loaded && state.campaigns.length === 0 && !nextUpcoming && !showComingSoon && (
                     <View className="items-center mt-16 px-6">
                         <Image source={isDark ? AnnouncementDark : AnnouncementLight} style={{ width: 72, height: 72, opacity: 0.6 }} />
                         <Text className="text-center mt-4" style={{ color: theme.textSecondary }}>

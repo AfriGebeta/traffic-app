@@ -3425,6 +3425,16 @@
         "AM": "ነፃ ጉዞ"
     },
     {
+        "key": "gallery-points-warning",
+        "EN_US": "Photos from your gallery may not earn campaign points. Use the camera to be sure.",
+        "AM": "ከጋለሪ የተመረጡ ፎቶዎች የውድድር ነጥብ ላያስገኙ ይችላሉ። እርግጠኛ ለመሆን ካሜራውን ይጠቀሙ።"
+    },
+    {
+        "key": "reset-north",
+        "EN_US": "Reset map to north",
+        "AM": "ካርታውን ወደ ሰሜን መልስ"
+    },
+    {
         "key": "free-drive-on-road",
         "EN_US": "On road",
         "AM": "በጉዞ ላይ"
@@ -4228,6 +4238,16 @@
         "key": "edit",
         "EN_US": "Edit",
         "AM": "አስተካክል"
+    },
+    {
+        "key": "know-this-place",
+        "EN_US": "Know this place?",
+        "AM": "ይህን ቦታ ያውቁታል?"
+    },
+    {
+        "key": "suggest-an-edit",
+        "EN_US": "Suggest an edit",
+        "AM": "ማስተካከያ ይጠቁሙ"
     },
     {
         "key": "session-expired",
@@ -5258,5 +5278,40 @@
         "key": "notif-strip-body",
         "EN_US": "You'll miss verifications, campaign news and prizes.",
         "AM": "ማረጋገጫዎች፣ የውድድር ዜናዎች እና ሽልማቶች ያመልጥዎታል።"
+    },
+    {
+        "key": "campaign-next-title",
+        "EN_US": "Next campaign",
+        "AM": "ቀጣይ ውድድር"
+    },
+    {
+        "key": "campaign-starts-in",
+        "EN_US": "Starts in",
+        "AM": "የሚጀምረው በ"
+    },
+    {
+        "key": "campaign-starts-on",
+        "EN_US": "Starts {{date}}",
+        "AM": "የሚጀምረው {{date}}"
+    },
+    {
+        "key": "campaign-next-soon-title",
+        "EN_US": "Next campaign coming soon",
+        "AM": "ቀጣዩ ውድድር በቅርቡ ይመጣል"
+    },
+    {
+        "key": "campaign-next-soon-body",
+        "EN_US": "We'll let you know as soon as it's announced.",
+        "AM": "ልክ እንደታወቀ እናሳውቅዎታለን።"
+    },
+    {
+        "key": "map-load-failed-title",
+        "EN_US": "Couldn't load the map",
+        "AM": "ካርታውን መጫን አልተቻለም"
+    },
+    {
+        "key": "map-load-failed-body",
+        "EN_US": "Check your internet connection and try again.",
+        "AM": "የኢንተርኔት ግንኙነትዎን ያረጋግጡና እንደገና ይሞክሩ።"
     }
 ]

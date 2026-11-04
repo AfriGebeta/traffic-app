@@ -460,7 +460,6 @@ export default function AddStationScreen() {
                                 onChange={setImages}
                                 folder="stations"
                                 horizontalPadding={80}
-                                cameraOnly={inCampaign}
                                 requireLocation={inCampaign}
                             />
                         </View>

@@ -18,7 +18,7 @@ import { CampaignPointsBadge } from '../../campaigns/components/CampaignPointsBa
 import { CampaignKind } from '../../campaigns/types/campaign.types';
 import { CampaignTourProvider } from '../../campaigns/tour/CampaignTourProvider';
 import { useTourCampaign } from '../../campaigns/tour/useTourCampaign';
-import { endCampaignTour, setCampaignTourStage } from '../../campaigns/tour/campaignTour';
+import { setCampaignTourStage } from '../../campaigns/tour/campaignTour';
 import { sentences } from '../../campaigns/tour/tourText';
 import { TourActions } from '../../campaigns/tour/TourTooltip';
 import { TourTouchable, TourView } from '../../campaigns/tour/walkthroughables';
@@ -30,18 +30,11 @@ const START_DELAY_MS = 500;
 export default function ContributionScreen() {
     const router = useRouter();
     const { t } = useTranslation();
-    const tour = useTourCampaign();
-    // back on the map there's the Report step (if incidents pay) and, for first-timers, the Profile step
-    const mapStepsLeft = tour.points('incident') > 0 || tour.firstTime;
-
     const tourActions: TourActions = {
         titleFor: (name) => (name === 'requirements' ? t('tour-rules-title') : TOUR_TITLE_KEYS[name] ? t(TOUR_TITLE_KEYS[name]) : undefined),
-        lastLabel: t(mapStepsLeft ? 'tour-next' : 'tour-done'),
+        // back on the map there's always the Campaigns-button step (and Report, if incidents pay)
+        lastLabel: t('tour-next'),
         onLast: () => {
-            if (!mapStepsLeft) {
-                endCampaignTour();
-                return;
-            }
             setCampaignTourStage('map-report');
             router.back();
         },
@@ -130,8 +123,7 @@ function ContributionOptions() {
     const withinM = tour.campaign?.requirements?.contributorWithinM;
     const rulesText = sentences(
         withinM ? t('tour-rules-text', { meters: withinM }) : t('tour-rules-text-anywhere'),
-        tour.photoBonus && t('tour-photo-bonus'),
-        tour.points('incident') <= 0 && !tour.firstTime && t('tour-track-points')
+        tour.photoBonus && t('tour-photo-bonus')
     );
 
     return (

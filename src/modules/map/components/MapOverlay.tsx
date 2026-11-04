@@ -14,6 +14,7 @@ import { FloatingActions } from './FloatingActions';
 import { BottomNavigation } from './BottomNavigation';
 import { CampaignTourProvider } from '../../campaigns/tour/CampaignTourProvider';
 import { CampaignEndingBanner } from '../../campaigns/components/CampaignEndingBanner';
+import { CampaignMapButton } from '../../campaigns/components/CampaignMapButton';
 import { MapCampaignTour, useMapTourActions } from '../../campaigns/tour/MapCampaignTour';
 import { MapThemeSelector } from './MapThemeSelector';
 import { RoutePointsBar } from '../../navigation/components/RoutePointsBar';
@@ -187,7 +188,6 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                             onProfilePress={handleProfilePress}
                             isLoading={isExploring}
                             hideProfile={isWide}
-                            profileTourStep
                         />
                     </View>
 
@@ -205,6 +205,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                         <>
                             {isCompact && <FreeDriveButton userLocation={userLocation} />}
                             <SosButton userLocation={userLocation} />
+                            {!isNavigationMinimized && <CampaignMapButton />}
                         </>
                     )}
 
@@ -248,8 +249,9 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
 
             {!showRoutePreview && isWide && (
                 <View className="absolute items-end" style={{ top: insets.top + 10, right: insets.right + 16, zIndex: 20 }}>
-                    <ProfileButton onPress={handleProfilePress} size={48} tourStep />
+                    <ProfileButton onPress={handleProfilePress} size={48} />
                     {!showSearchContainer && <SosButton userLocation={userLocation} />}
+                    {!showSearchContainer && !isNavigationMinimized && <CampaignMapButton />}
                 </View>
             )}
 

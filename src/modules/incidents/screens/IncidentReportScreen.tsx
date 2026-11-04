@@ -289,7 +289,7 @@ export default function IncidentReportScreen() {
                         {!inCampaign && <Text style={{ color: theme.textSecondary }}> ({t('optional')})</Text>}
                     </Text>
                     <View className="mb-6">
-                        <PhotoPicker photos={images} onChange={setImages} folder="incidents" cameraOnly={inCampaign} requireLocation={inCampaign} />
+                        <PhotoPicker photos={images} onChange={setImages} folder="incidents" requireLocation={inCampaign} />
                     </View>
 
                     <Button

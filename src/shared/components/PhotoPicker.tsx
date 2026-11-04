@@ -73,7 +73,10 @@ export function PhotoPicker({ photos, onChange, folder, horizontalPadding = 48, 
             allowsMultipleSelection: true,
             selectionLimit: 0,
             quality: 0.8,
+            exif: true,
         });
+        // TEMP: does a gallery photo keep its GPS?
+        if (!result.canceled) result.assets.forEach((asset) => console.log('[gallery-exif]', asset.fileName ?? asset.uri.split('/').pop(), JSON.stringify({ lat: asset.exif?.GPSLatitude ?? null, latRef: asset.exif?.GPSLatitudeRef ?? null, lng: asset.exif?.GPSLongitude ?? null, lngRef: asset.exif?.GPSLongitudeRef ?? null, make: asset.exif?.Make ?? null })));
         if (!result.canceled && result.assets.length > 0) await upload(result.assets.map((asset) => ({ uri: asset.uri })));
     };
 
@@ -129,6 +132,15 @@ export function PhotoPicker({ photos, onChange, folder, horizontalPadding = 48, 
                     </View>
                 ))}
             </View>
+
+            {requireLocation && !cameraOnly && (
+                <View className="flex-row items-start mt-3">
+                    <Ionicons name="information-circle-outline" size={16} color={theme.textSecondary} style={{ marginTop: 1 }} />
+                    <Text className="text-xs ml-1.5 flex-1 leading-4" style={{ color: theme.textSecondary }}>
+                        {t('gallery-points-warning')}
+                    </Text>
+                </View>
+            )}
 
             {uploading && (
                 <View className="flex-row items-center mt-3 rounded-xl p-3" style={{ backgroundColor: theme.blueMuted }}>
