@@ -18,6 +18,7 @@ import { useScoringCampaign } from '../../campaigns/hooks/useScoringCampaign';
 import { PhotoPicker, UploadedPhoto } from '../../../shared/components/PhotoPicker';
 import { PHOTO_PIN_LIMIT_M, deviceFieldsFromFix, latestPhotoFix, photoPinGap } from '../../../shared/utils/photoFix';
 import { isRouteSlot } from '../utils/routeStationHandoff';
+import { askForNotifications } from '../../../shared/services/notificationPermission';
 
 const NEARBY_RADIUS_METERS = 300;
 
@@ -242,6 +243,7 @@ export default function AddStationScreen() {
                 createdNodeId.current = created?.id ?? null;
                 merged = created?.merged === true;
                 if (!merged) showCampaignPointsEstimate('taxi_station', location, { hasPhoto: images.length > 0 });
+                void askForNotifications('contribution');
             }
 
             if (routeSlot) {

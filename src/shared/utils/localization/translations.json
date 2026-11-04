@@ -5218,5 +5218,45 @@
         "key": "campaign-ending-time-m",
         "EN_US": "{{m}} m",
         "AM": "{{m}} ደቂቃ"
+    },
+    {
+        "key": "notif-ask-title",
+        "EN_US": "Turn on notifications",
+        "AM": "ማሳወቂያዎችን ያብሩ"
+    },
+    {
+        "key": "notif-ask-body-home",
+        "EN_US": "Get told when your contributions are verified, when campaigns start and when you win.",
+        "AM": "አስተዋጽኦዎ ሲረጋገጥ፣ ውድድሮች ሲጀምሩ እና ሲያሸንፉ ይነገርዎታል።"
+    },
+    {
+        "key": "notif-ask-body-contribution",
+        "EN_US": "We'll tell you when this contribution is verified and your points are added.",
+        "AM": "ይህ አስተዋጽኦ ሲረጋገጥ እና ነጥቦችዎ ሲጨመሩ እናሳውቅዎታለን።"
+    },
+    {
+        "key": "notif-ask-body-campaign",
+        "EN_US": "We'll tell you about your rank, the final day and the winners.",
+        "AM": "ስለ ደረጃዎ፣ ስለ መጨረሻው ቀን እና ስለ አሸናፊዎች እናሳውቅዎታለን።"
+    },
+    {
+        "key": "notif-turn-on",
+        "EN_US": "Turn on",
+        "AM": "ያብሩ"
+    },
+    {
+        "key": "notif-not-now",
+        "EN_US": "Not now",
+        "AM": "አሁን አይደለም"
+    },
+    {
+        "key": "notif-strip-title",
+        "EN_US": "Notifications are off",
+        "AM": "ማሳወቂያዎች ጠፍተዋል"
+    },
+    {
+        "key": "notif-strip-body",
+        "EN_US": "You'll miss verifications, campaign news and prizes.",
+        "AM": "ማረጋገጫዎች፣ የውድድር ዜናዎች እና ሽልማቶች ያመልጥዎታል።"
     }
 ]

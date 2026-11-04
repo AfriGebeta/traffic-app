@@ -42,6 +42,7 @@ import { showCampaignPointsEstimate } from '../../campaigns/utils/pointsPopup';
 import { useScoringCampaign } from '../../campaigns/hooks/useScoringCampaign';
 import { PhotoPicker, UploadedPhoto } from '../../../shared/components/PhotoPicker';
 import { PHOTO_PIN_LIMIT_M, deviceFieldsFromFix, latestPhotoFix, photoPinGap } from '../../../shared/utils/photoFix';
+import { askForNotifications } from '../../../shared/services/notificationPermission';
 
 
 type IncidentIcon = React.FC<{ width?: number; height?: number }>;
@@ -140,6 +141,7 @@ export default function IncidentReportScreen() {
             dashboardEventsService.contribute();
             showToast(t(incident.merged ? 'report-merged-thanks' : 'incident-reported-successfully'));
             if (!incident.merged) showCampaignPointsEstimate('incident', location, { hasPhoto: images.length > 0 });
+            void askForNotifications('contribution');
             setTimeout(() => {
                 router.back();
             }, 500);

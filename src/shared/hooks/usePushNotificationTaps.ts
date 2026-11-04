@@ -42,13 +42,11 @@ const toastText = ({ notification }: RemoteMessage): string | null => {
 // Firebase doesn't show pushes while the app is open, so post the same notification ourselves
 const showWhileOpen = (message: RemoteMessage) => {
     const { title, body } = message.notification ?? {};
-    console.log('[push] show while open', JSON.stringify({ notification: message.notification ?? null, dataKeys: Object.keys(message.data ?? {}) }));
     if (!title && !body) return;
     Notifications.scheduleNotificationAsync({
         content: { title: title ?? undefined, body: body ?? undefined, data: message.data ?? {} },
         trigger: { channelId: PUSH_CHANNEL },
-    }).then((id) => console.log('[push] posted', id)).catch((error) => {
-        console.log('[push] post failed', String(error));
+    }).catch(() => {
         const text = toastText(message);
         if (text) showToast(text);
     });

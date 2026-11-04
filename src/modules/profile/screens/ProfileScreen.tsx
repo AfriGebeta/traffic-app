@@ -26,6 +26,7 @@ import { endCampaignTour } from '../../campaigns/tour/campaignTour';
 import { TourActions } from '../../campaigns/tour/TourTooltip';
 import { useTourCampaign } from '../../campaigns/tour/useTourCampaign';
 import { TourTouchable } from '../../campaigns/tour/walkthroughables';
+import { NotificationsOffStrip } from '../../../shared/components/NotificationsOffStrip';
 
 const LANGUAGES = [
     { code: 'en' as const, label: 'English', flag: '🇬🇧' },
@@ -470,6 +471,8 @@ const ProfileContent = () => {
                             </TouchableOpacity>
                         </View>
                     </View>
+
+                    <NotificationsOffStrip style={{ marginBottom: 12 }} />
 
                     <View ref={campaignsRowRef} collapsable={false} className="mb-3">
                         <CopilotStep name="campaigns" order={1} text={t('tour-campaigns-text')} active={touring}>

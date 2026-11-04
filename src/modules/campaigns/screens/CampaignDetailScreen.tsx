@@ -19,6 +19,7 @@ import { periodLabel } from '../utils/periodLabel';
 import { ordinal } from '../utils/ordinal';
 import { startCampaignTour } from '../tour/campaignTour';
 import { CampaignKind, CampaignTrack } from '../types/campaign.types';
+import { askForNotifications } from '../../../shared/services/notificationPermission';
 
 const NO_TRACKS: CampaignTrack[] = [];
 
@@ -113,6 +114,7 @@ export default function CampaignDetailScreen() {
             showToast(t('campaign-joined'));
             void refreshCampaigns();
             showMeAround();
+            void askForNotifications('campaign');
         } catch (error) {
             const code = error instanceof ApiError ? error.code : undefined;
             if (isRestrictedError(code)) return;

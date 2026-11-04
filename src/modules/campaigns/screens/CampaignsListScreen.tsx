@@ -8,6 +8,7 @@ import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { hasCampaignEnded, isParticipating, refreshCampaigns, useCampaigns } from '../store/campaignStore';
 import { pickLocalized } from '../utils/localizedText';
+import { NotificationsOffStrip } from '../../../shared/components/NotificationsOffStrip';
 
 const AnnouncementLight = require('../../../../assets/images/announcement-light.png');
 const AnnouncementDark = require('../../../../assets/images/announcement-dark.png');
@@ -42,6 +43,8 @@ export default function CampaignsListScreen() {
                 contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
                 refreshControl={<RefreshControl refreshing={state.loading} onRefresh={() => void refreshCampaigns()} />}
             >
+                <NotificationsOffStrip style={{ marginBottom: 12 }} />
+
                 {!state.loaded && <ActivityIndicator className="mt-8" color={colors.primary.main} />}
 
                 {state.loaded && state.campaigns.length === 0 && (

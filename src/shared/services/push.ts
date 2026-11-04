@@ -90,7 +90,7 @@ export const initPush = () => {
     }).catch((error) => log('channel error', error));
     // pushes that arrive while the app is open are posted by us (usePushNotificationTaps); show them like any other
     Notifications.setNotificationHandler({
-        handleNotification: async (notification) => (console.log('[push] handler', notification.request.identifier), { shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }),
+        handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }),
     });
 
     onTokenRefresh(messaging, (token) => void registerPushDevice(token));

@@ -20,6 +20,7 @@ import { useTheme } from '../../../shared/theme/ThemeContext';
 import { isPunishableRule, NO_PUNISHMENT_VALUE } from '../utils/ruleTranslations';
 import { PhotoPicker, UploadedPhoto } from '../../../shared/components/PhotoPicker';
 import { ConfirmDialog } from '../../../components/ConfirmDialog';
+import { askForNotifications } from '../../../shared/services/notificationPermission';
 
 export default function AddRuleReportScreen() {
     const router = useRouter();
@@ -116,6 +117,7 @@ export default function AddRuleReportScreen() {
             const hasPhoto = photos.length > 0;
             const isComplete = hasPhoto && showPunishment && punishment.trim().length > 0;
             if (!report.merged) showCampaignPointsEstimate('traffic_rule', coordinates, { hasPhoto, isComplete });
+            void askForNotifications('contribution');
             router.back();
             if (!fromReportSheet) router.back();
         } catch (error) {
