@@ -3,6 +3,7 @@ import { PlaceType } from '../types/place.types';
 export const getPlaceTranslationKey = (type: PlaceType): string => {
     const translationMap: Record<PlaceType, string> = {
         gas_station: 'gas-station',
+        charging_station: 'charging-station',
         taxi_station: 'taxi-station',
         restaurant: 'restaurants',
         cafe: 'cafe',

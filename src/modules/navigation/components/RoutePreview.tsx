@@ -208,22 +208,29 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
             return;
         }
 
-        const path = taxiRoute?.path;
-        if (!path?.length) return;
+        const legs = taxiRoute?.legs ?? [];
+
+        // the fare editor sets one price, so only single-ride trips map to one route
+        if (legs.length !== 1) {
+            showToast(t('fare-stop-not-found'));
+            return;
+        }
+
+        const routeId = legs[0].routeId;
+        if (routeId == null) {
+            showToast(t('fare-stop-not-found'));
+            return;
+        }
 
         setSavingFare(true);
         try {
-            const match = await taxiService.findRouteForPath(path);
-            if (!match) {
+            const lastStop = await taxiService.getRouteLastStop(routeId);
+            if (!lastStop) {
                 showToast(t('fare-stop-not-found'));
                 return;
             }
 
-            await taxiService.updateStopFare(
-                match.routeId,
-                match.endStop.id,
-                match.startStop.fareFromStart + fare
-            );
+            await taxiService.updateStopFare(routeId, lastStop.nodeId, fare);
 
             setTaxiRoute(prev => prev ? {
                 ...prev,

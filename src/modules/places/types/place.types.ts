@@ -1,4 +1,4 @@
-export type PlaceType = 'gas_station' | 'taxi_station' | 'restaurant' | 'cafe' | 'parking' | 'hospital' | 'clinic' | 'pharmacy' | 'bank' | 'atm' | 'hotel' | 'school' | 'park' | 'building' | 'company' | 'government' | 'mall' | 'shop' | 'other';
+export type PlaceType = 'gas_station' | 'charging_station' | 'taxi_station' | 'restaurant' | 'cafe' | 'parking' | 'hospital' | 'clinic' | 'pharmacy' | 'bank' | 'atm' | 'hotel' | 'school' | 'park' | 'building' | 'company' | 'government' | 'mall' | 'shop' | 'other';
 
 export interface Place {
     id: string;
@@ -120,6 +120,7 @@ export const PLACE_TYPES = [
     { id: 'restaurant', label: 'Restaurant', icon: 'restaurant' as const, color: '#10B981' },
     { id: 'cafe', label: 'Cafe', icon: 'cafe' as const, color: '#B45309' },
     { id: 'parking', label: 'Parking', icon: 'car' as const, color: '#8B5CF6' },
+    { id: 'charging_station', label: 'Charging Station', icon: 'flash' as const, color: '#22C55E' },
     { id: 'hospital', label: 'Hospital', icon: 'medical' as const, color: '#EC4899' },
     { id: 'clinic', label: 'Clinic', icon: 'medkit' as const, color: '#F472B6' },
     { id: 'pharmacy', label: 'Pharmacy', icon: 'bandage' as const, color: '#14B8A6' },

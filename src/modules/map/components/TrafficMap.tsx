@@ -486,7 +486,7 @@ export default function TrafficMap({ sharedLocation, sharedRoute, taxiDestinatio
         setClickedLocation(null);
 
     };
-    const { handleMapClick } = useMapClick({
+    const { handleMapClick, handleMapLongPress } = useMapClick({
         navigationMode,
         onSelectPlace: handleSelectPlace,
         setSelectedDestination,
@@ -1323,6 +1323,7 @@ export default function TrafficMap({ sharedLocation, sharedRoute, taxiDestinatio
                 center={mapCenter}
                 zoom={USER_LOCATION_ZOOM}
                 onMapClick={handleMapClick}
+                onMapLongPress={handleMapLongPress}
                 onMapLoaded={handleMapLoaded}
                 routeGeoJSON={isNavigationMinimized ? undefined : (taxiRouteData ? undefined : routeGeoJSON)}
                 maneuvers={isNavigationMinimized || taxiRouteData ? undefined : routeManeuversList}

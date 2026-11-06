@@ -133,11 +133,14 @@ function AppShell() {
       logBreadcrumb(`app state: ${nextState}`);
       if (nextState === 'background' || nextState === 'inactive') {
         backgroundedAtRef.current = Date.now();
+        if (nextState === 'background') dashboardEventsService.sessionEnd();
       } else if (nextState === 'active') {
         void refreshCampaigns();
         const backgroundedAt = backgroundedAtRef.current;
         if (backgroundedAt !== null && Date.now() - backgroundedAt >= BACKGROUND_IDLE_MS) {
           dashboardEventsService.sessionStart();
+        } else {
+          dashboardEventsService.sessionResume();
         }
         backgroundedAtRef.current = null;
       }
