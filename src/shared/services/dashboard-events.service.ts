@@ -6,6 +6,7 @@ const INSTALL_SENT_KEY = '@dashboard_install_sent';
 
 type DashboardEventType =
   | 'SESSION_START'
+  | 'SESSION_END'
   | 'INSTALL'
   | 'ONBOARD_COMPLETE'
   | 'SEARCH'
@@ -28,6 +29,9 @@ const round = (value: number, digits = 2): number => {
 };
 
 class DashboardEventsService {
+  private activeSince: number | null = null;
+  private accumulatedMs = 0;
+
   private async sendEvent(type: DashboardEventType, metadata?: Record<string, any>): Promise<void> {
     try {
       const deviceId = await telemetryService.getDeviceId();
@@ -46,7 +50,19 @@ class DashboardEventsService {
 
   sessionStart(): void {
     // console.log('dashboard events: SESSION_START triggered');
+    this.accumulatedMs = 0;
+    this.activeSince = Date.now();
     void this.sendEvent('SESSION_START');
+  }
+
+  sessionResume(): void {
+    if (this.activeSince === null) this.activeSince = Date.now();
+  }
+  sessionEnd(): void {
+    if (this.activeSince === null) return;
+    this.accumulatedMs += Date.now() - this.activeSince;
+    this.activeSince = null;
+    void this.sendEvent('SESSION_END', { durationSec: Math.round(this.accumulatedMs / 1000) });
   }
 
   async installOnce(): Promise<void> {
