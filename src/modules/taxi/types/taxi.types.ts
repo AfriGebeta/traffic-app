@@ -150,6 +150,16 @@ export interface RouteSegment {
     instructions?: any[];
 }
 
+// one taxi ride in a trip; order matches the taxi entries in segments
+export interface TaxiLeg {
+    routeId: number;
+    routeName: string;
+    routeType?: string;
+    rideKm?: number;
+    fare?: number;
+    currency?: string;
+}
+
 export interface TaxiNavigationResponse {
     success: boolean;
     timestamp: string;
@@ -183,6 +193,7 @@ export interface TaxiNavigationResponse {
     path: number[];
     formattedPath: string;
     segments?: RouteSegment[];
+    legs?: TaxiLeg[];
     originWalkRoute?: WalkRoute;
     destinationWalkRoute?: WalkRoute;
     summary: {

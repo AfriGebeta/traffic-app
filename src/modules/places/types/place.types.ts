@@ -1,4 +1,4 @@
-export type PlaceType = 'gas_station' | 'taxi_station' | 'restaurant' | 'cafe' | 'parking' | 'hospital' | 'clinic' | 'pharmacy' | 'bank' | 'atm' | 'hotel' | 'school' | 'park' | 'building' | 'company' | 'government' | 'mall' | 'shop' | 'other';
+export type PlaceType = 'gas_station' | 'charging_station' | 'taxi_station' | 'restaurant' | 'cafe' | 'parking' | 'hospital' | 'clinic' | 'pharmacy' | 'bank' | 'atm' | 'hotel' | 'school' | 'park' | 'building' | 'company' | 'government' | 'mall' | 'shop' | 'other';
 
 export interface Place {
     id: string;
@@ -117,6 +117,7 @@ export const PLACE_CATEGORY_IDS: Partial<Record<PlaceType, string>> = {
 
 export const PLACE_TYPES = [
     { id: 'gas_station', label: 'Gas Station', icon: 'water' as const, color: '#EF4444' },
+    { id: 'charging_station', label: 'Charging Station', icon: 'flash' as const, color: '#22C55E' },
     { id: 'restaurant', label: 'Restaurant', icon: 'restaurant' as const, color: '#10B981' },
     { id: 'cafe', label: 'Cafe', icon: 'cafe' as const, color: '#B45309' },
     { id: 'parking', label: 'Parking', icon: 'car' as const, color: '#8B5CF6' },

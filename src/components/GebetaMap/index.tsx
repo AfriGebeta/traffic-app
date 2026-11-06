@@ -210,6 +210,7 @@ const ensureStyleBackgroundLayer = (styleJson: Record<string, any>, isDark: bool
 
 interface ExtendedGebetaMapProps extends Omit<GebetaMapProps, 'center'> {
     center?: [number, number];
+    onMapLongPress?: (lngLat: [number, number], event?: any) => void;
     routeGeoJSON?: any;
     routeStyle?: {
         color?: string;
@@ -1079,7 +1080,7 @@ export type TrafficMapRef = GebetaMapRef & {
 };
 
 const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
-    ({ apiKey, center, zoom, onMapClick, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, routeEpoch, taxiActiveRouteGeoJSON, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, isHomeMap, staticInitialCamera, freeCamera, maneuvers, boundingBox, alternativeRoutesGeoJSON, routeTimeLabels }, ref) => {
+    ({ apiKey, center, zoom, onMapClick, onMapLongPress, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, routeEpoch, taxiActiveRouteGeoJSON, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, isHomeMap, staticInitialCamera, freeCamera, maneuvers, boundingBox, alternativeRoutesGeoJSON, routeTimeLabels }, ref) => {
         const navPuckFraction = isTaxiNavigation ? 0.52 : NAV_PUCK_SCREEN_FRACTION;
         const navMarker = useNavMarker();
         const { isDark } = useTheme();
@@ -2227,6 +2228,11 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
                             }
 
                             onMapClick([coords[0], coords[1]], { ...e, features });
+                        }}
+                        onLongPress={(e) => {
+                            const coords = (e.geometry as any)?.coordinates;
+                            if (!coords || !onMapLongPress) return;
+                            onMapLongPress([coords[0], coords[1]], e);
                         }}
                         onRegionIsChanging={(e: any) => {
                             lastRegionEventAtRef.current = Date.now();

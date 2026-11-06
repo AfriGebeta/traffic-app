@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import * as Haptics from 'expo-haptics';
 import i18n from '../../../shared/utils/localization/i18n';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 import { exploreService } from '../services/exploreService';
@@ -18,7 +19,7 @@ export const useMapClick = ({
     setClickedLocation,
 }: UseMapClickParams) => {
     const handleMapClick = useCallback(
-        async (lngLat: [number, number], event?: any) => {
+        (lngLat: [number, number], event?: any) => {
             if (navigationMode) return;
 
             const [lng, lat] = lngLat;
@@ -33,7 +34,9 @@ export const useMapClick = ({
 
             let clickedFeature = null;
             if (event?.features && event.features.length > 0) {
-                clickedFeature = event.features.find((f: any) => getFeatureName(f.properties));
+                clickedFeature = event.features.find(
+                    (f: any) => f?.geometry?.type === 'Point' && getFeatureName(f.properties)
+                );
             }
 
             if (clickedFeature) {
@@ -57,28 +60,18 @@ export const useMapClick = ({
                 setClickedLocation({ lat, lng });
 
                 onSelectPlace(place);
-                return;
             }
+        },
+        [navigationMode, onSelectPlace, setClickedLocation]
+    );
 
+    const handleMapLongPress = useCallback(
+        async (lngLat: [number, number]) => {
+            if (navigationMode) return;
 
-            try {
-                const place = await Promise.race([
-                    exploreService.reverseGeocode(lat, lng),
-                    new Promise<null>((resolve) => setTimeout(() => resolve(null), 800)),
-                ]);
+            const [lng, lat] = lngLat;
 
-                // console.log('usemapclick:reverseGeocode result:', place ? place.name : 'null/timeout');
-
-                if (place) {
-
-                    setClickedLocation({ lat: place.latitude, lng: place.longitude });
-
-                    onSelectPlace(place);
-                    return;
-                }
-            } catch (error) {
-                console.log('rev geocoding error:', error);
-            }
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
 
             const coordsLabel = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
 
@@ -107,5 +100,5 @@ export const useMapClick = ({
         [navigationMode, onSelectPlace, setClickedLocation]
     );
 
-    return { handleMapClick };
+    return { handleMapClick, handleMapLongPress };
 };

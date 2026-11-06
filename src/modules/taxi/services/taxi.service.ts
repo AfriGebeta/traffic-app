@@ -251,9 +251,10 @@ export const taxiService = {
         return routes;
     },
 
-    async updateStopFare(routeId: number, stopId: number, fareFromStart: number): Promise<TaxiRouteStop> {
+    // stopRef is the node id of the stop on that route (backend contract: /routes/{routeId}/stops/{nodeId})
+    async updateStopFare(routeId: number, stopRef: number, fareFromStart: number): Promise<TaxiRouteStop> {
         const response = await apiService.patch<any>(
-            `/api/taxi/routes/${routeId}/stops/${stopId}`,
+            `/api/taxi/routes/${routeId}/stops/${stopRef}`,
             { fareFromStart }
         );
 
@@ -269,30 +270,14 @@ export const taxiService = {
         return response.data.data || response.data;
     },
 
-    async findRouteForPath(path: number[]): Promise<{ routeId: number; startStop: TaxiRouteStop; endStop: TaxiRouteStop } | null> {
-        if (path.length < 2) return null;
-
+    // last stop (highest sequenceIndex) of a route; its node id is what the fare PATCH targets
+    async getRouteLastStop(routeId: number): Promise<TaxiRouteStop | null> {
         const routes = await taxiService.getRoutes();
-        const startNodeId = path[0];
-        const endNodeId = path[path.length - 1];
-
-        let best: { routeId: number; startStop: TaxiRouteStop; endStop: TaxiRouteStop; covered: number } | null = null;
-
-        for (const route of routes) {
-            const stops = route.stops;
-            if (!stops?.length) continue;
-
-            const startStop = stops.find(s => s.nodeId === startNodeId);
-            const endStop = stops.find(s => s.nodeId === endNodeId);
-            if (!startStop || !endStop || startStop.sequenceIndex >= endStop.sequenceIndex) continue;
-
-            const covered = path.filter(nodeId => stops.some(s => s.nodeId === nodeId)).length;
-            if (!best || covered > best.covered) {
-                best = { routeId: route.id, startStop, endStop, covered };
-            }
+        const route = routes.find(r => r.id === routeId);
+        if (!route?.stops?.length) {
+            return null;
         }
 
-        if (!best) return null;
-        return { routeId: best.routeId, startStop: best.startStop, endStop: best.endStop };
+        return route.stops.reduce((a, b) => (b.sequenceIndex > a.sequenceIndex ? b : a));
     },
 };

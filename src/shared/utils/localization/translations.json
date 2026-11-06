@@ -365,6 +365,11 @@
         "AM": "ነዳጅ ማደያ"
     },
     {
+        "key": "charging-station",
+        "EN_US": "Charging Station",
+        "AM": "የኤሌክትሪክ መኪና ቻርጅ ማድረጊያ"
+    },
+    {
         "key": "taxi-station",
         "EN_US": "Taxi Station",
         "AM": "ታክሲ ተራ"

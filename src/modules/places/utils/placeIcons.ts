@@ -2,8 +2,11 @@ import React from 'react';
 
 import GasStationLight from '../../../../assets/images/contribute-place-gas-station-light.svg';
 import GasStationDark from '../../../../assets/images/contribute-place-gas-station-dark.svg';
+import ChargingStationLight from '../../../../assets/images/contribute-place-charging-station-light.svg';
+import ChargingStationDark from '../../../../assets/images/contribute-place-charging-station-dark.svg';
 import TaxiLight from '../../../../assets/images/contribute-place-taxi-light.svg';
 import TaxiDark from '../../../../assets/images/contribute-place-taxi-dark.svg';
+
 import RestaurantLight from '../../../../assets/images/contribute-place-restaurant-light.svg';
 import RestaurantDark from '../../../../assets/images/contribute-place-restaurant-dark.svg';
 import CafeLight from '../../../../assets/images/contribute-place-cafe-light.svg';
@@ -43,6 +46,7 @@ export type PlaceIcon = React.FC<{ width?: number; height?: number }>;
 
 const PLACE_ICONS: Record<string, { light: PlaceIcon; dark: PlaceIcon }> = {
     gas_station: { light: GasStationLight, dark: GasStationDark },
+    charging_station: { light: ChargingStationLight, dark: ChargingStationDark },
     taxi_station: { light: TaxiLight, dark: TaxiDark },
     restaurant: { light: RestaurantLight, dark: RestaurantDark },
     cafe: { light: CafeLight, dark: CafeDark },
