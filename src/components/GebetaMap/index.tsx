@@ -2779,8 +2779,8 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
                                     coordinate={[rule.lng, rule.lat]}
                                 >
                                     <View style={{
-                                        width: 28,
-                                        height: 28,
+                                        width: 22,
+                                        height: 22,
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                     }}>
@@ -2788,13 +2788,13 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
                                             <Image
                                                 source={{ uri: rule.type.img }}
                                                 style={{
-                                                    width: 24,
-                                                    height: 24,
+                                                    width: 18,
+                                                    height: 18,
                                                 }}
                                                 resizeMode="contain"
                                             />
                                         ) : (
-                                            <Ionicons name="warning" size={22} color="#EF4444" />
+                                            <Ionicons name="warning" size={16} color="#EF4444" />
                                         )}
                                     </View>
                                 </MapLibreGL.PointAnnotation>
