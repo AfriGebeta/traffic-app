@@ -117,10 +117,10 @@ export const PLACE_CATEGORY_IDS: Partial<Record<PlaceType, string>> = {
 
 export const PLACE_TYPES = [
     { id: 'gas_station', label: 'Gas Station', icon: 'water' as const, color: '#EF4444' },
-    { id: 'charging_station', label: 'Charging Station', icon: 'flash' as const, color: '#22C55E' },
     { id: 'restaurant', label: 'Restaurant', icon: 'restaurant' as const, color: '#10B981' },
     { id: 'cafe', label: 'Cafe', icon: 'cafe' as const, color: '#B45309' },
     { id: 'parking', label: 'Parking', icon: 'car' as const, color: '#8B5CF6' },
+    { id: 'charging_station', label: 'Charging Station', icon: 'flash' as const, color: '#22C55E' },
     { id: 'hospital', label: 'Hospital', icon: 'medical' as const, color: '#EC4899' },
     { id: 'clinic', label: 'Clinic', icon: 'medkit' as const, color: '#F472B6' },
     { id: 'pharmacy', label: 'Pharmacy', icon: 'bandage' as const, color: '#14B8A6' },
