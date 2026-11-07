@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { RADIUS, SectionLabel } from './CampaignUi';
 
 const UNITS = [
     { key: 'campaign-countdown-days', seconds: 86400 },
@@ -10,7 +11,7 @@ const UNITS = [
     { key: 'campaign-countdown-seconds', seconds: 1 },
 ] as const;
 
-// same dark card in both themes; dark mode adds a border so it doesn't melt into the background
+// same dark tile in both themes; flat, with a hairline border instead of a shadow
 const COUNTDOWN_BG = '#26272B';
 
 const secondsUntil = (endMs: number) => Math.max(0, Math.floor((endMs - Date.now()) / 1000));
@@ -56,30 +57,24 @@ export function CampaignCountdown({ endsAt, label, onDone }: Props) {
 
     return (
         <View className="mb-6">
-            <Text className="font-bold text-base mb-3" style={{ color: theme.textPrimary }}>
-                {label ?? t('campaign-ends-in')}
-            </Text>
+            <SectionLabel style={{ marginBottom: 8 }}>{label ?? t('campaign-ends-in')}</SectionLabel>
             <View
-                className="flex-row items-center rounded-3xl py-4 px-2"
+                className="flex-row items-center py-4 px-2"
                 style={{
                     backgroundColor: COUNTDOWN_BG,
-                    borderWidth: isDark ? 1 : 0,
-                    borderColor: theme.border,
-                    shadowColor: '#000',
-                    shadowOpacity: 0.15,
-                    shadowRadius: 12,
-                    shadowOffset: { width: 0, height: 4 },
-                    elevation: 4,
+                    borderRadius: RADIUS,
+                    borderWidth: 1,
+                    borderColor: isDark ? theme.border : COUNTDOWN_BG,
                 }}
             >
                 {parts.map((part, i) => (
                     <React.Fragment key={part.key}>
                         {i > 0 && <View style={{ width: 1, height: 20, backgroundColor: 'rgba(255,255,255,0.15)' }} />}
                         <View className="flex-1 items-center">
-                            <Text style={{ color: '#FFFFFF', fontSize: 30, fontVariant: ['tabular-nums'] }}>
+                            <Text style={{ color: '#FFFFFF', fontSize: 28, letterSpacing: -0.3, fontVariant: ['tabular-nums'] }}>
                                 {String(part.value).padStart(2, '0')}
                             </Text>
-                            <Text className="text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                            <Text className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.6)' }}>
                                 {t(part.key)}
                             </Text>
                         </View>

@@ -8,6 +8,7 @@ import { useTheme } from '../../../shared/theme/ThemeContext';
 import { useCampaigns } from '../store/campaignStore';
 import { pickLocalized } from '../utils/localizedText';
 import { CampaignLeaderboardView } from '../components/CampaignLeaderboardView';
+import { SectionLabel } from '../components/CampaignUi';
 
 export default function CampaignLeaderboardScreen() {
     const router = useRouter();
@@ -20,11 +21,14 @@ export default function CampaignLeaderboardScreen() {
 
     return (
         <View className="flex-1" style={{ paddingTop: insets.top, backgroundColor: theme.background }}>
-            <View className="px-4 py-4 flex-row items-center">
-                <TouchableOpacity onPress={() => router.back()} className="mr-4" activeOpacity={0.7}>
-                    <Ionicons name="arrow-back" size={26} color={theme.textPrimary} />
+            <View className="px-4 pt-3 pb-2 flex-row items-center">
+                <TouchableOpacity onPress={() => router.back()} className="p-1 -ml-1" activeOpacity={0.7} hitSlop={8}>
+                    <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
                 </TouchableOpacity>
-                <Text className="text-xl font-bold flex-1" style={{ color: theme.textPrimary }} numberOfLines={1}>
+            </View>
+            <View className="px-4 mb-4">
+                <SectionLabel style={{ marginBottom: 4 }}>{t('leaderboard')}</SectionLabel>
+                <Text style={{ color: theme.textPrimary, fontSize: 24, lineHeight: 30, letterSpacing: -0.3 }} numberOfLines={1}>
                     {campaign ? pickLocalized(campaign.name, i18n.language) : t('leaderboard')}
                 </Text>
             </View>

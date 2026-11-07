@@ -4,7 +4,7 @@ import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '../../../shared/theme/colors';
+import { Chip, FONT_MEDIUM, NavRow, RADIUS, RADIUS_SM, SectionLabel, SkeletonBlock, tint } from '../components/CampaignUi';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { showToast } from '../../../shared/utils/toast';
 import { ApiError, ApiErrorCode, isRestrictedError } from '../../../shared/utils/apiErrors';
@@ -149,12 +149,29 @@ export default function CampaignDetailScreen() {
     };
 
     if (!campaign) {
+        const loading = state.loading || !state.loaded;
         return (
-            <View className="flex-1 items-center justify-center" style={{ backgroundColor: theme.background }}>
-                {state.loading || !state.loaded ? (
-                    <ActivityIndicator color={colors.primary.main} />
+            <View className="flex-1" style={{ paddingTop: insets.top, backgroundColor: theme.background }}>
+                <View className="px-4 pt-3 pb-2 flex-row items-center">
+                    <TouchableOpacity onPress={() => router.back()} className="mr-3 p-1 -ml-1" activeOpacity={0.7} hitSlop={8}>
+                        <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
+                    </TouchableOpacity>
+                </View>
+                {loading ? (
+                    // skeleton shaped like the page: title, dates, description, countdown, points card
+                    <View className="px-4" style={{ gap: 10 }}>
+                        <SkeletonBlock height={12} width="25%" />
+                        <SkeletonBlock height={30} width="70%" />
+                        <SkeletonBlock height={12} width="45%" />
+                        <SkeletonBlock height={14} style={{ marginTop: 12 }} />
+                        <SkeletonBlock height={14} width="85%" />
+                        <SkeletonBlock height={88} style={{ marginTop: 20, borderRadius: RADIUS }} />
+                        <SkeletonBlock height={140} style={{ marginTop: 12, borderRadius: RADIUS }} />
+                    </View>
                 ) : (
-                    <Text style={{ color: theme.textSecondary }}>{t('campaign-not-found')}</Text>
+                    <View className="flex-1 items-center justify-center">
+                        <Text className="text-sm" style={{ color: theme.textSecondary }}>{t('campaign-not-found')}</Text>
+                    </View>
                 )}
             </View>
         );
@@ -166,7 +183,7 @@ export default function CampaignDetailScreen() {
     const requirements = campaign.requirements ?? {};
     const formula = campaign.pointsFormula;
     const eventRules = (campaign.scoring ?? []).filter((rule) => typeof rule.points === 'number' && rule.points > 0);
-    const cardStyle = { backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border };
+    const cardStyle = { backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border, borderRadius: RADIUS };
     // open campaigns (requiresJoin false) count everyone, so only offer Join where it matters.
     // /running only lists open campaigns, and E0020 covers one that closed meanwhile
     const ended = hasCampaignEnded(campaign);
@@ -184,53 +201,75 @@ export default function CampaignDetailScreen() {
     const wonTotal =
         totalPeriod?.status === 'final' && !totalPeriod.hidden && !!totalRank && typeof totalPrize === 'number' && totalPrize > 0;
 
+    const bonuses = [
+        !!formula?.quality?.photo && formula.quality.photo > 1 ? `${t('campaign-bonus-photo')} ×${formula.quality.photo}` : null,
+        !!formula?.quality?.complete && formula.quality.complete > 1 ? `${t('campaign-bonus-complete')} ×${formula.quality.complete}` : null,
+        !!formula?.priorityMultiplier && formula.priorityMultiplier > 1 ? `${t('campaign-bonus-priority')} ×${formula.priorityMultiplier}` : null,
+        formula?.firstToMapBonus ? `${t('campaign-bonus-first')} +${formula.firstToMapBonus}` : null,
+        formula?.dailyItemCap ? `${t('campaign-daily-cap')}: ${formula.dailyItemCap}` : null,
+    ].filter((bonus): bonus is string => !!bonus);
+
+    const rules = [
+        t('campaign-rule-verified'),
+        campaign.boundary ? t('campaign-rule-area') : null,
+        requirements.contributorWithinM ? t('campaign-rule-be-there', { meters: requirements.contributorWithinM }) : null,
+        requirements.photoMaxAgeHours ? t('campaign-rule-fresh-photo', { hours: requirements.photoMaxAgeHours }) : null,
+        t('campaign-rule-camera'),
+        t('campaign-rule-honest'),
+    ].filter((rule): rule is string => !!rule);
+
+    const joinDisabled = (needsTrack && !selectedTrack) || joining;
+    const textPrimary = { color: theme.textPrimary };
+    const textSecondary = { color: theme.textSecondary };
+    const mediumPrimary = { color: theme.textPrimary, fontFamily: FONT_MEDIUM };
+
     return (
         <View className="flex-1" style={{ paddingTop: insets.top, backgroundColor: theme.background }}>
-            <View className="px-4 py-4 flex-row items-center">
-                <TouchableOpacity onPress={() => router.back()} className="mr-4" activeOpacity={0.7}>
-                    <Ionicons name="arrow-back" size={26} color={theme.textPrimary} />
+            <View className="px-4 pt-3 pb-2 flex-row items-center">
+                <TouchableOpacity onPress={() => router.back()} className="mr-3 p-1 -ml-1" activeOpacity={0.7} hitSlop={8}>
+                    <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
                 </TouchableOpacity>
-                <Text className="text-xl font-bold flex-1" style={{ color: theme.textPrimary }} numberOfLines={1}>
-                    {name}
-                </Text>
             </View>
 
             <ScrollView className="flex-1 px-4" contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}>
-                {wonTotal && (
-                    <TouchableOpacity
-                        onPress={() => router.push({ pathname: '/campaigns/[slug]/leaderboard', params: { slug: campaign.slug, period: 'total' } })}
-                        activeOpacity={0.7}
-                        className="flex-row items-center rounded-2xl p-4 mb-4"
-                        style={{ borderWidth: 1, borderColor: colors.primary.main }}
-                    >
-                        <View className="flex-1 mr-3">
-                            <Text className="font-bold text-base" style={{ color: theme.textPrimary }}>
-                                {t('campaign-you-won-title')}
-                            </Text>
-                            <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>
-                                {t('campaign-you-won-total', { place: ordinal(totalRank, i18n.language) })}
-                            </Text>
-                            <Text className="font-bold text-base mt-1" style={{ color: colors.primary.main }}>
-                                {t('campaign-prize-amount', { amount: totalPrize.toLocaleString('en-US') })}
-                            </Text>
-                        </View>
-                        <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
-                    </TouchableOpacity>
+
+                <SectionLabel style={{ marginBottom: 6 }}>{t('campaigns')}</SectionLabel>
+                <Text style={{ ...textPrimary, fontSize: 28, lineHeight: 34, letterSpacing: -0.4 }}>{name}</Text>
+
+                {(campaign.startsAt || campaign.endsAt) && (
+                    <View className="flex-row items-center mt-2">
+                        <Ionicons name="calendar-outline" size={14} color={theme.textSecondary} />
+                        <Text className="text-xs ml-1.5" style={textSecondary}>
+                            {formatDate(campaign.startsAt, i18n.language)} – {formatDate(campaign.endsAt, i18n.language)}
+                        </Text>
+                    </View>
                 )}
 
                 {!!description && (
-                    <Text className="text-base leading-6 mb-4" style={{ color: theme.textSecondary }}>
+                    <Text className="text-sm leading-6 mt-4" style={textSecondary}>
                         {description}
                     </Text>
                 )}
 
-                {(campaign.startsAt || campaign.endsAt) && (
-                    <View className="flex-row items-center mb-6">
-                        <Ionicons name="calendar-outline" size={16} color={theme.textSecondary} />
-                        <Text className="text-sm ml-2" style={{ color: theme.textSecondary }}>
-                            {formatDate(campaign.startsAt, i18n.language)} – {formatDate(campaign.endsAt, i18n.language)}
-                        </Text>
-                    </View>
+                <View style={{ height: 24 }} />
+
+                {wonTotal && (
+                    <TouchableOpacity
+                        onPress={() => router.push({ pathname: '/campaigns/[slug]/leaderboard', params: { slug: campaign.slug, period: 'total' } })}
+                        activeOpacity={0.7}
+                        style={{ ...cardStyle, borderColor: theme.primary, padding: 16, marginBottom: 16, flexDirection: 'row', alignItems: 'center' }}
+                    >
+                        <View className="flex-1 mr-3">
+                            <Text style={mediumPrimary}>{t('campaign-you-won-title')}</Text>
+                            <Text className="text-xs mt-1" style={textSecondary}>
+                                {t('campaign-you-won-total', { place: ordinal(totalRank, i18n.language) })}
+                            </Text>
+                            <Text style={{ ...textPrimary, fontSize: 22, marginTop: 8, fontVariant: ['tabular-nums'] }}>
+                                {t('campaign-prize-amount', { amount: totalPrize.toLocaleString('en-US') })}
+                            </Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
+                    </TouchableOpacity>
                 )}
 
                 {!ended && !!campaign.endsAt && <CampaignCountdown endsAt={campaign.endsAt} />}
@@ -239,197 +278,144 @@ export default function CampaignDetailScreen() {
                     <TouchableOpacity
                         onPress={openLeaderboard}
                         activeOpacity={0.7}
-                        className="flex-row items-center rounded-2xl p-4 mb-6"
-                        style={{ borderWidth: 1, borderColor: colors.primary.main }}
+                        style={{ ...cardStyle, padding: 16, marginBottom: 24, flexDirection: 'row', alignItems: 'center' }}
                     >
                         <View className="flex-1 mr-3">
-                            <Text className="font-bold text-base" style={{ color: theme.textPrimary }}>
-                                {t('campaign-status-final')}
-                            </Text>
-                            <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>
+                            <Text style={mediumPrimary}>{t('campaign-status-final')}</Text>
+                            <Text className="text-xs mt-1" style={textSecondary}>
                                 {t('campaign-winners-note')}
                             </Text>
                         </View>
-                        <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+                        <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
                     </TouchableOpacity>
                 )}
 
                 {ended && campaign.phase !== 'final' && (
-                    <View className="rounded-2xl p-4 mb-6" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
-                        <Text className="font-bold text-base" style={{ color: theme.textPrimary }}>
-                            {t('campaign-ended')}
-                        </Text>
-                        <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>
+                    <View style={{ ...cardStyle, padding: 16, marginBottom: 24 }}>
+                        <Text style={mediumPrimary}>{t('campaign-ended')}</Text>
+                        <Text className="text-xs mt-1" style={textSecondary}>
                             {t(campaign.phase === 'auditing' ? 'campaign-results-coming-note' : 'campaign-ended-description')}
                         </Text>
                     </View>
                 )}
 
                 {(participating || (ended && joined)) && (
-                    <View className="rounded-2xl p-4 mb-6" style={{ backgroundColor: theme.primaryMuted }}>
-                        <Text className="font-bold text-base" style={{ color: theme.textPrimary }}>
-                            {t(joined ? 'campaign-you-joined' : 'campaign-open-to-all')}
-                            {joinedTrack ? ` · ${pickLocalized(joinedTrack.name, i18n.language)}` : ''}
-                        </Text>
+                    <View style={{ ...cardStyle, padding: 16, marginBottom: 8 }}>
+                        <View className="flex-row items-center flex-wrap" style={{ gap: 8 }}>
+                            <Chip tone="success">{t(joined ? 'campaign-you-joined' : 'campaign-open-to-all')}</Chip>
+                            {joinedTrack && <Chip>{pickLocalized(joinedTrack.name, i18n.language)}</Chip>}
+                        </View>
                         {me?.enrollment?.disqualified && (
-                            <Text className="text-sm mt-1" style={{ color: colors.error.main }}>
-                                {t('campaign-disqualified')}
-                                {me.enrollment.disqualifiedReason ? `: ${me.enrollment.disqualifiedReason}` : ''}
-                            </Text>
-                        )}
-                        {(me?.periods ?? []).map((standing, i) => {
-                            return (
-                                <Text key={i} className="text-sm mt-1" style={{ color: theme.textSecondary }}>
-                                    {periodLabel(standing.period, t)}: {standing.score} {t('campaign-points')}
-                                    {standing.rank ? ` · #${standing.rank} / ${standing.participants}` : ''}
+                            <View
+                                className="mt-3 px-3 py-2"
+                                style={{ borderRadius: RADIUS_SM, borderWidth: 1, borderColor: tint(theme.error, '4D'), backgroundColor: tint(theme.error, '1A') }}
+                            >
+                                <Text className="text-sm" style={{ color: theme.error }}>
+                                    {t('campaign-disqualified')}
+                                    {me.enrollment.disqualifiedReason ? `: ${me.enrollment.disqualifiedReason}` : ''}
                                 </Text>
-                            );
-                        })}
+                            </View>
+                        )}
+                        {(me?.periods ?? []).map((standing, i) => (
+                            <View key={i} className="flex-row items-end justify-between mt-4">
+                                <View className="flex-1 mr-3">
+                                    <Text className="text-xs" style={textSecondary}>
+                                        {periodLabel(standing.period, t)}
+                                    </Text>
+                                    <View className="flex-row items-baseline">
+                                        <Text style={{ ...textPrimary, fontSize: 26, lineHeight: 34, letterSpacing: -0.3, fontVariant: ['tabular-nums'] }}>
+                                            {standing.score}
+                                        </Text>
+                                        <Text className="text-xs ml-1" style={textSecondary}>
+                                            {t('campaign-points')}
+                                        </Text>
+                                    </View>
+                                </View>
+                                {!!standing.rank && (
+                                    <Text className="text-sm mb-1" style={{ ...textSecondary, fontVariant: ['tabular-nums'] }}>
+                                        #{standing.rank} / {standing.participants}
+                                    </Text>
+                                )}
+                            </View>
+                        ))}
                     </View>
                 )}
 
                 {(participating || ended) && (
-                    <TouchableOpacity
-                        onPress={openLeaderboard}
-                        activeOpacity={0.7}
-                        className="flex-row items-center justify-between rounded-2xl px-4 py-4 mb-3"
-                        style={cardStyle}
-                    >
-                        <Text className="font-semibold text-base" style={{ color: theme.textPrimary }}>
-                            {t('leaderboard')}
-                        </Text>
-                        <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
-                    </TouchableOpacity>
+                    <View className="mb-6 -mx-3">
+                        <NavRow title={t('leaderboard')} onPress={openLeaderboard} />
+                        {(participating || (ended && joined)) && (
+                            <NavRow
+                                title={t('my-contributions')}
+                                onPress={() => router.push({ pathname: '/my-contributions', params: { campaign: campaign.slug } })}
+                            />
+                        )}
+                        {participating && <NavRow title={t('campaign-how-to-take-part')} onPress={showMeAround} />}
+                    </View>
                 )}
 
-                {(participating || (ended && joined)) && (
-                    <TouchableOpacity
-                        onPress={() => router.push({ pathname: '/my-contributions', params: { campaign: campaign.slug } })}
-                        activeOpacity={0.7}
-                        className="flex-row items-center justify-between rounded-2xl px-4 py-4 mb-6"
-                        style={cardStyle}
-                    >
-                        <Text className="font-semibold text-base" style={{ color: theme.textPrimary }}>
-                            {t('my-contributions')}
-                        </Text>
-                        <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
-                    </TouchableOpacity>
-                )}
-
-                {participating && (
-                    <TouchableOpacity onPress={showMeAround} activeOpacity={0.7} className="flex-row items-center self-start mb-6 -mt-3">
-                        <Ionicons name="help-circle-outline" size={18} color={colors.primary.main} />
-                        <Text className="font-semibold ml-1.5" style={{ color: colors.primary.main }}>
-                            {t('campaign-how-to-take-part')}
-                        </Text>
-                    </TouchableOpacity>
-                )}
+                {(scoredKinds.length > 0 || eventRules.length > 0) && <SectionLabel style={{ marginBottom: 8 }}>{t('campaign-how-points-work')}</SectionLabel>}
 
                 {scoredKinds.length > 0 && (
                     <>
-                        <Text className="font-bold text-base mb-3" style={{ color: theme.textPrimary }}>
-                            {t('campaign-how-points-work')}
-                        </Text>
-                        <View className="rounded-2xl mb-3 overflow-hidden" style={cardStyle}>
-                            {scoredKinds.map(({ kind, points }, i) => (
-                                <View
-                                    key={kind}
-                                    className="flex-row items-center justify-between px-4 py-3"
-                                    style={i > 0 ? { borderTopWidth: 1, borderTopColor: theme.border } : undefined}
-                                >
-                                    <Text style={{ color: theme.textPrimary }}>{t(KIND_LABEL_KEYS[kind])}</Text>
-                                    <Text className="font-bold" style={{ color: theme.textPrimary }}>
-                                        {points}+ {t('campaign-points')}
+                        <View style={{ ...cardStyle, paddingVertical: 4, marginBottom: 12 }}>
+                            {scoredKinds.map(({ kind, points }) => (
+                                <View key={kind} className="flex-row items-center justify-between px-4 py-2.5">
+                                    <Text className="text-sm" style={textPrimary}>
+                                        {t(KIND_LABEL_KEYS[kind])}
+                                    </Text>
+                                    <Text className="text-sm" style={{ ...mediumPrimary, fontVariant: ['tabular-nums'] }}>
+                                        {points}+ <Text style={textSecondary}>{t('campaign-points')}</Text>
                                     </Text>
                                 </View>
                             ))}
                         </View>
-                        <View className="mb-6 gap-1">
-                            {!!formula?.quality?.photo && formula.quality.photo > 1 && (
-                                <Text className="text-sm" style={{ color: theme.textSecondary }}>
-                                    • {t('campaign-bonus-photo')} ×{formula.quality.photo}
-                                </Text>
-                            )}
-                            {!!formula?.quality?.complete && formula.quality.complete > 1 && (
-                                <Text className="text-sm" style={{ color: theme.textSecondary }}>
-                                    • {t('campaign-bonus-complete')} ×{formula.quality.complete}
-                                </Text>
-                            )}
-                            {!!formula?.priorityMultiplier && formula.priorityMultiplier > 1 && (
-                                <Text className="text-sm" style={{ color: theme.textSecondary }}>
-                                    • {t('campaign-bonus-priority')} ×{formula.priorityMultiplier}
-                                </Text>
-                            )}
-                            {!!formula?.firstToMapBonus && (
-                                <Text className="text-sm" style={{ color: theme.textSecondary }}>
-                                    • {t('campaign-bonus-first')} +{formula.firstToMapBonus}
-                                </Text>
-                            )}
-                            {!!formula?.dailyItemCap && (
-                                <Text className="text-sm" style={{ color: theme.textSecondary }}>
-                                    • {t('campaign-daily-cap')}: {formula.dailyItemCap}
-                                </Text>
-                            )}
-                        </View>
+                        {bonuses.length > 0 && (
+                            <View className="flex-row flex-wrap mb-6" style={{ gap: 6 }}>
+                                {bonuses.map((bonus) => (
+                                    <Chip key={bonus}>{bonus}</Chip>
+                                ))}
+                            </View>
+                        )}
+                        {bonuses.length === 0 && <View style={{ height: 12 }} />}
                     </>
                 )}
 
                 {/* campaigns that don't score submissions pay per event; show those rules as sent */}
                 {scoredKinds.length === 0 && eventRules.length > 0 && (
-                    <>
-                        <Text className="font-bold text-base mb-3" style={{ color: theme.textPrimary }}>
-                            {t('campaign-how-points-work')}
-                        </Text>
-                        <View className="rounded-2xl mb-6 overflow-hidden" style={cardStyle}>
-                            {eventRules.map((rule, i) => (
-                                <View
-                                    key={`${rule.event}-${i}`}
-                                    className="flex-row items-center justify-between px-4 py-3"
-                                    style={i > 0 ? { borderTopWidth: 1, borderTopColor: theme.border } : undefined}
-                                >
-                                    <Text className="flex-1 mr-3" style={{ color: theme.textPrimary }}>
-                                        {rule.description || rule.event}
-                                    </Text>
-                                    <Text className="font-bold" style={{ color: theme.textPrimary }}>
-                                        +{rule.points} {t('campaign-points')}
-                                    </Text>
-                                </View>
-                            ))}
-                        </View>
-                    </>
+                    <View style={{ ...cardStyle, paddingVertical: 4, marginBottom: 24 }}>
+                        {eventRules.map((rule, i) => (
+                            <View key={`${rule.event}-${i}`} className="flex-row items-center justify-between px-4 py-2.5">
+                                <Text className="flex-1 mr-3 text-sm" style={textPrimary}>
+                                    {rule.description || rule.event}
+                                </Text>
+                                <Text className="text-sm" style={{ ...mediumPrimary, fontVariant: ['tabular-nums'] }}>
+                                    +{rule.points} <Text style={textSecondary}>{t('campaign-points')}</Text>
+                                </Text>
+                            </View>
+                        ))}
+                    </View>
                 )}
 
-                <Text className="font-bold text-base mb-3" style={{ color: theme.textPrimary }}>
-                    {t('campaign-rules')}
-                </Text>
-                <View className="mb-6 gap-1">
-                    <Text className="text-sm" style={{ color: theme.textSecondary }}>• {t('campaign-rule-verified')}</Text>
-                    {campaign.boundary && (
-                        <Text className="text-sm" style={{ color: theme.textSecondary }}>• {t('campaign-rule-area')}</Text>
-                    )}
-                    {!!requirements.contributorWithinM && (
-                        <Text className="text-sm" style={{ color: theme.textSecondary }}>
-                            • {t('campaign-rule-be-there', { meters: requirements.contributorWithinM })}
-                        </Text>
-                    )}
-                    {!!requirements.photoMaxAgeHours && (
-                        <Text className="text-sm" style={{ color: theme.textSecondary }}>
-                            • {t('campaign-rule-fresh-photo', { hours: requirements.photoMaxAgeHours })}
-                        </Text>
-                    )}
-                    <Text className="text-sm" style={{ color: theme.textSecondary }}>• {t('campaign-rule-camera')}</Text>
-                    <Text className="text-sm" style={{ color: theme.textSecondary }}>• {t('campaign-rule-honest')}</Text>
+                <SectionLabel style={{ marginBottom: 8 }}>{t('campaign-rules')}</SectionLabel>
+                <View className="mb-6" style={{ gap: 8 }}>
+                    {rules.map((rule) => (
+                        <View key={rule} className="flex-row">
+                            <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: theme.textSecondary, marginTop: 8, marginRight: 10 }} />
+                            <Text className="text-sm flex-1 leading-5" style={textSecondary}>
+                                {rule}
+                            </Text>
+                        </View>
+                    ))}
                 </View>
 
                 {canJoin && tracks.length > 1 && (
                     <>
-                        <Text className="font-bold text-base mb-1" style={{ color: theme.textPrimary }}>
-                            {t('campaign-choose-track')}
-                        </Text>
-                        <Text className="text-sm mb-3" style={{ color: theme.textSecondary }}>
+                        <SectionLabel style={{ marginBottom: 4 }}>{t('campaign-choose-track')}</SectionLabel>
+                        <Text className="text-xs mb-3" style={textSecondary}>
                             {t('campaign-track-locked')}
                         </Text>
-                        <View className="gap-3 mb-6">
+                        <View className="mb-6" style={{ gap: 8 }}>
                             {tracks.map((track) => {
                                 const selected = selectedTrack === track.key;
                                 return (
@@ -437,19 +423,22 @@ export default function CampaignDetailScreen() {
                                         key={track.key}
                                         onPress={() => setSelectedTrack(track.key)}
                                         activeOpacity={0.7}
-                                        className="flex-row items-center rounded-2xl px-4 py-4"
                                         style={{
                                             ...cardStyle,
-                                            borderColor: selected ? colors.primary.main : theme.border,
-                                            borderWidth: selected ? 2 : 1,
+                                            flexDirection: 'row',
+                                            alignItems: 'center',
+                                            paddingHorizontal: 16,
+                                            paddingVertical: 14,
+                                            borderColor: selected ? theme.primary : theme.border,
+                                            backgroundColor: selected ? tint(theme.primary, '14') : theme.surface
                                         }}
                                     >
                                         <Ionicons
                                             name={selected ? 'radio-button-on' : 'radio-button-off'}
-                                            size={22}
-                                            color={selected ? colors.primary.main : theme.textSecondary}
+                                            size={20}
+                                            color={selected ? theme.primary : theme.textSecondary}
                                         />
-                                        <Text className="ml-3 text-base font-semibold" style={{ color: theme.textPrimary }}>
+                                        <Text className="ml-3 text-sm" style={selected ? mediumPrimary : textPrimary}>
                                             {pickLocalized(track.name, i18n.language)}
                                         </Text>
                                     </TouchableOpacity>
@@ -459,25 +448,28 @@ export default function CampaignDetailScreen() {
                     </>
                 )}
 
-
-                <Text className="font-bold text-base mb-3" style={{ color: theme.textPrimary }}>
-                    {t('campaign-follow-us')}
-                </Text>
-                <View className="flex-row justify-between mb-6">
+                <SectionLabel style={{ marginBottom: 10 }}>{t('campaign-follow-us')}</SectionLabel>
+                <View className="flex-row mb-6" style={{ gap: 8 }}>
                     {SOCIAL_LINKS.map((link) => (
                         <TouchableOpacity
                             key={link.label}
                             onPress={() => void Linking.openURL(link.url).catch(() => {})}
-                            activeOpacity={0.7}
                             accessibilityRole="link"
                             accessibilityLabel={link.label}
-                            className="w-12 h-12 rounded-full items-center justify-center"
-                            style={cardStyle}
+                            activeOpacity={0.7}
+                            style={{
+                                ...cardStyle,
+                                width: 44,
+                                height: 44,
+                                borderRadius: RADIUS,
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}
                         >
                             {link.family === 'ion' ? (
-                                <Ionicons name={link.icon} size={22} color={theme.textPrimary} />
+                                <Ionicons name={link.icon} size={20} color={theme.textSecondary} />
                             ) : (
-                                <FontAwesome name={link.icon} size={22} color={theme.textPrimary} />
+                                <FontAwesome name={link.icon} size={20} color={theme.textSecondary} />
                             )}
                         </TouchableOpacity>
                     ))}
@@ -487,10 +479,10 @@ export default function CampaignDetailScreen() {
                     <TouchableOpacity
                         onPress={devLeave}
                         activeOpacity={0.7}
-                        className="rounded-2xl px-4 py-4 mb-6 items-center"
-                        style={{ borderWidth: 1, borderStyle: 'dashed', borderColor: colors.error.main }}
+                        className="px-4 py-3 mb-6 items-center"
+                        style={{ borderRadius: RADIUS_SM, borderWidth: 1, borderStyle: 'dashed', borderColor: theme.error }}
                     >
-                        <Text className="font-semibold" style={{ color: colors.error.main }}>
+                        <Text className="text-sm" style={{ color: theme.error }}>
                             [dev] Leave campaign
                         </Text>
                     </TouchableOpacity>
@@ -499,19 +491,27 @@ export default function CampaignDetailScreen() {
 
             {canJoin && (
                 <View
-                    className="absolute left-0 right-0 bottom-0 px-4 pt-4"
-                    style={{ paddingBottom: insets.bottom + 16, backgroundColor: theme.background, borderTopWidth: 1, borderTopColor: theme.border }}
+                    className="absolute left-0 right-0 bottom-0 px-4 pt-3"
+                    style={{ paddingBottom: insets.bottom + 12, backgroundColor: theme.background, borderTopWidth: 1, borderTopColor: theme.border }}
                 >
                     <TouchableOpacity
                         onPress={join}
-                        disabled={(needsTrack && !selectedTrack) || joining}
-                        className="rounded-xl py-4 items-center"
-                        style={{ backgroundColor: colors.primary.main, opacity: (needsTrack && !selectedTrack) || joining ? 0.5 : 1 }}
+                        disabled={joinDisabled}
+                        activeOpacity={0.7}
+                        style={{
+                            height: 48,
+                            borderRadius: RADIUS_SM,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: theme.primary,
+                            opacity: joinDisabled ? 0.5 : 1
+                        }}
                     >
                         {joining ? (
                             <ActivityIndicator color="#fff" />
                         ) : (
-                            <Text className="text-white font-bold text-base">{t('campaign-join')}</Text>
+                            <Text style={{ color: '#fff', fontFamily: FONT_MEDIUM, fontSize: 15 }}>{t('campaign-join')}</Text>
                         )}
                     </TouchableOpacity>
                 </View>

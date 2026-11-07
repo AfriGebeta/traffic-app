@@ -4,14 +4,50 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { resolveStorageUri } from '../../../shared/utils/storage';
 import { campaignService } from '../services/campaign.service';
 import { pickLocalized } from '../utils/localizedText';
 import { useCampaigns } from '../store/campaignStore';
 import { getIncidentTranslationKey } from '../../incidents/utils/incidentTranslations';
 import { RULE_TRANSLATION_MAP } from '../../rules/utils/ruleTranslations';
 import { CampaignKind, MySubmissions, Submission, SubmissionStatus } from '../types/campaign.types';
+import { Chip, ChipTone, FONT_MEDIUM, RADIUS_SM, SkeletonBlock, tint } from '../components/CampaignUi';
+
+const THUMB_STYLE = { width: 44, height: 44, borderRadius: RADIUS_SM, marginRight: 12 };
+
+function SubmissionThumb({ photo }: { photo?: string }) {
+    const { colors: theme } = useTheme();
+    const [uri, setUri] = useState<string | null>(null);
+    const [failed, setFailed] = useState(false);
+
+    useEffect(() => {
+        let alive = true;
+        setUri(null);
+        setFailed(false);
+        if (!photo) return;
+        resolveStorageUri(photo)
+            .then((signed) => {
+                if (alive) setUri(signed);
+            })
+            .catch(() => {
+                if (alive) setFailed(true);
+            });
+        return () => {
+            alive = false;
+        };
+    }, [photo]);
+
+    if (uri && !failed) return <Image source={{ uri }} style={THUMB_STYLE} onError={() => setFailed(true)} />;
+    return (
+        <View
+            className="items-center justify-center"
+            style={[THUMB_STYLE, { backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }]}
+        >
+            <Ionicons name="image-outline" size={18} color={theme.textSecondary} />
+        </View>
+    );
+}
 
 const KINDS: CampaignKind[] = ['place', 'taxi_station', 'traffic_rule', 'incident'];
 
@@ -64,7 +100,7 @@ export default function MyContributionsScreen() {
     const { campaign } = useLocalSearchParams<{ campaign?: string }>();
     const { t, i18n } = useTranslation();
     const insets = useSafeAreaInsets();
-    const { colors: theme, isDark } = useTheme();
+    const { colors: theme } = useTheme();
     const campaignState = useCampaigns();
     const scopedCampaign = campaign ? campaignState.campaigns.find((c) => c.slug === campaign) : undefined;
 
@@ -115,11 +151,12 @@ export default function MyContributionsScreen() {
 
     const hasMore = !!result && items.length < (result.total ?? 0);
 
-    const statusColor = (status: SubmissionStatus) => {
-        if (status === 'VERIFIED') return theme.green;
-        if (status === 'REJECTED' || status === 'REVOKED') return colors.error.main;
-        if (status === 'PENDING' || status === 'NEEDS_REVIEW') return colors.primary.main;
-        return theme.textSecondary;
+    // same grouping as before: verified green, rejected/revoked red, waiting brand, the rest neutral
+    const statusTone = (status: SubmissionStatus): ChipTone => {
+        if (status === 'VERIFIED') return 'success';
+        if (status === 'REJECTED' || status === 'REVOKED') return 'danger';
+        if (status === 'PENDING' || status === 'NEEDS_REVIEW') return 'primary';
+        return 'neutral';
     };
 
     const tab = (label: string, active: boolean, onPress: () => void, count?: number) => (
@@ -127,16 +164,17 @@ export default function MyContributionsScreen() {
             key={label}
             onPress={onPress}
             activeOpacity={0.7}
-            className="px-4 py-2 rounded-lg mr-2"
+            className="px-3 py-1.5 mr-2"
             style={{
-                backgroundColor: active ? colors.primary.main : theme.surface,
+                borderRadius: RADIUS_SM,
+                backgroundColor: active ? tint(theme.primary, '1F') : 'transparent',
                 borderWidth: 1,
-                borderColor: active ? colors.primary.main : theme.border,
+                borderColor: active ? theme.primary : theme.border,
             }}
         >
-            <Text className="font-semibold" style={{ color: active ? '#fff' : theme.textPrimary }}>
+            <Text className="text-sm" style={{ color: active ? theme.textPrimary : theme.textSecondary, fontFamily: active ? FONT_MEDIUM : undefined }}>
                 {label}
-                {count != null ? ` · ${count}` : ''}
+                {count != null && <Text style={{ color: theme.textSecondary, fontVariant: ['tabular-nums'] }}>{` · ${count}`}</Text>}
             </Text>
         </TouchableOpacity>
     );
@@ -148,19 +186,11 @@ export default function MyContributionsScreen() {
         const photo = item.photoUrls?.[0];
 
         return (
-            <View className="flex-row items-center py-3" style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}>
-                {photo ? (
-                    <Image source={{ uri: photo }} style={{ width: 48, height: 48, borderRadius: 10, marginRight: 12 }} />
-                ) : (
-                    <View
-                        className="items-center justify-center mr-3"
-                        style={{ width: 48, height: 48, borderRadius: 10, backgroundColor: theme.surface }}
-                    >
-                        <Ionicons name="image-outline" size={20} color={theme.textSecondary} />
-                    </View>
-                )}
+            // no dividers: spacing separates rows
+            <View className="flex-row items-start py-3">
+                <SubmissionThumb photo={photo} />
                 <View className="flex-1 mr-3">
-                    <Text className="text-base font-semibold" style={{ color: theme.textPrimary }} numberOfLines={1}>
+                    <Text style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM, fontSize: 15 }} numberOfLines={1}>
                         {title}
                     </Text>
                     <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }} numberOfLines={1}>
@@ -168,21 +198,24 @@ export default function MyContributionsScreen() {
                         {item.action === 'correction' ? ` · ${t('submission-correction')}` : ''}
                         {item.campaign ? ` · ${pickLocalized(item.campaign.name, i18n.language)}` : ''}
                     </Text>
-                    <Text className="text-xs font-semibold mt-1" style={{ color: statusColor(item.status) }}>
-                        {t(STATUS_LABEL_KEYS[item.status] ?? 'submission-status-pending')}
-                    </Text>
+                    <View className="flex-row mt-1.5">
+                        <Chip tone={statusTone(item.status)}>{t(STATUS_LABEL_KEYS[item.status] ?? 'submission-status-pending')}</Chip>
+                    </View>
                     {!!reason && (item.status === 'REJECTED' || item.status === 'REVOKED') && (
-                        <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }} numberOfLines={2}>
+                        <Text className="text-xs mt-1" style={{ color: theme.textSecondary }} numberOfLines={2}>
                             {t('submission-reason')}: {reason}
                         </Text>
                     )}
                     {outsideCampaign && (
-                        <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }}>
+                        <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>
                             {t('submission-no-campaign-points')}
                         </Text>
                     )}
                 </View>
-                <Text className="font-bold text-base" style={{ color: item.points > 0 ? theme.green : theme.textSecondary }}>
+                <Text
+                    className="text-sm mt-0.5"
+                    style={{ color: item.points > 0 ? theme.green : theme.textSecondary, fontFamily: FONT_MEDIUM, fontVariant: ['tabular-nums'] }}
+                >
                     {item.status === 'VERIFIED' && item.points > 0 ? `+${item.points}` : '—'}
                 </Text>
             </View>
@@ -191,24 +224,29 @@ export default function MyContributionsScreen() {
 
     return (
         <View className="flex-1" style={{ paddingTop: insets.top, backgroundColor: theme.background }}>
-            <View className="px-4 py-4 flex-row items-center">
-                <TouchableOpacity onPress={() => router.back()} className="mr-4" activeOpacity={0.7}>
-                    <Ionicons name="arrow-back" size={26} color={theme.textPrimary} />
+            <View className="px-4 pt-3 pb-2 flex-row items-center">
+                <TouchableOpacity onPress={() => router.back()} className="p-1 -ml-1" activeOpacity={0.7} hitSlop={8}>
+                    <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
                 </TouchableOpacity>
-                <View className="flex-1">
-                    <Text className="text-xl font-bold" style={{ color: theme.textPrimary }} numberOfLines={1}>
+            </View>
+            <View className="px-4 mb-4 flex-row items-end">
+                <View className="flex-1 mr-3">
+                    <Text style={{ color: theme.textPrimary, fontSize: 28, lineHeight: 34, letterSpacing: -0.4 }} numberOfLines={1}>
                         {t('my-contributions')}
                     </Text>
                     {!!scopedCampaign && (
-                        <Text className="text-sm" style={{ color: theme.textSecondary }} numberOfLines={1}>
+                        <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }} numberOfLines={1}>
                             {pickLocalized(scopedCampaign.name, i18n.language)}
                         </Text>
                     )}
                 </View>
                 {result && (
-                    <View className="rounded-full px-3 py-1" style={{ backgroundColor: isDark ? '#4D3400' : theme.primaryMuted }}>
-                        <Text className="font-bold" style={{ color: colors.primary.main }}>
-                            {result.totalPoints ?? 0} {t('campaign-pts')}
+                    <View className="items-end">
+                        <Text style={{ color: theme.textPrimary, fontSize: 24, lineHeight: 30, letterSpacing: -0.3, fontVariant: ['tabular-nums'] }}>
+                            {result.totalPoints ?? 0}
+                        </Text>
+                        <Text className="text-xs" style={{ color: theme.textSecondary }}>
+                            {t('campaign-pts')}
                         </Text>
                     </View>
                 )}
@@ -224,11 +262,22 @@ export default function MyContributionsScreen() {
             </View>
 
             {loading ? (
-                <ActivityIndicator className="mt-8" color={colors.primary.main} />
+                // skeleton rows shaped like the list: photo, title, meta, status
+                <View className="px-4 pt-1" style={{ gap: 20 }}>
+                    {[0.65, 0.5, 0.7, 0.55, 0.6].map((w, i) => (
+                        <View key={i} className="flex-row items-center">
+                            <SkeletonBlock height={44} width={44} style={{ marginRight: 12 }} />
+                            <View className="flex-1" style={{ gap: 8 }}>
+                                <SkeletonBlock height={13} width={`${Math.round(w * 100)}%`} />
+                                <SkeletonBlock height={10} width="40%" />
+                            </View>
+                        </View>
+                    ))}
+                </View>
             ) : failed ? (
                 <TouchableOpacity onPress={() => void load(1, 'initial')} className="items-center mt-8">
-                    <Text style={{ color: theme.textSecondary }}>{t('my-contributions-failed')}</Text>
-                    <Text className="font-semibold mt-2" style={{ color: colors.primary.main }}>{t('try-again')}</Text>
+                    <Text className="text-sm" style={{ color: theme.textSecondary }}>{t('my-contributions-failed')}</Text>
+                    <Text className="text-sm mt-2" style={{ color: theme.primary, fontFamily: FONT_MEDIUM }}>{t('try-again')}</Text>
                 </TouchableOpacity>
             ) : (
                 <FlatList
@@ -241,9 +290,9 @@ export default function MyContributionsScreen() {
                     onEndReached={() => {
                         if (hasMore && !loadingMore) void load(page + 1, 'more');
                     }}
-                    ListFooterComponent={loadingMore ? <ActivityIndicator className="my-4" color={colors.primary.main} /> : null}
+                    ListFooterComponent={loadingMore ? <ActivityIndicator className="my-4" color={theme.primary} /> : null}
                     ListEmptyComponent={
-                        <Text className="text-center mt-8" style={{ color: theme.textSecondary }}>
+                        <Text className="text-center text-sm mt-8" style={{ color: theme.textSecondary }}>
                             {t('my-contributions-empty')}
                         </Text>
                     }

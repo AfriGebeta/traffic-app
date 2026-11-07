@@ -1,10 +1,9 @@
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, Image, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Image, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { hasCampaignEnded, isParticipating, refreshCampaigns, useCampaigns } from '../store/campaignStore';
 import { pickLocalized } from '../utils/localizedText';
@@ -12,6 +11,7 @@ import { campaignService } from '../services/campaign.service';
 import { CampaignCountdown } from '../components/CampaignCountdown';
 import { Campaign } from '../types/campaign.types';
 import { NotificationsOffStrip } from '../../../shared/components/NotificationsOffStrip';
+import { Chip, FONT_MEDIUM, RADIUS, SectionLabel, SkeletonBlock } from '../components/CampaignUi';
 
 const AnnouncementLight = require('../../../../assets/images/announcement-light.png');
 const AnnouncementDark = require('../../../../assets/images/announcement-dark.png');
@@ -52,14 +52,14 @@ export default function CampaignsListScreen() {
 
     return (
         <View className="flex-1" style={{ paddingTop: insets.top, backgroundColor: theme.background }}>
-            <View className="px-4 py-4 flex-row items-center">
-                <TouchableOpacity onPress={() => router.back()} className="mr-4" activeOpacity={0.7}>
-                    <Ionicons name="arrow-back" size={26} color={theme.textPrimary} />
+            <View className="px-4 pt-3 pb-2 flex-row items-center">
+                <TouchableOpacity onPress={() => router.back()} className="p-1 -ml-1" activeOpacity={0.7} hitSlop={8}>
+                    <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
                 </TouchableOpacity>
-                <Text className="text-xl font-bold" style={{ color: theme.textPrimary }}>
-                    {t('campaigns')}
-                </Text>
             </View>
+            <Text className="px-4 mb-4" style={{ color: theme.textPrimary, fontSize: 28, lineHeight: 34, letterSpacing: -0.4 }}>
+                {t('campaigns')}
+            </Text>
 
             <ScrollView
                 className="flex-1 px-4"
@@ -68,17 +68,32 @@ export default function CampaignsListScreen() {
             >
                 <NotificationsOffStrip style={{ marginBottom: 12 }} />
 
-                {!state.loaded && <ActivityIndicator className="mt-8" color={colors.primary.main} />}
+                {!state.loaded && (
+                    // skeleton cards shaped like the campaign rows
+                    <View style={{ gap: 12 }}>
+                        {[0, 1, 2].map((i) => (
+                            <View
+                                key={i}
+                                className="flex-row items-center p-4"
+                                style={{ borderRadius: RADIUS, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surface }}
+                            >
+                                <SkeletonBlock height={40} width={40} style={{ marginRight: 14 }} />
+                                <View className="flex-1" style={{ gap: 8 }}>
+                                    <SkeletonBlock height={14} width="60%" />
+                                    <SkeletonBlock height={12} width="35%" />
+                                </View>
+                            </View>
+                        ))}
+                    </View>
+                )}
 
                 {nextUpcoming && next && nextStart && (
-                    <View className="rounded-2xl p-4 mb-3" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: colors.primary.main }}>
-                        <Text className="text-xs font-bold uppercase mb-1" style={{ color: colors.primary.main, letterSpacing: 1 }}>
-                            {t('campaign-next-title')}
-                        </Text>
-                        <Text className="text-lg font-bold" style={{ color: theme.textPrimary }} numberOfLines={2}>
+                    <View className="p-4 mb-3" style={{ borderRadius: RADIUS, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.primary }}>
+                        <SectionLabel style={{ marginBottom: 6 }}>{t('campaign-next-title')}</SectionLabel>
+                        <Text style={{ color: theme.textPrimary, fontSize: 20, lineHeight: 26, letterSpacing: -0.2 }} numberOfLines={2}>
                             {pickLocalized(next.name, i18n.language)}
                         </Text>
-                        <Text className="text-sm mt-0.5 mb-4" style={{ color: theme.textSecondary }}>
+                        <Text className="text-xs mt-1 mb-4" style={{ color: theme.textSecondary }}>
                             {t('campaign-starts-on', {
                                 date: nextStart.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
                             })}
@@ -89,12 +104,12 @@ export default function CampaignsListScreen() {
                 )}
 
                 {showComingSoon && (
-                    <View className="items-center rounded-2xl px-6 py-8 mb-3" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
-                        <Image source={isDark ? AnnouncementDark : AnnouncementLight} style={{ width: 72, height: 72 }} />
-                        <Text className="text-base font-bold text-center mt-4" style={{ color: theme.textPrimary }}>
+                    <View className="items-center px-6 py-8 mb-3" style={{ borderRadius: RADIUS, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
+                        <Image source={isDark ? AnnouncementDark : AnnouncementLight} style={{ width: 64, height: 64 }} />
+                        <Text className="text-base text-center mt-4" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM }}>
                             {t('campaign-next-soon-title')}
                         </Text>
-                        <Text className="text-sm text-center mt-1" style={{ color: theme.textSecondary }}>
+                        <Text className="text-xs text-center mt-1 leading-5" style={{ color: theme.textSecondary }}>
                             {t('campaign-next-soon-body')}
                         </Text>
                     </View>
@@ -103,7 +118,7 @@ export default function CampaignsListScreen() {
                 {state.loaded && state.campaigns.length === 0 && !nextUpcoming && !showComingSoon && (
                     <View className="items-center mt-16 px-6">
                         <Image source={isDark ? AnnouncementDark : AnnouncementLight} style={{ width: 72, height: 72, opacity: 0.6 }} />
-                        <Text className="text-center mt-4" style={{ color: theme.textSecondary }}>
+                        <Text className="text-sm text-center mt-4" style={{ color: theme.textSecondary }}>
                             {t('campaigns-none')}
                         </Text>
                     </View>
@@ -120,30 +135,32 @@ export default function CampaignsListScreen() {
                                 key={campaign.slug}
                                 activeOpacity={0.7}
                                 onPress={() => router.push({ pathname: '/campaigns/[slug]', params: { slug: campaign.slug } })}
-                                className="flex-row items-center rounded-2xl p-4"
-                                style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
+                                className="flex-row items-center p-4"
+                                style={{ borderRadius: RADIUS, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
                             >
-                                <Image source={isDark ? AnnouncementDark : AnnouncementLight} style={{ width: 44, height: 44, marginRight: 14 }} />
-                                <View className="flex-1">
-                                    <Text className="text-base font-semibold" style={{ color: theme.textPrimary }} numberOfLines={1}>
+                                <Image source={isDark ? AnnouncementDark : AnnouncementLight} style={{ width: 40, height: 40, marginRight: 14 }} />
+                                <View className="flex-1 mr-2">
+                                    <Text style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM, fontSize: 15 }} numberOfLines={1}>
                                         {pickLocalized(campaign.name, i18n.language)}
                                     </Text>
-                                   <Text className="text-sm mt-0.5" style={{ color: participating ? theme.green : theme.textSecondary }}>
-                                        {participating
-                                            ? [
-                                                  t(joined ? 'campaign-joined-short' : 'campaign-open-short'),
-                                                  weekly?.rank ? `#${weekly.rank}` : null,
-                                                  // rank is null while the board is hidden near the period's end; the score still counts
-                                                  weekly && (weekly.rank || weekly.score > 0) ? `${weekly.score} ${t('campaign-points')}` : null,
-                                              ]
-                                                  .filter(Boolean)
-                                                  .join(' · ')
-                                            : hasCampaignEnded(campaign)
-                                              ? t(campaign.phase === 'final' ? 'campaign-phase-final-short' : campaign.phase === 'auditing' ? 'campaign-phase-auditing-short' : 'campaign-ended')
-                                              : t('campaign-not-joined')}
-                                    </Text>
+                                    <View className="flex-row mt-1.5">
+                                        <Chip tone={participating ? 'success' : 'neutral'}>
+                                            {participating
+                                                ? [
+                                                      t(joined ? 'campaign-joined-short' : 'campaign-open-short'),
+                                                      weekly?.rank ? `#${weekly.rank}` : null,
+                                                      // rank is null while the board is hidden near the period's end; the score still counts
+                                                      weekly && (weekly.rank || weekly.score > 0) ? `${weekly.score} ${t('campaign-points')}` : null,
+                                                  ]
+                                                      .filter(Boolean)
+                                                      .join(' · ')
+                                                : hasCampaignEnded(campaign)
+                                                  ? t(campaign.phase === 'final' ? 'campaign-phase-final-short' : campaign.phase === 'auditing' ? 'campaign-phase-auditing-short' : 'campaign-ended')
+                                                  : t('campaign-not-joined')}
+                                        </Chip>
+                                    </View>
                                 </View>
-                                <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+                                <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
                             </TouchableOpacity>
                         );
                     })}

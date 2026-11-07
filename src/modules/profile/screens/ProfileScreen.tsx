@@ -21,6 +21,7 @@ import WorkIcon from '../../../../assets/images/profile-work.svg';
 import OthersIcon from '../../../../assets/images/profile-others.svg';
 import LogoutIcon from '../../../../assets/images/profile-logout.svg';
 import { NotificationsOffStrip } from '../../../shared/components/NotificationsOffStrip';
+import { notificationService } from '../../notifications/services/notification.service';
 
 const LANGUAGES = [
     { code: 'en' as const, label: 'English', flag: '🇬🇧' },
@@ -50,6 +51,8 @@ const ProfileContent = () => {
     const [remoteAvatarFailed, setRemoteAvatarFailed] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+    // inbox badge on the bell; refreshed on every focus so it clears after reading
+    const [unreadNotifications, setUnreadNotifications] = useState(0);
 
 
     const [level, setLevel] = useState('');
@@ -108,6 +111,11 @@ const ProfileContent = () => {
         const userId = freshUser?.id ?? storedUser?.id;
 
         if (userId) {
+            // signed-in only: the inbox needs auth
+            notificationService
+                .getUnreadCount()
+                .then(setUnreadNotifications)
+                .catch(() => undefined);
             const stats = await leaderboardService.getUserStats(userId).catch(() => null);
             if (stats) {
                 setLevel(stats.level);
@@ -316,8 +324,36 @@ const ProfileContent = () => {
                             </View>
                         </View>
                         <TouchableOpacity
+                            onPress={() => router.push('/notifications')}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 4 }}
+                            className="items-center justify-center p-2"
+                            accessibilityRole="button"
+                            accessibilityLabel={t('notifications')}
+                        >
+                            <Ionicons name="notifications-outline" size={20} color={theme.textPrimary} />
+                            {unreadNotifications > 0 && (
+                                <View
+                                    className="absolute items-center justify-center px-1"
+                                    style={{
+                                        top: 2,
+                                        right: 0,
+                                        minWidth: 16,
+                                        height: 16,
+                                        borderRadius: 8,
+                                        backgroundColor: colors.primary.main,
+                                        borderWidth: 1.5,
+                                        borderColor: theme.background,
+                                    }}
+                                >
+                                    <Text style={{ color: '#fff', fontSize: 9, fontFamily: 'PlusJakartaSans-Medium', fontVariant: ['tabular-nums'] }}>
+                                        {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                                    </Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
+                        <TouchableOpacity
                             onPress={() => setShowMenu(true)}
-                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}
                             className="items-center justify-center p-2"
                         >
                             <Ionicons name="ellipsis-vertical" size={20} color={theme.textPrimary} />

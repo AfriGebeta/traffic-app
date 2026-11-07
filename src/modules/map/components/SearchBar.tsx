@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { View, TextInput, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { useTheme } from '../../../shared/theme/ThemeContext';
@@ -7,6 +7,7 @@ import { useGlass } from '../../../shared/theme/glass';
 import { GlassSheen } from '../../../shared/components/GlassSheen';
 import { useUserRegistration } from '../../register/hooks/useUserRegistration';
 import { useResolvedImageUri } from '../../../shared/hooks/useResolvedImageUri';
+import { notificationService } from '../../notifications/services/notification.service';
 
 interface SearchBarProps {
     value: string;
@@ -27,12 +28,23 @@ export const ProfileButton: React.FC<{ onPress?: () => void; size?: number }> = 
     const [storedImage, setStoredImage] = useState<string | null>(null);
     const [localImage, setLocalImage] = useState<string | null>(null);
     const profileImage = useResolvedImageUri(storedImage) ?? localImage;
+    // unread inbox count for the badge; refreshed whenever the map comes back into focus
+    const [unreadNotifications, setUnreadNotifications] = useState(0);
 
     useFocusEffect(
         useCallback(() => {
             getStoredUser().then((user) => {
                 setStoredImage(user?.profileImage ?? null);
                 setLocalImage(user?.profileImageLocal ?? null);
+                // signed-in only: the inbox needs auth
+                if (!user?.id) {
+                    setUnreadNotifications(0);
+                    return;
+                }
+                notificationService
+                    .getUnreadCount()
+                    .then(setUnreadNotifications)
+                    .catch(() => undefined);
             });
         }, [])
     );
@@ -53,7 +65,32 @@ export const ProfileButton: React.FC<{ onPress?: () => void; size?: number }> = 
         </TouchableOpacity>
     );
 
-    return button;
+    // badge sits outside the button so the glass surface can't clip it; the wrapper is always there so the avatar never remounts
+    return (
+        <View>
+            {button}
+            {unreadNotifications > 0 && (
+                <View
+                    pointerEvents="none"
+                    className="absolute items-center justify-center px-1"
+                    style={{
+                        top: -4,
+                        right: -4,
+                        minWidth: 18,
+                        height: 18,
+                        borderRadius: 9,
+                        backgroundColor: theme.primary,
+                        borderWidth: 1.5,
+                        borderColor: theme.background,
+                    }}
+                >
+                    <Text style={{ color: '#fff', fontSize: 10, fontFamily: 'PlusJakartaSans-Medium', fontVariant: ['tabular-nums'] }}>
+                        {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                    </Text>
+                </View>
+            )}
+        </View>
+    );
 };
 
 

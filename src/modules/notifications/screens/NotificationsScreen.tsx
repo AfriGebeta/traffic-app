@@ -4,7 +4,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { pickLocalized } from '../../campaigns/utils/localizedText';
 import { notificationService } from '../services/notification.service';
@@ -12,6 +11,7 @@ import { InboxNotification } from '../types/notification.types';
 import { hasNotificationTarget, openNotificationTarget } from '../utils/notificationTarget';
 import { timeAgo } from '../utils/timeAgo';
 import { NotificationsOffStrip } from '../../../shared/components/NotificationsOffStrip';
+import { Chip, FONT_MEDIUM, RADIUS, RADIUS_SM, SkeletonBlock, tint } from '../../campaigns/components/CampaignUi';
 
 const PAGE_SIZE = 20;
 
@@ -141,22 +141,28 @@ export default function NotificationsScreen() {
             <TouchableOpacity
                 onPress={() => open(item)}
                 activeOpacity={0.7}
-                className="flex-row rounded-2xl px-4 py-3.5 mb-3"
-                style={{ borderWidth: 1, borderColor: isUnread ? colors.primary.main : theme.border, backgroundColor: theme.surface }}
+                className="flex-row px-4 py-3.5 mb-2"
+                // unread: faint brand tint + dot; read: plain card
+                style={{
+                    borderRadius: RADIUS,
+                    borderWidth: 1,
+                    borderColor: isUnread ? tint(theme.primary, '66') : theme.border,
+                    backgroundColor: isUnread ? tint(theme.primary, '12') : theme.surface,
+                }}
             >
                 <View className="flex-1">
-                    <View className="flex-row items-center mb-1">
-                        {isUnread && <View className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: colors.primary.main }} />}
+                    <View className="flex-row items-center mb-1.5">
+                        {isUnread && <View className="w-1.5 h-1.5 rounded-full mr-2" style={{ backgroundColor: theme.primary }} />}
                         {!!categoryKey && (
-                            <Text className="text-xs font-semibold mr-2" style={{ color: colors.primary.main }}>
-                                {t(categoryKey)}
-                            </Text>
+                            <View className="mr-2">
+                                <Chip tone="primary">{t(categoryKey)}</Chip>
+                            </View>
                         )}
                         <Text className="text-xs" style={{ color: theme.textSecondary }}>
                             {timeAgo(item.createdAt, t, i18n.language)}
                         </Text>
                     </View>
-                    <Text className={isUnread ? 'text-base font-bold' : 'text-base font-semibold'} style={{ color: theme.textPrimary }}>
+                    <Text style={{ color: theme.textPrimary, fontSize: 15, lineHeight: 21, fontFamily: isUnread ? FONT_MEDIUM : undefined }}>
                         {pickLocalized(item.title, i18n.language)}
                     </Text>
                     {isExpanded ? (
@@ -174,22 +180,24 @@ export default function NotificationsScreen() {
                         <TouchableOpacity
                             onPress={() => openNotificationTarget(item.data, 'inbox')}
                             activeOpacity={0.8}
-                            className="self-start rounded-full px-4 py-2 mt-3"
-                            style={{ backgroundColor: colors.primary.main }}
+                            className="self-start px-4 py-2 mt-3"
+                            style={{ borderRadius: RADIUS_SM, backgroundColor: theme.primary }}
                         >
-                            <Text className="font-semibold text-white">{t('notifications-open')}</Text>
+                            <Text className="text-sm" style={{ color: '#fff', fontFamily: FONT_MEDIUM }}>
+                                {t('notifications-open')}
+                            </Text>
                         </TouchableOpacity>
                     )}
                 </View>
                 {content ? (
                     <Ionicons
                         name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                        size={18}
+                        size={16}
                         color={theme.textSecondary}
                         style={{ alignSelf: isExpanded ? 'flex-start' : 'center', marginLeft: 8 }}
                     />
                 ) : (
-                    opensScreen && <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} style={{ alignSelf: 'center', marginLeft: 8 }} />
+                    opensScreen && <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} style={{ alignSelf: 'center', marginLeft: 8 }} />
                 )}
             </TouchableOpacity>
         );
@@ -197,16 +205,18 @@ export default function NotificationsScreen() {
 
     return (
         <View className="flex-1" style={{ paddingTop: insets.top, backgroundColor: theme.background }}>
-            <View className="px-4 py-4 flex-row items-center">
-                <TouchableOpacity onPress={() => router.back()} className="mr-4" activeOpacity={0.7}>
-                    <Ionicons name="arrow-back" size={26} color={theme.textPrimary} />
+            <View className="px-4 pt-3 pb-2 flex-row items-center">
+                <TouchableOpacity onPress={() => router.back()} className="p-1 -ml-1" activeOpacity={0.7} hitSlop={8}>
+                    <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
                 </TouchableOpacity>
-                <Text className="text-xl font-bold flex-1" style={{ color: theme.textPrimary }} numberOfLines={1}>
+            </View>
+            <View className="px-4 mb-4 flex-row items-end">
+                <Text className="flex-1 mr-3" style={{ color: theme.textPrimary, fontSize: 28, lineHeight: 34, letterSpacing: -0.4 }} numberOfLines={1}>
                     {t('notifications')}
                 </Text>
                 {unread > 0 && (
-                    <TouchableOpacity onPress={markAllRead} hitSlop={8} activeOpacity={0.7}>
-                        <Text className="font-semibold" style={{ color: colors.primary.main }}>
+                    <TouchableOpacity onPress={markAllRead} hitSlop={8} activeOpacity={0.7} className="mb-1">
+                        <Text className="text-sm" style={{ color: theme.primary, fontFamily: FONT_MEDIUM }}>
                             {t('notifications-mark-all-read')}
                         </Text>
                     </TouchableOpacity>
@@ -216,7 +226,20 @@ export default function NotificationsScreen() {
             <NotificationsOffStrip style={{ marginHorizontal: 16, marginBottom: 12 }} />
 
             {loading ? (
-                <ActivityIndicator className="mt-8" color={colors.primary.main} />
+                // skeleton cards shaped like notifications: meta line, title, body
+                <View className="px-4" style={{ gap: 8 }}>
+                    {[0.7, 0.55, 0.65, 0.5].map((w, i) => (
+                        <View
+                            key={i}
+                            className="px-4 py-3.5"
+                            style={{ borderRadius: RADIUS, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surface, gap: 8 }}
+                        >
+                            <SkeletonBlock height={10} width="30%" />
+                            <SkeletonBlock height={14} width={`${Math.round(w * 100)}%`} />
+                            <SkeletonBlock height={12} width="85%" />
+                        </View>
+                    ))}
+                </View>
             ) : (
                 <FlatList
                     data={items}
@@ -226,16 +249,16 @@ export default function NotificationsScreen() {
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} />}
                     onEndReached={() => void loadMore()}
                     onEndReachedThreshold={0.4}
-                    ListFooterComponent={loadingMore ? <ActivityIndicator className="my-4" color={colors.primary.main} /> : null}
+                    ListFooterComponent={loadingMore ? <ActivityIndicator className="my-4" color={theme.primary} /> : null}
                     ListEmptyComponent={
                         <View className="items-center mt-16 px-6">
-                            <Ionicons name={failed ? 'cloud-offline-outline' : 'notifications-outline'} size={44} color={theme.textSecondary} />
-                            <Text className="text-center mt-3" style={{ color: theme.textSecondary }}>
+                            <Ionicons name={failed ? 'cloud-offline-outline' : 'notifications-outline'} size={36} color={theme.textSecondary} />
+                            <Text className="text-sm text-center mt-3" style={{ color: theme.textSecondary }}>
                                 {t(failed ? 'notifications-failed' : 'notifications-empty')}
                             </Text>
                             {failed && (
                                 <TouchableOpacity onPress={() => void refresh()} className="mt-3" activeOpacity={0.7}>
-                                    <Text className="font-semibold" style={{ color: colors.primary.main }}>
+                                    <Text className="text-sm" style={{ color: theme.primary, fontFamily: FONT_MEDIUM }}>
                                         {t('try-again')}
                                     </Text>
                                 </TouchableOpacity>

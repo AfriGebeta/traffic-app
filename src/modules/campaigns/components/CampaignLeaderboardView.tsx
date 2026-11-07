@@ -1,10 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { campaignService } from '../services/campaign.service';
 import { refreshCampaigns, useCampaigns } from '../store/campaignStore';
@@ -15,12 +14,12 @@ import { periodLabel } from '../utils/periodLabel';
 import { previousWeekKey } from '../utils/previousWeekKey';
 import { ordinal } from '../utils/ordinal';
 import { CampaignLeaderboard, CampaignPeriodKind, CampaignTrack } from '../types/campaign.types';
+import { FONT_MEDIUM, RADIUS, RADIUS_SM, SectionLabel, SkeletonBlock, tint } from './CampaignUi';
 
 const NO_TRACKS: CampaignTrack[] = [];
 
 const PODIUM_HEIGHTS: Record<number, number> = { 1: 100, 2: 84, 3: 70 };
 const WINNER_HEIGHTS: Record<number, number> = { 1: 150, 2: 118, 3: 100 };
-const LIVE_GREEN = '#22C55E';
 
 interface Props {
     slug: string;
@@ -156,23 +155,24 @@ export function CampaignLeaderboardView({ slug, initialPeriod }: Props) {
                         return (
                             <View key={entry.userId} className="flex-1 items-center">
                                 <View
-                                    className="w-full items-center justify-center rounded-2xl px-1.5"
+                                    className="w-full items-center justify-center px-1.5"
                                     // only 1st gets the brand tint; 2nd and 3rd stay plain
                                     style={{
                                         height: WINNER_HEIGHTS[place],
-                                        backgroundColor: first ? theme.primaryMuted : theme.surface,
+                                        borderRadius: RADIUS,
+                                        backgroundColor: first ? tint(theme.primary, '14') : theme.surface,
                                         borderWidth: 1,
-                                        borderColor: first ? colors.primary.main : theme.border,
+                                        borderColor: first ? theme.primary : theme.border,
                                     }}
                                 >
-                                    <Text className="text-4xl font-bold" style={{ color: first ? colors.primary.main : theme.textPrimary }}>
+                                    <Text style={{ color: first ? theme.primary : theme.textPrimary, fontSize: 36, lineHeight: 42, fontVariant: ['tabular-nums'] }}>
                                         {place}
                                     </Text>
-                                    <View className="rounded-full px-2.5 py-1 mt-2" style={{ backgroundColor: theme.background }}>
+                                    <View className="px-2 py-0.5 mt-2" style={{ backgroundColor: theme.background, borderRadius: 4 }}>
                                         {/* prize goes in the block; without one, the score takes its place */}
                                         <Text
-                                            className="text-xs font-bold"
-                                            style={{ color: prize ? colors.primary.main : theme.textSecondary }}
+                                            className="text-xs"
+                                            style={{ color: prize ? theme.textPrimary : theme.textSecondary, fontFamily: FONT_MEDIUM, fontVariant: ['tabular-nums'] }}
                                             numberOfLines={1}
                                         >
                                             {prize
@@ -182,15 +182,15 @@ export function CampaignLeaderboardView({ slug, initialPeriod }: Props) {
                                     </View>
                                 </View>
                                 <Text
-                                    className="text-sm font-semibold mt-2"
+                                    className="text-sm mt-2"
                                     // a long name wraps; without this the second line hugs the left
-                                    style={{ color: theme.textPrimary, textAlign: 'center' }}
+                                    style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM, textAlign: 'center' }}
                                     numberOfLines={2}
                                 >
                                     {entry.name}
                                 </Text>
                                 {!!prize && (
-                                    <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }} numberOfLines={1}>
+                                    <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary, fontVariant: ['tabular-nums'] }} numberOfLines={1}>
                                         {entry.campaignScore} {t('campaign-points')}
                                     </Text>
                                 )}
@@ -199,7 +199,7 @@ export function CampaignLeaderboardView({ slug, initialPeriod }: Props) {
                     })}
                 </View>
                 {otherPrizes.length > 0 && (
-                    <Text className="text-sm mt-3 text-center" style={{ color: theme.textSecondary }}>
+                    <Text className="text-xs mt-3 text-center" style={{ color: theme.textSecondary }}>
                         {otherPrizes
                             .map(({ rank, amount }) => `${ordinal(rank, i18n.language)}: ${t('campaign-prize-amount', { amount: amount.toLocaleString('en-US') })}`)
                             .join('  ·  ')}
@@ -213,14 +213,15 @@ export function CampaignLeaderboardView({ slug, initialPeriod }: Props) {
             key={label}
             onPress={onPress}
             activeOpacity={0.7}
-            className="px-4 py-2 rounded-lg mr-2"
+            className="px-3 py-1.5 mr-2"
             style={{
-                backgroundColor: active ? colors.primary.main : theme.surface,
+                borderRadius: RADIUS_SM,
+                backgroundColor: active ? tint(theme.primary, '1F') : 'transparent',
                 borderWidth: 1,
-                borderColor: active ? colors.primary.main : theme.border,
+                borderColor: active ? theme.primary : theme.border,
             }}
         >
-            <Text className="font-semibold" style={{ color: active ? '#fff' : theme.textPrimary }}>
+            <Text className="text-sm" style={{ color: active ? theme.textPrimary : theme.textSecondary, fontFamily: active ? FONT_MEDIUM : undefined }}>
                 {label}
             </Text>
         </TouchableOpacity>
@@ -234,11 +235,11 @@ export function CampaignLeaderboardView({ slug, initialPeriod }: Props) {
                 onPress={onPress}
                 disabled={!active}
                 activeOpacity={0.7}
-                className="flex-row items-center px-3 py-2 rounded-lg"
-                style={{ borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surface, opacity: active ? 1 : 0.4 }}
+                className="flex-row items-center px-3 py-2"
+                style={{ borderRadius: RADIUS_SM, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surface, opacity: active ? 1 : 0.4 }}
             >
                 {icon === 'chevron-back' && <Ionicons name={icon} size={16} color={color} />}
-                <Text className="font-semibold mx-1" style={{ color }}>
+                <Text className="text-sm mx-1" style={{ color, fontFamily: FONT_MEDIUM }}>
                     {label}
                 </Text>
                 {icon === 'chevron-forward' && <Ionicons name={icon} size={16} color={color} />}
@@ -270,16 +271,21 @@ export function CampaignLeaderboardView({ slug, initialPeriod }: Props) {
                 <TouchableOpacity
                     onPress={() => router.push('/notifications')}
                     activeOpacity={0.7}
-                    className="flex-row items-start mx-4 mb-3 rounded-xl px-4 py-3"
+                    className="flex-row items-start mx-4 mb-3 px-4 py-3"
                     style={
                         status === 'final'
-                            ? { borderWidth: 1, borderColor: colors.primary.main }
-                            : { backgroundColor: status === 'live' ? theme.surface : theme.primaryMuted, borderWidth: 1, borderColor: theme.border }
+                            ? { borderRadius: RADIUS, borderWidth: 1, borderColor: theme.primary, backgroundColor: theme.surface }
+                            : {
+                                  borderRadius: RADIUS,
+                                  backgroundColor: status === 'live' ? theme.surface : tint(theme.primary, '14'),
+                                  borderWidth: 1,
+                                  borderColor: status === 'live' ? theme.border : tint(theme.primary, '4D'),
+                              }
                     }
                 >
-                    {status === 'live' && <View className="w-2.5 h-2.5 rounded-full mt-1.5" style={{ backgroundColor: LIVE_GREEN }} />}
+                    {status === 'live' && <View className="w-1.5 h-1.5 rounded-full mt-2" style={{ backgroundColor: theme.green }} />}
                     <View className={status === 'live' ? 'flex-1 ml-2.5' : 'flex-1'}>
-                        <Text className="font-semibold" style={{ color: theme.textPrimary }}>
+                        <Text className="text-sm" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM }}>
                             {t(`campaign-status-${status}`)}
                         </Text>
                         <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>
@@ -291,13 +297,13 @@ export function CampaignLeaderboardView({ slug, initialPeriod }: Props) {
                         </Text>
                     </View>
                     <View className="flex-row items-center self-center ml-3">
-                        <Ionicons name="notifications-outline" size={20} color={theme.textPrimary} />
+                        <Ionicons name="notifications-outline" size={18} color={theme.textSecondary} />
                         {unreadNotifications > 0 && (
                             <View
                                 className="rounded-full items-center justify-center px-1.5 ml-1"
-                                style={{ minWidth: 20, height: 20, backgroundColor: colors.primary.main }}
+                                style={{ minWidth: 18, height: 18, backgroundColor: theme.primary }}
                             >
-                                <Text className="text-xs font-bold text-white">{unreadNotifications > 99 ? '99+' : unreadNotifications}</Text>
+                                <Text style={{ color: '#fff', fontSize: 11, fontFamily: FONT_MEDIUM, fontVariant: ['tabular-nums'] }}>{unreadNotifications > 99 ? '99+' : unreadNotifications}</Text>
                             </View>
                         )}
                         <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} style={{ marginLeft: 2 }} />
@@ -306,9 +312,21 @@ export function CampaignLeaderboardView({ slug, initialPeriod }: Props) {
             )}
 
             <View className="flex-1">
-                {loading && <ActivityIndicator className="mt-8" color={colors.primary.main} />}
+                {loading && (
+                    // rows shaped like the list: rank, name, score
+                    <View className="px-4 pt-2" style={{ gap: 14 }}>
+                        {[0.7, 0.55, 0.65, 0.5, 0.6, 0.45, 0.6].map((w, i) => (
+                            <View key={i} className="flex-row items-center px-3">
+                                <SkeletonBlock height={12} width={24} style={{ marginRight: 16 }} />
+                                <SkeletonBlock height={12} width={`${Math.round(w * 100)}%`} />
+                                <View className="flex-1" />
+                                <SkeletonBlock height={12} width={36} />
+                            </View>
+                        ))}
+                    </View>
+                )}
                 {!loading && failed && (
-                    <Text className="text-center mt-8" style={{ color: theme.textSecondary }}>
+                    <Text className="text-center text-sm mt-8" style={{ color: theme.textSecondary }}>
                         {t('campaign-leaderboard-failed')}
                     </Text>
                 )}
@@ -317,36 +335,44 @@ export function CampaignLeaderboardView({ slug, initialPeriod }: Props) {
                     <FlatList
                         data={listEntries}
                         keyExtractor={(entry) => entry.userId}
-                        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: showPrizeFooter || showPager || showMe ? 16 : insets.bottom + 24 }}
+                        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: showPrizeFooter || showPager || showMe ? 16 : insets.bottom + 24 }}
                         ListHeaderComponent={winnersHeader}
                         ListEmptyComponent={
                             topThree.length > 0 ? null : (
-                                <Text className="text-center mt-8" style={{ color: theme.textSecondary }}>
+                                <Text className="text-center text-sm mt-8" style={{ color: theme.textSecondary }}>
                                     {t('campaign-leaderboard-empty')}
                                 </Text>
                             )
                         }
                         renderItem={({ item }) => (
+                            // no dividers: spacing separates rows; your own row gets a soft brand tint
                             <View
-                                className="flex-row items-center py-3"
-                                style={[
-                                    { borderBottomWidth: 1, borderBottomColor: theme.border },
-                                    item.userId === myUserId && {
-                                        borderWidth: 1,
-                                        borderColor: colors.primary.main,
-                                        borderBottomColor: colors.primary.main,
-                                        borderRadius: 10,
-                                        paddingHorizontal: 8,
-                                    },
-                                ]}
+                                className="flex-row items-center px-3"
+                                // tall enough that a page of 10 nearly fills the screen above the pinned pager
+                                style={{
+                                    minHeight: 44,
+                                    borderRadius: RADIUS_SM,
+                                    backgroundColor: item.userId === myUserId ? tint(theme.primary, '1F') : 'transparent',
+                                }}
                             >
-                                <Text className="w-10 font-bold" style={{ color: item.rank <= 3 ? colors.primary.main : theme.textSecondary }}>
-                                    #{item.rank}
+                                <Text
+                                    className="w-10 text-sm"
+                                    style={{
+                                        color: item.rank <= 3 ? theme.primary : theme.textSecondary,
+                                        fontFamily: item.rank <= 3 ? FONT_MEDIUM : undefined,
+                                        fontVariant: ['tabular-nums'],
+                                    }}
+                                >
+                                    {item.rank}
                                 </Text>
-                                <Text className="flex-1 text-base" style={{ color: theme.textPrimary }} numberOfLines={1}>
+                                <Text
+                                    className="flex-1 text-sm mr-3"
+                                    style={{ color: theme.textPrimary, fontFamily: item.userId === myUserId ? FONT_MEDIUM : undefined }}
+                                    numberOfLines={1}
+                                >
                                     {item.name}
                                 </Text>
-                                <Text className="font-bold text-base" style={{ color: theme.textPrimary }}>
+                                <Text className="text-sm" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM, fontVariant: ['tabular-nums'] }}>
                                     {item.campaignScore}
                                 </Text>
                             </View>
@@ -365,7 +391,7 @@ export function CampaignLeaderboardView({ slug, initialPeriod }: Props) {
                     }}
                 >
                     {pageButton(t('campaign-page-previous'), 'chevron-back', page > 1, () => setPage(page - 1))}
-                    <Text className="text-sm" style={{ color: theme.textSecondary }}>
+                    <Text className="text-xs" style={{ color: theme.textSecondary, fontVariant: ['tabular-nums'] }}>
                         {t('campaign-page-of', { page, total: totalPages })}
                     </Text>
                     {pageButton(t('campaign-page-next'), 'chevron-forward', page < totalPages, () => setPage(page + 1))}
@@ -378,16 +404,16 @@ export function CampaignLeaderboardView({ slug, initialPeriod }: Props) {
                         onPress={() => myPage && setPage(myPage)}
                         disabled={!myPage || myPage === page}
                         activeOpacity={0.7}
-                        className="flex-row items-center rounded-xl px-4 py-3"
-                        style={{ borderWidth: 1, borderColor: colors.primary.main }}
+                        className="flex-row items-center px-3 py-3"
+                        style={{ borderRadius: RADIUS, borderWidth: 1, borderColor: tint(theme.primary, '66'), backgroundColor: tint(theme.primary, '1F') }}
                     >
-                        <Text className="w-12 font-bold" style={{ color: colors.primary.main }}>
-                            {myRank ? `#${myRank}` : '—'}
+                        <Text className="w-12 text-sm" style={{ color: theme.primary, fontFamily: FONT_MEDIUM, fontVariant: ['tabular-nums'] }}>
+                            {myRank ?? '—'}
                         </Text>
-                        <Text className="flex-1 text-base font-semibold" style={{ color: theme.textPrimary }} numberOfLines={1}>
+                        <Text className="flex-1 text-sm" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM }} numberOfLines={1}>
                             {t('campaign-you')}
                         </Text>
-                        <Text className="font-bold text-base" style={{ color: theme.textPrimary }}>
+                        <Text className="text-sm" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM, fontVariant: ['tabular-nums'] }}>
                             {myScore}
                         </Text>
                     </TouchableOpacity>
@@ -399,9 +425,7 @@ export function CampaignLeaderboardView({ slug, initialPeriod }: Props) {
                     className="px-4 pt-4"
                     style={{ paddingBottom: insets.bottom + 16, borderTopWidth: 1, borderTopColor: theme.border, backgroundColor: theme.background }}
                 >
-                    <Text className="font-bold text-base mb-3" style={{ color: theme.textPrimary }}>
-                        {t('campaign-prizes')}
-                    </Text>
+                    <SectionLabel style={{ marginBottom: 10 }}>{t('campaign-prizes')}</SectionLabel>
                     {/* podium: 2nd | 1st (taller) | 3rd */}
                     <View className="flex-row items-end gap-3">
                         {podium.map(({ rank, amount }) => {
@@ -409,15 +433,21 @@ export function CampaignLeaderboardView({ slug, initialPeriod }: Props) {
                             return (
                                 <View
                                     key={rank}
-                                    className="flex-1 items-center justify-center rounded-2xl px-2"
-                                    style={{ height: PODIUM_HEIGHTS[rank], backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
+                                    className="flex-1 items-center justify-center px-2"
+                                    style={{
+                                        height: PODIUM_HEIGHTS[rank],
+                                        borderRadius: RADIUS,
+                                        backgroundColor: first ? tint(theme.primary, '14') : theme.surface,
+                                        borderWidth: 1,
+                                        borderColor: first ? tint(theme.primary, '66') : theme.border,
+                                    }}
                                 >
-                                    <Text className="font-semibold" style={{ color: theme.textSecondary }}>
+                                    <Text className="text-xs" style={{ color: theme.textSecondary }}>
                                         {ordinal(rank, i18n.language)}
                                     </Text>
                                     <Text
-                                        className={first ? 'font-bold text-lg' : 'font-bold text-base'}
-                                        style={{ color: theme.textPrimary }}
+                                        className={first ? 'text-lg mt-0.5' : 'text-base mt-0.5'}
+                                        style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM, fontVariant: ['tabular-nums'] }}
                                         numberOfLines={1}
                                     >
                                         {t('campaign-prize-amount', { amount: amount.toLocaleString('en-US') })}
@@ -427,7 +457,7 @@ export function CampaignLeaderboardView({ slug, initialPeriod }: Props) {
                         })}
                     </View>
                     {otherPrizes.length > 0 && (
-                        <Text className="text-sm mt-3 text-center" style={{ color: theme.textSecondary }}>
+                        <Text className="text-xs mt-3 text-center" style={{ color: theme.textSecondary }}>
                             {otherPrizes
                                 .map(({ rank, amount }) => `${ordinal(rank, i18n.language)}: ${t('campaign-prize-amount', { amount: amount.toLocaleString('en-US') })}`)
                                 .join('  ·  ')}
