@@ -365,6 +365,11 @@
         "AM": "ነዳጅ ማደያ"
     },
     {
+        "key": "condominium",
+        "EN_US": "Condominium",
+        "AM": "ኮንዶሚኒየም"
+    },
+    {
         "key": "charging-station",
         "EN_US": "Charging Station",
         "AM": "የኤሌክትሪክ መኪና ቻርጅ ማድረጊያ"
@@ -5318,5 +5323,125 @@
         "key": "map-load-failed-body",
         "EN_US": "Check your internet connection and try again.",
         "AM": "የኢንተርኔት ግንኙነትዎን ያረጋግጡና እንደገና ይሞክሩ።"
+    },
+    {
+        "key": "special-points-title",
+        "EN_US": "Special points",
+        "AM": "ልዩ ነጥቦች"
+    },
+    {
+        "key": "special-points-subtitle",
+        "EN_US": "Extra campaign points for these right now",
+        "AM": "ለእነዚህ ተጨማሪ የውድድር ነጥቦች ይሰጣል"
+    },
+    {
+        "key": "special-points-add",
+        "EN_US": "+{{points}} points",
+        "AM": "+{{points}} ነጥብ"
+    },
+    {
+        "key": "special-points-multiplier",
+        "EN_US": "×{{value}} points",
+        "AM": "×{{value}} ነጥብ"
+    },
+    {
+        "key": "block-number",
+        "EN_US": "Block",
+        "AM": "ብሎክ"
+    },
+    {
+        "key": "block-number-placeholder",
+        "EN_US": "e.g. 12",
+        "AM": "ለምሳሌ 12"
+    },
+    {
+        "key": "block-number-required",
+        "EN_US": "Enter the block number",
+        "AM": "የብሎክ ቁጥሩን ያስገቡ"
+    },
+    {
+        "key": "menu-photos",
+        "EN_US": "Menu photos",
+        "AM": "የምግብ ዝርዝር ፎቶዎች"
+    },
+    {
+        "key": "menu-photos-hint",
+        "EN_US": "Add photos of the menu (up to {{max}})",
+        "AM": "የምግብ ዝርዝሩን ፎቶዎች ይጨምሩ (እስከ {{max}})"
+    },
+    {
+        "key": "place-category-unavailable",
+        "EN_US": "This place type can't be added right now. Try again later.",
+        "AM": "ይህን የቦታ አይነት አሁን መጨመር አይቻልም። ቆይተው እንደገና ይሞክሩ።"
+    },
+    {
+        "key": "floor-count",
+        "EN_US": "Number of floors",
+        "AM": "የወለሎች ብዛት"
+    },
+    {
+        "key": "floor-count-placeholder",
+        "EN_US": "e.g. 5",
+        "AM": "ለምሳሌ 5"
+    },
+    {
+        "key": "building-kind",
+        "EN_US": "Type of building",
+        "AM": "የህንፃው አይነት"
+    },
+    {
+        "key": "building-kind-placeholder",
+        "EN_US": "Select type",
+        "AM": "አይነት ይምረጡ"
+    },
+    {
+        "key": "building-kind-commercial_building",
+        "EN_US": "Commercial building",
+        "AM": "የንግድ ህንፃ"
+    },
+    {
+        "key": "building-kind-shopping_mall",
+        "EN_US": "Shopping mall",
+        "AM": "የገበያ ማዕከል (ሞል)"
+    },
+    {
+        "key": "building-kind-office_building",
+        "EN_US": "Office building",
+        "AM": "የቢሮ ህንፃ"
+    },
+    {
+        "key": "building-kind-mixed_use",
+        "EN_US": "Mixed use",
+        "AM": "ድብልቅ አገልግሎት"
+    },
+    {
+        "key": "building-kind-residential",
+        "EN_US": "Residential",
+        "AM": "የመኖሪያ ህንፃ"
+    },
+    {
+        "key": "building-kind-hotel",
+        "EN_US": "Hotel",
+        "AM": "ሆቴል"
+    },
+    {
+        "key": "building-kind-market",
+        "EN_US": "Market",
+        "AM": "ገበያ"
+    },
+    {
+        "key": "building-kind-campus_building",
+        "EN_US": "Campus building",
+        "AM": "የግቢ ህንፃ (ካምፓስ)"
+    },
+    {
+        "key": "building-kind-government_building",
+        "EN_US": "Government building",
+        "AM": "የመንግስት ህንፃ"
+    },
+    {
+        "key": "building-kind-religious_compound",
+        "EN_US": "Religious compound",
+        "AM": "የሃይማኖት ተቋም ግቢ"
     }
 ]

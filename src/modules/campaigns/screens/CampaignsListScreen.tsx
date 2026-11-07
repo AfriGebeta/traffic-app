@@ -128,7 +128,7 @@ export default function CampaignsListScreen() {
                                     <Text className="text-base font-semibold" style={{ color: theme.textPrimary }} numberOfLines={1}>
                                         {pickLocalized(campaign.name, i18n.language)}
                                     </Text>
-                                    <Text className="text-sm mt-0.5" style={{ color: participating ? theme.green : theme.textSecondary }}>
+                                   <Text className="text-sm mt-0.5" style={{ color: participating ? theme.green : theme.textSecondary }}>
                                         {participating
                                             ? [
                                                   t(joined ? 'campaign-joined-short' : 'campaign-open-short'),

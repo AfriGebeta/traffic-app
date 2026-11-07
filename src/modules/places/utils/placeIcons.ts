@@ -31,6 +31,8 @@ import ParkLight from '../../../../assets/images/contribute-place-park-light.svg
 import ParkDark from '../../../../assets/images/contribute-place-park-dark.svg';
 import BuildingLight from '../../../../assets/images/contribute-place-building-light.svg';
 import BuildingDark from '../../../../assets/images/contribute-place-building-dark.svg';
+import CondominiumLight from '../../../../assets/images/contribute-place-condominum-light.svg';
+import CondominiumDark from '../../../../assets/images/contribute-place-condominum-dark.svg';
 import CompanyLight from '../../../../assets/images/contribute-place-company-light.svg';
 import CompanyDark from '../../../../assets/images/contribute-place-company-dark.svg';
 import GovernmentLight from '../../../../assets/images/contribute-place-government-light.svg';
@@ -60,6 +62,7 @@ const PLACE_ICONS: Record<string, { light: PlaceIcon; dark: PlaceIcon }> = {
     school: { light: SchoolLight, dark: SchoolDark },
     park: { light: ParkLight, dark: ParkDark },
     building: { light: BuildingLight, dark: BuildingDark },
+    condominium: { light: CondominiumLight, dark: CondominiumDark },
     company: { light: CompanyLight, dark: CompanyDark },
     government: { light: GovernmentLight, dark: GovernmentDark },
     mall: { light: MallLight, dark: MallDark },

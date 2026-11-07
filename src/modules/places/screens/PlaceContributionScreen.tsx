@@ -2,13 +2,16 @@ import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { PLACE_TYPES } from '../types/place.types';
+import { PLACE_TYPES, PlaceType } from '../types/place.types';
 import { useTranslation } from 'react-i18next';
 import { getPlaceTranslationKey } from '../utils/placeTranslations';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { getPlaceIcon } from '../utils/placeIcons';
 import { useCampaignGpsWarmup } from '../../campaigns/hooks/useCampaignGpsWarmup';
+import { isTypeAvailable, slugForType, usePlaceCategories } from '../services/placeCategories';
+import { colors } from '../../../shared/theme/colors';
+import { useSpecialPoints } from '../../campaigns/hooks/useSpecialPoints';
 
 export default function PlaceContributionScreen() {
     const router = useRouter();
@@ -18,6 +21,11 @@ export default function PlaceContributionScreen() {
     const insets = useSafeAreaInsets();
     const { colors: theme, isDark } = useTheme();
     const params = useLocalSearchParams();
+    // only types the backend has an active category for
+    const categories = usePlaceCategories();
+    const placeTypes = PLACE_TYPES.filter((placeType) => isTypeAvailable(placeType.id as PlaceType, categories));
+    // types with a campaign bonus get a badge (joined, running campaigns only)
+    const { visible: specialPoints } = useSpecialPoints();
 
     const prefillParams = Object.fromEntries(
         Object.entries(params).filter(([key, value]) => key.startsWith('prefill') && typeof value === 'string')
@@ -48,8 +56,9 @@ export default function PlaceContributionScreen() {
 
             <ScrollView className="flex-1 p-4" contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}>
                 <View className="gap-3">
-                    {PLACE_TYPES.map((placeType) => {
+                    {placeTypes.map((placeType) => {
                         const Icon = getPlaceIcon(placeType.id, isDark);
+                        const special = specialPoints.find((row) => row.kind === 'place' && row.key === slugForType(placeType.id));
 
                         return (
                             <TouchableOpacity
@@ -62,9 +71,12 @@ export default function PlaceContributionScreen() {
                                     <Icon width={40} height={40} />
                                 </View>
                                 <View className="flex-1">
-                                    <Text className="text-lg font-semibold" style={{ color: theme.textPrimary }}>
-                                        {t(getPlaceTranslationKey(placeType.id))}
-                                    </Text>
+                                    <View className="flex-row items-center">
+                                        <Text className="text-lg font-semibold" style={{ color: theme.textPrimary }}>
+                                            {t(getPlaceTranslationKey(placeType.id))}
+                                        </Text>
+                                        {special && <Ionicons name="flash" size={18} color={colors.primary.main} style={{ marginLeft: 6 }} />}
+                                    </View>
                                     <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>
                                         {t('add-new')} {t(getPlaceTranslationKey(placeType.id)).toLowerCase()}
                                     </Text>

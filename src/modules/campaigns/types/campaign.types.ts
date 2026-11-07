@@ -29,11 +29,24 @@ export interface CampaignPeriod {
     current?: CampaignPeriodInfo;
 }
 
+// /api/special-points: one bonus a running campaign pays for a kind (or one place category of it)
+export interface SpecialPoint {
+    campaign: { id: string; slug: string; name: LocalizedText };
+    kind: CampaignKind;
+    key?: string | null;
+    name?: LocalizedText | null;
+    multiplier?: number | null;
+    add?: number | null;
+    points?: number;
+}
+
 export interface CampaignTheme {
     from: string;
     to: string;
     kinds: CampaignKind[];
-    multiplier: number;
+    categories?: string[];
+    multiplier?: number | null;
+    add?: number | null;
 }
 
 export interface CampaignPointsFormula {

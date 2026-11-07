@@ -1,6 +1,6 @@
 import { apiService } from '../../../shared/services/api';
 import { ApiError } from '../../../shared/utils/apiErrors';
-import { Campaign, CampaignKind, CampaignLeaderboard, CampaignMe, CampaignPeriodKind, MySubmissions } from '../types/campaign.types';
+import { Campaign, CampaignKind, CampaignLeaderboard, CampaignMe, CampaignPeriodKind, MySubmissions, SpecialPoint } from '../types/campaign.types';
 
 const unwrap = <T>(body: any): T => (body && typeof body === 'object' && 'data' in body ? body.data : body);
 
@@ -11,6 +11,14 @@ export const campaignService = {
         if (response.error || !response.data) throw new ApiError(response, 'Failed to load campaigns');
         const campaigns = unwrap<Campaign[]>(response.data);
         return Array.isArray(campaigns) ? campaigns : [];
+    },
+
+    // bonuses running campaigns pay for some kinds / place categories; empty when there are none
+    async getSpecialPoints(): Promise<SpecialPoint[]> {
+        const response = await apiService.get<{ data: SpecialPoint[] }>('/api/special-points');
+        if (response.error || !response.data) throw new ApiError(response, 'Failed to load special points');
+        const rows = unwrap<SpecialPoint[]>(response.data);
+        return Array.isArray(rows) ? rows : [];
     },
 
     // the next scheduled campaign (active, not started yet); null when none is planned

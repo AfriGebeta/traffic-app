@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { BottomSheet } from '../../../shared/components';
 import { PLACE_TYPES, PlaceType } from '../types/place.types';
+import { isTypeAvailable, usePlaceCategories } from '../services/placeCategories';
 import { getPlaceTranslationKey } from '../utils/placeTranslations';
 
 interface PlaceContributionSheetProps {
@@ -18,6 +19,7 @@ export const PlaceContributionSheet: React.FC<PlaceContributionSheetProps> = ({
 }) => {
     const { t } = useTranslation();
     const router = useRouter();
+    const categories = usePlaceCategories();
 
     const handlePlaceTypeSelect = (placeType: string) => {
         router.push({
@@ -50,7 +52,7 @@ export const PlaceContributionSheet: React.FC<PlaceContributionSheetProps> = ({
 
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
                     <View className="flex-row flex-wrap gap-3">
-                        {PLACE_TYPES.map((placeType) => {
+                        {PLACE_TYPES.filter((placeType) => isTypeAvailable(placeType.id as PlaceType, categories)).map((placeType) => {
                             const placeImageMap: Record<string, any> = {
                                 'gas_station': require('../../../../assets/images/gas-station-place.png'),
                                 'taxi_station': require('../../../../assets/images/taxi-station-place.png'),

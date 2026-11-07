@@ -8,28 +8,37 @@ const isThemeActive = (from: string, to: string, now: Date): boolean => {
     return !Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime()) && now >= start && now <= end;
 };
 
-const themeMultiplier = (campaign: Campaign, kind: CampaignKind, now: Date): number =>
-    (campaign.pointsFormula?.themes ?? [])
-        .filter((theme) => theme.kinds?.includes(kind) && isThemeActive(theme.from, theme.to, now))
-        .reduce((multiplier, theme) => multiplier * (theme.multiplier || 1), 1);
+// a theme with categories only counts for those place categories (slugs); without a category nothing matches it
+const activeThemes = (campaign: Campaign, kind: CampaignKind, category: string | undefined, now: Date) =>
+    (campaign.pointsFormula?.themes ?? []).filter(
+        (theme) =>
+            theme.kinds?.includes(kind) &&
+            isThemeActive(theme.from, theme.to, now) &&
+            (!theme.categories?.length || (!!category && theme.categories.includes(category)))
+    );
 
 export const scoresSubmissions = (campaign: Campaign): boolean =>
     !!campaign.boundary?.coordinates && (campaign.scoring ?? []).some((rule) => rule.event === 'SUBMISSION_VERIFIED');
 
-// what a plain verified item of this kind earns right now; 0 = the kind doesn't count here
-export const basePoints = (campaign: Campaign, kind: CampaignKind, now = new Date()): number => {
+// what a plain verified item of this kind earns right now (themes: multipliers, then `add`); 0 = the kind doesn't count here
+export const basePoints = (campaign: Campaign, kind: CampaignKind, now = new Date(), category?: string): number => {
     if (!scoresSubmissions(campaign)) return 0;
     const base = campaign.pointsFormula?.base?.[kind] ?? 0;
-    return base > 0 ? Math.round(base * themeMultiplier(campaign, kind, now)) : 0;
+    if (base <= 0) return 0;
+    const themes = activeThemes(campaign, kind, category, now);
+    const multiplied = themes.reduce((points, theme) => points * (theme.multiplier || 1), base);
+    return Math.round(themes.reduce((points, theme) => points + (theme.add || 0), multiplied));
 };
 
 export interface SubmissionQuality {
     hasPhoto?: boolean;
     isComplete?: boolean;
+    // place category slug, for themes limited to some categories (e.g. condominium, building)
+    category?: string;
 }
 
 export const estimatePoints = (campaign: Campaign, kind: CampaignKind, quality: SubmissionQuality, now = new Date()): number => {
-    const base = basePoints(campaign, kind, now);
+    const base = basePoints(campaign, kind, now, quality.category);
     if (base === 0) return 0;
     const factors = campaign.pointsFormula?.quality ?? {};
     // take the best tier that applies instead of stacking them

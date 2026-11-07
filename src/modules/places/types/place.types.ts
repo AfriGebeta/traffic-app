@@ -1,4 +1,4 @@
-export type PlaceType = 'gas_station' | 'charging_station' | 'taxi_station' | 'restaurant' | 'cafe' | 'parking' | 'hospital' | 'clinic' | 'pharmacy' | 'bank' | 'atm' | 'hotel' | 'school' | 'park' | 'building' | 'company' | 'government' | 'mall' | 'shop' | 'other';
+export type PlaceType = 'gas_station' | 'charging_station' | 'taxi_station' | 'restaurant' | 'cafe' | 'parking' | 'hospital' | 'clinic' | 'pharmacy' | 'bank' | 'atm' | 'hotel' | 'school' | 'park' | 'building' | 'condominium' | 'company' | 'government' | 'mall' | 'shop' | 'other';
 
 export interface Place {
     id: string;
@@ -20,17 +20,22 @@ export interface PlaceContributionAddress {
     city?: string;
     neighborhood?: string;
     streetName?: string;
+    // condominiums only (required there)
+    blockNumber?: string;
 }
 
 export interface PlaceContributionRequest {
     name: string;
-    type: PlaceType;
+    // the backend's category id, found by slug (placeCategories.ts); `type` is no longer sent
     categoryId?: string;
     lat: number;
     lng: number;
     description: string;
     phone?: string;
     images: string[];
+    menu?: string[];
+    floorCount?: string;
+    buildingKind?: BuildingKind;
     address?: PlaceContributionAddress;
     // where the phone is, which can differ from a map-picked lat/lng; backend checks photos against it
     deviceLat?: number;
@@ -115,11 +120,27 @@ export const PLACE_CATEGORY_IDS: Partial<Record<PlaceType, string>> = {
     parking: 'cmumawa7000afpx0iw48pvrt5',
 };
 
+export const BUILDING_KINDS = [
+    'commercial_building',
+    'shopping_mall',
+    'office_building',
+    'mixed_use',
+    'residential',
+    'hotel',
+    'market',
+    'campus_building',
+    'government_building',
+    'religious_compound',
+] as const;
+
+export type BuildingKind = (typeof BUILDING_KINDS)[number];
+
 export const PLACE_TYPES = [
-    { id: 'gas_station', label: 'Gas Station', icon: 'water' as const, color: '#EF4444' },
     { id: 'restaurant', label: 'Restaurant', icon: 'restaurant' as const, color: '#10B981' },
     { id: 'cafe', label: 'Cafe', icon: 'cafe' as const, color: '#B45309' },
     { id: 'parking', label: 'Parking', icon: 'car' as const, color: '#8B5CF6' },
+    { id: 'building', label: 'Building', icon: 'business' as const, color: '#F59E0B' },
+    { id: 'condominium', label: 'Condominium', icon: 'home' as const, color: '#0EA5E9' },
     { id: 'charging_station', label: 'Charging Station', icon: 'flash' as const, color: '#22C55E' },
     { id: 'hospital', label: 'Hospital', icon: 'medical' as const, color: '#EC4899' },
     { id: 'clinic', label: 'Clinic', icon: 'medkit' as const, color: '#F472B6' },
@@ -128,8 +149,8 @@ export const PLACE_TYPES = [
     { id: 'atm', label: 'ATM', icon: 'card' as const, color: '#6366F1' },
     { id: 'hotel', label: 'Hotel', icon: 'bed' as const, color: '#A855F7' },
     { id: 'school', label: 'School', icon: 'school' as const, color: '#F97316' },
+    { id: 'gas_station', label: 'Gas Station', icon: 'water' as const, color: '#EF4444' },
     { id: 'park', label: 'Park', icon: 'leaf' as const, color: '#22C55E' },
-    { id: 'building', label: 'Building', icon: 'business' as const, color: '#F59E0B' },
     { id: 'company', label: 'Company', icon: 'briefcase' as const, color: '#06B6D4' },
     { id: 'government', label: 'Government Office', icon: 'shield' as const, color: '#8B5CF6' },
     { id: 'mall', label: 'Mall', icon: 'cart' as const, color: '#F59E0B' },
