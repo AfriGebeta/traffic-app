@@ -31,6 +31,8 @@ import { useIncidentReport } from '../hooks/useIncidentReport';
 import { CONGESTION_LEVELS, CongestionLevel, DEFAULT_CONGESTION_LEVEL } from '../types/incident.types';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { FONT_MEDIUM, RADIUS, RADIUS_SM } from '../../campaigns/components/CampaignUi';
+import { FieldLabel } from '../../../shared/components/FieldLabel';
 import { showToast } from '../../../shared/utils/toast';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { getIncidentTranslationKey } from '../utils/incidentTranslations';
@@ -173,31 +175,31 @@ export default function IncidentReportScreen() {
             >
                 <View className="px-6 pb-6" style={{ paddingTop: insets.top + 16 }}>
                     <View
-                        className="w-16 h-16 items-center justify-center mb-4"
+                        className="w-14 h-14 items-center justify-center mb-3"
                     >
                         {IncidentSvgIcon ? (
-                            <IncidentSvgIcon width={48} height={48} />
+                            <IncidentSvgIcon width={44} height={44} />
                         ) : (
                             <Ionicons name="warning" size={32} color={color} />
                         )}
                     </View>
 
-                    <Text className="text-3xl font-bold mb-2" style={{ color: theme.textPrimary }}>
+                    <Text className="mb-4" style={{ color: theme.textPrimary, fontSize: 26, lineHeight: 32, letterSpacing: -0.4 }}>
                         {t('report')}: {t(getIncidentTranslationKey(iconName))}
                     </Text>
 
-                    <View className="mb-6 rounded-2xl p-4" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
+                    <View className="mb-6 p-4" style={{ borderRadius: RADIUS, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
                         <View className="flex-row items-center">
                             <Ionicons
                                 name={pickedLocation ? 'location' : 'locate'}
-                                size={20}
-                                color={theme.textSecondary}
+                                size={18}
+                                color={theme.primary}
                             />
                             <View className="ml-3 flex-1">
-                                <Text className="text-sm font-semibold" style={{ color: theme.textPrimary }}>
+                                <Text className="text-sm" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM }}>
                                     {pickedLocation ? t('location-selected') : photoLocation ? t('photo-location') : t('current-location')}
                                 </Text>
-                                <Text className="text-sm" style={{ color: theme.textSecondary }}>
+                                <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary, fontVariant: ['tabular-nums'] }}>
                                     {location
                                         ? `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`
                                         : t('getting-location')}
@@ -214,13 +216,13 @@ export default function IncidentReportScreen() {
                         <View className="mt-3">
 
                             <TouchableOpacity
-                                className="py-3 rounded-xl  flex-row items-center justify-center"
-                                style={{ backgroundColor: isDark ? theme.background : '#e8e8e8ff' }}
+                                className="flex-row items-center justify-center"
+                                style={{ height: 44, borderRadius: RADIUS_SM, backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border }}
                                 onPress={() => router.push('/incident-map-picker')}
                                 activeOpacity={0.7}
                             >
-                                <Ionicons name="map" size={18} color={theme.textSecondary} />
-                                <Text className="text-sm font-semibold ml-2" style={{ color: theme.textPrimary }}>
+                                <Ionicons name="map-outline" size={16} color={theme.primary} />
+                                <Text className="text-sm ml-2" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM }}>
                                     {t('pick-location-on-map')}
                                 </Text>
                             </TouchableOpacity>
@@ -229,19 +231,19 @@ export default function IncidentReportScreen() {
                                 <>
                                     <View className="flex-row items-center justify-center my-2">
                                         <View className="flex-1 h-px" style={{ backgroundColor: theme.border }} />
-                                        <Text className="text-sm mx-3" style={{ color: theme.textSecondary }}>{t('or')}</Text>
+                                        <Text className="text-xs mx-3" style={{ color: theme.textSecondary }}>{t('or')}</Text>
                                         <View className="flex-1 h-px" style={{ backgroundColor: theme.border }} />
                                     </View>
                                     <TouchableOpacity
-                                        className="py-3 rounded-xl flex-row items-center justify-center"
-                                        style={{ backgroundColor: isDark ? theme.background : '#F3F4F6' }}
+                                        className="flex-row items-center justify-center"
+                                        style={{ height: 44, borderRadius: RADIUS_SM, backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border }}
                                         onPress={() => setPickedLocation(null)}
                                         activeOpacity={0.7}
                                         disabled={!currentLocation}
                                     >
-                                        <Ionicons name="locate" size={18} color={theme.textSecondary} />
+                                        <Ionicons name="locate" size={16} color={theme.primary} />
 
-                                        <Text className="text-sm font-semibold ml-2" style={{ color: theme.textPrimary }}>
+                                        <Text className="text-sm ml-2" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM }}>
                                             {t('use-current-location')}
                                         </Text>
                                     </TouchableOpacity>
@@ -250,13 +252,21 @@ export default function IncidentReportScreen() {
                         </View>
                     </View>
 
-                    <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
-                        {t('description')}
-                    </Text>
+                    <FieldLabel label={t('description')} />
 
                     <TextInput
-                        className="border-2 rounded-xl p-4 text-base min-h-32 mb-4"
-                        style={{ backgroundColor: theme.surface, borderColor: theme.border, color: theme.textPrimary, textAlignVertical: 'top' }}
+                        className="min-h-32 mb-1.5"
+                        style={{
+                            borderRadius: RADIUS_SM,
+                            borderWidth: 1,
+                            paddingHorizontal: 14,
+                            paddingVertical: 12,
+                            fontSize: 15,
+                            backgroundColor: theme.surface,
+                            borderColor: theme.border,
+                            color: theme.textPrimary,
+                            textAlignVertical: 'top',
+                        }}
                         placeholder={t('describe-situation')}
                         placeholderTextColor={theme.textSecondary}
                         value={description}
@@ -266,17 +276,24 @@ export default function IncidentReportScreen() {
                         maxLength={500}
                     />
 
-                    <Text className="text-xs mb-4" style={{ color: theme.textSecondary }}>
+                    <Text className="text-xs mb-5 text-right" style={{ color: theme.textSecondary, fontVariant: ['tabular-nums'] }}>
                         {description.length}/500 {t('characters')}
                     </Text>
 
-                    <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
-                        {t('direction-optional')}
-                    </Text>
+                    <FieldLabel label={t('direction-optional')} />
 
                     <TextInput
-                        className="border-2 rounded-xl p-4 text-base mb-6"
-                        style={{ backgroundColor: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
+                        className="mb-6"
+                        style={{
+                            borderRadius: RADIUS_SM,
+                            borderWidth: 1,
+                            minHeight: 48,
+                            paddingHorizontal: 14,
+                            fontSize: 15,
+                            backgroundColor: theme.surface,
+                            borderColor: theme.border,
+                            color: theme.textPrimary,
+                        }}
                         placeholder={t('north-south')}
                         placeholderTextColor={theme.textSecondary}
                         value={direction}
@@ -284,15 +301,14 @@ export default function IncidentReportScreen() {
                         maxLength={50}
                     />
 
-                    <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
-                        {t('photos')}
-                        {!inCampaign && <Text style={{ color: theme.textSecondary }}> ({t('optional')})</Text>}
-                    </Text>
+                    <FieldLabel label={t('photos')} optional={!inCampaign} />
                     <View className="mb-6">
                         <PhotoPicker photos={images} onChange={setImages} folder="incidents" requireLocation={inCampaign} />
                     </View>
 
                     <Button
+                        style={{ borderRadius: RADIUS_SM, minHeight: 48, paddingVertical: 12 }}
+                        textStyle={{ fontSize: 16, fontWeight: 'normal', fontFamily: FONT_MEDIUM }}
                         title={t('submit-report')}
                         onPress={handleSubmit}
                         disabled={!location}
@@ -303,7 +319,9 @@ export default function IncidentReportScreen() {
                         title={t('cancel')}
                         variant="outline"
                         onPress={() => router.back()}
-                        style={{ marginTop: 12 }}
+                        // quiet secondary: hairline border instead of the 2px brand outline
+                        style={{ marginTop: 10, borderRadius: RADIUS_SM, minHeight: 48, paddingVertical: 12, borderWidth: 1, borderColor: theme.border }}
+                        textStyle={{ fontSize: 16, fontWeight: 'normal', fontFamily: FONT_MEDIUM, color: theme.textPrimary }}
                     />
                 </View>
             </ScrollView>

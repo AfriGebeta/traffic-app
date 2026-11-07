@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { taxiService } from '../services/taxi.service';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { FONT_MEDIUM, RADIUS, RADIUS_SM, SectionLabel } from '../../campaigns/components/CampaignUi';
 import { routeCacheService } from '../services/route-cache.service';
 import { useRouteBuilder } from '../contexts/RouteBuilderContext';
 
@@ -28,7 +29,7 @@ export default function SetAvailabilityScreen() {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
-    const { colors: theme, isDark } = useTheme();
+    const { colors: theme } = useTheme();
     const { endCollectorTracking, setIsCollecting } = useRouteBuilder();
 
     const [routeId, setRouteId] = useState<number | null>(null);
@@ -213,24 +214,24 @@ export default function SetAvailabilityScreen() {
 
     return (
         <View className="flex-1" style={{ paddingTop: insets.top, backgroundColor: theme.background }}>
-            <View className="px-4 py-6" style={{ borderBottomWidth: 1, borderBottomColor: theme.background }}>
-                <View className="flex-row items-center mb-2">
-                    <TouchableOpacity onPress={() => router.back()} className="mr-4" activeOpacity={0.7}>
-                        <Ionicons name="arrow-back" size={28} color={colors.primary.main} />
-                    </TouchableOpacity>
-                    <Text className="text-2xl font-bold" style={{ color: theme.textPrimary }}>{t('set-availability')}</Text>
-                </View>
-                <Text className="mt-2" style={{ color: theme.textSecondary }}>
+            <View className="px-6 pt-3 pb-2">
+                <TouchableOpacity onPress={() => router.back()} className="self-start p-1 -ml-1" activeOpacity={0.7} hitSlop={8}>
+                    <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
+                </TouchableOpacity>
+                <Text className="mt-3" style={{ color: theme.textPrimary, fontSize: 26, lineHeight: 32, letterSpacing: -0.4 }}>
+                    {t('set-availability')}
+                </Text>
+                <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>
                     {t('set-operating-hours-for-all-routes')}
                 </Text>
             </View>
 
-            <ScrollView className="flex-1 p-4" contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}>
-                <View className="rounded-2xl p-6 shadow-sm mb-4" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
-                    <Text className="text-lg font-bold mb-2" style={{ color: theme.textPrimary }}>
+            <ScrollView className="flex-1 px-6" contentContainerStyle={{ paddingTop: 16, paddingBottom: insets.bottom + 20 }}>
+                <View className="mb-4">
+                    <Text className="mb-1" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM, fontSize: 17 }}>
                         {routeName}
                     </Text>
-                    <Text className="text-sm mb-4" style={{ color: theme.textSecondary }}>
+                    <Text className="text-xs mb-4" style={{ color: theme.textSecondary }}>
                         {individualTimes
                             ? t('set-individual-times-for-each-route')
                             : segments.length > 0
@@ -240,10 +241,10 @@ export default function SetAvailabilityScreen() {
                     </Text>
 
                     {segments.length > 0 && (
-                        <View className="mb-4 p-4 rounded-xl" style={{ borderWidth: 1, borderColor: theme.border }}>
+                        <View className="mb-4 p-4" style={{ borderRadius: RADIUS, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surface }}>
                             <View className="flex-row items-center justify-between">
                                 <View className="flex-1 mr-3">
-                                    <Text className="font-semibold mb-1" style={{ color: theme.textPrimary }}>
+                                    <Text className="text-sm mb-0.5" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM }}>
                                         {t('individual-times-per-route')}
                                     </Text>
                                     <Text className="text-xs" style={{ color: theme.textSecondary }}>
@@ -264,10 +265,10 @@ export default function SetAvailabilityScreen() {
                     )}
 
                     {!individualTimes && segments.length > 0 && (
-                        <View className="mb-4 p-3 rounded-xl" style={{ backgroundColor: isDark ? theme.background : '#F9FAFB' }}>
-                            <Text className="font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('affected-routes')}:</Text>
+                        <View className="mb-4 p-3" style={{ borderRadius: RADIUS, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
+                            <SectionLabel style={{ marginBottom: 6 }}>{t('affected-routes')}</SectionLabel>
                             {segments.map((segment, index) => (
-                                <Text key={index} className="text-sm" style={{ color: theme.textSecondary }}>
+                                <Text key={index} className="text-sm leading-6" style={{ color: theme.textSecondary }}>
                                     • {segment.fromName} → {segment.toName}
                                 </Text>
                             ))}
@@ -276,40 +277,40 @@ export default function SetAvailabilityScreen() {
 
                     {individualTimes && segments.length > 0 ? (
                         segments.map((segment, segmentIndex) => (
-                            <View key={segmentIndex} className="mb-6 p-4 rounded-xl" style={{ backgroundColor: isDark ? theme.background : '#F9FAFB', borderWidth: 2, borderColor: theme.border }}>
-                                <Text className="font-bold mb-3" style={{ color: theme.textPrimary }}>
+                            <View key={segmentIndex} className="mb-4 p-4" style={{ borderRadius: RADIUS, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
+                                <Text className="text-sm mb-3" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM }}>
                                     {segment.fromName} → {segment.toName}
                                 </Text>
 
                                 <View className="flex-row items-center justify-between mb-4">
                                     <View className="flex-1 mr-2">
-                                        <Text className="font-medium mb-2" style={{ color: theme.textPrimary }}>{t('start-time')}</Text>
+                                        <Text className="text-xs mb-1.5" style={{ color: theme.textSecondary }}>{t('start-time')}</Text>
                                         <TouchableOpacity
-                                            className="rounded-lg p-3"
-                                            style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
+                                            className="p-3"
+                                            style={{ borderRadius: RADIUS_SM, backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border }}
                                             onPress={() => openTimePicker(segmentIndex, 'start', segmentIndex)}
                                         >
-                                            <Text className="text-center font-mono text-lg" style={{ color: theme.textPrimary }}>
+                                            <Text className="text-center" style={{ color: theme.textPrimary, fontSize: 18, fontVariant: ['tabular-nums'] }}>
                                                 {formatTime(timeWindows[segmentIndex]?.startMinutes || 300)}
                                             </Text>
                                         </TouchableOpacity>
                                     </View>
                                     <View className="flex-1 ml-2">
-                                        <Text className="font-medium mb-2" style={{ color: theme.textPrimary }}>{t('end-time')}</Text>
+                                        <Text className="text-xs mb-1.5" style={{ color: theme.textSecondary }}>{t('end-time')}</Text>
                                         <TouchableOpacity
-                                            className="rounded-lg p-3"
-                                            style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
+                                            className="p-3"
+                                            style={{ borderRadius: RADIUS_SM, backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border }}
                                             onPress={() => openTimePicker(segmentIndex, 'end', segmentIndex)}
                                         >
-                                            <Text className="text-center font-mono text-lg" style={{ color: theme.textPrimary }}>
+                                            <Text className="text-center" style={{ color: theme.textPrimary, fontSize: 18, fontVariant: ['tabular-nums'] }}>
                                                 {formatTime(timeWindows[segmentIndex]?.endMinutes || 1320)}
                                             </Text>
                                         </TouchableOpacity>
                                     </View>
                                 </View>
 
-                                <View className="flex-row items-center justify-between p-3 rounded-lg" style={{ backgroundColor: theme.surface }}>
-                                    <Text className="font-medium" style={{ color: theme.textPrimary }}>{t('is-available')}</Text>
+                                <View className="flex-row items-center justify-between pt-3" style={{ borderTopWidth: 1, borderTopColor: theme.border }}>
+                                    <Text className="text-sm" style={{ color: theme.textPrimary }}>{t('is-available')}</Text>
                                     <Switch
                                         value={timeWindows[segmentIndex]?.isAvailable ?? true}
                                         onValueChange={(value) => updateTimeWindow(segmentIndex, 'isAvailable', value)}
@@ -321,47 +322,47 @@ export default function SetAvailabilityScreen() {
                         ))
                     ) : (
                         timeWindows.map((window, index) => (
-                            <View key={index} className="mb-6 p-4 rounded-xl" style={{ backgroundColor: isDark ? theme.background : '#F9FAFB' }}>
+                            <View key={index} className="mb-4 p-4" style={{ borderRadius: RADIUS, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
                                 <View className="flex-row items-center justify-between mb-4">
-                                    <Text className="font-semibold" style={{ color: theme.textPrimary }}>
+                                    <Text className="text-sm" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM }}>
                                         {t('operating-hours')}
                                     </Text>
                                     {timeWindows.length > 1 && (
                                         <TouchableOpacity onPress={() => removeTimeWindow(index)}>
-                                            <Ionicons name="trash-outline" size={20} color={theme.error} />
+                                            <Ionicons name="trash-outline" size={18} color={theme.error} />
                                         </TouchableOpacity>
                                     )}
                                 </View>
 
                                 <View className="flex-row items-center justify-between mb-4">
                                     <View className="flex-1 mr-2">
-                                        <Text className="font-medium mb-2" style={{ color: theme.textPrimary }}>{t('start-time')}</Text>
+                                        <Text className="text-xs mb-1.5" style={{ color: theme.textSecondary }}>{t('start-time')}</Text>
                                         <TouchableOpacity
-                                            className="rounded-lg p-3"
-                                            style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
+                                            className="p-3"
+                                            style={{ borderRadius: RADIUS_SM, backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border }}
                                             onPress={() => openTimePicker(index, 'start')}
                                         >
-                                            <Text className="text-center font-mono text-lg" style={{ color: theme.textPrimary }}>
+                                            <Text className="text-center" style={{ color: theme.textPrimary, fontSize: 18, fontVariant: ['tabular-nums'] }}>
                                                 {formatTime(window.startMinutes)}
                                             </Text>
                                         </TouchableOpacity>
                                     </View>
                                     <View className="flex-1 ml-2">
-                                        <Text className="font-medium mb-2" style={{ color: theme.textPrimary }}>{t('end-time')}</Text>
+                                        <Text className="text-xs mb-1.5" style={{ color: theme.textSecondary }}>{t('end-time')}</Text>
                                         <TouchableOpacity
-                                            className="rounded-lg p-3"
-                                            style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
+                                            className="p-3"
+                                            style={{ borderRadius: RADIUS_SM, backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border }}
                                             onPress={() => openTimePicker(index, 'end')}
                                         >
-                                            <Text className="text-center font-mono text-lg" style={{ color: theme.textPrimary }}>
+                                            <Text className="text-center" style={{ color: theme.textPrimary, fontSize: 18, fontVariant: ['tabular-nums'] }}>
                                                 {formatTime(window.endMinutes)}
                                             </Text>
                                         </TouchableOpacity>
                                     </View>
                                 </View>
 
-                                <View className="flex-row items-center justify-between p-3 rounded-lg" style={{ backgroundColor: theme.surface }}>
-                                    <Text className="font-medium" style={{ color: theme.textPrimary }}>{t('is-available')}</Text>
+                                <View className="flex-row items-center justify-between pt-3" style={{ borderTopWidth: 1, borderTopColor: theme.border }}>
+                                    <Text className="text-sm" style={{ color: theme.textPrimary }}>{t('is-available')}</Text>
                                     <Switch
                                         value={window.isAvailable}
                                         onValueChange={(value) => updateTimeWindow(index, 'isAvailable', value)}
@@ -375,28 +376,28 @@ export default function SetAvailabilityScreen() {
 
                     {!individualTimes && (
                         <TouchableOpacity
-                            className="py-3 rounded-xl mb-4 flex-row items-center justify-center"
-                            style={{ backgroundColor: isDark ? theme.background : '#E5E7EB' }}
+                            className="mb-4 flex-row items-center justify-center"
+                            style={{ height: 46, borderRadius: RADIUS_SM, borderWidth: 1, borderStyle: 'dashed', borderColor: theme.border, backgroundColor: theme.surface }}
                             onPress={addTimeWindow}
                             activeOpacity={0.7}
                         >
-                            <Ionicons name="add-circle-outline" size={20} color={colors.primary.main} />
-                            <Text className="font-semibold ml-2" style={{ color: theme.textPrimary }}>{t('add-time-window')}</Text>
+                            <Ionicons name="add-circle-outline" size={18} color={theme.primary} />
+                            <Text className="text-sm ml-2" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM }}>{t('add-time-window')}</Text>
                         </TouchableOpacity>
                     )}
 
                     <View className="flex-row space-x-2">
                         <TouchableOpacity
-                            className="flex-1 py-4 rounded-xl"
+                            className="flex-1 items-center justify-center"
                             onPress={handleSubmit}
                             disabled={loading}
                             activeOpacity={0.7}
-                            style={{ backgroundColor: loading ? theme.border : colors.primary.main }}
+                            style={{ height: 48, borderRadius: RADIUS_SM, backgroundColor: loading ? theme.border : theme.primary }}
                         >
                             {loading ? (
                                 <ActivityIndicator color="white" />
                             ) : (
-                                <Text className="text-white text-center font-bold text-lg">
+                                <Text className="text-center" style={{ color: '#fff', fontFamily: FONT_MEDIUM, fontSize: 16 }}>
                                     {individualTimes ? t('submit') : t('apply-to-all-routes')}
                                 </Text>
                             )}
@@ -412,17 +413,17 @@ export default function SetAvailabilityScreen() {
                 onRequestClose={() => setShowTimePicker(false)}
             >
                 <View className="flex-1 bg-black/50 justify-center items-center">
-                    <View className="rounded-2xl p-6 w-80 mx-4" style={{ backgroundColor: theme.surface }}>
-                        <Text className="text-xl font-bold mb-4" style={{ color: theme.textPrimary }}>
+                    <View className="p-6 w-80 mx-4" style={{ borderRadius: RADIUS, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
+                        <Text className="mb-4" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM, fontSize: 17 }}>
                             {editingTime?.field === 'start' ? t('set-start-time') : t('set-end-time')}
                         </Text>
 
                         <View className="flex-row items-center justify-center mb-6">
                             <View className="flex-1 mr-2">
-                                <Text className="font-medium mb-2 text-center" style={{ color: theme.textPrimary }}>{t('hour')}</Text>
+                                <Text className="text-xs mb-1.5 text-center" style={{ color: theme.textSecondary }}>{t('hour')}</Text>
                                 <TextInput
-                                    className="rounded-lg px-4 py-3 text-center text-xl font-mono"
-                                    style={{ backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border, color: theme.textPrimary }}
+                                    className="px-4 py-3 text-center"
+                                    style={{ borderRadius: RADIUS_SM, fontSize: 22, fontVariant: ['tabular-nums'], backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border, color: theme.textPrimary }}
                                     placeholderTextColor={theme.textSecondary}
                                     value={tempHour}
                                     onChangeText={setTempHour}
@@ -431,12 +432,12 @@ export default function SetAvailabilityScreen() {
                                     placeholder="00"
                                 />
                             </View>
-                            <Text className="text-3xl font-bold mx-2" style={{ color: theme.textSecondary }}>:</Text>
+                            <Text className="mx-2" style={{ color: theme.textSecondary, fontSize: 26, marginTop: 18 }}>:</Text>
                             <View className="flex-1 ml-2">
-                                <Text className="font-medium mb-2 text-center" style={{ color: theme.textPrimary }}>{t('minute')}</Text>
+                                <Text className="text-xs mb-1.5 text-center" style={{ color: theme.textSecondary }}>{t('minute')}</Text>
                                 <TextInput
-                                    className="rounded-lg px-4 py-3 text-center text-xl font-mono"
-                                    style={{ backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border, color: theme.textPrimary }}
+                                    className="px-4 py-3 text-center"
+                                    style={{ borderRadius: RADIUS_SM, fontSize: 22, fontVariant: ['tabular-nums'], backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border, color: theme.textPrimary }}
                                     placeholderTextColor={theme.textSecondary}
                                     value={tempMinute}
                                     onChangeText={setTempMinute}
@@ -447,24 +448,24 @@ export default function SetAvailabilityScreen() {
                             </View>
                         </View>
 
-                        <Text className="text-sm text-center mb-4" style={{ color: theme.textSecondary }}>
+                        <Text className="text-xs text-center mb-4" style={{ color: theme.textSecondary }}>
                             {t('format-24-hour')}
                         </Text>
 
                         <View className="flex-row space-x-2">
                             <TouchableOpacity
-                                className="flex-1 py-3 rounded-xl mr-2"
-                                style={{ backgroundColor: isDark ? theme.background : '#E5E7EB' }}
+                                className="flex-1 mr-2 items-center justify-center"
+                                style={{ height: 44, borderRadius: RADIUS_SM, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.background }}
                                 onPress={() => setShowTimePicker(false)}
                             >
-                                <Text className="text-center font-semibold" style={{ color: theme.textPrimary }}>{t('cancel')}</Text>
+                                <Text className="text-center text-sm" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM }}>{t('cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                className="flex-1 py-3 rounded-xl ml-2"
-                                style={{ backgroundColor: colors.primary.main }}
+                                className="flex-1 ml-2 items-center justify-center"
+                                style={{ height: 44, borderRadius: RADIUS_SM, backgroundColor: theme.primary }}
                                 onPress={saveTime}
                             >
-                                <Text className="text-white text-center font-semibold">{t('save')}</Text>
+                                <Text className="text-center text-sm" style={{ color: '#fff', fontFamily: FONT_MEDIUM }}>{t('save')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>

@@ -15,8 +15,9 @@ import { useScoringCampaign } from '../../campaigns/hooks/useScoringCampaign';
 import { deviceFieldsFromFix, latestPhotoFix } from '../../../shared/utils/photoFix';
 import { useTranslation } from 'react-i18next';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
-import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { FONT_MEDIUM, RADIUS, RADIUS_SM, tint } from '../../campaigns/components/CampaignUi';
+import { FieldLabel } from '../../../shared/components/FieldLabel';
 import { isPunishableRule, NO_PUNISHMENT_VALUE } from '../utils/ruleTranslations';
 import { PhotoPicker, UploadedPhoto } from '../../../shared/components/PhotoPicker';
 import { ConfirmDialog } from '../../../components/ConfirmDialog';
@@ -130,35 +131,31 @@ export default function AddRuleReportScreen() {
 
     return (
         <View className="flex-1" style={{ backgroundColor: theme.background }}>
-            <View className="px-6 pt-16 pb-4" style={{ backgroundColor: theme.background, borderBottomWidth: 1, borderBottomColor: theme.border }}>
-                <View className="flex-row items-center">
-                    <TouchableOpacity
-                        onPress={() => router.back()}
-                        className="mr-4"
-                        activeOpacity={0.7}
-                    >
-                        <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
-                    </TouchableOpacity>
-                    <Text className="text-xl font-bold" style={{ color: theme.textPrimary }}>{t('report-traffic-rule')}</Text>
-                </View>
+            <View className="px-6 pb-2" style={{ paddingTop: insets.top + 12, backgroundColor: theme.background }}>
+                <TouchableOpacity onPress={() => router.back()} className="self-start p-1 -ml-1" activeOpacity={0.7} hitSlop={8}>
+                    <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
+                </TouchableOpacity>
+                <Text className="mt-3" style={{ color: theme.textPrimary, fontSize: 26, lineHeight: 32, letterSpacing: -0.4 }}>
+                    {t('report-traffic-rule')}
+                </Text>
             </View>
 
-            <View className="mx-6 mt-6 mb-4 rounded-2xl p-4" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
+            <View className="mx-6 mt-3 mb-4 px-4 py-3" style={{ borderRadius: RADIUS, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
                 <View className="flex-row items-center">
-                    <View className="w-14 h-14 items-center justify-center mr-4 rounded-xl overflow-hidden" style={{ backgroundColor: isDark ? '#FFFFFF' : '#F3F4F6' }}>
+                    <View className="w-12 h-12 items-center justify-center mr-3 overflow-hidden" style={{ borderRadius: RADIUS_SM, backgroundColor: isDark ? '#FFFFFF' : '#F3F4F6' }}>
                         {typeImg && typeof typeImg === 'string' && typeImg.length > 0 ? (
                             <Image
                                 source={{ uri: typeImg }}
-                                style={{ width: 48, height: 48 }}
+                                style={{ width: 40, height: 40 }}
                                 resizeMode="contain"
                             />
                         ) : (
-                            <Ionicons name="shield-checkmark" size={32} color="#EF4444" />
+                            <Ionicons name="shield-checkmark" size={26} color="#EF4444" />
                         )}
                     </View>
                     <View className="flex-1">
-                        <Text className="text-lg font-bold" style={{ color: theme.textPrimary }}>{typeName || 'Traffic Rule'}</Text>
-                        <Text className="text-sm" style={{ color: theme.textSecondary }} numberOfLines={2}>
+                        <Text style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM, fontSize: 16 }}>{typeName || 'Traffic Rule'}</Text>
+                        <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }} numberOfLines={2}>
                             {typeDescription || 'Report a traffic rule violation'}
                         </Text>
                     </View>
@@ -169,41 +166,39 @@ export default function AddRuleReportScreen() {
                 <View className="gap-5 pb-6">
                     {showPunishment && (
                         <View>
-                            <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
-                                {t('punishment')} <Text style={{ color: theme.textSecondary }}>({t('optional')})</Text>
-                            </Text>
+                            <FieldLabel label={t('punishment')} optional />
                             <Input
+                                variant="calm"
                                 placeholder={t('punishment-placeholder')}
                                 value={punishment}
                                 onChangeText={setPunishment}
                                 multiline
                                 numberOfLines={3}
                             />
-                            <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>
+                            <Text className="text-xs mt-1.5" style={{ color: theme.textSecondary }}>
                                 {t('punishment-description')}
                             </Text>
                         </View>
                     )}
 
                     <View>
-                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
-                            {t('location')} <Text style={{ color: theme.primary }}>*</Text>
-                        </Text>
+                        <FieldLabel label={t('location')} required />
                         {coordinates ? (
                             <View>
-                                <View className="rounded-xl p-4" style={{ backgroundColor: isDark ? theme.greenMuted : '#F0FDF4', borderWidth: 1, borderColor: theme.green }}>
+                                <View className="px-4 py-3" style={{ borderRadius: RADIUS, backgroundColor: theme.greenMuted, borderWidth: 1, borderColor: tint(theme.green, '66') }}>
                                     <View className="flex-row items-center justify-between">
+                                        <Ionicons name="location" size={18} color={theme.green} style={{ marginRight: 10 }} />
                                         <View className="flex-1">
-                                            <Text className="font-semibold" style={{ color: theme.textPrimary }}>
+                                            <Text className="text-sm" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM }}>
                                                 {usingCurrentLocation ? t('current-location') : t('location-selected')}
                                             </Text>
-                                            <Text className="text-sm" style={{ color: theme.textSecondary }}>
+                                            <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary, fontVariant: ['tabular-nums'] }}>
                                                 {coordinates.lat.toFixed(7)}, {coordinates.lng.toFixed(7)}
                                             </Text>
                                         </View>
                                         {!isNavigating && (
                                             <TouchableOpacity onPress={() => { setCoordinates(null); setUsingCurrentLocation(false); }}>
-                                                <Ionicons name="close-circle" size={24} color={theme.error} />
+                                                <Ionicons name="close-circle" size={20} color={theme.textSecondary} />
                                             </TouchableOpacity>
                                         )}
                                     </View>
@@ -212,35 +207,26 @@ export default function AddRuleReportScreen() {
                                     <>
                                         <View className="flex-row items-center justify-center my-2">
                                             <View className="flex-1 h-px" style={{ backgroundColor: theme.border }} />
-                                            <Text className="text-sm mx-3" style={{ color: theme.textSecondary }}>{t('or')}</Text>
+                                            <Text className="text-xs mx-3" style={{ color: theme.textSecondary }}>{t('or')}</Text>
                                             <View className="flex-1 h-px" style={{ backgroundColor: theme.border }} />
                                         </View>
                                         <TouchableOpacity
-                                            className="rounded-2xl px-4 py-2 flex-row items-center justify-between"
+                                            className="px-3 py-2.5 flex-row items-center justify-between"
                                             onPress={handlePickLocation}
                                             activeOpacity={0.7}
-                                            style={{
-                                                backgroundColor: theme.surface,
-                                                borderWidth: 2,
-                                                borderColor: theme.border,
-                                                shadowColor: '#000',
-                                                shadowOffset: { width: 0, height: 1 },
-                                                shadowOpacity: 0.05,
-                                                shadowRadius: 4,
-                                                elevation: 1,
-                                            }}
+                                            style={{ borderRadius: RADIUS_SM, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
                                         >
                                             <View className="flex-row items-center flex-1">
-                                                <View className="w-10 h-10 rounded-full items-center justify-center" style={{ backgroundColor: isDark ? theme.background : '#F3F4F6' }}>
-                                                    <Ionicons name="map" size={20} color={theme.textSecondary} />
+                                                <View className="w-8 h-8 items-center justify-center" style={{ borderRadius: RADIUS_SM, backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border }}>
+                                                    <Ionicons name="map-outline" size={16} color={theme.primary} />
                                                 </View>
                                                 <View className="ml-3 flex-1">
-                                                    <Text className="text-sm font-medium" style={{ color: theme.textSecondary }}>
+                                                    <Text className="text-sm" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM }}>
                                                         {t('pick-location-on-map')}
                                                     </Text>
                                                 </View>
                                             </View>
-                                            <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+                                            <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
                                         </TouchableOpacity>
                                     </>
                                 )}
@@ -249,65 +235,56 @@ export default function AddRuleReportScreen() {
                             <View>
                                 {!isNavigating && (
                                     <TouchableOpacity
-                                        className="rounded-2xl px-4 py-2 flex-row items-center justify-between mb-2"
+                                        className="px-3 py-2.5 flex-row items-center justify-between mb-2"
                                         onPress={handlePickLocation}
                                         activeOpacity={0.7}
-                                        style={{
-                                            backgroundColor: theme.surface,
-                                            borderWidth: 2,
-                                            borderColor: theme.border,
-                                            shadowColor: '#000',
-                                            shadowOffset: { width: 0, height: 1 },
-                                            shadowOpacity: 0.05,
-                                            shadowRadius: 4,
-                                            elevation: 1,
-                                        }}
+                                        style={{ borderRadius: RADIUS_SM, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
                                     >
                                         <View className="flex-row items-center flex-1">
-                                            <View className="w-10 h-10 rounded-full items-center justify-center" style={{ backgroundColor: isDark ? theme.background : '#F3F4F6' }}>
-                                                <Ionicons name="map" size={20} color={theme.textSecondary} />
+                                            <View className="w-8 h-8 items-center justify-center" style={{ borderRadius: RADIUS_SM, backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border }}>
+                                                <Ionicons name="map-outline" size={16} color={theme.primary} />
                                             </View>
                                             <View className="ml-3 flex-1">
-                                                <Text className="text-sm font-medium" style={{ color: theme.textSecondary }}>
+                                                <Text className="text-sm" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM }}>
                                                     {t('pick-location-on-map')}
                                                 </Text>
                                             </View>
                                         </View>
-                                        <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+                                        <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
                                     </TouchableOpacity>
                                 )}
                                 {!isNavigating && (
                                     <View className="flex-row items-center justify-center my-2">
                                         <View className="flex-1 h-px" style={{ backgroundColor: theme.border }} />
-                                        <Text className="text-sm mx-3" style={{ color: theme.textSecondary }}>{t('or')}</Text>
+                                        <Text className="text-xs mx-3" style={{ color: theme.textSecondary }}>{t('or')}</Text>
                                         <View className="flex-1 h-px" style={{ backgroundColor: theme.border }} />
                                     </View>
                                 )}
                                 <TouchableOpacity
-                                    className="py-3 rounded-xl flex-row items-center justify-center"
-                                    style={{ backgroundColor: colors.primary.main }}
+                                    className="flex-row items-center justify-center"
+                                    style={{ height: 46, borderRadius: RADIUS_SM, backgroundColor: theme.primary, opacity: userLocation ? 1 : 0.5 }}
                                     onPress={handleUseCurrentLocation}
                                     activeOpacity={0.7}
                                     disabled={!userLocation}
                                 >
-                                    <Ionicons name="locate" size={20} color="white" />
-                                    <Text className="text-white font-semibold ml-2">{t('use-current-location')}</Text>
+                                    <Ionicons name="locate" size={18} color="white" />
+                                    <Text className="ml-2" style={{ color: '#fff', fontFamily: FONT_MEDIUM, fontSize: 15 }}>{t('use-current-location')}</Text>
                                 </TouchableOpacity>
                             </View>
                         )}
                     </View>
 
                     <View>
-                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
-                            {t('photos')} <Text style={{ color: theme.textSecondary }}>({t('optional')})</Text>
-                        </Text>
+                        <FieldLabel label={t('photos')} optional />
                         <PhotoPicker photos={photos} onChange={setPhotos} folder="rules" requireLocation={inCampaign} />
                     </View>
                 </View>
             </ScrollView>
 
-            <View className="px-6 pt-4" style={{ paddingBottom: insets.bottom + 16, backgroundColor: theme.background, borderTopWidth: 1, borderTopColor: theme.border }}>
+            <View className="px-6 pt-3" style={{ paddingBottom: insets.bottom + 12, backgroundColor: theme.background, borderTopWidth: 1, borderTopColor: theme.border }}>
                 <Button
+                    style={{ borderRadius: RADIUS_SM, minHeight: 48, paddingVertical: 12 }}
+                    textStyle={{ fontSize: 16, fontWeight: 'normal', fontFamily: FONT_MEDIUM }}
                     title={submitting ? t('submitting') : t('submit-report')}
                     onPress={() => void handleSubmit()}
                     disabled={submitting || !coordinates}

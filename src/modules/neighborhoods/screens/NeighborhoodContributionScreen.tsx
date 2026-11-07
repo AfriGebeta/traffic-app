@@ -10,15 +10,16 @@ import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { useNeighborhoodContribution } from '../hooks/useNeighborhoodContribution';
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import { BoundingBox } from '../types/neighborhood.types';
-import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { FONT_MEDIUM, RADIUS, RADIUS_SM } from '../../campaigns/components/CampaignUi';
+import { FieldLabel } from '../../../shared/components/FieldLabel';
 import { useLocalSearchParams } from 'expo-router';
 
 export default function NeighborhoodContributionScreen() {
     const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const { colors: theme, isDark } = useTheme();
+    const { colors: theme } = useTheme();
     const params = useLocalSearchParams();
     const { userLocation } = useUserLocation();
     const { contributeNeighborhood, loading } = useNeighborhoodContribution();
@@ -111,26 +112,21 @@ export default function NeighborhoodContributionScreen() {
 
     return (
         <View className="flex-1" style={{ backgroundColor: theme.background }}>
-            <View className="px-6 pt-16 pb-4" style={{ backgroundColor: theme.background, borderBottomWidth: 1, borderBottomColor: theme.border }}>
-                <View className="flex-row items-center">
-                    <TouchableOpacity
-                        onPress={() => router.back()}
-                        className="mr-4"
-                        activeOpacity={0.7}
-                    >
-                        <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
-                    </TouchableOpacity>
-                    <Text className="text-xl font-bold" style={{ color: theme.textPrimary }}>{t('add-neighborhood')}</Text>
-                </View>
+            <View className="px-6 pb-2" style={{ paddingTop: insets.top + 12, backgroundColor: theme.background }}>
+                <TouchableOpacity onPress={() => router.back()} className="self-start p-1 -ml-1" activeOpacity={0.7} hitSlop={8}>
+                    <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
+                </TouchableOpacity>
+                <Text className="mt-3" style={{ color: theme.textPrimary, fontSize: 26, lineHeight: 32, letterSpacing: -0.4 }}>
+                    {t('add-neighborhood')}
+                </Text>
             </View>
 
             <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
-                <View className="gap-5 pb-6 mt-6">
+                <View className="gap-5 pb-6 mt-4">
                     <View>
-                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
-                            {t('neighborhood-name')} <Text style={{ color: theme.primary }}>*</Text>
-                        </Text>
+                        <FieldLabel label={t('neighborhood-name')} required />
                         <Input
+                            variant="calm"
                             placeholder={t('neighborhood-name-placeholder')}
                             value={name}
                             onChangeText={handleNameChange}
@@ -138,20 +134,20 @@ export default function NeighborhoodContributionScreen() {
                     </View>
 
                     <View>
-                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
-                            {t('slug')} <Text style={{ color: theme.primary }}>*</Text>
-                        </Text>
+                        <FieldLabel label={t('slug')} required />
                         <Input
+                            variant="calm"
                             placeholder={t('slug-placeholder')}
                             value={slug}
                             onChangeText={setSlug}
                         />
-                        <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>{t('auto-generated-from-name')}</Text>
+                        <Text className="text-xs mt-1.5" style={{ color: theme.textSecondary }}>{t('auto-generated-from-name')}</Text>
                     </View>
 
                     <View>
-                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('description')}</Text>
+                        <FieldLabel label={t('description')} />
                         <Input
+                            variant="calm"
                             placeholder={t('add-details-about-neighborhood')}
                             value={description}
                             onChangeText={setDescription}
@@ -161,42 +157,42 @@ export default function NeighborhoodContributionScreen() {
                     </View>
 
                     <View>
-                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
-                            {t('location')} <Text style={{ color: theme.primary }}>*</Text>
-                        </Text>
+                        <FieldLabel label={t('location')} required />
                         {coordinates ? (
-                            <View className="rounded-xl p-4" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
+                            <View className="px-4 py-3" style={{ borderRadius: RADIUS, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
                                 <View className="flex-row items-center justify-between">
+                                    <Ionicons name="location" size={18} color={theme.primary} style={{ marginRight: 10 }} />
                                     <View className="flex-1">
-                                        <Text className="font-semibold" style={{ color: theme.textPrimary }}>
+                                        <Text className="text-sm" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM }}>
                                             {usingCurrentLocation ? t('current-location') : t('location-selected')}
                                         </Text>
-                                        <Text className="text-sm" style={{ color: theme.textSecondary }}>
+                                        <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary, fontVariant: ['tabular-nums'] }}>
                                             {coordinates.lat.toFixed(7)}, {coordinates.lng.toFixed(7)}
                                         </Text>
                                     </View>
-                                    <TouchableOpacity onPress={() => { setCoordinates(null); setUsingCurrentLocation(false); }}>
-                                        <Ionicons name="close-circle" size={24} color={theme.error} />
+                                    <TouchableOpacity onPress={() => { setCoordinates(null); setUsingCurrentLocation(false); }} hitSlop={8}>
+                                        <Ionicons name="close-circle" size={20} color={theme.textSecondary} />
                                     </TouchableOpacity>
                                 </View>
                             </View>
                         ) : (
                             <TouchableOpacity
-                                className="py-3 rounded-xl flex-row items-center justify-center"
-                                style={{ backgroundColor: colors.primary.main }}
+                                className="flex-row items-center justify-center"
+                                style={{ height: 46, borderRadius: RADIUS_SM, backgroundColor: theme.primary, opacity: userLocation ? 1 : 0.5 }}
                                 onPress={handleUseCurrentLocation}
                                 activeOpacity={0.7}
                                 disabled={!userLocation}
                             >
-                                <Ionicons name="locate" size={20} color="white" />
-                                <Text className="text-white font-semibold ml-2">{t('use-current-location')}</Text>
+                                <Ionicons name="locate" size={18} color="white" />
+                                <Text className="ml-2" style={{ color: '#fff', fontFamily: FONT_MEDIUM, fontSize: 15 }}>{t('use-current-location')}</Text>
                             </TouchableOpacity>
                         )}
                     </View>
 
                     <View>
-                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('city')}</Text>
+                        <FieldLabel label={t('city')} />
                         <Input
+                            variant="calm"
                             placeholder={t('city-placeholder')}
                             value={city}
                             onChangeText={setCity}
@@ -204,8 +200,9 @@ export default function NeighborhoodContributionScreen() {
                     </View>
 
                     <View>
-                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('subcity')}</Text>
+                        <FieldLabel label={t('subcity')} />
                         <Input
+                            variant="calm"
                             placeholder={t('subcity-placeholder')}
                             value={subcity}
                             onChangeText={setSubcity}
@@ -213,8 +210,9 @@ export default function NeighborhoodContributionScreen() {
                     </View>
 
                     <View>
-                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('woreda')}</Text>
+                        <FieldLabel label={t('woreda')} />
                         <Input
+                            variant="calm"
                             placeholder={t('woreda-placeholder')}
                             value={woreda}
                             onChangeText={setWoreda}
@@ -222,19 +220,10 @@ export default function NeighborhoodContributionScreen() {
                     </View>
 
                     <View>
-                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('bounding-box-optional')}</Text>
+                        <FieldLabel label={t('bounding-box-optional')} />
                         <TouchableOpacity
-                            className="rounded-2xl p-4 flex-row items-center justify-between"
-                            style={{
-                                backgroundColor: theme.surface,
-                                borderWidth: 2,
-                                borderColor: theme.border,
-                                shadowColor: '#000',
-                                shadowOffset: { width: 0, height: 1 },
-                                shadowOpacity: 0.05,
-                                shadowRadius: 4,
-                                elevation: 1,
-                            }}
+                            className="px-3 py-2.5 flex-row items-center justify-between"
+                            style={{ borderRadius: RADIUS_SM, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
                             onPress={() => {
                                 const centerCoords = coordinates || { lat: 9.0105, lng: 38.7636 };
                                 router.push({
@@ -249,35 +238,35 @@ export default function NeighborhoodContributionScreen() {
                             activeOpacity={0.7}
                         >
                             <View className="flex-row items-center flex-1">
-                                <View className="w-10 h-10 rounded-full items-center justify-center" style={{ backgroundColor: isDark ? theme.background : '#F3F4F6' }}>
-                                    <Ionicons name="resize-outline" size={20} color={boundingBox ? theme.primary : theme.textSecondary} />
+                                <View className="w-8 h-8 items-center justify-center" style={{ borderRadius: RADIUS_SM, backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border }}>
+                                    <Ionicons name="resize-outline" size={16} color={boundingBox ? theme.primary : theme.textSecondary} />
                                 </View>
                                 <View className="ml-3 flex-1">
-                                    <Text className="text-sm font-medium" style={{ color: theme.textPrimary }}>
+                                    <Text className="text-sm" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM }}>
                                         {boundingBox ? t('edit-bounding-box') : t('draw-bounding-box')}
                                     </Text>
                                     {boundingBox && (
-                                        <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>{t('bounding-box-set')}</Text>
+                                        <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }}>{t('bounding-box-set')}</Text>
                                     )}
                                 </View>
                             </View>
-                            <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+                            <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
                         </TouchableOpacity>
 
                         {boundingBox && (
-                            <View className="mt-3 rounded-xl p-3" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
-                                <Text className="text-xs font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('bounding-box-coordinates')}</Text>
+                            <View className="mt-2 p-3" style={{ borderRadius: RADIUS_SM, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
+                                <Text className="text-xs mb-2" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM }}>{t('bounding-box-coordinates')}</Text>
                                 <View className="gap-1">
-                                    <Text className="text-xs" style={{ color: theme.textSecondary }}>
+                                    <Text className="text-xs" style={{ color: theme.textSecondary, fontVariant: ['tabular-nums'] }}>
                                         {t('north')}: {boundingBox.north.toFixed(6)}
                                     </Text>
-                                    <Text className="text-xs" style={{ color: theme.textSecondary }}>
+                                    <Text className="text-xs" style={{ color: theme.textSecondary, fontVariant: ['tabular-nums'] }}>
                                         {t('south')}: {boundingBox.south.toFixed(6)}
                                     </Text>
-                                    <Text className="text-xs" style={{ color: theme.textSecondary }}>
+                                    <Text className="text-xs" style={{ color: theme.textSecondary, fontVariant: ['tabular-nums'] }}>
                                         {t('east')}: {boundingBox.east.toFixed(6)}
                                     </Text>
-                                    <Text className="text-xs" style={{ color: theme.textSecondary }}>
+                                    <Text className="text-xs" style={{ color: theme.textSecondary, fontVariant: ['tabular-nums'] }}>
                                         {t('west')}: {boundingBox.west.toFixed(6)}
                                     </Text>
                                 </View>
@@ -287,8 +276,10 @@ export default function NeighborhoodContributionScreen() {
                 </View>
             </ScrollView>
 
-            <View className="px-6 pt-4" style={{ paddingBottom: insets.bottom + 16, backgroundColor: theme.background, borderTopWidth: 1, borderTopColor: theme.border }}>
+            <View className="px-6 pt-3" style={{ paddingBottom: insets.bottom + 12, backgroundColor: theme.background, borderTopWidth: 1, borderTopColor: theme.border }}>
                 <Button
+                    style={{ borderRadius: RADIUS_SM, minHeight: 48, paddingVertical: 12 }}
+                    textStyle={{ fontSize: 16, fontWeight: 'normal', fontFamily: FONT_MEDIUM }}
                     title={loading ? t('submitting') : t('submit-contribution')}
                     onPress={handleSubmit}
                     disabled={loading || !name.trim() || !slug.trim() || !coordinates}

@@ -10,8 +10,8 @@ import { useTheme } from '../../../shared/theme/ThemeContext';
 import { getPlaceIcon } from '../utils/placeIcons';
 import { useCampaignGpsWarmup } from '../../campaigns/hooks/useCampaignGpsWarmup';
 import { isTypeAvailable, slugForType, usePlaceCategories } from '../services/placeCategories';
-import { colors } from '../../../shared/theme/colors';
 import { useSpecialPoints } from '../../campaigns/hooks/useSpecialPoints';
+import { FONT_MEDIUM, RADIUS } from '../../campaigns/components/CampaignUi';
 
 export default function PlaceContributionScreen() {
     const router = useRouter();
@@ -40,21 +40,17 @@ export default function PlaceContributionScreen() {
 
     return (
         <View className="flex-1" style={{ backgroundColor: theme.background, paddingTop: insets.top }}>
-            <View className="px-4 py-6" style={{ borderBottomWidth: 1, borderBottomColor: theme.background }}>
-                <View className="flex-row items-center mb-2">
-                    <TouchableOpacity
-                        onPress={() => router.back()}
-                        className="mr-4"
-                        activeOpacity={0.7}
-                    >
-                        <Ionicons name="arrow-back" size={28} color={theme.textPrimary} />
-                    </TouchableOpacity>
-                    <Text className="text-2xl font-bold" style={{ color: theme.textPrimary }}>{t('contribute-a-place')}</Text>
-                </View>
-                <Text className="mt-2" style={{ color: theme.textSecondary }}>{t('help-others-by-adding-useful-locations')}</Text>
+            <View className="px-4 pt-3 pb-2">
+                <TouchableOpacity onPress={() => router.back()} className="self-start p-1 -ml-1" activeOpacity={0.7} hitSlop={8}>
+                    <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
+                </TouchableOpacity>
+                <Text className="mt-3" style={{ color: theme.textPrimary, fontSize: 28, lineHeight: 34, letterSpacing: -0.4 }}>
+                    {t('contribute-a-place')}
+                </Text>
+                <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>{t('help-others-by-adding-useful-locations')}</Text>
             </View>
 
-            <ScrollView className="flex-1 p-4" contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}>
+            <ScrollView className="flex-1 px-4" contentContainerStyle={{ paddingTop: 12, paddingBottom: insets.bottom + 20 }}>
                 <View className="gap-3">
                     {placeTypes.map((placeType) => {
                         const Icon = getPlaceIcon(placeType.id, isDark);
@@ -63,25 +59,26 @@ export default function PlaceContributionScreen() {
                         return (
                             <TouchableOpacity
                                 key={placeType.id}
-                                className="rounded-2xl p-6 shadow-sm flex-row items-center"
-                                style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
+                                className="px-5 py-5 flex-row items-center"
+                                style={{ borderRadius: RADIUS, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
                                 onPress={() => handlePlaceTypeSelect(placeType.id)}
+                                activeOpacity={0.7}
                             >
                                 <View className="w-12 h-12 items-center justify-center mr-4">
                                     <Icon width={40} height={40} />
                                 </View>
                                 <View className="flex-1">
                                     <View className="flex-row items-center">
-                                        <Text className="text-lg font-semibold" style={{ color: theme.textPrimary }}>
+                                        <Text style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM, fontSize: 16 }}>
                                             {t(getPlaceTranslationKey(placeType.id))}
                                         </Text>
-                                        {special && <Ionicons name="flash" size={18} color={colors.primary.main} style={{ marginLeft: 6 }} />}
+                                        {special && <Ionicons name="flash" size={16} color={theme.primary} style={{ marginLeft: 6 }} />}
                                     </View>
-                                    <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>
+                                    <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }}>
                                         {t('add-new')} {t(getPlaceTranslationKey(placeType.id)).toLowerCase()}
                                     </Text>
                                 </View>
-                                <Ionicons name="chevron-forward" size={24} color={theme.textSecondary} />
+                                <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
                             </TouchableOpacity>
                         );
                     })}

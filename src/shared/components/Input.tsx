@@ -12,6 +12,8 @@ interface InputProps extends TextInputProps {
     icon?: keyof typeof Ionicons.glyphMap;
     showClearButton?: boolean;
     onClear?: () => void;
+    // calm: smaller corners, regular-weight 15px text; default keeps the original look everywhere else
+    variant?: 'default' | 'calm';
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -22,8 +24,10 @@ export const Input: React.FC<InputProps> = ({
     icon,
     showClearButton,
     onClear,
+    variant = 'default',
     ...props
 }) => {
+    const calm = variant === 'calm';
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
     const { colors: theme, isDark } = useTheme();
@@ -49,7 +53,7 @@ export const Input: React.FC<InputProps> = ({
             )}
             <View
                 className="flex-row items-center rounded-xl border min-h-[52px] px-4"
-                style={getBorderStyle()}
+                style={[getBorderStyle(), calm && { borderRadius: 6, minHeight: props.multiline ? 88 : 48, paddingHorizontal: 14 }]}
             >
                 {icon && (
                     <Ionicons
@@ -61,7 +65,10 @@ export const Input: React.FC<InputProps> = ({
                 )}
                 <TextInput
                     className={`flex-1 text-lg font-bold py-0 ${className || ''}`}
-                    style={{ color: theme.textPrimary }}
+                    style={[
+                        { color: theme.textPrimary },
+                        calm && { fontSize: 15, fontWeight: 'normal', paddingVertical: props.multiline ? 12 : 0, textAlignVertical: props.multiline ? 'top' : 'center' },
+                    ]}
                     secureTextEntry={secureTextEntry && !isPasswordVisible}
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}

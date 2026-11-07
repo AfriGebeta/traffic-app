@@ -5,8 +5,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { FONT_MEDIUM, RADIUS, RADIUS_SM, tint } from '../../campaigns/components/CampaignUi';
+import { FieldLabel } from '../../../shared/components/FieldLabel';
 import { useRouteBuilder } from '../contexts/RouteBuilderContext';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
 import { showToast } from '../../../shared/utils/toast';
@@ -301,43 +302,44 @@ export default function AddStationScreen() {
 
     return (
         <View className="flex-1" style={{ paddingTop: insets.top, backgroundColor: theme.background }}>
-            <View className="px-4 py-6" style={{ borderBottomWidth: 1, borderBottomColor: theme.background }}>
-                <View className="flex-row items-center mb-2">
-                    <TouchableOpacity onPress={() => router.back()} className="mr-4" activeOpacity={0.7}>
-                        <Ionicons name="arrow-back" size={28} color={theme.textPrimary} />
-                    </TouchableOpacity>
-                    <Text className="text-2xl font-bold" style={{ color: theme.textPrimary }}>{t('contribute-taxi-station')}</Text>
-                </View>
-                <Text className="mt-2" style={{ color: theme.textSecondary }}>{t('contribute-taxi-station-description')}</Text>
+            <View className="px-6 pt-3 pb-2">
+                <TouchableOpacity onPress={() => router.back()} className="self-start p-1 -ml-1" activeOpacity={0.7} hitSlop={8}>
+                    <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
+                </TouchableOpacity>
+                <Text className="mt-3" style={{ color: theme.textPrimary, fontSize: 26, lineHeight: 32, letterSpacing: -0.4 }}>
+                    {t('contribute-taxi-station')}
+                </Text>
+                <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>{t('contribute-taxi-station-description')}</Text>
             </View>
 
             <Animated.View style={[{ flex: 1 }, keyboardAnimatedStyle]}>
                 <ScrollView
-                    className="flex-1 p-4"
-                    contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+                    className="flex-1 px-6"
+                    contentContainerStyle={{ paddingTop: 16, paddingBottom: insets.bottom + 20 }}
                     keyboardShouldPersistTaps="handled"
                 >
-                    <View className="rounded-2xl p-6 shadow-sm" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
+                    <View>
                         <View className="mb-6">
-                            <Text className="font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('location')} *</Text>
+                            <FieldLabel label={t('location')} required />
 
                             {location ? (
-                                <View className="rounded-xl p-4" style={{ backgroundColor: theme.primaryMuted, borderWidth: 1, borderColor: theme.primary }}>
+                                <View className="px-4 py-3" style={{ borderRadius: RADIUS, backgroundColor: tint(theme.primary, '14'), borderWidth: 1, borderColor: tint(theme.primary, '66') }}>
                                     <View className="flex-row items-center justify-between">
+                                        <Ionicons name="location" size={18} color={theme.primary} style={{ marginRight: 10 }} />
                                         <View className="flex-1">
-                                            <Text className="font-semibold" style={{ color: theme.textPrimary }}>
+                                            <Text className="text-sm" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM }}>
                                                 {locationSource === 'photo'
                                                     ? t('photo-location')
                                                     : locationSource === 'current'
                                                       ? t('using-current-location')
                                                       : t('picked-on-map')}
                                             </Text>
-                                            <Text className="text-sm" style={{ color: theme.textSecondary }}>
+                                            <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary, fontVariant: ['tabular-nums'] }}>
                                                 {location.lat.toFixed(7)}, {location.lng.toFixed(7)}
                                             </Text>
                                         </View>
-                                        <TouchableOpacity onPress={() => { setLocation(null); setLocationSource(null); }}>
-                                            <Ionicons name="close-circle" size={24} color={theme.error} />
+                                        <TouchableOpacity onPress={() => { setLocation(null); setLocationSource(null); }} hitSlop={8}>
+                                            <Ionicons name="close-circle" size={20} color={theme.textSecondary} />
                                         </TouchableOpacity>
                                     </View>
                                     {pinGap != null && (
@@ -349,45 +351,45 @@ export default function AddStationScreen() {
                             ) : (
                                 <View>
                                     <TouchableOpacity
-                                        className="py-3 rounded-xl mb-2 flex-row items-center justify-center"
-                                        style={{ backgroundColor: colors.primary.main }}
+                                        className="mb-2 flex-row items-center justify-center"
+                                        style={{ height: 46, borderRadius: RADIUS_SM, backgroundColor: theme.primary, opacity: userLocation ? 1 : 0.5 }}
                                         onPress={handleUseCurrentLocation}
                                         activeOpacity={0.7}
                                         disabled={!userLocation}
                                     >
-                                        <Ionicons name="locate" size={20} color="white" />
-                                        <Text className="text-white font-semibold ml-2">{t('use-current-location')}</Text>
+                                        <Ionicons name="locate" size={18} color="white" />
+                                        <Text className="ml-2" style={{ color: '#fff', fontFamily: FONT_MEDIUM, fontSize: 15 }}>{t('use-current-location')}</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity
-                                        className="rounded-xl p-4 flex-row items-center justify-center"
-                                        style={{ backgroundColor: theme.surface, borderWidth: 2, borderStyle: 'dashed', borderColor: theme.border }}
+                                        className="flex-row items-center justify-center"
+                                        style={{ height: 46, borderRadius: RADIUS_SM, backgroundColor: theme.surface, borderWidth: 1, borderStyle: 'dashed', borderColor: theme.border }}
                                         onPress={handlePickOnMap}
                                         activeOpacity={0.7}
                                     >
-                                        <Ionicons name="map" size={24} color={colors.primary.main} />
-                                        <Text className="ml-2" style={{ color: theme.textSecondary }}>{t('or-pick-on-map')}</Text>
+                                        <Ionicons name="map-outline" size={18} color={theme.primary} />
+                                        <Text className="ml-2 text-sm" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM }}>{t('or-pick-on-map')}</Text>
                                     </TouchableOpacity>
                                 </View>
                             )}
                         </View>
 
                         {location && nearby.length > 0 && (
-                            <View className="mb-6 rounded-xl overflow-hidden" style={{ borderWidth: 1, borderColor: theme.border }}>
-                                <View className="px-4 py-2" style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}>
-                                    <Text className="font-semibold text-xs" style={{ color: theme.textPrimary }}>{t('nearby-existing-stations')}</Text>
-                                    <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>{t('avoid-duplicate-station')}</Text>
+                            <View className="mb-6 overflow-hidden" style={{ borderRadius: RADIUS, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surface }}>
+                                <View className="px-4 py-2.5" style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}>
+                                    <Text className="text-xs" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM }}>{t('nearby-existing-stations')}</Text>
+                                    <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }}>{t('avoid-duplicate-station')}</Text>
                                 </View>
                                 {nearby.map((station) => (
-                                    <View key={station.id} className="px-4 py-2" style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}>
+                                    <View key={station.id} className="px-4 py-2.5">
                                         <View className="flex-row items-center">
-                                            <Text className="font-semibold flex-1 text-sm" style={{ color: theme.textPrimary }}>{station.name}</Text>
+                                            <Text className="flex-1 text-sm" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM }}>{station.name}</Text>
                                             {station.nodeType && (
-                                                <View className="px-2 py-1 rounded" style={{ backgroundColor: theme.primaryMuted }}>
-                                                    <Text className="text-xs font-medium" style={{ color: theme.primary }}>{station.nodeType}</Text>
+                                                <View className="px-2 py-0.5" style={{ borderRadius: 4, backgroundColor: tint(theme.primary) }}>
+                                                    <Text className="text-xs" style={{ color: theme.textPrimary }}>{station.nodeType}</Text>
                                                 </View>
                                             )}
                                         </View>
-                                        <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>
+                                        <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary, fontVariant: ['tabular-nums'] }}>
                                             {station.distance}m away
                                             {station.routeName ? ` • ${station.routeName}` : ''}
                                         </Text>
@@ -401,10 +403,9 @@ export default function AddStationScreen() {
                         )}
 
                         <View className="mb-6">
-                            <Text className="font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('station-name')} *</Text>
+                            <FieldLabel label={t('station-name')} required />
                             <TextInput
-                                className="rounded-xl px-4 py-3"
-                                style={{ backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border, color: theme.textPrimary }}
+                                style={{ borderRadius: RADIUS_SM, minHeight: 48, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border, color: theme.textPrimary }}
                                 placeholderTextColor={theme.textSecondary}
                                 placeholder={t('enter-station-name')}
                                 value={name}
@@ -413,23 +414,23 @@ export default function AddStationScreen() {
                         </View>
 
                         <View className="mb-6">
-                            <Text className="font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('type')}</Text>
+                            <FieldLabel label={t('type')} />
                             <View className="flex-row gap-3">
                                 <TouchableOpacity
-                                    className="flex-1 py-3 rounded-xl border-2"
-                                    style={{ backgroundColor: nodeType === 'station' ? theme.primaryMuted : theme.background, borderColor: nodeType === 'station' ? theme.primary : theme.border }}
+                                    className="flex-1 py-3"
+                                    style={{ borderRadius: RADIUS_SM, borderWidth: 1, backgroundColor: nodeType === 'station' ? tint(theme.primary, '1F') : theme.surface, borderColor: nodeType === 'station' ? theme.primary : theme.border }}
                                     onPress={() => setNodeType('station')}
                                 >
-                                    <Text className="text-center font-semibold" style={{ color: nodeType === 'station' ? theme.primary : theme.textSecondary }}>
+                                    <Text className="text-center text-sm" style={{ color: nodeType === 'station' ? theme.textPrimary : theme.textSecondary, fontFamily: nodeType === 'station' ? FONT_MEDIUM : undefined }}>
                                         {t('station')}
                                     </Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
-                                    className="flex-1 py-3 rounded-xl border-2"
-                                    style={{ backgroundColor: nodeType === 'stop' ? theme.primaryMuted : theme.background, borderColor: nodeType === 'stop' ? theme.primary : theme.border }}
+                                    className="flex-1 py-3"
+                                    style={{ borderRadius: RADIUS_SM, borderWidth: 1, backgroundColor: nodeType === 'stop' ? tint(theme.primary, '1F') : theme.surface, borderColor: nodeType === 'stop' ? theme.primary : theme.border }}
                                     onPress={() => setNodeType('stop')}
                                 >
-                                    <Text className="text-center font-semibold" style={{ color: nodeType === 'stop' ? theme.primary : theme.textSecondary }}>
+                                    <Text className="text-center text-sm" style={{ color: nodeType === 'stop' ? theme.textPrimary : theme.textSecondary, fontFamily: nodeType === 'stop' ? FONT_MEDIUM : undefined }}>
                                         {t('stop')}
                                     </Text>
                                 </TouchableOpacity>
@@ -437,10 +438,9 @@ export default function AddStationScreen() {
                         </View>
 
                         <View className="mb-6">
-                            <Text className="font-semibold mb-2" style={{ color: theme.textPrimary }}>{t('landmark')}</Text>
+                            <FieldLabel label={t('landmark')} />
                             <TextInput
-                                className="rounded-xl px-4 py-3"
-                                style={{ backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border, color: theme.textPrimary }}
+                                style={{ borderRadius: RADIUS_SM, minHeight: 48, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border, color: theme.textPrimary }}
                                 placeholderTextColor={theme.textSecondary}
                                 placeholder={t('enter-landmark-description')}
                                 value={landmark}
@@ -451,10 +451,7 @@ export default function AddStationScreen() {
                         </View>
 
                         <View className="mb-6">
-                            <Text className="font-semibold mb-2" style={{ color: theme.textPrimary }}>
-                                {t('photos')}
-                                {!inCampaign && <Text style={{ color: theme.textSecondary }}> ({t('optional')})</Text>}
-                            </Text>
+                            <FieldLabel label={t('photos')} optional={!inCampaign} />
                             <PhotoPicker
                                 photos={images}
                                 onChange={setImages}
@@ -467,21 +464,20 @@ export default function AddStationScreen() {
                         {/* the route itself defines where a route-builder stop goes */}
                         {!routeSlot && (
                             <View className="mb-6">
-                                <Text className="font-semibold mb-1" style={{ color: theme.textPrimary }}>{t('destinations-terminals')}</Text>
-                                <Text className="text-xs mb-2" style={{ color: theme.textSecondary }}>{t('destinations-terminals-hint')}</Text>
+                                <FieldLabel label={t('destinations-terminals')} hint={t('destinations-terminals-hint')} />
 
                                 {destinations.length > 0 && (
                                     <View className="flex-row flex-wrap gap-2 mb-2">
                                         {destinations.map((d) => (
                                             <View
                                                 key={d.key}
-                                                className="flex-row items-center rounded-full pl-3 pr-1 py-1"
-                                                style={{ backgroundColor: theme.primaryMuted, borderWidth: 1, borderColor: theme.primary }}
+                                                className="flex-row items-center pl-2.5 pr-1 py-1"
+                                                style={{ borderRadius: RADIUS_SM, backgroundColor: tint(theme.primary, '1F'), borderWidth: 1, borderColor: tint(theme.primary, '66') }}
                                             >
                                                 {d.newStop && <Ionicons name="add-circle-outline" size={14} color={theme.primary} style={{ marginRight: 4 }} />}
-                                                <Text className="text-sm font-medium" style={{ color: theme.primary }}>{d.name}</Text>
+                                                <Text className="text-sm" style={{ color: theme.textPrimary }}>{d.name}</Text>
                                                 <TouchableOpacity onPress={() => handleRemoveDestination(d.key)} className="ml-1" hitSlop={8}>
-                                                    <Ionicons name="close-circle" size={18} color={theme.primary} />
+                                                    <Ionicons name="close-circle" size={16} color={theme.textSecondary} />
                                                 </TouchableOpacity>
                                             </View>
                                         ))}
@@ -489,8 +485,7 @@ export default function AddStationScreen() {
                                 )}
 
                                 <TextInput
-                                    className="rounded-xl px-4 py-3"
-                                    style={{ backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border, color: theme.textPrimary }}
+                                    style={{ borderRadius: RADIUS_SM, minHeight: 48, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border, color: theme.textPrimary }}
                                     placeholderTextColor={theme.textSecondary}
                                     placeholder={t('search-destination-station')}
                                     value={destinationQuery}
@@ -498,18 +493,17 @@ export default function AddStationScreen() {
                                 />
 
                                 {destinationMatches.length > 0 && (
-                                    <View className="mt-2 rounded-xl overflow-hidden" style={{ backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border }}>
+                                    <View className="mt-2 overflow-hidden" style={{ borderRadius: RADIUS_SM, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
                                         <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled keyboardShouldPersistTaps="always">
                                             {destinationMatches.map((node) => (
                                                 <TouchableOpacity
                                                     key={node.id}
-                                                    className="px-4 py-3"
-                                                    style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}
+                                                    className="px-4 py-2.5"
                                                     onPress={() => handleSelectDestination(node)}
                                                 >
-                                                    <Text className="font-semibold" style={{ color: theme.textPrimary }}>{node.name}</Text>
+                                                    <Text className="text-sm" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM }}>{node.name}</Text>
                                                     {node.routeName && (
-                                                        <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>{node.routeName}</Text>
+                                                        <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }}>{node.routeName}</Text>
                                                     )}
                                                 </TouchableOpacity>
                                             ))}
@@ -519,35 +513,35 @@ export default function AddStationScreen() {
 
                                 {trimmedDestinationQuery.length > 0 && !hasExactDestinationMatch && (
                                     <TouchableOpacity
-                                        className="mt-2 rounded-xl px-4 py-3 flex-row items-center"
-                                        style={{ backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border }}
+                                        className="mt-2 px-3 py-2.5 flex-row items-center"
+                                        style={{ borderRadius: RADIUS_SM, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
                                         onPress={handleAddNewDestination}
                                         activeOpacity={0.7}
                                     >
-                                        <Ionicons name="add-circle-outline" size={20} color={colors.primary.main} />
+                                        <Ionicons name="add-circle-outline" size={18} color={theme.primary} />
                                         <View className="ml-2 flex-1">
-                                            <Text className="font-semibold" numberOfLines={1} style={{ color: theme.textPrimary }}>
+                                            <Text className="text-sm" numberOfLines={1} style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM }}>
                                                 {`${t('add')} "${trimmedDestinationQuery}"`}
                                             </Text>
                                             <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }}>
                                                 {t('pick-new-destination-on-map')}
                                             </Text>
                                         </View>
-                                        <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+                                        <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
                                     </TouchableOpacity>
                                 )}
                             </View>
                         )}
 
                         <TouchableOpacity
-                            className="py-4 rounded-xl flex-row items-center justify-center"
-                            style={{ backgroundColor: colors.primary.main, opacity: submitting ? 0.7 : 1 }}
+                            className="flex-row items-center justify-center"
+                            style={{ height: 48, borderRadius: RADIUS_SM, backgroundColor: theme.primary, opacity: submitting ? 0.7 : 1 }}
                             onPress={handleSubmit}
                             disabled={submitting}
                             activeOpacity={0.7}
                         >
                             {submitting && <ActivityIndicator color="#fff" style={{ marginRight: 8 }} />}
-                            <Text className="text-white text-center font-bold text-lg">
+                            <Text className="text-center" style={{ color: '#fff', fontFamily: FONT_MEDIUM, fontSize: 16 }}>
                                 {submitting ? t('submitting') : t('submit')}
                             </Text>
                         </TouchableOpacity>

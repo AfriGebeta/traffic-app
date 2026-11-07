@@ -5,8 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { taxiService } from '../services/taxi.service';
-import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { FONT_MEDIUM, RADIUS, RADIUS_SM, SectionLabel, tint } from '../../campaigns/components/CampaignUi';
 import { routeCacheService } from '../services/route-cache.service';
 import { showToast } from '../../../shared/utils/toast';
 import { ApiError, isRestrictedError } from '../../../shared/utils/apiErrors';
@@ -37,7 +37,7 @@ export default function SetPricingScreen() {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
-    const { colors: theme, isDark } = useTheme();
+    const { colors: theme } = useTheme();
 
     const [stops, setStops] = useState<RouteStop[]>([]);
     const [routeName, setRouteName] = useState('');
@@ -229,20 +229,21 @@ export default function SetPricingScreen() {
 
     return (
         <View className="flex-1" style={{ paddingTop: insets.top, backgroundColor: theme.background }}>
-            <View className="px-4 py-6" style={{ borderBottomWidth: 1, borderBottomColor: theme.background }}>
-                <View className="flex-row items-center mb-2">
-                    <TouchableOpacity onPress={() => router.back()} className="mr-4" activeOpacity={0.7}>
-                        <Ionicons name="arrow-back" size={28} color={colors.primary.main} />
-                    </TouchableOpacity>
-                    <Text className="text-2xl font-bold" style={{ color: theme.textPrimary }}>{t('set-prices')}</Text>
-                </View>
-                <Text className="mt-2" style={{ color: theme.textSecondary }}>{t('set-prices-description')}</Text>
+            <View className="px-6 pt-3 pb-2">
+                <TouchableOpacity onPress={() => router.back()} className="self-start p-1 -ml-1" activeOpacity={0.7} hitSlop={8}>
+                    <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
+                </TouchableOpacity>
+                <Text className="mt-3" style={{ color: theme.textPrimary, fontSize: 26, lineHeight: 32, letterSpacing: -0.4 }}>
+                    {t('set-prices')}
+                </Text>
+                <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>{t('set-prices-description')}</Text>
             </View>
 
-            <ScrollView className="flex-1 p-4" contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}>
-                <View className="rounded-2xl p-6 shadow-sm" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
-                    <Text className="text-lg font-bold mb-4" style={{ color: theme.textPrimary }}>
-                        {routeName} ({stops.length} {t('stops')})
+            <ScrollView className="flex-1 px-6" contentContainerStyle={{ paddingTop: 16, paddingBottom: insets.bottom + 20 }}>
+                <View>
+                    <SectionLabel style={{ marginBottom: 4 }}>{`${stops.length} ${t('stops')}`}</SectionLabel>
+                    <Text className="mb-4" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM, fontSize: 17 }}>
+                        {routeName}
                     </Text>
 
                     {edgePrices.map((edge, index) => {
@@ -250,26 +251,39 @@ export default function SetPricingScreen() {
                         return (
                             <View
                                 key={index}
-                                className="mb-4 p-4 rounded-xl"
-                                style={isMainRoute
-                                    ? { backgroundColor: theme.surface, borderWidth: 1, borderColor: colors.primary.main }
-                                    : { backgroundColor: isDark ? theme.background : '#F9FAFB' }}
+                                className="mb-3 p-4"
+                                // main route is the one required price: brand border; the rest are plain
+                                style={{
+                                    borderRadius: RADIUS,
+                                    borderWidth: 1,
+                                    backgroundColor: isMainRoute ? tint(theme.primary, '12') : theme.surface,
+                                    borderColor: isMainRoute ? tint(theme.primary, '80') : theme.border,
+                                }}
                             >
                                 <View className="flex-row items-center justify-between mb-2">
                                     <View className="flex-1">
-                                        <Text className="font-semibold" style={{ color: theme.textPrimary }}>
+                                        <Text className="text-sm" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM }}>
                                             {edge.fromName} → {edge.toName}
                                         </Text>
                                         {isMainRoute && (
-                                            <Text className="text-xs mt-1" style={{ color: colors.primary.dark }}>
-                                                {t('main-route-required')} *
+                                            <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }}>
+                                                {t('main-route-required')} <Text style={{ color: theme.primary }}>*</Text>
                                             </Text>
                                         )}
                                     </View>
                                 </View>
                                 <TextInput
-                                    className="rounded-xl px-4 py-3"
-                                    style={{ backgroundColor: isDark ? theme.surface : '#FFFFFF', borderWidth: 1, borderColor: theme.border, color: theme.textPrimary }}
+                                    style={{
+                                        borderRadius: RADIUS_SM,
+                                        minHeight: 46,
+                                        paddingHorizontal: 14,
+                                        fontSize: 15,
+                                        fontVariant: ['tabular-nums'],
+                                        backgroundColor: theme.background,
+                                        borderWidth: 1,
+                                        borderColor: theme.border,
+                                        color: theme.textPrimary,
+                                    }}
                                     placeholderTextColor={theme.textSecondary}
                                     placeholder={isMainRoute ? t('required') : t('optional')}
                                     value={edge.cost}
@@ -281,8 +295,8 @@ export default function SetPricingScreen() {
                     })}
 
                     <TouchableOpacity
-                        className="py-4 rounded-xl mt-4"
-                        style={{ backgroundColor: loading ? theme.border : colors.primary.main }}
+                        className="mt-3 items-center justify-center"
+                        style={{ height: 48, borderRadius: RADIUS_SM, backgroundColor: loading ? theme.border : theme.primary }}
                         onPress={handleSubmit}
                         disabled={loading}
                         activeOpacity={0.7}
@@ -290,7 +304,7 @@ export default function SetPricingScreen() {
                         {loading ? (
                             <ActivityIndicator color="white" />
                         ) : (
-                            <Text className="text-white text-center font-bold text-lg">
+                            <Text className="text-center" style={{ color: '#fff', fontFamily: FONT_MEDIUM, fontSize: 16 }}>
                                 {t('create-route')}
                             </Text>
                         )}

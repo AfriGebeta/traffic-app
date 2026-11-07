@@ -12,6 +12,7 @@ import { useTheme } from '../../../shared/theme/ThemeContext';
 import { INCIDENT_SVG_ICON_MAP as INCIDENT_ICON_MAP } from './incidentIcons';
 import { QuickReportSheet } from './QuickReportSheet';
 import { ReportLocation } from '../../../shared/utils/reportHeading';
+import { FONT_MEDIUM, RADIUS, RADIUS_SM } from '../../campaigns/components/CampaignUi';
 
 interface IncidentReportSheetProps {
     isVisible: boolean;
@@ -119,18 +120,19 @@ export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
     return (
         <BottomSheet expandWhenOpen={true} onBackdropPress={onClose}>
             <View className="flex-1 pb-4">
-                <View className="flex-row items-center mb-6">
+                <View className="flex-row items-start mb-5">
                     <TouchableOpacity
                         onPress={onClose}
-                        className="mr-4 rounded-full p-2"
-                        style={{ backgroundColor: isDark ? theme.surface : '#F3F4F6' }}
+                        className="mr-3 items-center justify-center"
+                        style={{ width: 36, height: 36, borderRadius: RADIUS_SM, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surface }}
                         activeOpacity={0.7}
+                        hitSlop={6}
                     >
-                        <Ionicons name="arrow-back" size={22} color={theme.textPrimary} />
+                        <Ionicons name="arrow-back" size={20} color={theme.textPrimary} />
                     </TouchableOpacity>
                     <View className="flex-1">
-                        <Text className="text-2xl font-bold" style={{ color: theme.textPrimary }}>{t('share-what-you-see')}</Text>
-                        <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>
+                        <Text style={{ color: theme.textPrimary, fontSize: 22, lineHeight: 28, letterSpacing: -0.3 }}>{t('share-what-you-see')}</Text>
+                        <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }}>
                             {t('help-other-drivers-by-reporting-incidents')}
                         </Text>
                     </View>
@@ -145,35 +147,32 @@ export const IncidentReportSheet: React.FC<IncidentReportSheetProps> = ({
                             return (
                                 <TouchableOpacity
                                     key={incidentType.name}
-                                    className="rounded-2xl p-4 items-center"
+                                    className="p-4 items-center justify-center"
                                     onPress={() => handleIncidentOptionPress(incidentType.name)}
                                     activeOpacity={0.7}
+                                    // flat tiles: hairline border, no shadow
                                     style={{
+                                        borderRadius: RADIUS,
                                         backgroundColor: theme.surface,
-                                        borderWidth: 2,
+                                        borderWidth: 1,
                                         borderColor: theme.border,
                                         width: '48%',
-                                        minHeight: 120,
-                                        shadowColor: '#000',
-                                        shadowOffset: { width: 0, height: 2 },
-                                        shadowOpacity: 0.05,
-                                        shadowRadius: 8,
-                                        elevation: 2,
+                                        minHeight: 116,
                                     }}
                                 >
                                     <View
-                                        className="w-16 h-16 items-center justify-center mb-3"
+                                        className="w-14 h-14 items-center justify-center mb-2"
                                     >
                                         {IncidentSvgIcon ? (
-                                            <IncidentSvgIcon width={48} height={48} />
+                                            <IncidentSvgIcon width={44} height={44} />
                                         ) : (
                                             <Ionicons name={incidentType.icon} size={28} color={incidentType.color} />
                                         )}
                                     </View>
                                     <View style={{ width: '100%', paddingHorizontal: 4 }}>
                                         <Text
-                                            className="text-sm font-semibold text-center"
-                                            style={{ color: theme.textPrimary }}
+                                            className="text-sm text-center"
+                                            style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM }}
                                             numberOfLines={2}
                                             ellipsizeMode="tail"
                                         >

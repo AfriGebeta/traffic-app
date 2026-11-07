@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { FONT_MEDIUM, RADIUS } from '../../campaigns/components/CampaignUi';
 import PlaceLightIcon from '../../../../assets/images/contribute-place-light.svg';
 import PlaceDarkIcon from '../../../../assets/images/contribute-place-dark.svg';
 import NeighborhoodLightIcon from '../../../../assets/images/contribute-neighborhood-light.svg';
@@ -129,26 +130,22 @@ function ContributionOptions() {
 
     return (
         <View className="flex-1" style={{ paddingTop: insets.top, paddingBottom: insets.bottom, backgroundColor: theme.background }}>
-            <View className="px-4 py-6" style={{ borderBottomWidth: 1, borderBottomColor: theme.background }}>
-                <View className="flex-row items-center mb-2">
-                    <TouchableOpacity
-                        onPress={() => router.back()}
-                        className="mr-4"
-                        activeOpacity={0.7}
-                    >
-                        <Ionicons name="arrow-back" size={28} color={theme.textPrimary} />
-                    </TouchableOpacity>
-                    <Text className="text-2xl font-bold" style={{ color: theme.textPrimary }}>{t('contribute')}</Text>
-                </View>
+            <View className="px-4 pt-3 pb-2">
+                <TouchableOpacity onPress={() => router.back()} className="self-start p-1 -ml-1" activeOpacity={0.7} hitSlop={8}>
+                    <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
+                </TouchableOpacity>
+                <Text className="mt-3" style={{ color: theme.textPrimary, fontSize: 28, lineHeight: 34, letterSpacing: -0.4 }}>
+                    {t('contribute')}
+                </Text>
                 <CopilotStep name="requirements" order={tourKinds.length + 1} text={rulesText} active={touring}>
                     <TourView>
-                        <Text className="mt-2" style={{ color: theme.textSecondary }}>{t('choose-what-to-contribute')}</Text>
+                        <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>{t('choose-what-to-contribute')}</Text>
                     </TourView>
                 </CopilotStep>
             </View>
 
-            <ScrollView className="flex-1 p-4">
-                <View className="gap-4">
+            <ScrollView className="flex-1 px-4" contentContainerStyle={{ paddingTop: 12, paddingBottom: 24 }}>
+                <View className="gap-3">
                     {contributionOptions.map((option) => {
                         const tourIndex = option.campaignKind ? tourKinds.indexOf(option.campaignKind) : -1;
                         const textKey = option.campaignKind ? TOUR_TEXT_KEYS[option.campaignKind] : undefined;
@@ -161,8 +158,8 @@ function ContributionOptions() {
                                 active={touring && tourIndex >= 0}
                             >
                                 <TourTouchable
-                                    className="rounded-2xl p-6 shadow-sm"
-                                    style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
+                                    className="px-5 py-6"
+                                    style={{ borderRadius: RADIUS, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
                                     onPress={() => router.push(option.route as any)}
                                     activeOpacity={0.7}
                                 >
@@ -171,17 +168,17 @@ function ContributionOptions() {
                                             <option.Icon width={40} height={40} />
                                         </View>
                                         <View className="flex-1">
-                                            <View className="flex-row items-center flex-wrap mb-1">
-                                                <Text className="text-xl font-semibold mr-2" style={{ color: theme.textPrimary }}>
+                                            <View className="flex-row items-center flex-wrap mb-0.5" style={{ gap: 8 }}>
+                                                <Text style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM, fontSize: 16 }}>
                                                     {t(option.titleKey)}
                                                 </Text>
                                                 {option.campaignKind && <CampaignPointsBadge kind={option.campaignKind} />}
                                             </View>
-                                            <Text className="text-sm" style={{ color: theme.textSecondary }}>
+                                            <Text className="text-xs leading-5" style={{ color: theme.textSecondary }}>
                                                 {t(option.descriptionKey)}
                                             </Text>
                                         </View>
-                                        <Ionicons name="chevron-forward" size={24} color={theme.textSecondary} />
+                                        <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
                                     </View>
                                 </TourTouchable>
                             </CopilotStep>

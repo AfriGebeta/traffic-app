@@ -24,6 +24,8 @@ import { ApiError, ApiErrorCode, getCampaignFailures, getDuplicatePlaceNames, is
 import { showCampaignPointsEstimate } from '../../campaigns/utils/pointsPopup';
 import { PHOTO_PIN_LIMIT_M, deviceFieldsFromFix, latestPhotoFix, photoPinGap } from '../../../shared/utils/photoFix';
 import { askForNotifications } from '../../../shared/services/notificationPermission';
+import { FONT_MEDIUM, RADIUS, RADIUS_SM, tint } from '../../campaigns/components/CampaignUi';
+import { FieldLabel } from '../../../shared/components/FieldLabel';
 
 // types the backend accepts menu photos for (others answer 400 E0007)
 const MENU_TYPES: PlaceType[] = ['restaurant', 'cafe', 'hotel'];
@@ -190,7 +192,7 @@ export default function AddPlaceScreen() {
             };
             const hasAddress = Boolean(address.city || address.neighborhood || address.streetName || address.blockNumber);
 
-            await placeService.contributePlace({
+            const request = {
                 name: name.trim(),
                 categoryId,
                 lat: coordinates.lat,
@@ -207,7 +209,10 @@ export default function AddPlaceScreen() {
                 address: hasAddress ? address : undefined,
                 // the photo's fix is where the user stood; otherwise the live location
                 ...(photoFix ? deviceFieldsFromFix(photoFix) : userLocation && { deviceLat: userLocation.lat, deviceLng: userLocation.lng }),
-            });
+            };
+            // TEMP: check what the backend receives
+            console.log(`[place-submit] type=${placeType} slug=${slugForType(placeType)}`, JSON.stringify(request, null, 2));
+            await placeService.contributePlace(request);
 
             dashboardEventsService.contribute();
             showToast(t('place-contribution-submitted'));
@@ -241,34 +246,33 @@ export default function AddPlaceScreen() {
 
     return (
         <View className="flex-1" style={{ backgroundColor: theme.background }}>
-            <View className="px-6 pt-16 pb-4" style={{ backgroundColor: theme.background, borderBottomWidth: 1, borderBottomColor: theme.border }}>
-                <View className="flex-row items-center">
-                    <TouchableOpacity
-                        onPress={() => router.back()}
-                        className="mr-4"
-                        activeOpacity={0.7}
-                    >
-                        <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
-                    </TouchableOpacity>
-                    <Text className="text-xl font-bold" style={{ color: theme.textPrimary }}>{t('add-place-details')}</Text>
-                </View>
+            <View className="px-6 pb-2" style={{ paddingTop: insets.top + 12, backgroundColor: theme.background }}>
+                <TouchableOpacity onPress={() => router.back()} className="self-start p-1 -ml-1" activeOpacity={0.7} hitSlop={8}>
+                    <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
+                </TouchableOpacity>
+                <Text className="mt-3" style={{ color: theme.textPrimary, fontSize: 26, lineHeight: 32, letterSpacing: -0.4 }}>
+                    {t('add-place-details')}
+                </Text>
             </View>
 
-            <View className="mx-6 mt-6 mb-4 rounded-2xl p-4 flex-row items-center" style={{ backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
-                <View className="w-12 h-12 items-center justify-center mr-4">
+            <View
+                className="mx-6 mt-3 mb-4 px-4 py-3 flex-row items-center"
+                style={{ borderRadius: RADIUS, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
+            >
+                <View className="w-10 h-10 items-center justify-center mr-3">
                     {(() => {
                         const Icon = getPlaceIcon(placeType, isDark);
 
-                        return <Icon width={40} height={40} />;
+                        return <Icon width={32} height={32} />;
                     })()}
                 </View>
                 <View className="flex-1">
-                    <Text className="text-lg font-bold" style={{ color: theme.textPrimary }}>
+                    <Text style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM, fontSize: 16 }}>
                         {needsCustomCategory && customCategory.trim()
                             ? customCategory.trim()
                             : placeType ? t(getPlaceTranslationKey(placeType)) : placeInfo?.label}
                     </Text>
-                    <Text className="text-sm" style={{ color: theme.textSecondary }}>{t('fill-in-the-details')}</Text>
+                    <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }}>{t('fill-in-the-details')}</Text>
                 </View>
             </View>
 
@@ -276,23 +280,20 @@ export default function AddPlaceScreen() {
                 <View className="gap-5 pb-6">
 
                     <View>
-                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
-                            {t('place-name')} <Text style={{ color: theme.primary }}>*</Text>
-                        </Text>
-                        <Input placeholder={t('place-name-placeholder')} value={name} onChangeText={setName} />
+                        <FieldLabel label={t('place-name')} required />
+                        <Input variant="calm" placeholder={t('place-name-placeholder')} value={name} onChangeText={setName} />
                     </View>
 
                     {needsCustomCategory && (
                         <View>
-                            <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
-                                {t('place-category')} <Text style={{ color: theme.primary }}>*</Text>
-                            </Text>
+                            <FieldLabel label={t('place-category')} required />
                             <Input
+                                variant="calm"
                                 placeholder={t('place-category-placeholder')}
                                 value={customCategory}
                                 onChangeText={setCustomCategory}
                             />
-                            <Text className="text-xs mt-1" style={{ color: theme.textSecondary }}>
+                            <Text className="text-xs mt-1.5" style={{ color: theme.textSecondary }}>
                                 {t('place-category-hint')}
                             </Text>
                         </View>
@@ -300,10 +301,9 @@ export default function AddPlaceScreen() {
 
                     {isCondominium && (
                         <View>
-                            <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
-                                {t('block-number')} <Text style={{ color: theme.primary }}>*</Text>
-                            </Text>
+                            <FieldLabel label={t('block-number')} required />
                             <Input
+                                variant="calm"
                                 placeholder={t('block-number-placeholder')}
                                 value={blockNumber}
                                 // digits only
@@ -316,33 +316,30 @@ export default function AddPlaceScreen() {
 
                     {isBuilding && (
                         <View>
-                            <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
-                                {t('building-kind')} <Text style={{ color: theme.textSecondary }}>({t('optional')})</Text>
-                            </Text>
+                            <FieldLabel label={t('building-kind')} optional />
                             <TouchableOpacity
                                 onPress={() => setBuildingKindOpen(true)}
                                 activeOpacity={0.7}
-                                className="flex-row items-center rounded-xl border min-h-[52px] px-4"
-                                style={{ borderColor: theme.border, backgroundColor: isDark ? theme.surface : colors.gray[50] }}
+                                className="flex-row items-center border px-3.5"
+                                style={{ borderRadius: RADIUS_SM, minHeight: 48, borderColor: theme.border, backgroundColor: isDark ? theme.surface : colors.gray[50] }}
                             >
                                 <Text
-                                    className="flex-1 text-lg font-bold"
-                                    style={{ color: buildingKind ? theme.textPrimary : theme.textSecondary }}
+                                    className="flex-1"
+                                    style={{ fontSize: 15, color: buildingKind ? theme.textPrimary : theme.textSecondary }}
                                     numberOfLines={1}
                                 >
                                     {buildingKind ? t(`building-kind-${buildingKind}`) : t('building-kind-placeholder')}
                                 </Text>
-                                <Ionicons name="chevron-down" size={20} color={theme.textSecondary} />
+                                <Ionicons name="chevron-down" size={18} color={theme.textSecondary} />
                             </TouchableOpacity>
                         </View>
                     )}
 
                     {isBuilding && (
                         <View>
-                            <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
-                                {t('floor-count')} <Text style={{ color: theme.textSecondary }}>({t('optional')})</Text>
-                            </Text>
+                            <FieldLabel label={t('floor-count')} optional />
                             <Input
+                                variant="calm"
                                 placeholder={t('floor-count-placeholder')}
                                 value={floorCount}
                                 // digits only
@@ -354,10 +351,9 @@ export default function AddPlaceScreen() {
                     )}
 
                     <View>
-                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
-                            {t('phone-number')} <Text style={{ color: theme.textSecondary }}>({t('optional')})</Text>
-                        </Text>
+                        <FieldLabel label={t('phone-number')} optional />
                         <Input
+                            variant="calm"
                             placeholder={t('place-phone-placeholder')}
                             value={phone}
                             onChangeText={setPhone}
@@ -368,10 +364,9 @@ export default function AddPlaceScreen() {
                     </View>
 
                     <View>
-                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
-                            {t('description')} <Text style={{ color: theme.textSecondary }}>({t('optional')})</Text>
-                        </Text>
+                        <FieldLabel label={t('description')} optional />
                         <Input
+                            variant="calm"
                             placeholder={t('add-details-about-place')}
                             value={description}
                             onChangeText={setDescription}
@@ -381,20 +376,13 @@ export default function AddPlaceScreen() {
                     </View>
 
                     <View>
-                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
-                            {t('city')} <Text style={{ color: theme.textSecondary }}>({t('optional')})</Text>
-                        </Text>
-                        <Input placeholder={t('city-placeholder')} value={city} onChangeText={setCity} />
+                        <FieldLabel label={t('city')} optional />
+                        <Input variant="calm" placeholder={t('city-placeholder')} value={city} onChangeText={setCity} />
                     </View>
 
                     {takesMenu && (
                         <View>
-                            <Text className="text-sm font-semibold mb-1" style={{ color: theme.textPrimary }}>
-                                {t('menu-photos')} <Text style={{ color: theme.textSecondary }}>({t('optional')})</Text>
-                            </Text>
-                            <Text className="text-xs mb-2" style={{ color: theme.textSecondary }}>
-                                {t('menu-photos-hint', { max: MAX_MENU_PHOTOS })}
-                            </Text>
+                            <FieldLabel label={t('menu-photos')} optional hint={t('menu-photos-hint', { max: MAX_MENU_PHOTOS })} />
                             {/* no GPS needed and gallery allowed: menus are often shot indoors or saved earlier */}
                             <PhotoPicker
                                 photos={menuPhotos}
@@ -406,37 +394,35 @@ export default function AddPlaceScreen() {
                     )}
 
                     <View>
-                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
-                            {t('neighborhood')} <Text style={{ color: theme.textSecondary }}>({t('optional')})</Text>
-                        </Text>
-                        <Input placeholder={t('neighborhood-placeholder')} value={neighborhood} onChangeText={setNeighborhood} />
+                        <FieldLabel label={t('neighborhood')} optional />
+                        <Input variant="calm" placeholder={t('neighborhood-placeholder')} value={neighborhood} onChangeText={setNeighborhood} />
                     </View>
 
                     <View>
-                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
-                            {t('street-name')} <Text style={{ color: theme.textSecondary }}>({t('optional')})</Text>
-                        </Text>
-                        <Input placeholder={t('street-name-placeholder')} value={streetName} onChangeText={setStreetName} />
+                        <FieldLabel label={t('street-name')} optional />
+                        <Input variant="calm" placeholder={t('street-name-placeholder')} value={streetName} onChangeText={setStreetName} />
                     </View>
 
                     <View>
-                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
-                            {t('location')} <Text style={{ color: theme.primary }}>*</Text>
-                        </Text>
+                        <FieldLabel label={t('location')} required />
                         {coordinates ? (
                             <View>
-                                <View className="rounded-xl p-4" style={{ backgroundColor: isDark ? theme.greenMuted : '#F0FDF4', borderWidth: 1, borderColor: theme.green }}>
+                                <View className="px-4 py-3" style={{ borderRadius: RADIUS, backgroundColor: theme.greenMuted, borderWidth: 1, borderColor: tint(theme.green, '66') }}>
                                     <View className="flex-row items-center justify-between">
+                                        <Ionicons name="location" size={18} color={theme.green} style={{ marginRight: 10 }} />
                                         <View className="flex-1">
-                                            <Text className="font-semibold" style={{ color: theme.textPrimary }}>
+                                            <Text className="text-sm" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM }}>
                                                 {pinFromPhoto ? t('photo-location') : usingCurrentLocation ? t('current-location') : t('location-selected')}
                                             </Text>
-                                            <Text className="text-sm" style={{ color: theme.textSecondary }}>
+                                            <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary, fontVariant: ['tabular-nums'] }}>
                                                 {coordinates.lat.toFixed(7)}, {coordinates.lng.toFixed(7)}
                                             </Text>
                                         </View>
-                                        <TouchableOpacity onPress={() => { setCoordinates(null); setUsingCurrentLocation(false); setPinFromPhoto(false); }}>
-                                            <Ionicons name="close-circle" size={24} color={theme.error} />
+                                        <TouchableOpacity
+                                            onPress={() => { setCoordinates(null); setUsingCurrentLocation(false); setPinFromPhoto(false); }}
+                                            hitSlop={8}
+                                        >
+                                            <Ionicons name="close-circle" size={20} color={theme.textSecondary} />
                                         </TouchableOpacity>
                                     </View>
                                 </View>
@@ -447,98 +433,81 @@ export default function AddPlaceScreen() {
                                 )}
                                 <View className="flex-row items-center justify-center my-2">
                                     <View className="flex-1 h-px" style={{ backgroundColor: theme.border }} />
-                                    <Text className="text-sm mx-3" style={{ color: theme.textSecondary }}>{t('or')}</Text>
+                                    <Text className="text-xs mx-3" style={{ color: theme.textSecondary }}>{t('or')}</Text>
                                     <View className="flex-1 h-px" style={{ backgroundColor: theme.border }} />
                                 </View>
                                 <TouchableOpacity
-                                    className="rounded-2xl px-4 py-2 flex-row items-center justify-between"
+                                    className="px-3 py-2.5 flex-row items-center justify-between"
                                     onPress={handlePickLocation}
                                     activeOpacity={0.7}
-                                    style={{
-                                        backgroundColor: theme.surface,
-                                        borderWidth: 2,
-                                        borderColor: theme.border,
-                                        shadowColor: '#000',
-                                        shadowOffset: { width: 0, height: 1 },
-                                        shadowOpacity: 0.05,
-                                        shadowRadius: 4,
-                                        elevation: 1,
-                                    }}
+                                    style={{ borderRadius: RADIUS_SM, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
                                 >
                                     <View className="flex-row items-center flex-1">
-                                        <View className="w-10 h-10 rounded-full items-center justify-center" style={{ backgroundColor: isDark ? theme.background : '#F3F4F6' }}>
-                                            <Ionicons name="map" size={20} color={theme.textSecondary} />
+                                        <View className="w-8 h-8 items-center justify-center" style={{ borderRadius: RADIUS_SM, backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border }}>
+                                            <Ionicons name="map-outline" size={16} color={theme.primary} />
                                         </View>
                                         <View className="ml-3 flex-1">
-                                            <Text className="text-sm font-medium" style={{ color: theme.textSecondary }}>
+                                            <Text className="text-sm" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM }}>
                                                 {t('pick-location-on-map')}
                                             </Text>
                                         </View>
                                     </View>
-                                    <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+                                    <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
                                 </TouchableOpacity>
                             </View>
                         ) : (
                             <View>
                                 <TouchableOpacity
-                                    className="rounded-2xl px-4 py-2 flex-row items-center justify-between mb-2"
+                                    className="px-3 py-2.5 flex-row items-center justify-between mb-2"
                                     onPress={handlePickLocation}
                                     activeOpacity={0.7}
-                                    style={{
-                                        backgroundColor: theme.surface,
-                                        borderWidth: 2,
-                                        borderColor: theme.border,
-                                        shadowColor: '#000',
-                                        shadowOffset: { width: 0, height: 1 },
-                                        shadowOpacity: 0.05,
-                                        shadowRadius: 4,
-                                        elevation: 1,
-                                    }}
+                                    style={{ borderRadius: RADIUS_SM, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}
                                 >
                                     <View className="flex-row items-center flex-1">
-                                        <View className="w-10 h-10 rounded-full items-center justify-center" style={{ backgroundColor: isDark ? theme.background : '#F3F4F6' }}>
-                                            <Ionicons name="map" size={20} color={theme.textSecondary} />
+                                        <View className="w-8 h-8 items-center justify-center" style={{ borderRadius: RADIUS_SM, backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border }}>
+                                            <Ionicons name="map-outline" size={16} color={theme.primary} />
                                         </View>
                                         <View className="ml-3 flex-1">
-                                            <Text className="text-sm font-medium" style={{ color: theme.textSecondary }}>
+                                            <Text className="text-sm" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM }}>
                                                 {t('pick-location-on-map')}
                                             </Text>
                                         </View>
                                     </View>
-                                    <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+                                    <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
                                 </TouchableOpacity>
                                 <View className="flex-row items-center justify-center my-2">
                                     <View className="flex-1 h-px" style={{ backgroundColor: theme.border }} />
-                                    <Text className="text-sm mx-3" style={{ color: theme.textSecondary }}>{t('or')}</Text>
+                                    <Text className="text-xs mx-3" style={{ color: theme.textSecondary }}>{t('or')}</Text>
                                     <View className="flex-1 h-px" style={{ backgroundColor: theme.border }} />
                                 </View>
                                 <TouchableOpacity
-                                    className="py-3 rounded-xl flex-row items-center justify-center"
-                                    style={{ backgroundColor: colors.primary.main }}
+                                    className="flex-row items-center justify-center"
+                                    style={{ height: 46, borderRadius: RADIUS_SM, backgroundColor: theme.primary, opacity: userLocation ? 1 : 0.5 }}
                                     onPress={handleUseCurrentLocation}
                                     activeOpacity={0.7}
                                     disabled={!userLocation}
                                 >
-                                    <Ionicons name="locate" size={20} color="white" />
-                                    <Text className="text-white font-semibold ml-2">{t('use-current-location')}</Text>
+                                    <Ionicons name="locate" size={18} color="white" />
+                                    <Text className="ml-2" style={{ color: '#fff', fontFamily: FONT_MEDIUM, fontSize: 15 }}>
+                                        {t('use-current-location')}
+                                    </Text>
                                 </TouchableOpacity>
                             </View>
                         )}
                     </View>
 
                     <View>
-                        <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
-                            {t('photos')}
-                            {/* campaigns reject places without a photo, so don't call it optional there */}
-                            {!inCampaign && <Text style={{ color: theme.textSecondary }}> ({t('optional')})</Text>}
-                        </Text>
+                        {/* campaigns reject places without a photo, so don't call it optional there */}
+                        <FieldLabel label={t('photos')} optional={!inCampaign} />
                         <PhotoPicker photos={images} onChange={setImages} folder="places" requireLocation={inCampaign} />
                     </View>
                 </View>
             </ScrollView>
 
-            <View className="px-6 pt-4" style={{ paddingBottom: insets.bottom + 16, backgroundColor: theme.background, borderTopWidth: 1, borderTopColor: theme.border }}>
+            <View className="px-6 pt-3" style={{ paddingBottom: insets.bottom + 12, backgroundColor: theme.background, borderTopWidth: 1, borderTopColor: theme.border }}>
                 <Button
+                    style={{ borderRadius: RADIUS_SM, minHeight: 48, paddingVertical: 12 }}
+                    textStyle={{ fontSize: 16, fontWeight: 'normal', fontFamily: FONT_MEDIUM }}
                     title={submitting ? t('submitting') : t('submit-contribution')}
                     onPress={() => void handleSubmit()}
                     disabled={submitting || !name.trim() || !coordinates || phoneInvalid || blockInvalid || (needsCustomCategory && !customCategory.trim())}
@@ -564,8 +533,8 @@ export default function AddPlaceScreen() {
                     style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
                     onPress={() => setBuildingKindOpen(false)}
                 >
-                    <Pressable className="w-full rounded-2xl py-2" style={{ backgroundColor: theme.background, maxWidth: 480 }}>
-                        <Text className="text-lg font-bold px-5 pt-3 pb-2" style={{ color: theme.textPrimary }}>
+                    <Pressable className="w-full py-2" style={{ borderRadius: RADIUS, backgroundColor: theme.background, maxWidth: 480, borderWidth: 1, borderColor: theme.border }}>
+                        <Text className="px-5 pt-3 pb-2" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM, fontSize: 16 }}>
                             {t('building-kind')}
                         </Text>
                         <ScrollView style={{ maxHeight: 420 }}>
@@ -581,10 +550,10 @@ export default function AddPlaceScreen() {
                                         }}
                                         className="flex-row items-center px-5 py-3.5"
                                     >
-                                        <Text className="flex-1 text-base" style={{ color: theme.textPrimary, fontWeight: selected ? '700' : '400' }}>
+                                        <Text className="flex-1 text-sm" style={{ color: theme.textPrimary, fontFamily: selected ? FONT_MEDIUM : undefined }}>
                                             {t(`building-kind-${kind}`)}
                                         </Text>
-                                        {selected && <Ionicons name="checkmark" size={20} color={colors.primary.main} />}
+                                        {selected && <Ionicons name="checkmark" size={18} color={theme.primary} />}
                                     </TouchableOpacity>
                                 );
                             })}
