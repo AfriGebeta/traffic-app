@@ -28,15 +28,17 @@ interface PhotoPickerProps {
     cameraOnly?: boolean;
     // campaign photos: camera waits for a good GPS fix before it can take the photo
     requireLocation?: boolean;
+    size?: 'regular' | 'small';
 }
 
 // Camera + gallery tiles with thumbnails; uploads straight to MinIO and returns object names.
 // Same look as the incident report photo section.
-export function PhotoPicker({ photos, onChange, folder, horizontalPadding = 48, cameraOnly = false, requireLocation = false }: PhotoPickerProps) {
+export function PhotoPicker({ photos, onChange, folder, horizontalPadding = 48, cameraOnly = false, requireLocation = false, size = 'regular' }: PhotoPickerProps) {
     const { t } = useTranslation();
     const { colors: theme, isDark } = useTheme();
     const width = useContentWidth();
-    const tileSize = Math.floor((width - horizontalPadding - 24) / 3);
+    const small = size === 'small';
+    const tileSize = small ? Math.floor((width - horizontalPadding - 48) / 5) : Math.floor((width - horizontalPadding - 24) / 3);
     const [uploading, setUploading] = useState(false);
     const [cameraOpen, setCameraOpen] = useState(false);
 
@@ -97,10 +99,10 @@ export function PhotoPicker({ photos, onChange, folder, horizontalPadding = 48, 
             disabled={uploading}
             activeOpacity={0.7}
         >
-            <View className="rounded-full p-3 mb-2" style={{ backgroundColor: isDark ? theme.background : '#F3F4F6' }}>
-                <Ionicons name={icon} size={24} color={theme.textSecondary} />
+            <View className={small ? 'rounded-full p-1.5 mb-1' : 'rounded-full p-3 mb-2'} style={{ backgroundColor: isDark ? theme.background : '#F3F4F6' }}>
+                <Ionicons name={icon} size={small ? 16 : 24} color={theme.textSecondary} />
             </View>
-            <Text className="text-xs font-medium" style={{ color: theme.textSecondary }}>{label}</Text>
+            <Text className={small ? 'text-[10px] font-medium' : 'text-xs font-medium'} style={{ color: theme.textSecondary }}>{label}</Text>
         </TouchableOpacity>
     );
 

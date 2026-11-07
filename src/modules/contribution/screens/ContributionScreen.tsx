@@ -23,6 +23,7 @@ import { sentences } from '../../campaigns/tour/tourText';
 import { TourActions } from '../../campaigns/tour/TourTooltip';
 import { TourTouchable, TourView } from '../../campaigns/tour/walkthroughables';
 import { useCampaignGpsWarmup } from '../../campaigns/hooks/useCampaignGpsWarmup';
+import { SpecialPointsList } from '../../campaigns/components/SpecialPointsList';
 
 // lets the tooltip after the map's Contribute step land here
 const START_DELAY_MS = 500;
@@ -187,6 +188,8 @@ function ContributionOptions() {
                         );
                     })}
                 </View>
+
+                <SpecialPointsList />
             </ScrollView>
         </View>
     );

@@ -18,6 +18,7 @@ const KEYWORD_MAP: { keywords: string[]; type: PlaceType }[] = [
     { keywords: ['shop', 'store', 'market', 'boutique'], type: 'shop' },
     { keywords: ['company', 'office', 'business'], type: 'company' },
     { keywords: ['government', 'municipal', 'embassy', 'ministry'], type: 'government' },
+    { keywords: ['condominium', 'condo'], type: 'condominium' },
     { keywords: ['building', 'apartment', 'tower'], type: 'building' },
 ];
 

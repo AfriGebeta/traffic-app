@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Modal, Pressable } from 'react-native';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Input, Button } from '../../../shared/components';
-import { PLACE_CATEGORY_IDS, PLACE_TYPES, PlaceContributionAddress, PlaceType } from '../types/place.types';
+import { BUILDING_KINDS, BuildingKind, PLACE_TYPES, PlaceContributionAddress, PlaceType } from '../types/place.types';
+import { categoryIdFor, loadPlaceCategories, slugForType, usePlaceCategories } from '../services/placeCategories';
 import { placeService } from '../services/place.service';
 import { showToast } from '../../../shared/utils/toast';
 import { useLocation } from '../../../shared/contexts/LocationContext';
@@ -24,6 +25,9 @@ import { showCampaignPointsEstimate } from '../../campaigns/utils/pointsPopup';
 import { PHOTO_PIN_LIMIT_M, deviceFieldsFromFix, latestPhotoFix, photoPinGap } from '../../../shared/utils/photoFix';
 import { askForNotifications } from '../../../shared/services/notificationPermission';
 
+// types the backend accepts menu photos for (others answer 400 E0007)
+const MENU_TYPES: PlaceType[] = ['restaurant', 'cafe', 'hotel'];
+const MAX_MENU_PHOTOS = 10;
 
 export default function AddPlaceScreen() {
     const { t, i18n } = useTranslation();
@@ -57,6 +61,12 @@ export default function AddPlaceScreen() {
     const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(prefillCoordinates);
     const inCampaign = !!useScoringCampaign('place');
     const [images, setImages] = useState<UploadedPhoto[]>([]);
+    const [menuPhotos, setMenuPhotos] = useState<UploadedPhoto[]>([]);
+    const [blockNumber, setBlockNumber] = useState('');
+    const [floorCount, setFloorCount] = useState('');
+    const [buildingKind, setBuildingKind] = useState<BuildingKind | null>(null);
+    const [buildingKindOpen, setBuildingKindOpen] = useState(false);
+    const categories = usePlaceCategories();
     const [submitting, setSubmitting] = useState(false);
     // E0016: names of similar places nearby; null when the dialog is closed
     const [duplicateNames, setDuplicateNames] = useState<string[] | null>(null);
@@ -66,6 +76,13 @@ export default function AddPlaceScreen() {
 
     const placeInfo = PLACE_TYPES.find((p) => p.id === placeType);
     const needsCustomCategory = placeType === 'other';
+    const isCondominium = placeType === 'condominium';
+    const isBuilding = placeType === 'building';
+    const trimmedFloorCount = floorCount.trim();
+    const takesMenu = MENU_TYPES.includes(placeType);
+    const trimmedBlock = blockNumber.trim();
+    // a block is a number, e.g. "12"
+    const blockInvalid = isCondominium && !/^\d+$/.test(trimmedBlock);
     const trimmedPhone = phone.trim();
     const phoneE164 = trimmedPhone ? toE164(trimmedPhone) : null;
     const phoneInvalid = trimmedPhone.length > 0 && !phoneE164;
@@ -143,6 +160,18 @@ export default function AddPlaceScreen() {
             return;
         }
 
+        if (blockInvalid) {
+            showToast(t('block-number-required'));
+            return;
+        }
+
+        // the list may still be loading (or failed earlier); try once more before giving up
+        const categoryId = categoryIdFor(placeType, categories ?? (await loadPlaceCategories()));
+        if (!categoryId) {
+            showToast(t('place-category-unavailable'));
+            return;
+        }
+
         // campaigns only accept places with a photo
         if (inCampaign && images.length === 0) {
             showToast(t('campaign-photo-required'));
@@ -157,13 +186,13 @@ export default function AddPlaceScreen() {
                 city: city.trim() || undefined,
                 neighborhood: neighborhood.trim() || undefined,
                 streetName: streetName.trim() || undefined,
+                blockNumber: isCondominium ? trimmedBlock : undefined,
             };
-            const hasAddress = Boolean(address.city || address.neighborhood || address.streetName);
+            const hasAddress = Boolean(address.city || address.neighborhood || address.streetName || address.blockNumber);
 
             await placeService.contributePlace({
                 name: name.trim(),
-                type: placeType,
-                categoryId: PLACE_CATEGORY_IDS[placeType],
+                categoryId,
                 lat: coordinates.lat,
                 lng: coordinates.lng,
                 // "other" has no backend category - keep the user's label in the description
@@ -172,6 +201,9 @@ export default function AddPlaceScreen() {
                     : trimmedDescription,
                 phone: phoneE164 ?? undefined,
                 images: images.map((img) => img.objectName),
+                ...(takesMenu && menuPhotos.length > 0 && { menu: menuPhotos.map((photo) => photo.objectName) }),
+                ...(isBuilding && trimmedFloorCount && { floorCount: trimmedFloorCount }),
+                ...(isBuilding && buildingKind && { buildingKind }),
                 address: hasAddress ? address : undefined,
                 // the photo's fix is where the user stood; otherwise the live location
                 ...(photoFix ? deviceFieldsFromFix(photoFix) : userLocation && { deviceLat: userLocation.lat, deviceLng: userLocation.lng }),
@@ -179,7 +211,7 @@ export default function AddPlaceScreen() {
 
             dashboardEventsService.contribute();
             showToast(t('place-contribution-submitted'));
-            showCampaignPointsEstimate('place', coordinates, { hasPhoto: images.length > 0 });
+            showCampaignPointsEstimate('place', coordinates, { hasPhoto: images.length > 0, category: slugForType(placeType) });
             void askForNotifications('contribution');
 
             leaveScreen();
@@ -266,6 +298,61 @@ export default function AddPlaceScreen() {
                         </View>
                     )}
 
+                    {isCondominium && (
+                        <View>
+                            <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
+                                {t('block-number')} <Text style={{ color: theme.primary }}>*</Text>
+                            </Text>
+                            <Input
+                                placeholder={t('block-number-placeholder')}
+                                value={blockNumber}
+                                // digits only
+                                onChangeText={(text) => setBlockNumber(text.replace(/\D/g, ''))}
+                                keyboardType="number-pad"
+                                maxLength={6}
+                            />
+                        </View>
+                    )}
+
+                    {isBuilding && (
+                        <View>
+                            <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
+                                {t('building-kind')} <Text style={{ color: theme.textSecondary }}>({t('optional')})</Text>
+                            </Text>
+                            <TouchableOpacity
+                                onPress={() => setBuildingKindOpen(true)}
+                                activeOpacity={0.7}
+                                className="flex-row items-center rounded-xl border min-h-[52px] px-4"
+                                style={{ borderColor: theme.border, backgroundColor: isDark ? theme.surface : colors.gray[50] }}
+                            >
+                                <Text
+                                    className="flex-1 text-lg font-bold"
+                                    style={{ color: buildingKind ? theme.textPrimary : theme.textSecondary }}
+                                    numberOfLines={1}
+                                >
+                                    {buildingKind ? t(`building-kind-${buildingKind}`) : t('building-kind-placeholder')}
+                                </Text>
+                                <Ionicons name="chevron-down" size={20} color={theme.textSecondary} />
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
+                    {isBuilding && (
+                        <View>
+                            <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
+                                {t('floor-count')} <Text style={{ color: theme.textSecondary }}>({t('optional')})</Text>
+                            </Text>
+                            <Input
+                                placeholder={t('floor-count-placeholder')}
+                                value={floorCount}
+                                // digits only
+                                onChangeText={(text) => setFloorCount(text.replace(/\D/g, ''))}
+                                keyboardType="number-pad"
+                                maxLength={3}
+                            />
+                        </View>
+                    )}
+
                     <View>
                         <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
                             {t('phone-number')} <Text style={{ color: theme.textSecondary }}>({t('optional')})</Text>
@@ -299,6 +386,24 @@ export default function AddPlaceScreen() {
                         </Text>
                         <Input placeholder={t('city-placeholder')} value={city} onChangeText={setCity} />
                     </View>
+
+                    {takesMenu && (
+                        <View>
+                            <Text className="text-sm font-semibold mb-1" style={{ color: theme.textPrimary }}>
+                                {t('menu-photos')} <Text style={{ color: theme.textSecondary }}>({t('optional')})</Text>
+                            </Text>
+                            <Text className="text-xs mb-2" style={{ color: theme.textSecondary }}>
+                                {t('menu-photos-hint', { max: MAX_MENU_PHOTOS })}
+                            </Text>
+                            {/* no GPS needed and gallery allowed: menus are often shot indoors or saved earlier */}
+                            <PhotoPicker
+                                photos={menuPhotos}
+                                onChange={(next) => setMenuPhotos(next.slice(0, MAX_MENU_PHOTOS))}
+                                folder="places"
+                                size="small"
+                            />
+                        </View>
+                    )}
 
                     <View>
                         <Text className="text-sm font-semibold mb-2" style={{ color: theme.textPrimary }}>
@@ -436,7 +541,7 @@ export default function AddPlaceScreen() {
                 <Button
                     title={submitting ? t('submitting') : t('submit-contribution')}
                     onPress={() => void handleSubmit()}
-                    disabled={submitting || !name.trim() || !coordinates || phoneInvalid || (needsCustomCategory && !customCategory.trim())}
+                    disabled={submitting || !name.trim() || !coordinates || phoneInvalid || blockInvalid || (needsCustomCategory && !customCategory.trim())}
                 />
             </View>
 
@@ -452,6 +557,41 @@ export default function AddPlaceScreen() {
                     leaveScreen();
                 }}
             />
+
+            <Modal visible={buildingKindOpen} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setBuildingKindOpen(false)}>
+                <Pressable
+                    className="flex-1 items-center justify-center px-6"
+                    style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
+                    onPress={() => setBuildingKindOpen(false)}
+                >
+                    <Pressable className="w-full rounded-2xl py-2" style={{ backgroundColor: theme.background, maxWidth: 480 }}>
+                        <Text className="text-lg font-bold px-5 pt-3 pb-2" style={{ color: theme.textPrimary }}>
+                            {t('building-kind')}
+                        </Text>
+                        <ScrollView style={{ maxHeight: 420 }}>
+                            {BUILDING_KINDS.map((kind) => {
+                                const selected = kind === buildingKind;
+                                return (
+                                    <TouchableOpacity
+                                        key={kind}
+                                        onPress={() => {
+                                            // tapping the chosen one again clears it (the field is optional)
+                                            setBuildingKind(selected ? null : kind);
+                                            setBuildingKindOpen(false);
+                                        }}
+                                        className="flex-row items-center px-5 py-3.5"
+                                    >
+                                        <Text className="flex-1 text-base" style={{ color: theme.textPrimary, fontWeight: selected ? '700' : '400' }}>
+                                            {t(`building-kind-${kind}`)}
+                                        </Text>
+                                        {selected && <Ionicons name="checkmark" size={20} color={colors.primary.main} />}
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </ScrollView>
+                    </Pressable>
+                </Pressable>
+            </Modal>
         </View>
     );
 }
