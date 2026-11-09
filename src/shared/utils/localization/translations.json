@@ -6173,5 +6173,20 @@
         "key": "more-ideas",
         "EN_US": "New ideas",
         "AM": "አዲስ ሀሳቦች"
+    },
+    {
+        "key": "campaign-video-title",
+        "EN_US": "How the campaign works",
+        "AM": "ውድድሩ እንዴት እንደሚሰራ"
+    },
+    {
+        "key": "campaign-video-hint",
+        "EN_US": "Watch this short video to see how to contribute and earn points.",
+        "AM": "እንዴት ማበርከትና ነጥብ ማግኘት እንደሚችሉ ለማየት ይህን አጭር ቪዲዮ ይመልከቱ።"
+    },
+    {
+        "key": "campaign-watch-video",
+        "EN_US": "Watch the video",
+        "AM": "ቪዲዮውን ይመልከቱ"
     }
 ]
