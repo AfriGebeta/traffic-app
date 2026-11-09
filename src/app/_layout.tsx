@@ -34,6 +34,7 @@ import { initializeCrashlytics, logBreadcrumb } from '../shared/utils/crashlytic
 import { useOrientationPolicy } from '../shared/layout/useOrientationPolicy';
 import { createScreenLayout } from '../shared/layout/ResponsiveScreen';
 import { initPush, registerPushDevice } from '../shared/services/push';
+import { initDataCollector } from '../modules/places/hooks/useIsDataCollector';
 import { locationPermissionSettled } from '../shared/utils/permissionSequence';
 import { getNotificationStatus, recordLaunchDenial } from '../shared/services/notificationPermission';
 import { usePushNotificationTaps } from '../shared/hooks/usePushNotificationTaps';
@@ -124,6 +125,7 @@ function AppShell() {
     void refreshCampaigns();
     void dashboardEventsService.installOnce();
     initPush();
+    initDataCollector();
   }, []);
 
   usePushNotificationTaps(pathname, isNavigationPath);

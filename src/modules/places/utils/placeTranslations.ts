@@ -18,6 +18,7 @@ export const getPlaceTranslationKey = (type: PlaceType): string => {
         park: 'park',
         building: 'building',
         condominium: 'condominium',
+        business: 'business',
         company: 'company',
         government: 'government-office',
         mall: 'mall',

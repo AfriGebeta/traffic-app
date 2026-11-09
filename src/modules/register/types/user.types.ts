@@ -11,6 +11,8 @@ export interface User {
     password?: string;
     points: number;
     role?: string;
+    // campus collector: unlocks the extra business fields (backend enforces the rules)
+    isDataCollector?: boolean;
     isBanned?: boolean;
     createdAt: string;
     updatedAt: string;
