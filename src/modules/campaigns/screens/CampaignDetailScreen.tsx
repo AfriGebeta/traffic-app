@@ -20,6 +20,7 @@ import { ordinal } from '../utils/ordinal';
 import { startCampaignTour } from '../tour/campaignTour';
 import { CampaignKind, CampaignTrack } from '../types/campaign.types';
 import { askForNotifications } from '../../../shared/services/notificationPermission';
+import { CampaignVideoModal, campaignIntroVideoId } from '../components/CampaignVideoModal';
 
 const NO_TRACKS: CampaignTrack[] = [];
 
@@ -59,6 +60,8 @@ export default function CampaignDetailScreen() {
     const state = useCampaigns();
     const [selectedTrack, setSelectedTrack] = useState<string | null>(null);
     const [joining, setJoining] = useState(false);
+    // 'join': right after joining, closing starts the tour; 'watch': opened from the row, closing just closes
+    const [videoOpen, setVideoOpen] = useState<'join' | 'watch' | null>(null);
 
     useEffect(() => {
         if (!state.loaded) void refreshCampaigns();
@@ -102,6 +105,14 @@ export default function CampaignDetailScreen() {
         router.dismissTo('/');
     };
 
+    const closeVideo = () => {
+        const afterJoin = videoOpen === 'join';
+        setVideoOpen(null);
+        if (!afterJoin) return;
+        showMeAround();
+        void askForNotifications('campaign');
+    };
+
     const join = async () => {
         if (!campaign || (needsTrack && !selectedTrack) || joining) return;
         if (!(await requireAuth())) return;
@@ -113,8 +124,12 @@ export default function CampaignDetailScreen() {
             markCampaignJoined(campaign.slug, track);
             showToast(t('campaign-joined'));
             void refreshCampaigns();
-            showMeAround();
-            void askForNotifications('campaign');
+            // intro video first (if Remote Config has one); the tour and the notification prompt wait until it's closed
+            if (campaignIntroVideoId()) setVideoOpen('join');
+            else {
+                showMeAround();
+                void askForNotifications('campaign');
+            }
         } catch (error) {
             const code = error instanceof ApiError ? error.code : undefined;
             if (isRestrictedError(code)) return;
@@ -351,6 +366,7 @@ export default function CampaignDetailScreen() {
                             />
                         )}
                         {participating && <NavRow title={t('campaign-how-to-take-part')} onPress={showMeAround} />}
+                        {participating && !!campaignIntroVideoId() && <NavRow title={t('campaign-watch-video')} onPress={() => setVideoOpen('watch')} />}
                     </View>
                 )}
 
@@ -516,6 +532,8 @@ export default function CampaignDetailScreen() {
                     </TouchableOpacity>
                 </View>
             )}
+
+            <CampaignVideoModal visible={!!videoOpen} onClose={closeVideo} />
         </View>
     );
 }
