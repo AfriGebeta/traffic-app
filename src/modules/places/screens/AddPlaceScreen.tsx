@@ -499,7 +499,7 @@ export default function AddPlaceScreen() {
                     <View>
                         {/* campaigns reject places without a photo, so don't call it optional there */}
                         <FieldLabel label={t('photos')} optional={!inCampaign} />
-                        <PhotoPicker photos={images} onChange={setImages} folder="places" requireLocation={inCampaign} />
+                        <PhotoPicker photos={images} onChange={setImages} folder="places" cameraOnly={inCampaign} requireLocation={inCampaign} />
                     </View>
                 </View>
             </ScrollView>

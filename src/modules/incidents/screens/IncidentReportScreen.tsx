@@ -303,7 +303,7 @@ export default function IncidentReportScreen() {
 
                     <FieldLabel label={t('photos')} optional={!inCampaign} />
                     <View className="mb-6">
-                        <PhotoPicker photos={images} onChange={setImages} folder="incidents" requireLocation={inCampaign} />
+                        <PhotoPicker photos={images} onChange={setImages} folder="incidents" cameraOnly={inCampaign} requireLocation={inCampaign} />
                     </View>
 
                     <Button

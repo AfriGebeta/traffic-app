@@ -276,7 +276,7 @@ export default function AddRuleReportScreen() {
 
                     <View>
                         <FieldLabel label={t('photos')} optional />
-                        <PhotoPicker photos={photos} onChange={setPhotos} folder="rules" requireLocation={inCampaign} />
+                        <PhotoPicker photos={photos} onChange={setPhotos} folder="rules" cameraOnly={inCampaign} requireLocation={inCampaign} />
                     </View>
                 </View>
             </ScrollView>
