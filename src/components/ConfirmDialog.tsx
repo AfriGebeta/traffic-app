@@ -12,7 +12,8 @@ interface ConfirmDialogProps {
     title: string;
     message?: string;
     confirmLabel: string;
-    cancelLabel: string;
+    // leave out for a single-button dialog
+    cancelLabel?: string;
     destructive?: boolean;
     showDeleteIcon?: boolean;
     onConfirm: () => void;
@@ -61,15 +62,17 @@ export const ConfirmDialog = ({
                     )}
 
                     <View className="flex-row gap-3 mt-6 w-full">
-                        <TouchableOpacity
-                            onPress={onCancel}
-                            className="flex-1 rounded-xl py-3.5 items-center"
-                            style={{ borderWidth: 1, borderColor: theme.border }}
-                        >
-                            <Text className="font-semibold text-base" style={{ color: theme.textPrimary }}>
-                                {cancelLabel}
-                            </Text>
-                        </TouchableOpacity>
+                        {!!cancelLabel && (
+                            <TouchableOpacity
+                                onPress={onCancel}
+                                className="flex-1 rounded-xl py-3.5 items-center"
+                                style={{ borderWidth: 1, borderColor: theme.border }}
+                            >
+                                <Text className="font-semibold text-base" style={{ color: theme.textPrimary }}>
+                                    {cancelLabel}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
 
                         <TouchableOpacity
                             onPress={onConfirm}

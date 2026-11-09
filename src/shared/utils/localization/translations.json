@@ -5443,5 +5443,735 @@
         "key": "building-kind-religious_compound",
         "EN_US": "Religious compound",
         "AM": "የሃይማኖት ተቋም ግቢ"
+    },
+    {
+        "key": "business",
+        "EN_US": "Business",
+        "AM": "ንግድ"
+    },
+    {
+        "key": "account-name",
+        "EN_US": "Name on the account",
+        "AM": "በሂሳቡ ላይ ያለ ስም"
+    },
+    {
+        "key": "account-name-placeholder",
+        "EN_US": "As it shows when paying",
+        "AM": "ሲከፈል እንደሚታየው"
+    },
+    {
+        "key": "account-number",
+        "EN_US": "Account number",
+        "AM": "የሂሳብ ቁጥር"
+    },
+    {
+        "key": "add-new-building",
+        "EN_US": "Add a new building",
+        "AM": "አዲስ ህንፃ ይጨምሩ"
+    },
+    {
+        "key": "add-offer",
+        "EN_US": "Add offer",
+        "AM": "ቅናሽ ይጨምሩ"
+    },
+    {
+        "key": "add-own-item",
+        "EN_US": "Add your own item",
+        "AM": "የራስዎን ዕቃ ይጨምሩ"
+    },
+    {
+        "key": "add-second-bank",
+        "EN_US": "Add a second bank",
+        "AM": "ሁለተኛ ባንክ ይጨምሩ"
+    },
+    {
+        "key": "remove-second-bank",
+        "EN_US": "Remove second bank",
+        "AM": "ሁለተኛውን ባንክ ያስወግዱ"
+    },
+    {
+        "key": "business-building",
+        "EN_US": "Building",
+        "AM": "ህንፃ"
+    },
+    {
+        "key": "business-building-needs-location",
+        "EN_US": "Set the location below to see nearby buildings",
+        "AM": "በአቅራቢያ ያሉ ህንፃዎችን ለማየት ከታች ቦታውን ያስቀምጡ"
+    },
+    {
+        "key": "business-catalog-unavailable",
+        "EN_US": "Could not load the business options",
+        "AM": "የንግድ አማራጮችን መጫን አልተቻለም"
+    },
+    {
+        "key": "business-features",
+        "EN_US": "Features",
+        "AM": "ባህሪያት"
+    },
+    {
+        "key": "business-floor",
+        "EN_US": "Floor",
+        "AM": "ፎቅ"
+    },
+    {
+        "key": "business-group",
+        "EN_US": "Business category",
+        "AM": "የንግድ ዘርፍ"
+    },
+    {
+        "key": "business-kind",
+        "EN_US": "Type of business",
+        "AM": "የንግድ አይነት"
+    },
+    {
+        "key": "business-hours",
+        "EN_US": "Opening hours",
+        "AM": "የስራ ሰዓት"
+    },
+    {
+        "key": "business-hours-invalid",
+        "EN_US": "Opening hours (use HH:MM)",
+        "AM": "የስራ ሰዓት (HH:MM ይጠቀሙ)"
+    },
+    {
+        "key": "business-phone-required",
+        "EN_US": "Phone number is required for a business",
+        "AM": "ለንግድ ስልክ ቁጥር ያስፈልጋል"
+    },
+    {
+        "key": "business-unit",
+        "EN_US": "Office or shop number",
+        "AM": "የቢሮ ወይም የሱቅ ቁጥር"
+    },
+    {
+        "key": "business-unit-placeholder",
+        "EN_US": "e.g. 21",
+        "AM": "ለምሳሌ 21"
+    },
+    {
+        "key": "businesses-count",
+        "EN_US": "{{count}} businesses",
+        "AM": "{{count}} ንግዶች"
+    },
+    {
+        "key": "campus-area",
+        "EN_US": "Campus area",
+        "AM": "የካምፓስ አካባቢ"
+    },
+    {
+        "key": "cashier-enters-pin",
+        "EN_US": "Hand the phone to the cashier to type the shop PIN",
+        "AM": "የሱቁን ፒን እንዲያስገቡ ስልኩን ለገንዘብ ተቀባዩ ይስጡ"
+    },
+    {
+        "key": "cbe-birr-number",
+        "EN_US": "CBE Birr number",
+        "AM": "የሲቢኢ ብር ቁጥር"
+    },
+    {
+        "key": "choose",
+        "EN_US": "Choose",
+        "AM": "ይምረጡ"
+    },
+    {
+        "key": "closed",
+        "EN_US": "Closed",
+        "AM": "ዝግ"
+    },
+    {
+        "key": "open",
+        "EN_US": "Open",
+        "AM": "ክፍት"
+    },
+    {
+        "key": "code-already-used",
+        "EN_US": "This code was already used",
+        "AM": "ይህ ኮድ ቀድሞ ጥቅም ላይ ውሏል"
+    },
+    {
+        "key": "code-expired",
+        "EN_US": "Code expired",
+        "AM": "ኮዱ ጊዜው አልፏል"
+    },
+    {
+        "key": "code-expires-in",
+        "EN_US": "Expires in {{time}}",
+        "AM": "በ{{time}} ውስጥ ጊዜው ያልፋል"
+    },
+    {
+        "key": "collection-buildings",
+        "EN_US": "{{count}} buildings",
+        "AM": "{{count}} ህንፃዎች"
+    },
+    {
+        "key": "collection-businesses",
+        "EN_US": "{{count}}/{{target}} businesses",
+        "AM": "{{count}}/{{target}} ንግዶች"
+    },
+    {
+        "key": "collection-with-offers",
+        "EN_US": "{{count}}/{{target}} with offers",
+        "AM": "{{count}}/{{target}} ቅናሽ ያላቸው"
+    },
+    {
+        "key": "collection-empty",
+        "EN_US": "Nothing mapped yet",
+        "AM": "እስካሁን ምንም አልተመዘገበም"
+    },
+    {
+        "key": "collector-details",
+        "EN_US": "More details (data collectors)",
+        "AM": "ተጨማሪ ዝርዝሮች (ዳታ ሰብሳቢዎች)"
+    },
+    {
+        "key": "collector-notes",
+        "EN_US": "Notes",
+        "AM": "ማስታወሻ"
+    },
+    {
+        "key": "collector-notes-hint",
+        "EN_US": "Only the team sees this",
+        "AM": "ቡድኑ ብቻ ነው የሚያየው"
+    },
+    {
+        "key": "collector-notes-placeholder",
+        "EN_US": "e.g. Owner is there after 2pm",
+        "AM": "ለምሳሌ ባለቤቱ ከ8 ሰዓት በኋላ ይገኛል"
+    },
+    {
+        "key": "collector-photo-required",
+        "EN_US": "Add at least one photo (the first one is the front)",
+        "AM": "ቢያንስ አንድ ፎቶ ይጨምሩ (የመጀመሪያው የፊት ለፊት ነው)"
+    },
+    {
+        "key": "collector-photos-hint",
+        "EN_US": "First photo is the front with the sign readable",
+        "AM": "የመጀመሪያው ፎቶ ስሙ የሚነበብ የፊት ለፊት ነው"
+    },
+    {
+        "key": "copy-monday-to-all",
+        "EN_US": "Copy Monday to every day",
+        "AM": "የሰኞን ለሁሉም ቀናት ይቅዱ"
+    },
+    {
+        "key": "could-not-confirm",
+        "EN_US": "Could not confirm",
+        "AM": "ማረጋገጥ አልተቻለም"
+    },
+    {
+        "key": "could-not-load",
+        "EN_US": "Could not load",
+        "AM": "መጫን አልተቻለም"
+    },
+    {
+        "key": "floor-basement",
+        "EN_US": "Basement",
+        "AM": "ምድር ቤት"
+    },
+    {
+        "key": "floor-ground",
+        "EN_US": "Ground floor",
+        "AM": "መሬት ወለል"
+    },
+    {
+        "key": "floor-n",
+        "EN_US": "Floor {{floor}}",
+        "AM": "{{floor}}ኛ ፎቅ"
+    },
+    {
+        "key": "floors-count",
+        "EN_US": "{{count}} floors",
+        "AM": "{{count}} ፎቆች"
+    },
+    {
+        "key": "get-code",
+        "EN_US": "Get code",
+        "AM": "ኮድ ያግኙ"
+    },
+    {
+        "key": "get-new-code",
+        "EN_US": "Get a new code",
+        "AM": "አዲስ ኮድ ያግኙ"
+    },
+    {
+        "key": "mapped-without-offers",
+        "EN_US": "This kind of place is mapped without offers.",
+        "AM": "ይህ አይነት ቦታ ያለ ቅናሽ ይመዘገባል።"
+    },
+    {
+        "key": "max-offers",
+        "EN_US": "Up to {{max}} offers",
+        "AM": "እስከ {{max}} ቅናሾች"
+    },
+    {
+        "key": "my-collection",
+        "EN_US": "My collection",
+        "AM": "የእኔ ስብስብ"
+    },
+    {
+        "key": "my-collection-description",
+        "EN_US": "Places you mapped, statuses and PINs",
+        "AM": "የመዘገቧቸው ቦታዎች፣ ሁኔታዎች እና ፒኖች"
+    },
+    {
+        "key": "nearest-landmark",
+        "EN_US": "Nearest landmark",
+        "AM": "የቅርብ ምልክት"
+    },
+    {
+        "key": "nearest-landmark-placeholder",
+        "EN_US": "e.g. Opposite Commerce gate",
+        "AM": "ለምሳሌ ከኮሜርስ በር ፊት ለፊት"
+    },
+    {
+        "key": "new-building",
+        "EN_US": "New building",
+        "AM": "አዲስ ህንፃ"
+    },
+    {
+        "key": "new-pin",
+        "EN_US": "New PIN",
+        "AM": "አዲስ ፒን"
+    },
+    {
+        "key": "no-offer-ideas",
+        "EN_US": "No ideas right now",
+        "AM": "አሁን ምንም ሀሳብ የለም"
+    },
+    {
+        "key": "no-offers-here",
+        "EN_US": "No offers running here right now",
+        "AM": "አሁን እዚህ ምንም ቅናሽ የለም"
+    },
+    {
+        "key": "not-in-building",
+        "EN_US": "Not in a building: street-level shop or stall",
+        "AM": "ህንፃ ውስጥ አይደለም፡ የመንገድ ዳር ሱቅ ወይም መደብር"
+    },
+    {
+        "key": "offer-already-used",
+        "EN_US": "You already used this offer",
+        "AM": "ይህን ቅናሽ ቀድመው ተጠቅመዋል"
+    },
+    {
+        "key": "offer-confirmed",
+        "EN_US": "Offer confirmed",
+        "AM": "ቅናሹ ተረጋግጧል"
+    },
+    {
+        "key": "offer-fill-required",
+        "EN_US": "Fill in the required fields",
+        "AM": "አስፈላጊ መስኮችን ይሙሉ"
+    },
+    {
+        "key": "offer-ideas",
+        "EN_US": "Offer ideas",
+        "AM": "የቅናሽ ሀሳቦች"
+    },
+    {
+        "key": "offer-incomplete",
+        "EN_US": "Offer details",
+        "AM": "የቅናሽ ዝርዝሮች"
+    },
+    {
+        "key": "offer-months",
+        "EN_US": "Months",
+        "AM": "ወራት"
+    },
+    {
+        "key": "offer-n",
+        "EN_US": "Offer {{n}}",
+        "AM": "ቅናሽ {{n}}"
+    },
+    {
+        "key": "offer-not-available-now",
+        "EN_US": "Not available right now",
+        "AM": "አሁን አይገኝም"
+    },
+    {
+        "key": "offer-paused",
+        "EN_US": "Paused",
+        "AM": "ቆሟል"
+    },
+    {
+        "key": "offer-preview",
+        "EN_US": "How it shows in the app",
+        "AM": "በመተግበሪያው እንዴት እንደሚታይ"
+    },
+    {
+        "key": "offer-preview-empty",
+        "EN_US": "Fill in the offer to see it",
+        "AM": "ለማየት ቅናሹን ይሙሉ"
+    },
+    {
+        "key": "offer-season",
+        "EN_US": "Season",
+        "AM": "ወቅት"
+    },
+    {
+        "key": "offer-type",
+        "EN_US": "Kind of offer",
+        "AM": "የቅናሽ አይነት"
+    },
+    {
+        "key": "offer-audience",
+        "EN_US": "Who it is for",
+        "AM": "ለማን"
+    },
+    {
+        "key": "offer-days",
+        "EN_US": "Days",
+        "AM": "ቀናት"
+    },
+    {
+        "key": "offer-time",
+        "EN_US": "Time",
+        "AM": "ሰዓት"
+    },
+    {
+        "key": "offer-redeem",
+        "EN_US": "How to use it",
+        "AM": "እንዴት እንደሚጠቀሙ"
+    },
+    {
+        "key": "offer-limit",
+        "EN_US": "Limit",
+        "AM": "ገደብ"
+    },
+    {
+        "key": "offer-badge-offer",
+        "EN_US": "Offer",
+        "AM": "ቅናሽ"
+    },
+    {
+        "key": "offer-badge-code",
+        "EN_US": "Code",
+        "AM": "ኮድ"
+    },
+    {
+        "key": "offer-badge-bundle",
+        "EN_US": "Bundle",
+        "AM": "ጥቅል"
+    },
+    {
+        "key": "offer-badge-new",
+        "EN_US": "New",
+        "AM": "አዲስ"
+    },
+    {
+        "key": "offers",
+        "EN_US": "Offers",
+        "AM": "ቅናሾች"
+    },
+    {
+        "key": "offers-count",
+        "EN_US": "{{count}} offers",
+        "AM": "{{count}} ቅናሾች"
+    },
+    {
+        "key": "offers-not-found",
+        "EN_US": "This place has no live offers",
+        "AM": "ይህ ቦታ ቅናሽ የለውም"
+    },
+    {
+        "key": "opening-hours",
+        "EN_US": "Opening hours",
+        "AM": "የስራ ሰዓት"
+    },
+    {
+        "key": "payment-cash",
+        "EN_US": "Cash",
+        "AM": "ጥሬ ገንዘብ"
+    },
+    {
+        "key": "payment-telebirr",
+        "EN_US": "Telebirr",
+        "AM": "ቴሌብር"
+    },
+    {
+        "key": "payment-mpesa",
+        "EN_US": "M-Pesa",
+        "AM": "ኤም-ፔሳ"
+    },
+    {
+        "key": "payment-cbe-birr",
+        "EN_US": "CBE Birr",
+        "AM": "ሲቢኢ ብር"
+    },
+    {
+        "key": "payment-bank-transfer",
+        "EN_US": "Bank transfer",
+        "AM": "የባንክ ዝውውር"
+    },
+    {
+        "key": "payment-card",
+        "EN_US": "Card",
+        "AM": "ካርድ"
+    },
+    {
+        "key": "payments-accepted",
+        "EN_US": "Payments accepted",
+        "AM": "የሚቀበሉት ክፍያ"
+    },
+    {
+        "key": "pays-to",
+        "EN_US": "Pays to",
+        "AM": "የሚከፈለው ለ"
+    },
+    {
+        "key": "pays-to-merchant",
+        "EN_US": "Merchant ID",
+        "AM": "የነጋዴ መለያ"
+    },
+    {
+        "key": "pays-to-till",
+        "EN_US": "Till or merchant number",
+        "AM": "የቲል ወይም የነጋዴ ቁጥር"
+    },
+    {
+        "key": "merchant-id",
+        "EN_US": "Merchant ID",
+        "AM": "የነጋዴ መለያ"
+    },
+    {
+        "key": "till-number",
+        "EN_US": "Till number",
+        "AM": "የቲል ቁጥር"
+    },
+    {
+        "key": "pending",
+        "EN_US": "pending",
+        "AM": "በመጠባበቅ ላይ"
+    },
+    {
+        "key": "please-check",
+        "EN_US": "Please check",
+        "AM": "እባክዎ ያረጋግጡ"
+    },
+    {
+        "key": "please-fill",
+        "EN_US": "Please fill in",
+        "AM": "እባክዎ ይሙሉ"
+    },
+    {
+        "key": "retry",
+        "EN_US": "Retry",
+        "AM": "እንደገና ሞክር"
+    },
+    {
+        "key": "search-by-name",
+        "EN_US": "Search by name",
+        "AM": "በስም ይፈልጉ"
+    },
+    {
+        "key": "second-phone",
+        "EN_US": "Second phone",
+        "AM": "ሁለተኛ ስልክ"
+    },
+    {
+        "key": "shop-pin",
+        "EN_US": "Shop PIN",
+        "AM": "የሱቅ ፒን"
+    },
+    {
+        "key": "shop-pin-hint",
+        "EN_US": "Give it to the owner. The cashier types it to confirm a code. Leave empty to get one after saving",
+        "AM": "ለባለቤቱ ይስጡ። ገንዘብ ተቀባዩ ኮድ ለማረጋገጥ ያስገባዋል። ባዶ ከተዉት ካስቀመጡ በኋላ ይሰጣል"
+    },
+    {
+        "key": "shop-pin-placeholder",
+        "EN_US": "4 digits",
+        "AM": "4 አሃዞች"
+    },
+    {
+        "key": "shop-pin-saved",
+        "EN_US": "Give this PIN to the owner: {{pin}}\nThe cashier types it to confirm a student's code.",
+        "AM": "ይህን ፒን ለባለቤቱ ይስጡ፡ {{pin}}\nገንዘብ ተቀባዩ የተማሪውን ኮድ ለማረጋገጥ ያስገባዋል።"
+    },
+    {
+        "key": "show-this-screen",
+        "EN_US": "Show this screen at the counter",
+        "AM": "ይህን ስክሪን በመክፈያው ያሳዩ"
+    },
+    {
+        "key": "status-new",
+        "EN_US": "New",
+        "AM": "አዲስ"
+    },
+    {
+        "key": "status-checked",
+        "EN_US": "Checked",
+        "AM": "ተረጋግጧል"
+    },
+    {
+        "key": "status-live",
+        "EN_US": "Live",
+        "AM": "ቀጥታ"
+    },
+    {
+        "key": "status-rejected",
+        "EN_US": "Rejected",
+        "AM": "ውድቅ"
+    },
+    {
+        "key": "street-level",
+        "EN_US": "Street level",
+        "AM": "የመንገድ ዳር"
+    },
+    {
+        "key": "too-many-pin-tries",
+        "EN_US": "Too many wrong tries. Try again in 15 minutes",
+        "AM": "ብዙ የተሳሳቱ ሙከራዎች። ከ15 ደቂቃ በኋላ ይሞክሩ"
+    },
+    {
+        "key": "trial-offers",
+        "EN_US": "Trial offers",
+        "AM": "የሙከራ ቅናሾች"
+    },
+    {
+        "key": "trial-offers-hint",
+        "EN_US": "Up to 3 offers. Customers see them from the month you pick",
+        "AM": "እስከ 3 ቅናሾች። ደንበኞች ከመረጡት ወር ጀምሮ ያያሉ"
+    },
+    {
+        "key": "typical-spend",
+        "EN_US": "Typical spend",
+        "AM": "የተለመደ ወጪ"
+    },
+    {
+        "key": "spend-free",
+        "EN_US": "Free",
+        "AM": "ነጻ"
+    },
+    {
+        "key": "spend-under-100",
+        "EN_US": "Under 100 birr",
+        "AM": "ከ100 ብር በታች"
+    },
+    {
+        "key": "spend-100-300",
+        "EN_US": "100 to 300 birr",
+        "AM": "ከ100 እስከ 300 ብር"
+    },
+    {
+        "key": "spend-300-1000",
+        "EN_US": "300 to 1000 birr",
+        "AM": "ከ300 እስከ 1000 ብር"
+    },
+    {
+        "key": "spend-over-1000",
+        "EN_US": "Over 1000 birr",
+        "AM": "ከ1000 ብር በላይ"
+    },
+    {
+        "key": "unnamed",
+        "EN_US": "Unnamed",
+        "AM": "ስም የሌለው"
+    },
+    {
+        "key": "unnamed-building",
+        "EN_US": "Unnamed building",
+        "AM": "ስም የሌለው ህንፃ"
+    },
+    {
+        "key": "up-to-two-banks",
+        "EN_US": "Up to 2 banks",
+        "AM": "እስከ 2 ባንኮች"
+    },
+    {
+        "key": "what-they-sell",
+        "EN_US": "What they sell",
+        "AM": "የሚሸጡት"
+    },
+    {
+        "key": "write-description-draft",
+        "EN_US": "Write a draft from the form",
+        "AM": "ከቅጹ ረቂቅ ይጻፉ"
+    },
+    {
+        "key": "wrong-pin-or-expired",
+        "EN_US": "Wrong PIN, or the code expired",
+        "AM": "የተሳሳተ ፒን ወይም ኮዱ ጊዜው አልፏል"
+    },
+    {
+        "key": "your-code",
+        "EN_US": "Your code",
+        "AM": "የእርስዎ ኮድ"
+    },
+    {
+        "key": "day-mon",
+        "EN_US": "Mon",
+        "AM": "ሰኞ"
+    },
+    {
+        "key": "day-tue",
+        "EN_US": "Tue",
+        "AM": "ማክሰኞ"
+    },
+    {
+        "key": "day-wed",
+        "EN_US": "Wed",
+        "AM": "ረቡዕ"
+    },
+    {
+        "key": "day-thu",
+        "EN_US": "Thu",
+        "AM": "ሐሙስ"
+    },
+    {
+        "key": "day-fri",
+        "EN_US": "Fri",
+        "AM": "አርብ"
+    },
+    {
+        "key": "day-sat",
+        "EN_US": "Sat",
+        "AM": "ቅዳሜ"
+    },
+    {
+        "key": "day-sun",
+        "EN_US": "Sun",
+        "AM": "እሁድ"
+    },
+    {
+        "key": "search-building",
+        "EN_US": "Search building name",
+        "AM": "የህንፃ ስም ይፈልጉ"
+    },
+    {
+        "key": "no-building-match",
+        "EN_US": "No nearby building with that name. Add it as a new building.",
+        "AM": "በዚህ ስም በአቅራቢያ ህንፃ የለም። እንደ አዲስ ህንፃ ያክሉት።"
+    },
+    {
+        "key": "search",
+        "EN_US": "Search",
+        "AM": "ፈልግ"
+    },
+    {
+        "key": "no-results",
+        "EN_US": "No results",
+        "AM": "ምንም ውጤት የለም"
+    },
+    {
+        "key": "no-campus",
+        "EN_US": "No campus",
+        "AM": "ካምፓስ የለም"
+    },
+    {
+        "key": "offer-ideas-description",
+        "EN_US": "Ideas fitted to this business, its products and the three trial months. Tap one to add it, then adjust with the owner.",
+        "AM": "ለዚህ ንግድ፣ ለምርቶቹ እና ለሶስቱ የሙከራ ወራት የተዘጋጁ ሀሳቦች። ለመጨመር አንዱን ይንኩ፣ ከዚያ ከባለቤቱ ጋር ያስተካክሉ።"
+    },
+    {
+        "key": "get-ideas",
+        "EN_US": "Get ideas",
+        "AM": "ሀሳቦችን ያግኙ"
+    },
+    {
+        "key": "more-ideas",
+        "EN_US": "New ideas",
+        "AM": "አዲስ ሀሳቦች"
     }
 ]

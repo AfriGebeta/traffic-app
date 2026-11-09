@@ -57,6 +57,8 @@ export default function PlacesLayout() {
                         headerShown: false,
                     }}
                 />
+                <Stack.Screen name="collection" options={{ title: 'My collection', headerShown: false }} />
+                <Stack.Screen name="offers-place" options={{ title: 'Offers', headerShown: false }} />
                 <Stack.Screen
                     name="claim"
                     options={{
