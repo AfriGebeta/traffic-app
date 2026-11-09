@@ -12,6 +12,10 @@ import { useCampaignGpsWarmup } from '../../campaigns/hooks/useCampaignGpsWarmup
 import { isTypeAvailable, slugForType, usePlaceCategories } from '../services/placeCategories';
 import { useSpecialPoints } from '../../campaigns/hooks/useSpecialPoints';
 import { FONT_MEDIUM, RADIUS } from '../../campaigns/components/CampaignUi';
+import { useIsDataCollector } from '../hooks/useIsDataCollector';
+
+// data collectors map businesses and their buildings first
+const COLLECTOR_FIRST: PlaceType[] = ['business', 'building'];
 
 export default function PlaceContributionScreen() {
     const router = useRouter();
@@ -23,7 +27,14 @@ export default function PlaceContributionScreen() {
     const params = useLocalSearchParams();
     // only types the backend has an active category for
     const categories = usePlaceCategories();
-    const placeTypes = PLACE_TYPES.filter((placeType) => isTypeAvailable(placeType.id as PlaceType, categories));
+    const isCollector = useIsDataCollector();
+    const available = PLACE_TYPES.filter((placeType) => isTypeAvailable(placeType.id as PlaceType, categories));
+    const placeTypes = isCollector
+        ? [
+              ...COLLECTOR_FIRST.flatMap((id) => available.filter((placeType) => placeType.id === id)),
+              ...available.filter((placeType) => !COLLECTOR_FIRST.includes(placeType.id as PlaceType)),
+          ]
+        : available;
     // types with a campaign bonus get a badge (joined, running campaigns only)
     const { visible: specialPoints } = useSpecialPoints();
 

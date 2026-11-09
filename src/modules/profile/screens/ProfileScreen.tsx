@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUserRegistration } from '../../register/hooks/useUserRegistration';
 import { User } from '../../register/types/user.types';
+import { useIsDataCollector } from '../../places/hooks/useIsDataCollector';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { changeLanguage } from '../../../shared/utils/localization/i18n';
 import { leaderboardService } from '../../leaderboard/services/leaderboard.service';
@@ -42,6 +43,7 @@ export const ProfileScreen = () => <ProfileContent />;
 const ProfileContent = () => {
     const router = useRouter();
     const { t, language } = useTranslation();
+    const isCollector = useIsDataCollector();
     const { colors: theme, isDark } = useTheme();
     const { getStoredUser, refreshStoredUser, clearAuth } = useUserRegistration();
     const [user, setUser] = useState<User | null>(null);
@@ -485,6 +487,34 @@ const ProfileContent = () => {
                             <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
                         </TouchableOpacity>
                     </View>
+
+                    {isCollector && (
+                    <View className="mb-3">
+                        <TouchableOpacity
+                            className="flex-row items-center justify-between px-4 py-4"
+                            style={elevatedCardStyle}
+                            activeOpacity={0.7}
+                            onPress={() => router.push('/places/collection')}
+                        >
+                            <View className="flex-row items-center flex-1 mr-3">
+                                <View
+                                    className="w-9 h-9 rounded-full items-center justify-center mr-3"
+                                    style={{ backgroundColor: isDark ? '#4D3400' : '#FFF1D6' }}
+                                >
+                                    <Ionicons name="clipboard-outline" size={18} color={colors.primary.main} />
+                                </View>
+                                <View className="flex-1">
+                                    <Text className="text-sm font-semibold" style={{ color: theme.textPrimary }}>
+                                        {t('my-collection')}
+                                    </Text>
+                                    <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }} numberOfLines={1}>
+                                        {t('my-collection-description')}
+                                    </Text>
+                                </View>
+                            </View>
+                            <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
+                        </TouchableOpacity>
+                    </View>)}
 
                     <TouchableOpacity
                         className="flex-row items-center justify-between px-4 py-4 mb-8"

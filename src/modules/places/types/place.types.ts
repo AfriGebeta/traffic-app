@@ -1,4 +1,6 @@
-export type PlaceType = 'gas_station' | 'charging_station' | 'taxi_station' | 'restaurant' | 'cafe' | 'parking' | 'hospital' | 'clinic' | 'pharmacy' | 'bank' | 'atm' | 'hotel' | 'school' | 'park' | 'building' | 'condominium' | 'company' | 'government' | 'mall' | 'shop' | 'other';
+import type { BusinessPayload, LabeledPhoto } from './business.types';
+
+export type PlaceType = 'gas_station' | 'charging_station' | 'taxi_station' | 'restaurant' | 'cafe' | 'parking' | 'hospital' | 'clinic' | 'pharmacy' | 'bank' | 'atm' | 'hotel' | 'school' | 'park' | 'building' | 'condominium' | 'business' | 'company' | 'government' | 'mall' | 'shop' | 'other';
 
 export interface Place {
     id: string;
@@ -22,6 +24,8 @@ export interface PlaceContributionAddress {
     streetName?: string;
     // condominiums only (required there)
     blockNumber?: string;
+    // collectors, on a building
+    landmarkDescription?: string;
 }
 
 export interface PlaceContributionRequest {
@@ -32,11 +36,17 @@ export interface PlaceContributionRequest {
     lng: number;
     description: string;
     phone?: string;
-    images: string[];
+    images?: string[];
     menu?: string[];
     floorCount?: string;
     buildingKind?: BuildingKind;
+    // collectors, on a building
+    campus?: string;
     address?: PlaceContributionAddress;
+    // Business type (business.types.ts)
+    business?: BusinessPayload;
+    // collectors send labelled photos instead of `images`
+    photos?: LabeledPhoto[];
     // where the phone is, which can differ from a map-picked lat/lng; backend checks photos against it
     deviceLat?: number;
     deviceLng?: number;
@@ -141,6 +151,7 @@ export const PLACE_TYPES = [
     { id: 'parking', label: 'Parking', icon: 'car' as const, color: '#8B5CF6' },
     { id: 'building', label: 'Building', icon: 'business' as const, color: '#F59E0B' },
     { id: 'condominium', label: 'Condominium', icon: 'home' as const, color: '#0EA5E9' },
+    { id: 'business', label: 'Business', icon: 'storefront' as const, color: '#F97316' },
     { id: 'charging_station', label: 'Charging Station', icon: 'flash' as const, color: '#22C55E' },
     { id: 'hospital', label: 'Hospital', icon: 'medical' as const, color: '#EC4899' },
     { id: 'clinic', label: 'Clinic', icon: 'medkit' as const, color: '#F472B6' },

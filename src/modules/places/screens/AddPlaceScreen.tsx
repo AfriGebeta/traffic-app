@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Modal, Pressable } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Input, Button } from '../../../shared/components';
@@ -12,7 +12,6 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
-import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { getPlaceIcon } from '../utils/placeIcons';
 import { toE164 } from '../../../shared/utils/phone';
@@ -26,6 +25,15 @@ import { PHOTO_PIN_LIMIT_M, deviceFieldsFromFix, latestPhotoFix, photoPinGap } f
 import { askForNotifications } from '../../../shared/services/notificationPermission';
 import { FONT_MEDIUM, RADIUS, RADIUS_SM, tint } from '../../campaigns/components/CampaignUi';
 import { FieldLabel } from '../../../shared/components/FieldLabel';
+import { isActive, pickLabel, usePlaceCatalog } from '../services/placeCatalog';
+import { useIsDataCollector } from '../hooks/useIsDataCollector';
+import { BusinessFields } from '../components/BusinessFields';
+import { CollectorFields } from '../components/CollectorFields';
+import { OfferEditor } from '../components/OfferEditor';
+import { SelectField } from '../components/FormControls';
+import { MAX_DESCRIPTION, MAX_FLOORS, STREET_LEVEL, buildBusiness, draftDescription, emptyBusinessDraft, offersAllowed, BusinessDraft } from '../utils/businessDraft';
+import { setPendingBuilding, takePendingBuilding } from '../utils/pendingBuilding';
+import { LabeledPhoto } from '../types/business.types';
 
 // types the backend accepts menu photos for (others answer 400 E0007)
 const MENU_TYPES: PlaceType[] = ['restaurant', 'cafe', 'hotel'];
@@ -46,6 +54,8 @@ export default function AddPlaceScreen() {
     const prefillDescription = typeof params.prefillDescription === 'string' ? params.prefillDescription : '';
     const prefillPhone = typeof params.prefillPhone === 'string' ? params.prefillPhone : '';
     const backSteps = Math.max(1, Number(params.backSteps) || 1);
+    // opened from the business form's "+ Add a new building"
+    const returnToBusiness = params.returnTo === 'business';
     const prefillLat = Number(params.prefillLat);
     const prefillLng = Number(params.prefillLng);
     const prefillCoordinates =
@@ -67,7 +77,15 @@ export default function AddPlaceScreen() {
     const [blockNumber, setBlockNumber] = useState('');
     const [floorCount, setFloorCount] = useState('');
     const [buildingKind, setBuildingKind] = useState<BuildingKind | null>(null);
-    const [buildingKindOpen, setBuildingKindOpen] = useState(false);
+    const [campus, setCampus] = useState<string | null>(null);
+    const [landmark, setLandmark] = useState('');
+    const [businessDraft, setBusinessDraft] = useState<BusinessDraft>(emptyBusinessDraft);
+    const patchBusiness = React.useCallback((patch: Partial<BusinessDraft>) => setBusinessDraft((prev) => ({ ...prev, ...patch })), []);
+    const [buildingsVersion, setBuildingsVersion] = useState(0);
+    // shop PIN returned after saving a business with a code offer
+    const [savedPin, setSavedPin] = useState<{ placeId: string; pin: string } | null>(null);
+    const isCollector = useIsDataCollector();
+    const { catalog, failed: catalogFailed, retry: retryCatalog } = usePlaceCatalog();
     const categories = usePlaceCategories();
     const [submitting, setSubmitting] = useState(false);
     // E0016: names of similar places nearby; null when the dialog is closed
@@ -80,6 +98,12 @@ export default function AddPlaceScreen() {
     const needsCustomCategory = placeType === 'other';
     const isCondominium = placeType === 'condominium';
     const isBuilding = placeType === 'building';
+    const isBusiness = placeType === 'business';
+    // collectors: building needs kind, floors, campus and a front photo; business needs hours, description and photos
+    const collectorBuilding = isCollector && isBuilding;
+    const collectorPlace = isCollector && (isBusiness || isBuilding);
+    const descriptionRequired = isCollector && isBusiness;
+    const photosRequired = inCampaign || collectorPlace;
     const trimmedFloorCount = floorCount.trim();
     const takesMenu = MENU_TYPES.includes(placeType);
     const trimmedBlock = blockNumber.trim();
@@ -88,6 +112,9 @@ export default function AddPlaceScreen() {
     const trimmedPhone = phone.trim();
     const phoneE164 = trimmedPhone ? toE164(trimmedPhone) : null;
     const phoneInvalid = trimmedPhone.length > 0 && !phoneE164;
+    const phoneMissing = isBusiness && !trimmedPhone;
+    const buildingIncomplete = collectorBuilding && (!buildingKind || !trimmedFloorCount || !campus);
+    const businessBlocked = isBusiness && (!catalog || !businessDraft.buildingChoice || !businessDraft.group || !businessDraft.kind);
 
     React.useEffect(() => {
         if (autoFilledLocation.current || coordinates || !userLocation) return;
@@ -106,6 +133,49 @@ export default function AddPlaceScreen() {
             }
         }, [selectedLocation, setSelectedLocation])
     );
+
+    // back from "+ Add a new building": select it and refresh the nearby list
+    useFocusEffect(
+        React.useCallback(() => {
+            if (!isBusiness) return;
+            const building = takePendingBuilding();
+            if (!building) return;
+            patchBusiness({ buildingChoice: building.id, buildingName: building.name, buildingFloorCount: building.floorCount, floor: null });
+            setBuildingsVersion((n) => n + 1);
+        }, [isBusiness, patchBusiness])
+    );
+
+    const handleAddBuilding = () => {
+        router.push({ pathname: '/places/add', params: { type: 'building', returnTo: 'business' } });
+    };
+
+    // collectors: first photo is the front, the rest get the type's second label (inside / main entrance)
+    const labeledPhotos = (): LabeledPhoto[] => {
+        const types = catalog?.photoTypes[isBuilding ? 'building' : 'business'] ?? [];
+        const rest = types.find((type) => type.key !== 'front')?.key ?? 'front';
+        return images.map((img, index) => ({ key: img.objectName, type: index === 0 ? 'front' : rest }));
+    };
+
+    const writeDescriptionDraft = () => {
+        const group = catalog?.businessGroups.find((g) => g.key === businessDraft.group);
+        const kind = group?.kinds.find((k) => k.key === businessDraft.kind);
+        const floor = businessDraft.floor ? (businessDraft.floor === 'ground' ? 'ground floor' : businessDraft.floor === 'basement' ? 'basement' : `floor ${businessDraft.floor}`) : '';
+        const where =
+            businessDraft.buildingChoice === STREET_LEVEL
+                ? businessDraft.landmark.trim() ? `Near ${businessDraft.landmark.trim()}` : ''
+                : [floor && floor[0].toUpperCase() + floor.slice(1), businessDraft.buildingName && `of ${businessDraft.buildingName}`, businessDraft.unit.trim() && `office ${businessDraft.unit.trim()}`]
+                      .filter(Boolean)
+                      .join(' ');
+        const feature = group?.features.find((f) => businessDraft.features.includes(f.key));
+        setDescription(
+            draftDescription({
+                kindLabel: pickLabel(kind?.label, 'en', 'Business'),
+                products: businessDraft.products,
+                where,
+                feature: feature ? pickLabel(feature.label, 'en') : undefined,
+            })
+        );
+    };
 
     // a new photo moves the pin to where it was taken, unless the user placed the pin on the map
     const photoFix = latestPhotoFix(images);
@@ -167,6 +237,40 @@ export default function AddPlaceScreen() {
             return;
         }
 
+        if (phoneMissing) {
+            showToast(t('business-phone-required'));
+            return;
+        }
+
+        let business: ReturnType<typeof buildBusiness>['business'] | undefined;
+        if (isBusiness) {
+            if (!catalog) {
+                showToast(t('business-catalog-unavailable'));
+                return;
+            }
+            const built = buildBusiness(businessDraft, isCollector, catalog);
+            if (built.missing.length > 0) {
+                showToast(`${t('please-fill')}: ${built.missing.map((key) => t(key)).join(', ')}`);
+                return;
+            }
+            business = built.business;
+        }
+
+        if (buildingIncomplete) {
+            showToast(`${t('please-fill')}: ${[!buildingKind && t('building-kind'), !trimmedFloorCount && t('floor-count'), !campus && t('campus-area')].filter(Boolean).join(', ')}`);
+            return;
+        }
+
+        if (descriptionRequired && !description.trim()) {
+            showToast(`${t('please-fill')}: ${t('description')}`);
+            return;
+        }
+
+        if (collectorPlace && images.length === 0) {
+            showToast(t('collector-photo-required'));
+            return;
+        }
+
         // the list may still be loading (or failed earlier); try once more before giving up
         const categoryId = categoryIdFor(placeType, categories ?? (await loadPlaceCategories()));
         if (!categoryId) {
@@ -189,8 +293,9 @@ export default function AddPlaceScreen() {
                 neighborhood: neighborhood.trim() || undefined,
                 streetName: streetName.trim() || undefined,
                 blockNumber: isCondominium ? trimmedBlock : undefined,
+                landmarkDescription: collectorBuilding && landmark.trim() ? landmark.trim() : undefined,
             };
-            const hasAddress = Boolean(address.city || address.neighborhood || address.streetName || address.blockNumber);
+            const hasAddress = Boolean(address.city || address.neighborhood || address.streetName || address.blockNumber || address.landmarkDescription);
 
             const request = {
                 name: name.trim(),
@@ -202,22 +307,42 @@ export default function AddPlaceScreen() {
                     ? [trimmedCustomCategory, trimmedDescription].filter(Boolean).join(' - ')
                     : trimmedDescription,
                 phone: phoneE164 ?? undefined,
-                images: images.map((img) => img.objectName),
+                // collectors label their business/building photos; everyone else sends plain keys
+                ...(collectorPlace ? { photos: labeledPhotos() } : { images: images.map((img) => img.objectName) }),
                 ...(takesMenu && menuPhotos.length > 0 && { menu: menuPhotos.map((photo) => photo.objectName) }),
                 ...(isBuilding && trimmedFloorCount && { floorCount: trimmedFloorCount }),
                 ...(isBuilding && buildingKind && { buildingKind }),
+                ...(collectorBuilding && campus && { campus }),
+                ...(business && { business }),
                 address: hasAddress ? address : undefined,
                 // the photo's fix is where the user stood; otherwise the live location
                 ...(photoFix ? deviceFieldsFromFix(photoFix) : userLocation && { deviceLat: userLocation.lat, deviceLng: userLocation.lng }),
             };
             // TEMP: check what the backend receives
             console.log(`[place-submit] type=${placeType} slug=${slugForType(placeType)}`, JSON.stringify(request, null, 2));
-            await placeService.contributePlace(request);
+            const created: any = await placeService.contributePlace(request);
+            const createdPlace = created?.data?.id ? created.data : created;
+            // TEMP: what the backend saved
+            console.log('[place-created]', JSON.stringify({ id: createdPlace?.id, status: createdPlace?.status, collectionStatus: createdPlace?.collectionStatus, business: !!createdPlace?.business, offerPin: !!createdPlace?.offerPin }));
 
             dashboardEventsService.contribute();
             showToast(t('place-contribution-submitted'));
             showCampaignPointsEstimate('place', coordinates, { hasPhoto: images.length > 0, category: slugForType(placeType) });
             void askForNotifications('contribution');
+
+            // hand the new building back to the business form, one screen back
+            if (isBuilding && returnToBusiness && createdPlace?.id) {
+                setPendingBuilding({ id: createdPlace.id, name: name.trim(), floorCount: trimmedFloorCount || null });
+                router.back();
+                return;
+            }
+
+            // a code offer: show the shop PIN before leaving
+            const pin = createdPlace?.offerPin ?? createdPlace?.business?.offerPin;
+            if (isBusiness && pin) {
+                setSavedPin({ placeId: createdPlace.id, pin: String(pin) });
+                return;
+            }
 
             leaveScreen();
         } catch (error) {
@@ -235,6 +360,14 @@ export default function AddPlaceScreen() {
             if (code === ApiErrorCode.CampaignRulesNotMet) {
                 const failures = getCampaignFailures((error as ApiError).additional);
                 showToast(failures.length > 0 ? failures.join('\n') : t('campaign-rules-not-met'));
+                return;
+            }
+            // 400 E0007: additional.missing / additional.invalid name the fields
+            const additional = error instanceof ApiError ? error.additional : undefined;
+            const fields = [...(Array.isArray(additional?.missing) ? additional.missing : []), ...(Array.isArray(additional?.invalid) ? additional.invalid : [])];
+            if (fields.length > 0) {
+                const named = fields.map((field: unknown) => (typeof field === 'string' ? field : (field as any)?.field ?? JSON.stringify(field)));
+                showToast(`${t('please-check')}: ${named.join(', ')}`);
                 return;
             }
             const errorMessage = error instanceof Error ? error.message : t('could-not-submit-contribution');
@@ -316,42 +449,95 @@ export default function AddPlaceScreen() {
 
                     {isBuilding && (
                         <View>
-                            <FieldLabel label={t('building-kind')} optional />
-                            <TouchableOpacity
-                                onPress={() => setBuildingKindOpen(true)}
-                                activeOpacity={0.7}
-                                className="flex-row items-center border px-3.5"
-                                style={{ borderRadius: RADIUS_SM, minHeight: 48, borderColor: theme.border, backgroundColor: isDark ? theme.surface : colors.gray[50] }}
-                            >
-                                <Text
-                                    className="flex-1"
-                                    style={{ fontSize: 15, color: buildingKind ? theme.textPrimary : theme.textSecondary }}
-                                    numberOfLines={1}
-                                >
-                                    {buildingKind ? t(`building-kind-${buildingKind}`) : t('building-kind-placeholder')}
-                                </Text>
-                                <Ionicons name="chevron-down" size={18} color={theme.textSecondary} />
-                            </TouchableOpacity>
+                            <FieldLabel label={t('building-kind')} required={collectorBuilding} optional={!collectorBuilding} />
+                            <SelectField
+                                title={t('building-kind')}
+                                placeholder={t('building-kind-placeholder')}
+                                options={
+                                    catalog?.buildingKinds.length
+                                        ? catalog.buildingKinds.filter(isActive).map((kind) => ({ value: kind.key, label: pickLabel(kind.label, i18n.language, kind.key) }))
+                                        : BUILDING_KINDS.map((kind) => ({ value: kind as string, label: t(`building-kind-${kind}`) }))
+                                }
+                                value={buildingKind}
+                                onChange={(kind) => setBuildingKind(kind as BuildingKind | null)}
+                                clearable={!collectorBuilding}
+                            />
                         </View>
                     )}
 
                     {isBuilding && (
                         <View>
-                            <FieldLabel label={t('floor-count')} optional />
-                            <Input
-                                variant="calm"
-                                placeholder={t('floor-count-placeholder')}
-                                value={floorCount}
-                                // digits only
-                                onChangeText={(text) => setFloorCount(text.replace(/\D/g, ''))}
-                                keyboardType="number-pad"
-                                maxLength={3}
+                            <FieldLabel label={t('floor-count')} required={collectorBuilding} optional={!collectorBuilding} />
+                            {collectorBuilding ? (
+                                // collectors pick 1 to 20; normal users type any number
+                                <SelectField
+                                    title={t('floor-count')}
+                                    placeholder={t('choose')}
+                                    options={Array.from({ length: MAX_FLOORS }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }))}
+                                    value={trimmedFloorCount || null}
+                                    onChange={(count) => setFloorCount(count ?? '')}
+                                />
+                            ) : (
+                                <Input
+                                    variant="calm"
+                                    placeholder={t('floor-count-placeholder')}
+                                    value={floorCount}
+                                    // digits only
+                                    onChangeText={(text) => setFloorCount(text.replace(/\D/g, ''))}
+                                    keyboardType="number-pad"
+                                    maxLength={3}
+                                />
+                            )}
+                        </View>
+                    )}
+
+                    {collectorBuilding && (
+                        <View>
+                            <FieldLabel label={t('campus-area')} required />
+                            <SelectField
+                                title={t('campus-area')}
+                                placeholder={t('choose')}
+                                options={(catalog?.campusAreas ?? []).filter(isActive).map((c) => ({ value: c.key, label: pickLabel(c.label, i18n.language, c.key) }))}
+                                value={campus}
+                                onChange={setCampus}
                             />
                         </View>
                     )}
 
+                    {collectorBuilding && (
+                        <View>
+                            <FieldLabel label={t('nearest-landmark')} optional />
+                            <Input variant="calm" placeholder={t('nearest-landmark-placeholder')} value={landmark} onChangeText={setLandmark} />
+                        </View>
+                    )}
+
+                    {isBusiness && !catalog && (
+                        <View className="flex-row items-center px-4 py-3" style={{ borderRadius: RADIUS, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surface }}>
+                            <Text className="flex-1 text-sm" style={{ color: theme.textSecondary }}>
+                                {catalogFailed ? t('business-catalog-unavailable') : t('loading')}
+                            </Text>
+                            {catalogFailed && (
+                                <TouchableOpacity onPress={retryCatalog} hitSlop={8}>
+                                    <Text className="text-sm" style={{ color: theme.primary, fontFamily: FONT_MEDIUM }}>{t('retry')}</Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    )}
+
+                    {isBusiness && catalog && (
+                        <BusinessFields
+                            draft={businessDraft}
+                            onChange={patchBusiness}
+                            catalog={catalog}
+                            isCollector={isCollector}
+                            coordinates={coordinates}
+                            onAddBuilding={handleAddBuilding}
+                            buildingsVersion={buildingsVersion}
+                        />
+                    )}
+
                     <View>
-                        <FieldLabel label={t('phone-number')} optional />
+                        <FieldLabel label={t('phone-number')} required={isBusiness} optional={!isBusiness} />
                         <Input
                             variant="calm"
                             placeholder={t('place-phone-placeholder')}
@@ -363,8 +549,26 @@ export default function AddPlaceScreen() {
                         />
                     </View>
 
+                    {isBusiness && (
+                        <View>
+                            <FieldLabel label={t('second-phone')} optional />
+                            <Input
+                                variant="calm"
+                                placeholder={t('place-phone-placeholder')}
+                                value={businessDraft.phone2}
+                                onChangeText={(phone2) => patchBusiness({ phone2 })}
+                                keyboardType="phone-pad"
+                            />
+                        </View>
+                    )}
+
                     <View>
-                        <FieldLabel label={t('description')} optional />
+                        <FieldLabel
+                            label={t('description')}
+                            required={descriptionRequired}
+                            optional={!descriptionRequired}
+                            hint={isBusiness ? catalog?.businessGroups.find((g) => g.key === businessDraft.group)?.descriptionExample : undefined}
+                        />
                         <Input
                             variant="calm"
                             placeholder={t('add-details-about-place')}
@@ -372,13 +576,49 @@ export default function AddPlaceScreen() {
                             onChangeText={setDescription}
                             multiline
                             numberOfLines={3}
+                            maxLength={isBusiness ? MAX_DESCRIPTION : undefined}
                         />
+                        {isBusiness && (
+                            <View className="flex-row items-center justify-between mt-1.5">
+                                <TouchableOpacity onPress={writeDescriptionDraft} disabled={!businessDraft.kind} hitSlop={6}>
+                                    <Text className="text-sm" style={{ color: businessDraft.kind ? theme.primary : theme.textSecondary, fontFamily: FONT_MEDIUM }}>
+                                        {t('write-description-draft')}
+                                    </Text>
+                                </TouchableOpacity>
+                                <Text className="text-xs" style={{ color: theme.textSecondary, fontVariant: ['tabular-nums'] }}>
+                                    {description.length}/{MAX_DESCRIPTION}
+                                </Text>
+                            </View>
+                        )}
                     </View>
 
-                    <View>
-                        <FieldLabel label={t('city')} optional />
-                        <Input variant="calm" placeholder={t('city-placeholder')} value={city} onChangeText={setCity} />
-                    </View>
+                    {isBusiness && isCollector && catalog && (
+                        <View>
+                            <Text className="mb-3" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM, fontSize: 16 }}>{t('collector-details')}</Text>
+                            <CollectorFields draft={businessDraft} onChange={patchBusiness} catalog={catalog} />
+                        </View>
+                    )}
+
+                    {isBusiness && isCollector && catalog && !!businessDraft.kind && (
+                        <View>
+                            <Text style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM, fontSize: 16 }}>{t('trial-offers')}</Text>
+                            {offersAllowed(businessDraft, catalog) ? (
+                                <>
+                                    <Text className="text-xs mt-0.5 mb-3" style={{ color: theme.textSecondary }}>{t('trial-offers-hint')}</Text>
+                                    <OfferEditor draft={businessDraft} onChange={patchBusiness} catalog={catalog} placeName={name} description={description} />
+                                </>
+                            ) : (
+                                <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>{t('mapped-without-offers')}</Text>
+                            )}
+                        </View>
+                    )}
+
+                    {!isBusiness && (
+                        <View>
+                            <FieldLabel label={t('city')} optional />
+                            <Input variant="calm" placeholder={t('city-placeholder')} value={city} onChangeText={setCity} />
+                        </View>
+                    )}
 
                     {takesMenu && (
                         <View>
@@ -393,15 +633,19 @@ export default function AddPlaceScreen() {
                         </View>
                     )}
 
-                    <View>
-                        <FieldLabel label={t('neighborhood')} optional />
-                        <Input variant="calm" placeholder={t('neighborhood-placeholder')} value={neighborhood} onChangeText={setNeighborhood} />
-                    </View>
+                    {!isBusiness && (
+                        <View>
+                            <FieldLabel label={t('neighborhood')} optional />
+                            <Input variant="calm" placeholder={t('neighborhood-placeholder')} value={neighborhood} onChangeText={setNeighborhood} />
+                        </View>
+                    )}
 
-                    <View>
-                        <FieldLabel label={t('street-name')} optional />
-                        <Input variant="calm" placeholder={t('street-name-placeholder')} value={streetName} onChangeText={setStreetName} />
-                    </View>
+                    {!isBusiness && (
+                        <View>
+                            <FieldLabel label={t('street-name')} optional />
+                            <Input variant="calm" placeholder={t('street-name-placeholder')} value={streetName} onChangeText={setStreetName} />
+                        </View>
+                    )}
 
                     <View>
                         <FieldLabel label={t('location')} required />
@@ -497,9 +741,14 @@ export default function AddPlaceScreen() {
                     </View>
 
                     <View>
-                        {/* campaigns reject places without a photo, so don't call it optional there */}
-                        <FieldLabel label={t('photos')} optional={!inCampaign} />
-                        <PhotoPicker photos={images} onChange={setImages} folder="places" requireLocation={inCampaign} />
+                        {/* campaigns and collectors need a photo, so don't call it optional there */}
+                        <FieldLabel
+                            label={t('photos')}
+                            required={collectorPlace}
+                            optional={!photosRequired}
+                            hint={collectorPlace ? t('collector-photos-hint') : undefined}
+                        />
+                        <PhotoPicker photos={images} onChange={setImages} folder="places" cameraOnly={inCampaign} requireLocation={inCampaign} />
                     </View>
                 </View>
             </ScrollView>
@@ -510,7 +759,7 @@ export default function AddPlaceScreen() {
                     textStyle={{ fontSize: 16, fontWeight: 'normal', fontFamily: FONT_MEDIUM }}
                     title={submitting ? t('submitting') : t('submit-contribution')}
                     onPress={() => void handleSubmit()}
-                    disabled={submitting || !name.trim() || !coordinates || phoneInvalid || blockInvalid || (needsCustomCategory && !customCategory.trim())}
+                    disabled={submitting || !name.trim() || !coordinates || phoneInvalid || blockInvalid || phoneMissing || businessBlocked || (needsCustomCategory && !customCategory.trim())}
                 />
             </View>
 
@@ -527,40 +776,20 @@ export default function AddPlaceScreen() {
                 }}
             />
 
-            <Modal visible={buildingKindOpen} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setBuildingKindOpen(false)}>
-                <Pressable
-                    className="flex-1 items-center justify-center px-6"
-                    style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
-                    onPress={() => setBuildingKindOpen(false)}
-                >
-                    <Pressable className="w-full py-2" style={{ borderRadius: RADIUS, backgroundColor: theme.background, maxWidth: 480, borderWidth: 1, borderColor: theme.border }}>
-                        <Text className="px-5 pt-3 pb-2" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM, fontSize: 16 }}>
-                            {t('building-kind')}
-                        </Text>
-                        <ScrollView style={{ maxHeight: 420 }}>
-                            {BUILDING_KINDS.map((kind) => {
-                                const selected = kind === buildingKind;
-                                return (
-                                    <TouchableOpacity
-                                        key={kind}
-                                        onPress={() => {
-                                            // tapping the chosen one again clears it (the field is optional)
-                                            setBuildingKind(selected ? null : kind);
-                                            setBuildingKindOpen(false);
-                                        }}
-                                        className="flex-row items-center px-5 py-3.5"
-                                    >
-                                        <Text className="flex-1 text-sm" style={{ color: theme.textPrimary, fontFamily: selected ? FONT_MEDIUM : undefined }}>
-                                            {t(`building-kind-${kind}`)}
-                                        </Text>
-                                        {selected && <Ionicons name="checkmark" size={18} color={theme.primary} />}
-                                    </TouchableOpacity>
-                                );
-                            })}
-                        </ScrollView>
-                    </Pressable>
-                </Pressable>
-            </Modal>
+            <ConfirmDialog
+                visible={savedPin !== null}
+                title={t('shop-pin')}
+                message={t('shop-pin-saved', { pin: savedPin?.pin ?? '' })}
+                confirmLabel={t('done')}
+                onConfirm={() => {
+                    setSavedPin(null);
+                    leaveScreen();
+                }}
+                onCancel={() => {
+                    setSavedPin(null);
+                    leaveScreen();
+                }}
+            />
         </View>
     );
 }
