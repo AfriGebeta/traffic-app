@@ -5705,14 +5705,14 @@
         "AM": "እስከ {{max}} ቅናሾች"
     },
     {
-        "key": "my-collection",
-        "EN_US": "My collection",
-        "AM": "የእኔ ስብስብ"
+        "key": "collection-title",
+        "EN_US": "Collection",
+        "AM": "ስብስብ"
     },
     {
-        "key": "my-collection-description",
-        "EN_US": "Places you mapped, statuses and PINs",
-        "AM": "የመዘገቧቸው ቦታዎች፣ ሁኔታዎች እና ፒኖች"
+        "key": "collection-description",
+        "EN_US": "Places the team mapped, with statuses and PINs",
+        "AM": "ቡድኑ የመዘገባቸው ቦታዎች፣ ሁኔታዎች እና ፒኖች"
     },
     {
         "key": "nearest-landmark",

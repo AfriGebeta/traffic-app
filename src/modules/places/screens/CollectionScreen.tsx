@@ -163,7 +163,7 @@ export default function CollectionScreen() {
                 <TouchableOpacity onPress={() => router.back()} className="self-start p-1 -ml-1" activeOpacity={0.7} hitSlop={8}>
                     <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
                 </TouchableOpacity>
-                <Text className="mt-3" style={{ color: theme.textPrimary, fontSize: 28, lineHeight: 34, letterSpacing: -0.4 }}>{t('my-collection')}</Text>
+                <Text className="mt-3" style={{ color: theme.textPrimary, fontSize: 28, lineHeight: 34, letterSpacing: -0.4 }}>{t('collection-title')}</Text>
                 {!!counts && (
                     <Text className="text-sm mt-1" style={{ color: theme.textSecondary }}>
                         {[

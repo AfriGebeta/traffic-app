@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
 import { getAccessToken, onSessionExpired, onSessionStarted } from '../../../shared/services/auth-session';
 import { userService } from '../../register/services/user.service';
 import { User } from '../../register/types/user.types';
@@ -45,6 +46,12 @@ export const initDataCollector = () => {
     onSessionStarted(() => void refreshDataCollector());
     onSessionExpired(resetDataCollector);
     void refreshDataCollector();
+    // role can change on the backend while the app is open; re-check each time it comes back
+    let appState: AppStateStatus = AppState.currentState;
+    AppState.addEventListener('change', (next) => {
+        if (appState.match(/inactive|background/) && next === 'active') void refreshDataCollector();
+        appState = next;
+    });
 };
 
 export function useIsDataCollector(): boolean {

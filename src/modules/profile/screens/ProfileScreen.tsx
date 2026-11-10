@@ -505,10 +505,10 @@ const ProfileContent = () => {
                                 </View>
                                 <View className="flex-1">
                                     <Text className="text-sm font-semibold" style={{ color: theme.textPrimary }}>
-                                        {t('my-collection')}
+                                        {t('collection-title')}
                                     </Text>
                                     <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }} numberOfLines={1}>
-                                        {t('my-collection-description')}
+                                        {t('collection-description')}
                                     </Text>
                                 </View>
                             </View>
