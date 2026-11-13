@@ -1,6 +1,7 @@
 import type { ApiResponse } from '../services/api';
 
 export enum ApiErrorCode {
+    Forbidden = 'E0010',
     DuplicatePlace = 'E0016',
     UserRestricted = 'E0017',
     PhotoLocationMismatch = 'E0018',

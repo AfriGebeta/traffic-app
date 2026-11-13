@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Modal, Pressable, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Modal, Platform, Pressable, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { colors } from '../../../shared/theme/colors';
@@ -205,6 +206,101 @@ export function ChipSelect<V extends string>({
 }
 
 // boxed sub-section inside a long form ("More details", "Offer 1", ...)
+export function DateField({
+    value,
+    onChange,
+    minimumDate,
+    placeholder,
+    doneLabel,
+    disabled,
+    error,
+}: {
+    value: string | null | undefined;
+    onChange: (value: string) => void;
+    minimumDate?: string;
+    placeholder: string;
+    // iOS only: the picker sits in a sheet with a Done button
+    doneLabel: string;
+    disabled?: boolean;
+    error?: string;
+}) {
+    const { colors: theme, isDark } = useTheme();
+    const [iosOpen, setIosOpen] = useState(false);
+    const toDate = (iso: string | null | undefined) => {
+        const match = iso?.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        return match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : null;
+    };
+    const toIso = (date: Date) =>
+        `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const current = toDate(value);
+    const min = toDate(minimumDate) ?? undefined;
+    const [iosDraft, setIosDraft] = useState<Date>(current ?? new Date());
+
+    const open = () => {
+        if (Platform.OS === 'android') {
+            DateTimePickerAndroid.open({
+                value: current ?? min ?? new Date(),
+                mode: 'date',
+                minimumDate: min,
+                onChange: (event, date) => {
+                    if (event.type === 'set' && date) onChange(toIso(date));
+                },
+            });
+            return;
+        }
+        setIosDraft(current ?? min ?? new Date());
+        setIosOpen(true);
+    };
+
+    return (
+        <View>
+            <TouchableOpacity
+                onPress={open}
+                activeOpacity={0.7}
+                disabled={disabled}
+                className="flex-row items-center border px-3.5"
+                style={{
+                    borderRadius: RADIUS_SM,
+                    minHeight: 48,
+                    borderColor: error ? theme.error : theme.border,
+                    backgroundColor: isDark ? theme.surface : colors.gray[50],
+                    opacity: disabled ? 0.5 : 1,
+                }}
+            >
+                <Text className="flex-1" style={{ fontSize: 15, color: current ? theme.textPrimary : theme.textSecondary }} numberOfLines={1}>
+                    {current ? current.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) : placeholder}
+                </Text>
+                <Ionicons name="calendar-outline" size={18} color={theme.textSecondary} />
+            </TouchableOpacity>
+            {!!error && (
+                <Text className="text-xs mt-1" style={{ color: theme.error }}>
+                    {error}
+                </Text>
+            )}
+
+            {Platform.OS === 'ios' && (
+                <Modal visible={iosOpen} transparent animationType="fade" onRequestClose={() => setIosOpen(false)}>
+                    <Pressable className="flex-1 items-center justify-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }} onPress={() => setIosOpen(false)}>
+                        <Pressable className="w-full p-4" style={{ borderRadius: RADIUS, backgroundColor: theme.background, maxWidth: 480 }}>
+                            <DateTimePicker value={iosDraft} mode="date" display="inline" minimumDate={min} onChange={(_, date) => date && setIosDraft(date)} />
+                            <TouchableOpacity
+                                onPress={() => {
+                                    onChange(toIso(iosDraft));
+                                    setIosOpen(false);
+                                }}
+                                className="items-center justify-center mt-2"
+                                style={{ minHeight: 44, borderRadius: RADIUS_SM, backgroundColor: theme.primary }}
+                            >
+                                <Text style={{ color: '#fff', fontFamily: FONT_MEDIUM }}>{doneLabel}</Text>
+                            </TouchableOpacity>
+                        </Pressable>
+                    </Pressable>
+                </Modal>
+            )}
+        </View>
+    );
+}
+
 export function FormSection({ title, subtitle, right, children }: { title: string; subtitle?: string; right?: React.ReactNode; children: React.ReactNode }) {
     const { colors: theme } = useTheme();
     return (

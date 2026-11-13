@@ -19,6 +19,18 @@ export interface GeocodingPlace {
     District?: string;
     type: string;
     image?: string;
+    businessId?: string | null;
+    promoted?: boolean;
+    hasOffers?: boolean;
+    offer?: GeocodingOffer | null;
+}
+
+export interface GeocodingOffer {
+    id: string;
+    text: string;
+    badge: string;
+    studentsOnly: boolean;
+    availableNow: boolean;
 }
 
 export interface GeocodingResponse {

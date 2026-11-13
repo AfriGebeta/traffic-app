@@ -8,6 +8,7 @@ import { AuthErrorCode, toFriendlyAuthError } from '../utils/authErrors';
 import { clearSession, getAccessToken } from '../../../shared/services/auth-session';
 import { unregisterPushDevice } from '../../../shared/services/push';
 import { resetDataCollector } from '../../places/hooks/useIsDataCollector';
+import { resetStudentCheck } from '../../places/hooks/useStudentCheck';
 
 const USER_STORAGE_KEY = '@traffic_app_user';
 
@@ -97,6 +98,7 @@ export const useUserRegistration = () => {
         await unregisterPushDevice();
         await clearSession();
         resetDataCollector();
+        resetStudentCheck();
         await resetHomeOnboarding();
     };
 

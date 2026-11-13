@@ -11,8 +11,8 @@ import { FONT_MEDIUM, RADIUS_SM, tint } from '../../campaigns/components/Campaig
 import { businessService } from '../services/business.service';
 import { isActive, pickLabel } from '../services/placeCatalog';
 import { BusinessOffer, CatalogOption, OfferField, OfferIdea, PlaceCatalog } from '../types/business.types';
-import { BusinessDraft, MAX_OFFERS, hoursText, offerMissing, offerPreview, offerUsesPin, randomPin } from '../utils/businessDraft';
-import { ChipSelect, FormSection, SelectField, toggleIn } from './FormControls';
+import { BusinessDraft, DEFAULT_OFFER_DAYS, MAX_OFFERS, addDays, hoursText, isoDate, offerMissing, offerPreview, offerUsesPin, randomPin } from '../utils/businessDraft';
+import { ChipSelect, DateField, FormSection, SelectField } from './FormControls';
 
 interface Props {
     draft: BusinessDraft;
@@ -36,16 +36,20 @@ export function OfferEditor({ draft, onChange, catalog, placeName, description }
     const [loadingIdeas, setLoadingIdeas] = useState(false);
 
     const firstKey = (list: CatalogOption[]) => list.filter(isActive)[0]?.key;
-    const newOffer = (base: Partial<BusinessOffer> = {}): BusinessOffer => ({
-        type: types[0]?.key ?? 'percent',
-        months: catalog.trialMonths.map((m) => m.key),
-        audience: firstKey(options.audience),
+    const newOffer = ({ months: _months, ...base }: Partial<BusinessOffer> = {}): BusinessOffer => {
+        const today = isoDate(new Date());
+        return {
+            type: types[0]?.key ?? 'percent',
+            startsOn: today,
+            endsOn: addDays(today, DEFAULT_OFFER_DAYS),
+            audience: firstKey(options.audience),
         days: firstKey(options.days),
         time: firstKey(options.time),
         redeem: firstKey(options.redeem),
-        limit: firstKey(options.limit),
-        ...base,
-    });
+            limit: firstKey(options.limit),
+            ...base,
+        };
+    };
 
     const setOffer = (index: number, patch: Partial<BusinessOffer>) =>
         onChange({ offers: draft.offers.map((offer, i) => (i === index ? { ...offer, ...patch } : offer)) });
@@ -161,19 +165,23 @@ export function OfferEditor({ draft, onChange, catalog, placeName, description }
             {draft.offers.map((offer, index) => {
                 const type = types.find((ty) => ty.key === offer.type) ?? options.types.find((ty) => ty.key === offer.type);
                 const missing = offerMissing(offer, type);
-                const preview = offerPreview(offer);
+                const ended = !!offer.endedOn;
+                const preview = String(offer.title ?? '').trim() || offerPreview(offer);
                 const badge = type ? (offer.redeem === 'code-with-pin' && type.badge === 'Offer' ? 'Code' : type.badge) : '';
                 return (
                     <FormSection
                         key={offer.id ?? `new-${index}`}
                         title={t('offer-n', { n: index + 1 })}
-                        subtitle={offer.paused ? t('offer-paused') : undefined}
+                        subtitle={ended ? t('offer-ended') : offer.paused ? t('offer-paused') : undefined}
                         right={
-                            <TouchableOpacity onPress={() => onChange({ offers: draft.offers.filter((_, i) => i !== index) })} hitSlop={8}>
-                                <Ionicons name="trash-outline" size={18} color={theme.error} />
-                            </TouchableOpacity>
+                            ended ? undefined : (
+                                <TouchableOpacity onPress={() => onChange({ offers: draft.offers.filter((_, i) => i !== index) })} hitSlop={8}>
+                                    <Ionicons name="trash-outline" size={18} color={theme.error} />
+                                </TouchableOpacity>
+                            )
                         }
                     >
+                        <View pointerEvents={ended ? 'none' : 'auto'} className="gap-4" style={{ opacity: ended ? 0.55 : 1 }}>
                         <View>
                             <FieldLabel label={t('offer-type')} required />
                             <SelectField
@@ -184,9 +192,9 @@ export function OfferEditor({ draft, onChange, catalog, placeName, description }
                                 // keep the shared fields, drop the old type's own fields
                                 onChange={(next) => {
                                     if (!next || next === offer.type) return;
-                                    const kept = Object.fromEntries(
-                                        Object.entries(offer).filter(([key]) => ['id', 'paused', 'months', 'audience', 'days', 'time', 'redeem', 'limit', 'season'].includes(key))
-                                    );
+                                    const nextType = options.types.find((ty) => ty.key === next);
+                                    const shared = new Set<string>(['id', 'paused', ...(nextType?.common ?? [])]);
+                                    const kept = Object.fromEntries(Object.entries(offer).filter(([key]) => shared.has(key)));
                                     onChange({
                                         offers: draft.offers.map((o, i) => (i === index ? ({ ...kept, type: next } as BusinessOffer) : o)),
                                     });
@@ -196,14 +204,41 @@ export function OfferEditor({ draft, onChange, catalog, placeName, description }
 
                         {type?.fields.map((field) => renderField(offer, index, field))}
 
-                        <View>
-                            <FieldLabel label={t('offer-months')} required />
-                            <ChipSelect
-                                options={catalog.trialMonths.map((m) => ({ value: m.key, label: `${pickLabel(m.label, lang, m.key)} · ${m.from}–${m.to}` }))}
-                                selected={offer.months ?? []}
-                                onToggle={(m) => setOffer(index, { months: toggleIn(offer.months ?? [], m) })}
-                            />
+                        <View className="flex-row gap-3">
+                            <View className="flex-1">
+                                <FieldLabel label={t('offer-starts')} required />
+                                <DateField
+                                    value={offer.startsOn}
+                                    placeholder={t('choose')}
+                                    doneLabel={t('done')}
+                                    // moving the start past the end pulls the end along
+                                    onChange={(startsOn) => setOffer(index, { startsOn, ...(offer.endsOn && offer.endsOn < startsOn && { endsOn: startsOn }) })}
+                                />
+                            </View>
+                            <View className="flex-1">
+                                <FieldLabel label={t('offer-ends')} required />
+                                <DateField
+                                    value={offer.endsOn}
+                                    minimumDate={offer.startsOn}
+                                    placeholder={t('choose')}
+                                    doneLabel={t('done')}
+                                    onChange={(endsOn) => setOffer(index, { endsOn })}
+                                />
+                            </View>
                         </View>
+
+                        {type?.common.includes('title') && (
+                            <View>
+                                <FieldLabel label={t('offer-title')} optional hint={t('offer-title-hint')} />
+                                <Input
+                                    variant="calm"
+                                    placeholder={offerPreview(offer) || t('offer-title')}
+                                    value={String(offer.title ?? '')}
+                                    onChangeText={(title) => setOffer(index, { title })}
+                                    maxLength={80}
+                                />
+                            </View>
+                        )}
 
                         {type?.common.includes('audience') && commonSelect(offer, index, 'audience', options.audience)}
                         {type?.common.includes('days') && commonSelect(offer, index, 'days', options.days)}
@@ -237,7 +272,8 @@ export function OfferEditor({ draft, onChange, catalog, placeName, description }
                                 </Text>
                             </View>
                         </View>
-                        {missing.length > 0 && <Text className="text-xs" style={{ color: theme.error }}>{t('offer-fill-required')}</Text>}
+                        {!ended && missing.length > 0 && <Text className="text-xs" style={{ color: theme.error }}>{t('offer-fill-required')}</Text>}
+                        </View>
                     </FormSection>
                 );
             })}

@@ -36,6 +36,10 @@ export const navigationService = {
             Country: place.address.country || '',
             City: place.address.city || '',
             type: place.category || 'location',
+            businessId: place.businessId ?? null,
+            promoted: place.promoted === true,
+            hasOffers: place.hasOffers === true,
+            offer: place.offer ?? null,
         }));
     },
 

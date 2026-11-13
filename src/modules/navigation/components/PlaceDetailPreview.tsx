@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image, ImageSourcePropType } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Image, ImageSourcePropType, Linking, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { Video, ResizeMode } from 'expo-av';
@@ -14,6 +14,12 @@ import { placeService } from '../../places/services/place.service';
 import { showToast } from '../../../shared/utils/toast';
 import { shareLocation } from '../../../shared/utils/shareLocation';
 import type { SavedPlace } from '../../places/types/place.types';
+import { trackEngagement } from '../../../shared/services/engagement.service';
+import { featuredOffer, useBusinessPlace } from '../../places/hooks/useBusinessPlace';
+import { pickLabel, usePlaceCatalog } from '../../places/services/placeCatalog';
+import { CardDetails, CardOffer, OpenLine } from '../../places/components/BusinessCardSections';
+import { openState, telUrl } from '../../places/utils/businessPlace';
+import { useAuthGate } from '../../register/hooks/useAuthGate';
 
 interface PlaceDetailPreviewProps {
     place: GeocodingPlace;
@@ -85,7 +91,7 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
     onContribute,
     onClose,
 }) => {
-    const { t } = useTranslation();
+    const { t, language } = useTranslation();
     const insets = useSafeAreaInsets();
     const { isWide, panelLeft } = useLayout();
     const { colors: theme, isDark } = useTheme();
@@ -94,10 +100,54 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
     // which video asset has rendered its first frame; image shows until then
     const [readyVideo, setReadyVideo] = useState<number | null>(null);
     const router = useRouter();
+    const { height: windowHeight } = useWindowDimensions();
+    const { requireAuth } = useAuthGate();
+    const { catalog } = usePlaceCatalog();
+    const business = useBusinessPlace(place.businessId);
+    const [photo, setPhoto] = useState(0);
+    const [showDetails, setShowDetails] = useState(false);
+    const firstOffer = featuredOffer(business.offers);
+    const photos = business.photos;
+    const openNow = openState(business.place?.openingHours);
+    const phoneUrl = telUrl(business.place?.phone);
 
     useEffect(() => {
         checkIfSaved();
     }, [place]);
+
+    useEffect(() => {
+        setPhoto(0);
+        setShowDetails(false);
+    }, [place.businessId]);
+
+    const openedFor = useRef<string | null>(null);
+    useEffect(() => {
+        if (!place.businessId || !business.loaded || openedFor.current === place.businessId) return;
+        openedFor.current = place.businessId;
+        trackEngagement(place.businessId, 'opened', firstOffer?.id);
+    }, [place.businessId, business.loaded, firstOffer?.id]);
+
+    const routeTo = (start: () => void) => () => {
+        trackEngagement(place.businessId, 'directions', firstOffer?.id);
+        start();
+    };
+
+    const call = (url: string) => {
+        trackEngagement(place.businessId, 'call', firstOffer?.id);
+        void Linking.openURL(url).catch(() => showToast(t('could-not-open-dialer')));
+    };
+
+    const openOffer = (offerId?: string) => {
+        if (!place.businessId) return;
+        router.push({ pathname: '/places/offer', params: { placeId: place.businessId, ...(offerId && { offerId }), name: place.name } } as any);
+    };
+
+    const toggleFollow = () =>
+        void requireAuth(async () => {
+            const next = !business.following;
+            const ok = await business.setFollowing(next);
+            showToast(ok ? t(next ? 'following-place' : 'unfollowed-place', { name: place.name }) : t('could-not-update'));
+        });
 
     useFocusEffect(
         React.useCallback(() => {
@@ -154,10 +204,14 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
     };
 
     const locationLine = [place.City, place.Country].filter(Boolean).join(', ');
+    const businessGroup = catalog?.businessGroups.find((g) => g.key === business.place?.business?.group);
+    const businessKind = businessGroup?.kinds.find((k) => k.key === business.place?.business?.kind);
     const categoryLabel =
         place.type === 'coordinates'
             ? `${place.latitude.toFixed(5)}, ${place.longitude.toFixed(5)}`
-            : place.type || t('location');
+            : businessKind
+              ? pickLabel(businessKind.label, language, businessKind.key)
+              : place.type || t('location');
 
     const getPlaceImage = () => {
         const placeType = (place.type || place.category || '').toLowerCase();
@@ -264,7 +318,30 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
                         </TouchableOpacity>
                     </View>
 
+                    <ScrollView style={{ maxHeight: windowHeight * 0.72 }} bounces={false} showsVerticalScrollIndicator={false}>
                     <View className="px-5 pb-1">
+                        {photos.length > 0 ? (
+                            <View className="mb-2">
+                                <Image
+                                    source={{ uri: photos[Math.min(photo, photos.length - 1)] }}
+                                    className="rounded-2xl"
+                                    style={{ width: '100%', height: 150, borderRadius: 16, backgroundColor: theme.surface }}
+                                    resizeMode="cover"
+                                />
+                                {photos.length > 1 && (
+                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingTop: 6 }}>
+                                        {photos.map((uri, index) => (
+                                            <TouchableOpacity key={uri} onPress={() => setPhoto(index)} activeOpacity={0.8}>
+                                                <Image
+                                                    source={{ uri }}
+                                                    style={{ width: 44, height: 44, borderRadius: 6, borderWidth: 2, borderColor: index === photo ? theme.primary : 'transparent' }}
+                                                />
+                                            </TouchableOpacity>
+                                        ))}
+                                    </ScrollView>
+                                )}
+                            </View>
+                        ) : (
                         <View
                             className="rounded-2xl overflow-hidden mb-2"
                             style={{ height: imageBoxHeight }}
@@ -299,6 +376,7 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
                                 />
                             ) : null}
                         </View>
+                        )}
 
                         <Text className="text-xl font-bold mb-0.5" style={{ color: theme.textPrimary }} numberOfLines={2}>
                             {place.name}
@@ -308,6 +386,19 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
                             {categoryLabel}
                             {locationLine ? ` • ${locationLine}` : ''}
                         </Text>
+                        {!!place.businessId && <OpenLine state={openNow} />}
+
+                        {!!firstOffer && (
+                            <View className="mt-2 mb-1">
+                                <CardOffer
+                                    offer={firstOffer}
+                                    moreCount={business.offers.length - 1}
+                                    image={photos[0]}
+                                    catalog={catalog}
+                                    onUse={() => openOffer(firstOffer.id)}
+                                />
+                            </View>
+                        )}
                     </View>
 
                     <ScrollView
@@ -322,22 +413,31 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
                         <ActionPill
                             icon="navigate"
                             label={t('directions')}
-                            onPress={onDirections}
+                            onPress={routeTo(onDirections)}
                             primary
                         />
+                        {!!phoneUrl && <ActionPill icon="call-outline" label={t('call')} onPress={() => call(phoneUrl)} />}
                         <ActionPill
                             icon="car-outline"
                             label={t('taxi')}
-                            onPress={onTaxi}
+                            onPress={routeTo(onTaxi)}
                         />
                         <ActionPill
                             icon={savedPlace ? 'bookmark' : 'bookmark-outline'}
                             label={t('save')}
                             onPress={savedPlace ? handleUnsavePlace : () => router.push({
                                 pathname: '/places/save',
-                                params: { lat: place.latitude, lng: place.longitude, name: place.name },
+                                // counted as a save only once the save screen succeeds
+                                params: { lat: place.latitude, lng: place.longitude, name: place.name, ...(place.businessId && { businessId: place.businessId }) },
                             } as any)}
                         />
+                        {!!place.businessId && (
+                            <ActionPill
+                                icon={business.following ? 'notifications' : 'notifications-outline'}
+                                label={t(business.following ? 'following' : 'follow')}
+                                onPress={toggleFollow}
+                            />
+                        )}
                         {/* {isClaimableBusiness() && (
                             <ActionPill
                                 icon="briefcase-outline"
@@ -350,6 +450,26 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
                             label={t('share')}
                             onPress={handleShare}
                         />
+                    </ScrollView>
+
+                    {!!business.place && (
+                        <View style={{ marginHorizontal: 20, paddingBottom: 4 }}>
+                            <TouchableOpacity
+                                onPress={() => setShowDetails((v) => !v)}
+                                activeOpacity={0.7}
+                                className="flex-row items-center py-2"
+                                accessibilityRole="button"
+                                accessibilityState={{ expanded: showDetails }}
+                            >
+                                <Ionicons name="information-circle-outline" size={17} color={theme.textSecondary} style={{ marginRight: 10 }} />
+                                <Text className="flex-1" style={{ color: theme.textPrimary, fontSize: 14, fontWeight: '600' }}>
+                                    {t(showDetails ? 'hide-details' : 'business-details-toggle')}
+                                </Text>
+                                <Ionicons name={showDetails ? 'chevron-up' : 'chevron-down'} size={17} color={theme.textSecondary} />
+                            </TouchableOpacity>
+                            {showDetails && <CardDetails place={business.place} openNow={openNow} catalog={catalog} onCall={call} />}
+                        </View>
+                    )}
                     </ScrollView>
 
                     <View

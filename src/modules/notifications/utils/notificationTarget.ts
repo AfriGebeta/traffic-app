@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { getCampaignState } from '../../campaigns/store/campaignStore';
+import { refreshStudentCheck } from '../../places/hooks/useStudentCheck';
 import { NotificationData } from '../types/notification.types';
 
 const str = (data: NotificationData | null | undefined, key: string): string => {
@@ -41,6 +42,11 @@ const targetFor = (data: NotificationData | null | undefined): Target => {
             return () => router.push('/contact-support');
         case 'admin.notification':
             return adminLinkTarget(data);
+        case 'student_check.decided':
+            return () => {
+                void refreshStudentCheck();
+                router.push('/student-check' as any);
+            };
         default:
             return 'home';
     }

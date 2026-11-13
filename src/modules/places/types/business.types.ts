@@ -58,7 +58,7 @@ export interface OfferField {
     options?: { label: LocalizedLabel; value: string | number }[];
 }
 
-export type OfferCommonField = 'audience' | 'days' | 'time' | 'redeem' | 'limit' | 'season' | 'months';
+export type OfferCommonField = 'audience' | 'days' | 'time' | 'redeem' | 'limit' | 'season' | 'months' | 'startsOn' | 'endsOn' | 'endedOn' | 'title' | 'announcedOn' | (string & {});
 
 export interface OfferTypeOption {
     key: string;
@@ -95,7 +95,11 @@ export interface BusinessOffer {
     id?: string;
     paused?: boolean;
     type: string;
-    months: string[];
+    months?: string[];
+    startsOn?: string;
+    endsOn?: string;
+    endedOn?: string | null;
+    title?: string;
     audience?: string;
     days?: string;
     time?: string;
@@ -141,6 +145,7 @@ export interface BusinessPayload {
     group: string;
     kind: string;
     phone2?: string;
+    telegram?: string;
     hoursPreset?: string;
     hours?: Hours;
     // collector only
@@ -170,8 +175,8 @@ export interface NearbyBuilding {
     distanceM: number;
 }
 
-export type CollectionStatus = 'New' | 'Checked' | 'Live' | 'Rejected';
-export const COLLECTION_STATUSES: CollectionStatus[] = ['New', 'Checked', 'Live', 'Rejected'];
+export type CollectionStatus = 'New' | 'Checked' | 'Live' | 'Rejected' | 'Closed';
+export const COLLECTION_STATUSES: CollectionStatus[] = ['New', 'Checked', 'Live', 'Rejected', 'Closed'];
 
 export interface CollectionBusiness {
     id: string;
@@ -242,13 +247,89 @@ export interface PublicOffer {
     redeem?: string | null;
     limit?: string | null;
     season?: string | null;
-    months: string[];
+    months?: string[];
+    startsOn?: string | null;
+    endsOn?: string | null;
+    studentsOnly?: boolean;
     availableNow: boolean;
+    loyalty?: LoyaltyCard | null;
+}
+
+export interface LoyaltyCard {
+    every: number;
+    reward: string;
+    stamps: number;
+    nextIsReward: boolean;
 }
 
 export interface PlaceOffers {
-    month: string | null;
+    // kept for old builds; ignore
+    month?: string | null;
     offers: PublicOffer[];
+}
+
+export interface PublicPlace {
+    id: string;
+    name: string | LocalizedLabel;
+    type: string;
+    lat: number;
+    lng: number;
+    description?: string | null;
+    images?: string[];
+    photoTypes?: LabeledPhoto[];
+    phone?: string | null;
+    website?: string | null;
+    openingHours?: Hours | null;
+    formattedAddress?: string | null;
+    campusArea?: string | null;
+    business?: (Partial<BusinessPayload> & { telegram?: string | null; phone2?: string | null; features?: string[] }) | null;
+}
+
+export interface OfferUse {
+    code: string;
+    usedAt: string;
+    showUntil: string;
+    place: { id: string; name: string | LocalizedLabel };
+    offer: { id: string; text: string };
+    loyalty?: LoyaltyVisit | null;
+}
+
+export interface LoyaltyVisit {
+    visit: number;
+    every: number;
+    isReward: boolean;
+    reward: string;
+}
+
+export interface SavedOffer {
+    offerId: string;
+    text: string;
+    studentsOnly: boolean;
+    status: string;
+    startsOn?: string | null;
+    endsOn?: string | null;
+    savedAt: string;
+    place: { id: string; name: string | LocalizedLabel; lat: number; lng: number; image?: string | null };
+}
+
+export type StudentCheckStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
+
+export interface StudentCheck {
+    status: StudentCheckStatus;
+    kind: 'student' | 'resident';
+    areaKey: string;
+    validUntil?: string | null;
+    note?: string | null;
+    createdAt: string;
+}
+
+export interface FollowedPlace {
+    id: string;
+    name: string | LocalizedLabel;
+    lat: number;
+    lng: number;
+    image?: string | null;
+    followedAt: string;
 }
 
 export interface OfferIdea {

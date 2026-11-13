@@ -80,6 +80,9 @@ const PlaceListItem = ({
     onPrepareSelect?: () => void;
     onRemoveRecent?: (place: GeocodingPlace) => void;
 }) => {
+    const { t } = useTranslation();
+    const promotedLabel = t('promoted');
+    const live = icon !== 'time-outline';
     const handleSelect = () => {
         onPrepareSelect?.();
         Keyboard.dismiss();
@@ -100,12 +103,29 @@ const PlaceListItem = ({
                     <Ionicons name={icon} size={20} color={icon === 'time-outline' ? theme.textSecondary : theme.primary} />
                 </View>
                 <View className="flex-1">
-                    <Text className="font-semibold" style={{ color: theme.textPrimary }} numberOfLines={1}>
-                        {place.name}
-                    </Text>
+                    <View className="flex-row items-center">
+                        <Text className="font-semibold flex-shrink" style={{ color: theme.textPrimary }} numberOfLines={1}>
+                            {place.name}
+                        </Text>
+                        {/* paid placement: always labelled */}
+                        {live && place.promoted && (
+                            <View className="ml-1.5 px-1.5" style={{ borderRadius: 4, borderWidth: 1, borderColor: theme.border }}>
+                                <Text style={{ color: theme.textSecondary, fontSize: 10.5 }}>{promotedLabel}</Text>
+                            </View>
+                        )}
+                    </View>
                     <Text className="text-sm" style={{ color: theme.textSecondary }} numberOfLines={1}>
                         {place.type} • {place.City}
                     </Text>
+                    {live && !!place.offer?.text && (
+                        // greyed when live today but not at this hour
+                        <View className="flex-row items-center mt-0.5" style={{ opacity: place.offer.availableNow ? 1 : 0.5 }}>
+                            <Ionicons name="pricetag" size={12} color={theme.primary} />
+                            <Text className="text-sm ml-1 flex-1" style={{ color: theme.primary, fontWeight: '600' }} numberOfLines={1}>
+                                {place.offer.text}
+                            </Text>
+                        </View>
+                    )}
                 </View>
                 <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
             </TouchableOpacity>
@@ -267,6 +287,10 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
 }) => {
     const { t } = useTranslation();
     const { colors: theme } = useTheme();
+    const [offersOnly, setOffersOnly] = React.useState(false);
+    const anyOffers = results.some((place) => place.hasOffers);
+    // a new search with no offers drops the filter so results never look empty
+    const shown = offersOnly && anyOffers ? results.filter((place) => place.hasOffers) : results;
 
     if (!showContainer) return null;
 
@@ -341,7 +365,29 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
                 </View>
             ) : (
                 <ScrollView className="max-h-80" keyboardShouldPersistTaps="always">
-                    {results.map((place, index) => (
+                    {anyOffers && (
+                        <View className="px-4 pt-3 pb-1 flex-row">
+                            <TouchableOpacity
+                                onPress={() => setOffersOnly((v) => !v)}
+                                activeOpacity={0.7}
+                                accessibilityRole="button"
+                                accessibilityState={{ selected: offersOnly }}
+                                className="flex-row items-center px-3 py-1.5"
+                                style={{
+                                    borderRadius: 999,
+                                    borderWidth: 1,
+                                    borderColor: offersOnly ? theme.primary : theme.border,
+                                    backgroundColor: offersOnly ? theme.primary : 'transparent',
+                                }}
+                            >
+                                <Ionicons name="pricetag" size={13} color={offersOnly ? '#fff' : theme.primary} />
+                                <Text className="ml-1.5 text-sm" style={{ color: offersOnly ? '#fff' : theme.textPrimary, fontWeight: '600' }}>
+                                    {t('has-an-offer')}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+                    {shown.map((place, index) => (
                         <PlaceListItem
                             key={`${place.latitude}-${place.longitude}-${index}`}
                             place={place}

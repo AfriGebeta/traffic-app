@@ -5,10 +5,16 @@ import {
     CollectionOverview,
     CollectionStatus,
     CollectorData,
+    FollowedPlace,
+    LoyaltyVisit,
+    OfferUse,
+    SavedOffer,
+    StudentCheck,
     NearbyBuilding,
     NearbyOfferPlace,
     OfferIdea,
     PlaceOffers,
+    PublicPlace,
 } from '../types/business.types';
 
 // some endpoints wrap the body in { data }
@@ -74,6 +80,22 @@ export const businessService = {
 
     // customers ---------------------------------------------------------------
 
+    async getPlace(placeId: string): Promise<PublicPlace> {
+        const response = await apiService.get(`/api/places/${placeId}`);
+        return unwrap<PublicPlace>(response, 'Failed to load place');
+    },
+
+    async follow(placeId: string, following: boolean): Promise<boolean> {
+        const response = following ? await apiService.post(`/api/places/${placeId}/follow`) : await apiService.delete(`/api/places/${placeId}/follow`);
+        return unwrap<{ following: boolean }>(response, 'Could not update').following;
+    },
+
+    async following(): Promise<FollowedPlace[]> {
+        const response = await apiService.get('/api/places/following');
+        const rows = unwrap<FollowedPlace[]>(response, 'Failed to load');
+        return Array.isArray(rows) ? rows : [];
+    },
+
     async nearbyOffers(lat: number, lng: number, radius = 1000): Promise<NearbyOfferPlace[]> {
         const response = await apiService.get(`/api/places/offers/nearby?${query({ lat, lng, radius })}`);
         const rows = unwrap<NearbyOfferPlace[]>(response, 'Failed to load offers');
@@ -91,8 +113,53 @@ export const businessService = {
         return unwrap(response, 'Could not get a code');
     },
 
-    async confirmCode(placeId: string, code: string, pin: string): Promise<{ confirmed: boolean; offer?: Pick<BusinessOffer, 'id' | 'text'>; confirmedAt?: string }> {
+    async confirmCode(
+        placeId: string,
+        code: string,
+        pin: string
+    ): Promise<{ confirmed: boolean; offer?: Pick<BusinessOffer, 'id' | 'text'>; confirmedAt?: string; loyalty?: LoyaltyVisit | null }> {
         const response = await apiService.post(`/api/places/${placeId}/offers/confirm`, { code, pin });
         return unwrap(response, 'Could not confirm');
+    },
+
+    async useOffer(placeId: string, offerId: string): Promise<OfferUse> {
+        const response = await apiService.post(`/api/places/${placeId}/offers/${offerId}/use`);
+        return unwrap(response, 'Could not use the offer');
+    },
+
+    async redemptionFeedback(placeId: string, code: string, given: boolean, note?: string): Promise<void> {
+        const response = await apiService.post(`/api/places/${placeId}/redemptions/${encodeURIComponent(code)}/feedback`, {
+            given,
+            ...(note?.trim() && { note: note.trim() }),
+        });
+        if (response.error) throw new ApiError(response, 'Could not send');
+    },
+
+    async setOfferSaved(placeId: string, offerId: string, saved: boolean): Promise<boolean> {
+        const path = `/api/places/${placeId}/offers/${offerId}/save`;
+        const response = saved ? await apiService.post(path) : await apiService.delete(path);
+        return unwrap<{ saved: boolean }>(response, 'Could not update').saved;
+    },
+
+    async savedOffers(): Promise<SavedOffer[]> {
+        const response = await apiService.get('/api/places/offers/saved');
+        const rows = unwrap<SavedOffer[]>(response, 'Failed to load');
+        return Array.isArray(rows) ? rows : [];
+    },
+
+    async remindOffer(placeId: string, offerId: string, at: string): Promise<string> {
+        const response = await apiService.post(`/api/places/${placeId}/offers/${offerId}/remind`, { at });
+        return unwrap<{ remindAt: string }>(response, 'Could not set a reminder').remindAt;
+    },
+
+
+    async studentCheck(): Promise<StudentCheck | null> {
+        const response = await apiService.get('/api/users/student-check');
+        return unwrap<{ check: StudentCheck | null }>(response, 'Failed to load').check ?? null;
+    },
+
+    async sendStudentCheck(body: { kind: 'student' | 'resident'; areaKey: string; photoKey: string }): Promise<StudentCheck> {
+        const response = await apiService.post('/api/users/student-check', body);
+        return unwrap<{ check: StudentCheck }>(response, 'Could not send').check;
     },
 };

@@ -5560,11 +5560,6 @@
         "AM": "የካምፓስ አካባቢ"
     },
     {
-        "key": "cashier-enters-pin",
-        "EN_US": "Hand the phone to the cashier to type the shop PIN",
-        "AM": "የሱቁን ፒን እንዲያስገቡ ስልኩን ለገንዘብ ተቀባዩ ይስጡ"
-    },
-    {
         "key": "cbe-birr-number",
         "EN_US": "CBE Birr number",
         "AM": "የሲቢኢ ብር ቁጥር"
@@ -5685,11 +5680,6 @@
         "AM": "{{count}} ፎቆች"
     },
     {
-        "key": "get-code",
-        "EN_US": "Get code",
-        "AM": "ኮድ ያግኙ"
-    },
-    {
         "key": "get-new-code",
         "EN_US": "Get a new code",
         "AM": "አዲስ ኮድ ያግኙ"
@@ -5711,8 +5701,8 @@
     },
     {
         "key": "collection-description",
-        "EN_US": "Places the team mapped, with statuses and PINs",
-        "AM": "ቡድኑ የመዘገባቸው ቦታዎች፣ ሁኔታዎች እና ፒኖች"
+        "EN_US": "Businesses in your area, with statuses and PINs",
+        "AM": "በአካባቢዎ ያሉ ንግዶች፣ ሁኔታዎች እና ፒኖች"
     },
     {
         "key": "nearest-landmark",
@@ -5755,11 +5745,6 @@
         "AM": "ይህን ቅናሽ ቀድመው ተጠቅመዋል"
     },
     {
-        "key": "offer-confirmed",
-        "EN_US": "Offer confirmed",
-        "AM": "ቅናሹ ተረጋግጧል"
-    },
-    {
         "key": "offer-fill-required",
         "EN_US": "Fill in the required fields",
         "AM": "አስፈላጊ መስኮችን ይሙሉ"
@@ -5773,11 +5758,6 @@
         "key": "offer-incomplete",
         "EN_US": "Offer details",
         "AM": "የቅናሽ ዝርዝሮች"
-    },
-    {
-        "key": "offer-months",
-        "EN_US": "Months",
-        "AM": "ወራት"
     },
     {
         "key": "offer-n",
@@ -5840,26 +5820,6 @@
         "AM": "ገደብ"
     },
     {
-        "key": "offer-badge-offer",
-        "EN_US": "Offer",
-        "AM": "ቅናሽ"
-    },
-    {
-        "key": "offer-badge-code",
-        "EN_US": "Code",
-        "AM": "ኮድ"
-    },
-    {
-        "key": "offer-badge-bundle",
-        "EN_US": "Bundle",
-        "AM": "ጥቅል"
-    },
-    {
-        "key": "offer-badge-new",
-        "EN_US": "New",
-        "AM": "አዲስ"
-    },
-    {
         "key": "offers",
         "EN_US": "Offers",
         "AM": "ቅናሾች"
@@ -5868,11 +5828,6 @@
         "key": "offers-count",
         "EN_US": "{{count}} offers",
         "AM": "{{count}} ቅናሾች"
-    },
-    {
-        "key": "offers-not-found",
-        "EN_US": "This place has no live offers",
-        "AM": "ይህ ቦታ ቅናሽ የለውም"
     },
     {
         "key": "opening-hours",
@@ -5988,11 +5943,6 @@
         "key": "shop-pin-saved",
         "EN_US": "Give this PIN to the owner: {{pin}}\nThe cashier types it to confirm a student's code.",
         "AM": "ይህን ፒን ለባለቤቱ ይስጡ፡ {{pin}}\nገንዘብ ተቀባዩ የተማሪውን ኮድ ለማረጋገጥ ያስገባዋል።"
-    },
-    {
-        "key": "show-this-screen",
-        "EN_US": "Show this screen at the counter",
-        "AM": "ይህን ስክሪን በመክፈያው ያሳዩ"
     },
     {
         "key": "status-new",
@@ -6188,5 +6138,435 @@
         "key": "campaign-watch-video",
         "EN_US": "Watch the video",
         "AM": "ቪዲዮውን ይመልከቱ"
+    },
+    {
+        "key": "offer-starts",
+        "EN_US": "Starts",
+        "AM": "ይጀምራል"
+    },
+    {
+        "key": "offer-ends",
+        "EN_US": "Ends",
+        "AM": "ያበቃል"
+    },
+    {
+        "key": "offer-title",
+        "EN_US": "Headline",
+        "AM": "ርዕስ"
+    },
+    {
+        "key": "offer-title-hint",
+        "EN_US": "Optional. Shown instead of the text made from the offer.",
+        "AM": "አማራጭ። ከቅናሹ በተሰራው ጽሑፍ ፋንታ ይታያል።"
+    },
+    {
+        "key": "offer-ended",
+        "EN_US": "Ended",
+        "AM": "አብቅቷል"
+    },
+    {
+        "key": "status-closed",
+        "EN_US": "Closed",
+        "AM": "ተዘግቷል"
+    },
+    {
+        "key": "business-other-area",
+        "EN_US": "This business is in another area",
+        "AM": "ይህ ንግድ በሌላ አካባቢ ነው"
+    },
+    {
+        "key": "business-telegram",
+        "EN_US": "Telegram username",
+        "AM": "የቴሌግራም መለያ ስም"
+    },
+    {
+        "key": "business-telegram-hint",
+        "EN_US": "The business's public Telegram, shown on its page",
+        "AM": "የንግዱ ይፋዊ ቴሌግራም፣ በገጹ ላይ ይታያል"
+    },
+    {
+        "key": "open-now",
+        "EN_US": "Open",
+        "AM": "ክፍት ነው"
+    },
+    {
+        "key": "closed-now",
+        "EN_US": "Closed",
+        "AM": "ዝግ ነው"
+    },
+    {
+        "key": "closes-at",
+        "EN_US": "closes {{time}}",
+        "AM": "{{time}} ይዘጋል"
+    },
+    {
+        "key": "ends-on",
+        "EN_US": "ends {{date}}",
+        "AM": "{{date}} ያበቃል"
+    },
+    {
+        "key": "more-offers-count",
+        "EN_US": "+{{count}} more",
+        "AM": "+{{count}} ተጨማሪ"
+    },
+    {
+        "key": "use-offer",
+        "EN_US": "Use offer",
+        "AM": "ቅናሹን ይጠቀሙ"
+    },
+    {
+        "key": "offer-not-now",
+        "EN_US": "Not available now",
+        "AM": "አሁን አይገኝም"
+    },
+    {
+        "key": "could-not-open-dialer",
+        "EN_US": "Could not open the phone app",
+        "AM": "የስልክ መተግበሪያውን መክፈት አልተቻለም"
+    },
+    {
+        "key": "following-place",
+        "EN_US": "Following {{name}}",
+        "AM": "{{name}}ን እየተከተሉ ነው"
+    },
+    {
+        "key": "unfollowed-place",
+        "EN_US": "Unfollowed {{name}}",
+        "AM": "{{name}}ን መከተል አቁመዋል"
+    },
+    {
+        "key": "could-not-update",
+        "EN_US": "Could not update. Try again.",
+        "AM": "ማዘመን አልተቻለም። እንደገና ይሞክሩ።"
+    },
+    {
+        "key": "call",
+        "EN_US": "Call",
+        "AM": "ደውል"
+    },
+    {
+        "key": "following",
+        "EN_US": "Following",
+        "AM": "እየተከተሉ"
+    },
+    {
+        "key": "follow",
+        "EN_US": "Follow",
+        "AM": "ተከተል"
+    },
+    {
+        "key": "hide-details",
+        "EN_US": "Hide details",
+        "AM": "ዝርዝሩን ደብቅ"
+    },
+    {
+        "key": "business-details-toggle",
+        "EN_US": "Phone, hours, address and website",
+        "AM": "ስልክ፣ ሰዓት፣ አድራሻ እና ድረ-ገጽ"
+    },
+    {
+        "key": "back",
+        "EN_US": "Back",
+        "AM": "ተመለስ"
+    },
+    {
+        "key": "students-only",
+        "EN_US": "Students only",
+        "AM": "ለተማሪዎች ብቻ"
+    },
+    {
+        "key": "everyone",
+        "EN_US": "Everyone",
+        "AM": "ለሁሉም"
+    },
+    {
+        "key": "offer-when",
+        "EN_US": "When",
+        "AM": "መቼ"
+    },
+    {
+        "key": "offer-claim-by",
+        "EN_US": "Claim it by",
+        "AM": "የሚወሰድበት መንገድ"
+    },
+    {
+        "key": "loyalty-next-free",
+        "EN_US": "Your next visit is free",
+        "AM": "ቀጣዩ ጉብኝትዎ ነፃ ነው"
+    },
+    {
+        "key": "loyalty-progress",
+        "EN_US": "{{stamps}} of {{every}} visits",
+        "AM": "ከ{{every}} ጉብኝቶች {{stamps}}"
+    },
+    {
+        "key": "offer-students-note",
+        "EN_US": "This offer is for students. Verify once to use it.",
+        "AM": "ይህ ቅናሽ ለተማሪዎች ነው። ለመጠቀም አንድ ጊዜ ያረጋግጡ።"
+    },
+    {
+        "key": "more-offers-here",
+        "EN_US": "More offers here",
+        "AM": "ተጨማሪ ቅናሾች እዚህ"
+    },
+    {
+        "key": "promoted",
+        "EN_US": "Promoted",
+        "AM": "የተዋወቀ"
+    },
+    {
+        "key": "has-an-offer",
+        "EN_US": "Has an offer",
+        "AM": "ቅናሽ ያለው"
+    },
+    {
+        "key": "back-to-map",
+        "EN_US": "Back to map",
+        "AM": "ወደ ካርታ ተመለስ"
+    },
+    {
+        "key": "cashier-pin-label",
+        "EN_US": "Shop PIN (the cashier types it)",
+        "AM": "የሱቅ ፒን (ገንዘብ ተቀባዩ ያስገባል)"
+    },
+    {
+        "key": "could-not-send",
+        "EN_US": "Could not send. Try again.",
+        "AM": "መላክ አልተቻለም። እንደገና ይሞክሩ።"
+    },
+    {
+        "key": "counter-got-offer",
+        "EN_US": "I got my offer",
+        "AM": "ቅናሹን አግኝቻለሁ"
+    },
+    {
+        "key": "counter-not-screenshot",
+        "EN_US": "The moving stripe and live clock show it isn’t a screenshot.",
+        "AM": "የሚንቀሳቀሰው መስመርና ሰዓቱ ይህ ስክሪንሾት አለመሆኑን ያሳያሉ።"
+    },
+    {
+        "key": "counter-hand-phone",
+        "EN_US": "Hand your phone to the cashier",
+        "AM": "ስልክዎን ለገንዘብ ተቀባዩ ይስጡ"
+    },
+    {
+        "key": "counter-turn-screen",
+        "EN_US": "Turn your screen to the cashier",
+        "AM": "ስክሪኑን ለገንዘብ ተቀባዩ ያሳዩ"
+    },
+    {
+        "key": "confirm-with-pin",
+        "EN_US": "Confirm with PIN",
+        "AM": "በፒን ያረጋግጡ"
+    },
+    {
+        "key": "follow-for-next-offer",
+        "EN_US": "Follow {{name}} for its next offer",
+        "AM": "ለቀጣዩ ቅናሽ {{name}}ን ይከተሉ"
+    },
+    {
+        "key": "loyalty-reward-now",
+        "EN_US": "Reward: {{reward}}",
+        "AM": "ሽልማት፦ {{reward}}"
+    },
+    {
+        "key": "loyalty-visit",
+        "EN_US": "Visit {{visit}} of {{every}}",
+        "AM": "ጉብኝት {{visit}} ከ{{every}}"
+    },
+    {
+        "key": "offer-done-title",
+        "EN_US": "Enjoy it",
+        "AM": "ይደሰቱበት"
+    },
+    {
+        "key": "offer-given-question",
+        "EN_US": "Did they give you the offer?",
+        "AM": "ቅናሹን ሰጡዎት?"
+    },
+    {
+        "key": "offer-not-given",
+        "EN_US": "No, report it",
+        "AM": "አልሰጡም፣ ሪፖርት አድርግ"
+    },
+    {
+        "key": "offer-report-placeholder",
+        "EN_US": "What happened? (optional)",
+        "AM": "ምን ሆነ? (አማራጭ)"
+    },
+    {
+        "key": "offer-used-at",
+        "EN_US": "Offer used at {{name}}.",
+        "AM": "ቅናሹ በ{{name}} ጥቅም ላይ ውሏል።"
+    },
+    {
+        "key": "remind-at",
+        "EN_US": "Today at {{time}}",
+        "AM": "ዛሬ {{time}} ላይ"
+    },
+    {
+        "key": "remind-me",
+        "EN_US": "Remind me later today",
+        "AM": "ዛሬ በኋላ አስታውሰኝ"
+    },
+    {
+        "key": "remind-me-title",
+        "EN_US": "Remind me at",
+        "AM": "አስታውሰኝ በ"
+    },
+    {
+        "key": "reminder-set",
+        "EN_US": "Reminder set for {{time}}",
+        "AM": "ማስታወሻ ለ{{time}} ተቀምጧል"
+    },
+    {
+        "key": "send-report",
+        "EN_US": "Send report",
+        "AM": "ሪፖርት ላክ"
+    },
+    {
+        "key": "student-check-title",
+        "EN_US": "Student check",
+        "AM": "የተማሪ ማረጋገጫ"
+    },
+    {
+        "key": "student-check-profile-description",
+        "EN_US": "Verify once to use student offers",
+        "AM": "የተማሪ ቅናሾችን ለመጠቀም አንድ ጊዜ ያረጋግጡ"
+    },
+    {
+        "key": "student-check-school-title",
+        "EN_US": "Which school are you at?",
+        "AM": "በየትኛው ትምህርት ቤት ነዎት?"
+    },
+    {
+        "key": "student-check-school-hint",
+        "EN_US": "We check once. You’re set until the end of the school year.",
+        "AM": "አንድ ጊዜ እናረጋግጣለን። እስከ ትምህርት ዓመቱ መጨረሻ ይቆያል።"
+    },
+    {
+        "key": "student-check-photo-title",
+        "EN_US": "Take a photo of your student ID",
+        "AM": "የተማሪ መታወቂያዎን ፎቶ ያንሱ"
+    },
+    {
+        "key": "student-check-photo-hint",
+        "EN_US": "The front, with your name and the year clearly visible.",
+        "AM": "ፊት ለፊቱን፣ ስምዎና ዓመቱ በግልጽ እንዲታዩ።"
+    },
+    {
+        "key": "student-check-private",
+        "EN_US": "Businesses never see your ID.",
+        "AM": "ንግዶች መታወቂያዎን በጭራሽ አያዩም።"
+    },
+    {
+        "key": "student-check-send",
+        "EN_US": "Send for checking",
+        "AM": "ለማረጋገጥ ላክ"
+    },
+    {
+        "key": "student-check-send-again",
+        "EN_US": "Send again",
+        "AM": "እንደገና ላክ"
+    },
+    {
+        "key": "student-check-approved",
+        "EN_US": "Verified student",
+        "AM": "የተረጋገጠ ተማሪ"
+    },
+    {
+        "key": "student-check-pending",
+        "EN_US": "Waiting for review",
+        "AM": "ግምገማ በመጠበቅ ላይ"
+    },
+    {
+        "key": "student-check-rejected",
+        "EN_US": "Not approved",
+        "AM": "አልጸደቀም"
+    },
+    {
+        "key": "student-check-expired",
+        "EN_US": "Expired",
+        "AM": "ጊዜው አልፏል"
+    },
+    {
+        "key": "student-check-pending-hint",
+        "EN_US": "Most checks are done within a day.",
+        "AM": "አብዛኞቹ ማረጋገጫዎች በአንድ ቀን ውስጥ ይጠናቀቃሉ።"
+    },
+    {
+        "key": "student-check-expired-hint",
+        "EN_US": "The school year ended. Send a new photo to verify again.",
+        "AM": "የትምህርት ዓመቱ አብቅቷል። እንደገና ለማረጋገጥ አዲስ ፎቶ ይላኩ።"
+    },
+    {
+        "key": "student-check-valid-until",
+        "EN_US": "Valid until {{date}}",
+        "AM": "እስከ {{date}} ያገለግላል"
+    },
+    {
+        "key": "student-check-pending-note",
+        "EN_US": "Your student check is being reviewed. Most are done within a day.",
+        "AM": "የተማሪ ማረጋገጫዎ እየታየ ነው። አብዛኞቹ በአንድ ቀን ውስጥ ይጠናቀቃሉ።"
+    },
+    {
+        "key": "thanks-for-telling-us",
+        "EN_US": "Thanks for letting us know.",
+        "AM": "ስላሳወቁን እናመሰግናለን።"
+    },
+    {
+        "key": "today",
+        "EN_US": "Today",
+        "AM": "ዛሬ"
+    },
+    {
+        "key": "use-offer-confirm-title",
+        "EN_US": "Are you at the counter?",
+        "AM": "ገንዘብ ተቀባዩ ጋ ነዎት?"
+    },
+    {
+        "key": "use-offer-confirm-message",
+        "EN_US": "Using it now counts as a use, so only tap this when you’re paying.",
+        "AM": "አሁን መጠቀም እንደ አንድ አጠቃቀም ይቆጠራል፣ ስለዚህ ሲከፍሉ ብቻ ይጫኑ።"
+    },
+    {
+        "key": "use-offer-confirm-yes",
+        "EN_US": "Use it now",
+        "AM": "አሁን ተጠቀም"
+    },
+    {
+        "key": "use-at-counter",
+        "EN_US": "Use at the counter",
+        "AM": "ገንዘብ ተቀባዩ ጋ ተጠቀም"
+    },
+    {
+        "key": "verified-student",
+        "EN_US": "Verified student",
+        "AM": "የተረጋገጠ ተማሪ"
+    },
+    {
+        "key": "verified-student-name",
+        "EN_US": "Verified student · {{name}}",
+        "AM": "የተረጋገጠ ተማሪ · {{name}}"
+    },
+    {
+        "key": "verify-to-use",
+        "EN_US": "Verify to use",
+        "AM": "ለመጠቀም ያረጋግጡ"
+    },
+    {
+        "key": "verify-to-use-toast",
+        "EN_US": "This offer is for verified students",
+        "AM": "ይህ ቅናሽ ለተረጋገጡ ተማሪዎች ነው"
+    },
+    {
+        "key": "offer-saved",
+        "EN_US": "Saved. We’ll remind you the morning it ends.",
+        "AM": "ተቀምጧል። በሚያበቃበት ጠዋት እናስታውስዎታለን።"
+    },
+    {
+        "key": "offer-unsaved",
+        "EN_US": "Removed from saved",
+        "AM": "ከተቀመጡት ተወግዷል"
     }
 ]

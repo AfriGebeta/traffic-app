@@ -18,6 +18,7 @@ import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { showToast } from '../../../shared/utils/toast';
 import { placeService } from '../services/place.service';
 import type { SavedPlaceType } from '../types/place.types';
+import { trackEngagement } from '../../../shared/services/engagement.service';
 
 const REQUIRES_ADDRESS: SavedPlaceType[] = ['HOME', 'WORK'];
 
@@ -82,6 +83,7 @@ export const SavePlaceScreen = () => {
                     }
                     : {}),
             });
+            trackEngagement(typeof params.businessId === 'string' ? params.businessId : null, 'save');
             showToast(t('place-saved-successfully'));
             router.back();
         } catch (error) {

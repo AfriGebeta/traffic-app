@@ -40,6 +40,7 @@ export interface TelemetryData {
 
 class TelemetryService {
   private sessionId: string;
+  private deviceIdPromise: Promise<string> | null = null;
   
   constructor() {
     this.sessionId = this.generateUUID();
@@ -54,20 +55,24 @@ class TelemetryService {
   }
 
 
-  async getDeviceId(): Promise<string> {
-    try {
-      let deviceId = await AsyncStorage.getItem(DEVICE_ID_KEY);
-      
-      if (!deviceId) {
-        deviceId = this.generateUUID();
-        await AsyncStorage.setItem(DEVICE_ID_KEY, deviceId);
-      }
-      
-      return deviceId;
-    } catch (error) {
-      console.error('Failed to get/create device ID:', error);
-      return this.generateUUID();
+  getDeviceId(): Promise<string> {
+    if (!this.deviceIdPromise) {
+      this.deviceIdPromise = this.loadDeviceId().catch((error) => {
+        console.error('Failed to get/create device ID:', error);
+        this.deviceIdPromise = null;
+        return this.generateUUID();
+      });
     }
+    return this.deviceIdPromise;
+  }
+
+  private async loadDeviceId(): Promise<string> {
+    let deviceId = await AsyncStorage.getItem(DEVICE_ID_KEY);
+    if (!deviceId) {
+      deviceId = this.generateUUID();
+      await AsyncStorage.setItem(DEVICE_ID_KEY, deviceId);
+    }
+    return deviceId;
   }
 
   async collectTelemetryData(): Promise<TelemetryData> {

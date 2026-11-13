@@ -562,6 +562,20 @@ export default function AddPlaceScreen() {
                         </View>
                     )}
 
+                    {isBusiness && isCollector && (
+                        <View>
+                            <FieldLabel label={t('business-telegram')} optional hint={t('business-telegram-hint')} />
+                            <Input
+                                variant="calm"
+                                placeholder="@username"
+                                value={businessDraft.telegram}
+                                onChangeText={(telegram) => patchBusiness({ telegram })}
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                            />
+                        </View>
+                    )}
+
                     <View>
                         <FieldLabel
                             label={t('description')}

@@ -11,13 +11,14 @@ import { businessService } from '../services/business.service';
 import { isActive, pickLabel, usePlaceCatalog } from '../services/placeCatalog';
 import { COLLECTION_STATUSES, CollectionBusiness, CollectionOverview, CollectionStatus, CollectorData } from '../types/business.types';
 import { ChipSelect } from '../components/FormControls';
+import { ApiError, ApiErrorCode } from '../../../shared/utils/apiErrors';
+import { offerDatesText } from '../utils/businessDraft';
 
 const statusOf = (row: { status?: CollectionStatus; collectionStatus?: CollectionStatus }): CollectionStatus =>
     (row.collectionStatus ?? row.status ?? 'New') as CollectionStatus;
 
-const toneFor: Record<CollectionStatus, ChipTone> = { New: 'neutral', Checked: 'primary', Live: 'success', Rejected: 'danger' };
+const toneFor: Record<CollectionStatus, ChipTone> = { New: 'neutral', Checked: 'primary', Live: 'success', Rejected: 'danger', Closed: 'neutral' };
 
-// data collectors: everything they mapped, with status, Set Live, shop PIN and offer pausing
 export default function CollectionScreen() {
     const { t, i18n } = useTranslation();
     const router = useRouter();
@@ -35,6 +36,7 @@ export default function CollectionScreen() {
     const [error, setError] = useState<string | null>(null);
     const [expanded, setExpanded] = useState<string | null>(null);
     const [details, setDetails] = useState<Record<string, CollectorData>>({});
+    const [otherArea, setOtherArea] = useState<Record<string, boolean>>({});
 
     const load = useCallback(
         async (mode: 'initial' | 'refresh' = 'initial') => {
@@ -74,12 +76,12 @@ export default function CollectionScreen() {
             return;
         }
         setExpanded(id);
-        if (details[id]) return;
+        if (details[id] || otherArea[id]) return;
         try {
             const data = await businessService.collectorData(id);
             setDetails((prev) => ({ ...prev, [id]: data }));
-        } catch {
-            // the row still works without the private details
+        } catch (e) {
+            if (e instanceof ApiError && e.code === ApiErrorCode.Forbidden) setOtherArea((prev) => ({ ...prev, [id]: true }));
         }
     };
 
@@ -123,6 +125,11 @@ export default function CollectionScreen() {
 
                 {open && (
                     <View className="mt-3 gap-3">
+                        {otherArea[row.id] && (
+                            <Text className="text-sm" style={{ color: theme.textSecondary }}>
+                                {t('business-other-area')}
+                            </Text>
+                        )}
 
                         {!!pin && (
                             <View className="flex-row items-center p-3" style={{ borderRadius: RADIUS_SM, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
@@ -135,13 +142,19 @@ export default function CollectionScreen() {
 
                         {offers.map((offer, i) => (
                             <View key={offer.id ?? i} className="flex-row items-center">
-                                <Text className="flex-1 text-sm" style={{ color: offer.paused ? theme.textSecondary : theme.textPrimary }} numberOfLines={2}>
-                                    {offer.text || offer.type}
-                                    {offer.months?.length ? `  · ${offer.months.join(', ')}` : ''}
-                                </Text>
-                                {!!offer.paused && (
+                                <View className="flex-1">
+                                    <Text className="text-sm" style={{ color: offer.paused || offer.endedOn ? theme.textSecondary : theme.textPrimary }} numberOfLines={2}>
+                                        {String(offer.title ?? '').trim() || offer.text || offer.type}
+                                    </Text>
+                                    {!!offerDatesText(offer, lang) && (
+                                        <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary, fontVariant: ['tabular-nums'] }}>
+                                            {offerDatesText(offer, lang)}
+                                        </Text>
+                                    )}
+                                </View>
+                                {(!!offer.endedOn || !!offer.paused) && (
                                     <Text className="text-xs ml-2" style={{ color: theme.textSecondary, fontFamily: FONT_MEDIUM }}>
-                                        {t('offer-paused')}
+                                        {t(offer.endedOn ? 'offer-ended' : 'offer-paused')}
                                     </Text>
                                 )}
                             </View>

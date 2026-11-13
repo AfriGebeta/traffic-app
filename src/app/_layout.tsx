@@ -40,6 +40,7 @@ import { getNotificationStatus, recordLaunchDenial } from '../shared/services/no
 import { usePushNotificationTaps } from '../shared/hooks/usePushNotificationTaps';
 
 import '../modules/navigation/services/nav-foreground-service';
+import { initEngagement } from '../shared/services/engagement.service';
 
 // First thing on the JS thread, so early failures are still captured.
 initializeCrashlytics();
@@ -126,6 +127,7 @@ function AppShell() {
     void dashboardEventsService.installOnce();
     initPush();
     initDataCollector();
+    initEngagement();
   }, []);
 
   usePushNotificationTaps(pathname, isNavigationPath);
