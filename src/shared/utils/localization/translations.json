@@ -3715,6 +3715,21 @@
         "AM": "በኋላ"
     },
     {
+        "key": "downloading-update",
+        "EN_US": "Downloading update",
+        "AM": "ማሻሻያው በመውረድ ላይ"
+    },
+    {
+        "key": "install-update",
+        "EN_US": "Install",
+        "AM": "ጫን"
+    },
+    {
+        "key": "update-failed",
+        "EN_US": "Update failed",
+        "AM": "ማሻሻያው አልተሳካም"
+    },
+    {
         "key": "cafe",
         "EN_US": "Cafe",
         "AM": "ካፌ"

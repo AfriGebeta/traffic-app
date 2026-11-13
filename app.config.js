@@ -12,6 +12,10 @@ if (!telegramClientId) {
 const telegramLoginHost = `app${telegramClientId}-login.tg.dev`;
 const [mapsIntentFilter, ...otherIntentFilters] = appJson.expo.android.intentFilters;
 
+// Sideloaded APK build only (npm run build:apk): lets the in-app updater launch
+// the system installer. Must never reach the Play Store build.
+const isApkBuild = process.env.EXPO_PUBLIC_DISTRIBUTION === 'apk';
+
 module.exports = {
   expo: {
     ...appJson.expo,
@@ -36,6 +40,10 @@ module.exports = {
     android: {
       ...appJson.expo.android,
       googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? appJson.expo.android.googleServicesFile,
+      permissions: [
+        ...(appJson.expo.android.permissions ?? []),
+        ...(isApkBuild ? ['REQUEST_INSTALL_PACKAGES'] : []),
+      ],
       queries: [
         { scheme: 'tg' },
         { scheme: 'telegram' },

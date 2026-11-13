@@ -15,6 +15,8 @@ import { useRemoteConfig, RemoteConfigProvider } from '../shared/contexts/Remote
 import { initializeAppCheckSingleton } from '../shared/utils/appCheck';
 import { ForceUpdateModal } from '../components/ForceUpdateModal';
 import { UpdateBanner } from '../components/UpdateBanner';
+import { ApkUpdateBar } from '../components/ApkUpdateBar';
+import { IS_APK_BUILD } from '../shared/config/distribution';
 import { ToastHost } from '../shared/components/ToastHost';
 import { PointsPopupHost } from '../modules/campaigns/components/PointsPopupHost';
 import { NotificationPromptHost } from '../shared/components/NotificationPromptHost';
@@ -114,7 +116,8 @@ function AppShell() {
   useOrientationPolicy();
   const { updateRequired, updateAvailable, latestVersion, storeUrl } = useRemoteConfig();
   const pathname = usePathname();
-  const showUpdateBanner = updateAvailable && !updateRequired && pathname === '/';
+  // Sideloaded APK builds update themselves (ApkUpdateBar); the Play Store prompts are Play-only.
+  const showUpdateBanner = !IS_APK_BUILD && updateAvailable && !updateRequired && pathname === '/';
   const backgroundedAtRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -233,7 +236,8 @@ function AppShell() {
                     latestVersion={latestVersion}
                     storeUrl={storeUrl}
                   />
-                  <ForceUpdateModal visible={updateRequired} storeUrl={storeUrl} />
+                  <ForceUpdateModal visible={!IS_APK_BUILD && updateRequired} storeUrl={storeUrl} />
+                  {IS_APK_BUILD && <ApkUpdateBar visible={pathname === '/'} />}
                 </IncidentFiltersProvider>
               </LocationProvider>
             </UserLocationProvider>
