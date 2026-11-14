@@ -2193,7 +2193,7 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
                     <MapGlassTarget style={styles.mapSurface}>
                     <MapLibreGL.MapView
                         ref={mapViewRef}
-                        surfaceView={false}
+                        surfaceView={Platform.OS === 'android' && Platform.Version < 31}
                         style={styles.mapSurface}
                         mapStyle={mapStyleState}
                         attributionEnabled={false}

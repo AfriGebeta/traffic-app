@@ -8,7 +8,7 @@ import React, {
     useRef,
     useState,
 } from 'react';
-import { Image, PixelRatio, StyleSheet, View } from 'react-native';
+import { Image, PixelRatio, Platform, StyleSheet, View } from 'react-native';
 import MapLibreGL from '@maplibre/maplibre-react-native';
 import { getAppConfig } from '../../../shared/config/remoteConfigValues';
 import {
@@ -367,6 +367,7 @@ const FreeDriveMapInner = forwardRef<FreeDriveMapHandle, FreeDriveMapProps>(({
         >
             <MapLibreGL.MapView
                 ref={mapRef}
+                surfaceView={Platform.OS === 'android' && Platform.Version < 31}
                 style={StyleSheet.absoluteFill}
                 mapStyle={styleJson ?? styleUrl}
                 logoEnabled={false}

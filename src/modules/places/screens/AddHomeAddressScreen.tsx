@@ -11,7 +11,7 @@ import {
     KeyboardAvoidingView,
     Platform,
 } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from '../../../shared/services/location';
@@ -27,6 +27,8 @@ import { useTtsPlayback } from '../../../shared/hooks/useTtsPlayback';
 import { placeService } from '../services/place.service';
 import { markHomeOnboardingDone } from '../utils/homeOnboarding';
 import { HOME_ADDRESS_VOICE_CHUNKS } from '../utils/homeAddressScript';
+import { findOnboardingCampaign } from '../../campaigns/utils/announcementCampaign';
+import { markBannerSeen } from '../../campaigns/utils/campaignPrefs';
 import {
     HOME_ADDRESS_REQUIRED_FIELDS,
     HomeAddressRequiredField,
@@ -36,6 +38,9 @@ import {
 type Step = 'choice' | 'followup' | 'form';
 
 const hlog = (...args: any[]) => console.log('home addr', ...args);
+
+// max wait after save/skip for the campaign check started on mount
+const ONBOARDING_CAMPAIGN_WAIT_MS = 15_000;
 
 const MIC_SIZE = 128;
 
@@ -130,6 +135,34 @@ const FIELD_LABEL_KEYS: Record<HomeAddressRequiredField, string> = {
 
 export const AddHomeAddressScreen = () => {
     const router = useRouter();
+    const { from } = useLocalSearchParams<{ from?: string }>();
+    const fromOnboarding = from === 'onboarding';
+    const onboardingCampaignRef = useRef<Promise<string | null> | null>(null);
+
+    useEffect(() => {
+        if (!fromOnboarding) return;
+        hlog('onboarding: checking for an active campaign');
+        onboardingCampaignRef.current = findOnboardingCampaign();
+    }, []);
+
+    const leave = async () => {
+        const pending = onboardingCampaignRef.current;
+        if (!pending) {
+            router.replace('/');
+            return;
+        }
+        const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), ONBOARDING_CAMPAIGN_WAIT_MS));
+        const slug = await Promise.race([pending, timeout]);
+        if (!slug) {
+            hlog('onboarding: no campaign to show');
+            router.replace('/');
+            return;
+        }
+        hlog('onboarding: opening campaign', slug);
+        // seen now, so the home modal doesn't repeat it
+        await markBannerSeen(slug);
+        router.replace({ pathname: '/campaigns/[slug]', params: { slug, from: 'onboarding' } });
+    };
     const insets = useSafeAreaInsets();
     const { t, isAmharic } = useTranslation();
     const { colors: theme } = useTheme();
@@ -146,6 +179,7 @@ export const AddHomeAddressScreen = () => {
 
     const [step, setStep] = useState<Step>('choice');
     const [saving, setSaving] = useState(false);
+    const [skipping, setSkipping] = useState(false);
     const [missingFields, setMissingFields] = useState<HomeAddressRequiredField[]>([]);
     const [savedPlaceId, setSavedPlaceId] = useState<string | null>(null);
     const [capturedAddress, setCapturedAddress] = useState<SavedPlaceAddress>({});
@@ -233,12 +267,14 @@ export const AddHomeAddressScreen = () => {
         hlog('flow complete, navigating home');
         await markHomeOnboardingDone();
         showToast(t('home-address-saved'));
-        router.replace('/');
+        await leave();
     };
 
-    const handleSkip = () => {
+    const handleSkip = async () => {
         hlog(`skipped (step: ${step})`);
-        router.replace('/');
+        setSaving(true);
+        setSkipping(true);
+        await leave();
     };
 
     const uploadVoice = async (audioUri: string) => {
@@ -760,9 +796,13 @@ export const AddHomeAddressScreen = () => {
                     </TouchableOpacity>
                 )}
                 <TouchableOpacity onPress={handleSkip} disabled={saving}>
-                    <Text className="text-base font-semibold" style={{ color: theme.textSecondary }}>
-                        {t('skip')}
-                    </Text>
+                    {skipping ? (
+                        <ActivityIndicator color={theme.textSecondary} />
+                    ) : (
+                        <Text className="text-base font-semibold" style={{ color: theme.textSecondary }}>
+                            {t('skip')}
+                        </Text>
+                    )}
                 </TouchableOpacity>
             </View>
 

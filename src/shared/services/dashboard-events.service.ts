@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiService } from './api';
 import telemetryService from './telemetry.service';
+import { captureInstallReferrer } from '../../modules/referrals/services/referral.service';
 
 const INSTALL_SENT_KEY = '@dashboard_install_sent';
 
@@ -72,7 +73,9 @@ class DashboardEventsService {
         // console.log('dashboard events: INSTALL already sent, skipping');
         return;
       }
-      await this.sendEvent('INSTALL');
+      const ref = await captureInstallReferrer();
+      console.log('dashboard events: INSTALL referral ref:', ref ?? 'none');
+      await this.sendEvent('INSTALL', ref ? { ref, platform: 'android' } : undefined);
       await AsyncStorage.setItem(INSTALL_SENT_KEY, 'true');
     } catch (e) {
       console.error('dashboard events: INSTALL threw:', e);

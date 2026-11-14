@@ -35,8 +35,9 @@ import { useOrientationPolicy } from '../shared/layout/useOrientationPolicy';
 import { createScreenLayout } from '../shared/layout/ResponsiveScreen';
 import { initPush, registerPushDevice } from '../shared/services/push';
 import { initDataCollector } from '../modules/places/hooks/useIsDataCollector';
+import { initReferrals } from '../modules/referrals/services/referral.service';
 import { locationPermissionSettled } from '../shared/utils/permissionSequence';
-import { getNotificationStatus, recordLaunchDenial } from '../shared/services/notificationPermission';
+import { getNotificationStatus, hasDeniedAtLaunch, recordLaunchDenial } from '../shared/services/notificationPermission';
 import { usePushNotificationTaps } from '../shared/hooks/usePushNotificationTaps';
 
 import '../modules/navigation/services/nav-foreground-service';
@@ -126,6 +127,7 @@ function AppShell() {
     void dashboardEventsService.installOnce();
     initPush();
     initDataCollector();
+    initReferrals();
   }, []);
 
   usePushNotificationTaps(pathname, isNavigationPath);
@@ -195,9 +197,9 @@ function AppShell() {
     if (Platform.OS === 'android' && Number(Platform.Version) >= 33) {
       const timeout = new Promise<void>((resolve) => setTimeout(resolve, 30000));
       Promise.race([locationPermissionSettled, timeout]).then(async () => {
-        // skipped once Android stops showing it, so a "no" below is always the user's answer
+        // first ask only: after a "no", home's card comes first and Android's dialog follows its "Turn on"
         const { enabled, canAsk } = await getNotificationStatus();
-        if (enabled || !canAsk) return;
+        if (enabled || !canAsk || (await hasDeniedAtLaunch())) return;
         PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
         )

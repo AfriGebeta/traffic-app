@@ -33,7 +33,9 @@ export const campaignService = {
         const response = await apiService.get<CampaignMe>(`/api/campaigns/${encodeURIComponent(slug)}/me`);
         console.log('[campaigns] me raw', slug, JSON.stringify(response.data ?? response.error));
         if (response.error || !response.data) throw new ApiError(response, 'Failed to load campaign standing');
-        return unwrap<CampaignMe>(response.data);
+        const me = unwrap<CampaignMe>(response.data);
+        if (me && Array.isArray(me.periods)) me.periods = me.periods.filter((standing) => standing && standing.period != null);
+        return me;
     },
 
     async join(slug: string, track?: string | null): Promise<{ track?: string | null; joinedAt: string }> {

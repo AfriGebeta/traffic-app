@@ -6188,5 +6188,65 @@
         "key": "campaign-watch-video",
         "EN_US": "Watch the video",
         "AM": "ቪዲዮውን ይመልከቱ"
+    },
+    {
+        "key": "referral-code-label",
+        "EN_US": "Referral code (optional)",
+        "AM": "የሪፈራል ኮድ (አማራጭ)"
+    },
+    {
+        "key": "referral-code-placeholder",
+        "EN_US": "e.g. 2fmxk84y",
+        "AM": "ለምሳሌ 2fmxk84y"
+    },
+    {
+        "key": "referral-claimed",
+        "EN_US": "Referral code added",
+        "AM": "የሪፈራል ኮዱ ተጨምሯል"
+    },
+    {
+        "key": "referral-not-found",
+        "EN_US": "That referral code wasn't found. Check it and try again.",
+        "AM": "ይህ የሪፈራል ኮድ አልተገኘም። ኮዱን አረጋግጠው እንደገና ይሞክሩ።"
+    },
+    {
+        "key": "referral-not-allowed",
+        "EN_US": "This code can't be used on your account.",
+        "AM": "ይህ ኮድ በመለያዎ ላይ መጠቀም አይቻልም።"
+    },
+    {
+        "key": "referral-already-used",
+        "EN_US": "You've already used a referral code.",
+        "AM": "የሪፈራል ኮድ አስቀድመው ተጠቅመዋል።"
+    },
+    {
+        "key": "referral-failed",
+        "EN_US": "Couldn't add the code. Try again later.",
+        "AM": "ኮዱን ማከል አልተቻለም። ቆይተው እንደገና ይሞክሩ።"
+    },
+    {
+        "key": "campaign-join-early",
+        "EN_US": "Join early",
+        "AM": "ቀድመው ይቀላቀሉ"
+    },
+    {
+        "key": "campaign-joined-early",
+        "EN_US": "You're in. We'll let you know when it starts",
+        "AM": "ተቀላቅለዋል። ሲጀምር እናሳውቅዎታለን"
+    },
+    {
+        "key": "campaign-prebooked-note",
+        "EN_US": "Your spot is saved. Points start counting when the campaign starts on {{date}}.",
+        "AM": "ቦታዎ ተይዟል። ነጥቦች መቆጠር የሚጀምሩት ውድድሩ {{date}} ሲጀምር ነው።"
+    },
+    {
+        "key": "campaign-join-early-hint",
+        "EN_US": "Points count from {{date}}",
+        "AM": "ነጥቦች የሚቆጠሩት ከ{{date}} ጀምሮ ነው"
+    },
+    {
+        "key": "campaign-see-details",
+        "EN_US": "See details",
+        "AM": "ዝርዝር ይመልከቱ"
     }
 ]

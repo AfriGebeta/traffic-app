@@ -6,20 +6,15 @@ import { useTranslation } from 'react-i18next';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { DIALOG_MAX_STYLE } from '../../../shared/layout/modalStyles';
-import { hasCampaignEnded, isParticipating, useCampaigns } from '../store/campaignStore';
+import { isUpcoming, useCampaigns } from '../store/campaignStore';
 import { getSeenBannerSlugs, markBannerSeen } from '../utils/campaignPrefs';
+import { pickAnnouncementCampaign } from '../utils/announcementCampaign';
 import { askForNotifications } from '../../../shared/services/notificationPermission';
 import { locationPermissionSettled } from '../../../shared/utils/permissionSequence';
 import { pickLocalized } from '../utils/localizedText';
-import { Campaign } from '../types/campaign.types';
 
 const AnnouncementLight = require('../../../../assets/images/announcement-light.png');
 const AnnouncementDark = require('../../../../assets/images/announcement-dark.png');
-
-const startTime = (campaign: Campaign) => {
-    const time = campaign.startsAt ? new Date(campaign.startsAt).getTime() : NaN;
-    return Number.isNaN(time) ? 0 : time;
-};
 
 export function CampaignBanner() {
     const router = useRouter();
@@ -35,9 +30,7 @@ export function CampaignBanner() {
     // newest campaign the user hasn't seen or joined; the rest are listed under Profile → Campaigns
     const campaign = useMemo(() => {
         if (!state.loaded || !seen) return null;
-        return [...state.campaigns]
-            .filter((c) => !seen.includes(c.slug) && !hasCampaignEnded(c) && !(c.requiresJoin && isParticipating(c, state)))
-            .sort((a, b) => startTime(b) - startTime(a))[0] ?? null;
+        return pickAnnouncementCampaign(state, seen);
     }, [state, seen]);
 
     // home's turn-on-notifications ask waits for the location prompt and never stacks on a campaign announcement
@@ -68,6 +61,11 @@ export function CampaignBanner() {
 
     const name = pickLocalized(campaign.name, i18n.language);
     const description = pickLocalized(campaign.description, i18n.language);
+    // pre-booking: say when it starts instead of "New campaign"
+    const startsAt = isUpcoming(campaign) && campaign.startsAt ? new Date(campaign.startsAt) : null;
+    const label = startsAt
+        ? t('campaign-starts-on', { date: startsAt.toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' }) })
+        : t('campaign-new');
 
     return (
         <Modal visible transparent animationType="fade" statusBarTranslucent onRequestClose={dismiss}>
@@ -93,7 +91,7 @@ export function CampaignBanner() {
                     />
 
                     <Text className="text-xs font-bold uppercase mb-1" style={{ color: colors.primary.main, letterSpacing: 1 }}>
-                        {t('campaign-new')}
+                        {label}
                     </Text>
                     <Text className="text-xl font-bold text-center" style={{ color: theme.textPrimary }}>
                         {name}
