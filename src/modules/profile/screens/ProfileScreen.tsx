@@ -517,7 +517,7 @@ const ProfileContent = () => {
                     </View>)}
 
                     <TouchableOpacity
-                        className="flex-row items-center justify-between px-4 py-4 mb-8"
+                        className="flex-row items-center justify-between px-4 py-4 mb-3"
                         style={elevatedCardStyle}
                         activeOpacity={0.7}
                         onPress={() => router.push('/my-contributions')}
@@ -535,6 +535,31 @@ const ProfileContent = () => {
                                 </Text>
                                 <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }} numberOfLines={1}>
                                     {t('my-contributions-description')}
+                                </Text>
+                            </View>
+                        </View>
+                        <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        className="flex-row items-center justify-between px-4 py-4 mb-8"
+                        style={elevatedCardStyle}
+                        activeOpacity={0.7}
+                        onPress={() => router.push('/my-referral' as any)}
+                    >
+                        <View className="flex-row items-center flex-1 mr-3">
+                            <View
+                                className="w-9 h-9 rounded-full items-center justify-center mr-3"
+                                style={{ backgroundColor: isDark ? '#4D3400' : '#FFF1D6' }}
+                            >
+                                <Ionicons name="link-outline" size={18} color={colors.primary.main} />
+                            </View>
+                            <View className="flex-1">
+                                <Text className="text-sm font-semibold" style={{ color: theme.textPrimary }}>
+                                    {t('referral-my-link')}
+                                </Text>
+                                <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }} numberOfLines={1}>
+                                    {t('referral-my-link-row-description')}
                                 </Text>
                             </View>
                         </View>
