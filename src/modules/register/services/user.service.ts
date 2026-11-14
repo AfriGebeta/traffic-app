@@ -1,4 +1,5 @@
 import { apiService } from '../../../shared/services/api';
+import { withDeviceId } from '../utils/withDeviceId';
 import {
     AuthResponse,
     UserRegistrationRequest,
@@ -14,15 +15,15 @@ import {
 
 export const userService = {
     async register(data: UserRegistrationRequest) {
-        return apiService.post<RegistrationResponse>('/api/users/register', data);
+        return apiService.post<RegistrationResponse>('/api/users/register', await withDeviceId(data, 'register'));
     },
 
     async login(data: UserLoginRequest) {
-        return apiService.post<AuthResponse>('/api/users/login', data);
+        return apiService.post<AuthResponse>('/api/users/login', await withDeviceId(data, 'login'));
     },
 
     async verifyEmail(data: VerifyEmailRequest) {
-        return apiService.post<AuthResponse>('/api/users/verify-email', data);
+        return apiService.post<AuthResponse>('/api/users/verify-email', await withDeviceId(data, 'verify-email'));
     },
 
     async resendVerification(data: ResendVerificationRequest) {
