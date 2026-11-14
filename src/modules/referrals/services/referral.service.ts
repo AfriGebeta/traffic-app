@@ -12,6 +12,26 @@ const CODE_PATTERN = /^[a-z0-9]{4,16}$/;
 
 export type ClaimResult = 'claimed' | 'not_found' | 'not_allowed' | 'already_used' | 'failed';
 
+export type ReferralStage = 'installed' | 'registered' | 'joined' | 'qualified';
+
+export interface ReferredPerson {
+    name?: string | null;
+    username?: string | null;
+    stage: ReferralStage;
+    since?: string | null;
+}
+
+export interface MyReferral {
+    code: string;
+    url: string;
+    clicks: number;
+    installs: number;
+    registered: number;
+    joined: number;
+    qualified: number;
+    people: ReferredPerson[];
+}
+
 const rlog = (...args: any[]) => console.log('referral', ...args);
 
 export const normalizeCode = (raw: string | null | undefined): string | null => {
@@ -137,6 +157,17 @@ export async function claim(raw: string): Promise<ClaimResult> {
             rlog('claim: keeping pending code for retry');
             return 'failed';
     }
+}
+
+export async function getMyReferral(): Promise<MyReferral | null> {
+    const response = await apiService.get<{ data?: MyReferral }>('/api/referrals/mine');
+    if (response.error || !response.data?.data?.code) {
+        rlog('mine: failed', response.status ?? 'network', response.error ?? 'no code in response');
+        return null;
+    }
+    const mine = response.data.data;
+    rlog('mine: ok', mine.code, `clicks ${mine.clicks} installs ${mine.installs} qualified ${mine.qualified}`);
+    return { ...mine, people: Array.isArray(mine.people) ? mine.people : [] };
 }
 
 let initialized = false;
