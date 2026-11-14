@@ -30,6 +30,9 @@ import { FieldError, FormError } from '../components/FormError';
 import { GenderSelect } from '../components/GenderSelect';
 import { toFullPhone, validateLocalPhone } from '../utils/authValidation';
 import { toFriendlyAuthError } from '../utils/authErrors';
+import { claim, normalizeCode } from '../../referrals/services/referral.service';
+import { useCanEnterReferralCode } from '../../referrals/hooks/useCanEnterReferralCode';
+import { claimResultMessage } from '../../referrals/utils/claimMessages';
 
 export default function CompleteProfileScreen() {
     const { t } = useTranslation();
@@ -43,6 +46,9 @@ export default function CompleteProfileScreen() {
     const [phoneError, setPhoneError] = useState<string | null>(null);
     const [sexError, setSexError] = useState<string | null>(null);
     const [formError, setFormError] = useState<string | null>(null);
+    const [referralCode, setReferralCode] = useState('');
+    const [referralError, setReferralError] = useState<string | null>(null);
+    const showReferralField = useCanEnterReferralCode();
 
     useEffect(() => {
         let cancelled = false;
@@ -82,10 +88,14 @@ export default function CompleteProfileScreen() {
         const phoneIssue = missing.phone ? validateLocalPhone(t, phoneNumber) : null;
         const sexIssue = missing.sex && sex === null ? t('error-select-gender') : null;
 
+        const typedReferral = showReferralField ? referralCode.trim() : '';
+        const referralIssue = typedReferral && !normalizeCode(typedReferral) ? t('referral-not-found') : null;
+
         setPhoneError(phoneIssue);
         setSexError(sexIssue);
+        setReferralError(referralIssue);
 
-        if (phoneIssue || sexIssue) return;
+        if (phoneIssue || sexIssue || referralIssue) return;
 
         const updates: UpdateProfileRequest = {};
         if (missing.phone) updates.phoneNumber = toFullPhone(phoneNumber);
@@ -108,7 +118,16 @@ export default function CompleteProfileScreen() {
             }
 
             await storeProfileUpdates(updates);
-            showToast(t('profile-updated') || 'Saved');
+
+            // referral never blocks sign-up: whatever the outcome, carry on into the app
+            if (typedReferral) {
+                console.log('referral complete-profile: claiming typed code', typedReferral);
+                const result = await claim(typedReferral);
+                console.log('referral complete-profile: result', result);
+                showToast(claimResultMessage(t, result));
+            } else {
+                showToast(t('profile-updated') || 'Saved');
+            }
             await continueToApp();
         } catch (error) {
             setFormError(
@@ -220,6 +239,29 @@ export default function CompleteProfileScreen() {
                                 hasError={Boolean(sexError)}
                             />
                             <FieldError message={sexError} />
+                        </View>
+                    )}
+
+                    {showReferralField && (
+                        <View className="mb-6">
+                            <Text className="text-sm font-bold text-gray-900 mb-2">{t('referral-code-label')}</Text>
+                            <TextInput
+                                className="bg-gray-50 border rounded-xl px-4 py-3.5 text-base text-gray-900 font-semibold"
+                                style={{ borderColor: referralError ? colors.error.main : '#D1D5DB' }}
+                                placeholder={t('referral-code-placeholder')}
+                                placeholderTextColor="#9CA3AF"
+                                value={referralCode}
+                                onChangeText={(text) => {
+                                    setReferralCode(text);
+                                    setReferralError(null);
+                                    setFormError(null);
+                                }}
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                                maxLength={16}
+                                editable={!loading}
+                            />
+                            <FieldError message={referralError} />
                         </View>
                     )}
 

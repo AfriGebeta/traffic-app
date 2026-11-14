@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Linking, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, BackHandler, Linking, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -11,7 +11,7 @@ import { ApiError, ApiErrorCode, isRestrictedError } from '../../../shared/utils
 import { useAuthGate } from '../../register/hooks/useAuthGate';
 import { CampaignCountdown } from '../components/CampaignCountdown';
 import { campaignService } from '../services/campaign.service';
-import { hasCampaignEnded, isParticipating, markCampaignJoined, markCampaignLeft, refreshCampaigns, useCampaigns } from '../store/campaignStore';
+import { hasCampaignEnded, isParticipating, isUpcoming, markCampaignJoined, markCampaignLeft, refreshCampaigns, useCampaigns } from '../store/campaignStore';
 import { basePoints } from '../utils/campaignPoints';
 import { getLastTrackKey, setLastTrackKey } from '../utils/campaignPrefs';
 import { pickLocalized } from '../utils/localizedText';
@@ -52,7 +52,9 @@ const formatDate =(iso: string | undefined, language: string) => {
 
 export default function CampaignDetailScreen() {
     const router = useRouter();
-    const { slug } = useLocalSearchParams<{ slug: string }>();
+    const { slug, from } = useLocalSearchParams<{ slug: string; from?: string }>();
+    // opened at the end of onboarding: nothing behind it in the stack, so back goes to the map
+    const fromOnboarding = from === 'onboarding';
     const { t, i18n } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors: theme } = useTheme();
@@ -67,11 +69,27 @@ export default function CampaignDetailScreen() {
         if (!state.loaded) void refreshCampaigns();
     }, [state.loaded]);
 
-    const campaign = state.campaigns.find((c) => c.slug === slug) ?? null;
+    const goBack = () => {
+        if (fromOnboarding) router.replace('/');
+        else router.back();
+    };
+
+    useEffect(() => {
+        if (!fromOnboarding) return;
+        const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+            router.replace('/');
+            return true;
+        });
+        return () => sub.remove();
+    }, [fromOnboarding, router]);
+
+    const campaign = state.campaigns.find((c) => c.slug === slug) ?? (state.upcoming?.slug === slug ? state.upcoming : null);
     const me = slug ? state.me[slug] : undefined;
     // /me.joined is the enrollment itself, independent of requiresJoin
     const joined = me?.joined === true;
-    const participating = !!campaign && isParticipating(campaign, state);
+    // pre-booking: joinable, but no points, leaderboard or tour until it starts
+    const notStarted = !!campaign && isUpcoming(campaign);
+    const participating = !!campaign && !notStarted && isParticipating(campaign, state);
     const tracks = campaign?.tracks ?? NO_TRACKS;
 
     // one track: no question, it's sent automatically; several: pre-select the last choice
@@ -109,7 +127,7 @@ export default function CampaignDetailScreen() {
         const afterJoin = videoOpen === 'join';
         setVideoOpen(null);
         if (!afterJoin) return;
-        showMeAround();
+        if (!notStarted) showMeAround();
         void askForNotifications('campaign');
     };
 
@@ -122,12 +140,12 @@ export default function CampaignDetailScreen() {
             await campaignService.join(campaign.slug, track);
             if (track) void setLastTrackKey(track);
             markCampaignJoined(campaign.slug, track);
-            showToast(t('campaign-joined'));
+            showToast(t(notStarted ? 'campaign-joined-early' : 'campaign-joined'));
             void refreshCampaigns();
             // intro video first (if Remote Config has one); the tour and the notification prompt wait until it's closed
             if (campaignIntroVideoId()) setVideoOpen('join');
             else {
-                showMeAround();
+                if (!notStarted) showMeAround();
                 void askForNotifications('campaign');
             }
         } catch (error) {
@@ -168,7 +186,7 @@ export default function CampaignDetailScreen() {
         return (
             <View className="flex-1" style={{ paddingTop: insets.top, backgroundColor: theme.background }}>
                 <View className="px-4 pt-3 pb-2 flex-row items-center">
-                    <TouchableOpacity onPress={() => router.back()} className="mr-3 p-1 -ml-1" activeOpacity={0.7} hitSlop={8}>
+                    <TouchableOpacity onPress={goBack} className="mr-3 p-1 -ml-1" activeOpacity={0.7} hitSlop={8}>
                         <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
                     </TouchableOpacity>
                 </View>
@@ -201,7 +219,10 @@ export default function CampaignDetailScreen() {
     const cardStyle = { backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border, borderRadius: RADIUS };
     // open campaigns (requiresJoin false) count everyone, so only offer Join where it matters.
     // /running only lists open campaigns, and E0020 covers one that closed meanwhile
-    const ended = hasCampaignEnded(campaign);
+    const ended = !notStarted && hasCampaignEnded(campaign);
+    const startDate = campaign.startsAt
+        ? new Date(campaign.startsAt).toLocaleString(i18n.language, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+        : '';
     const canJoin = campaign.requiresJoin && !joined && !ended;
     const openLeaderboard = () => router.push({ pathname: '/campaigns/[slug]/leaderboard', params: { slug: campaign.slug } });
 
@@ -241,7 +262,7 @@ export default function CampaignDetailScreen() {
     return (
         <View className="flex-1" style={{ paddingTop: insets.top, backgroundColor: theme.background }}>
             <View className="px-4 pt-3 pb-2 flex-row items-center">
-                <TouchableOpacity onPress={() => router.back()} className="mr-3 p-1 -ml-1" activeOpacity={0.7} hitSlop={8}>
+                <TouchableOpacity onPress={goBack} className="mr-3 p-1 -ml-1" activeOpacity={0.7} hitSlop={8}>
                     <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
                 </TouchableOpacity>
             </View>
@@ -287,7 +308,27 @@ export default function CampaignDetailScreen() {
                     </TouchableOpacity>
                 )}
 
-                {!ended && !!campaign.endsAt && <CampaignCountdown endsAt={campaign.endsAt} />}
+                {notStarted && !!campaign.startsAt && (
+                    <CampaignCountdown endsAt={campaign.startsAt} label={t('campaign-starts-in')} onDone={() => void refreshCampaigns()} />
+                )}
+                {!notStarted && !ended && !!campaign.endsAt && <CampaignCountdown endsAt={campaign.endsAt} />}
+
+                {notStarted && joined && (
+                    <View style={{ ...cardStyle, padding: 16, marginBottom: 16 }}>
+                        <View className="flex-row items-center flex-wrap" style={{ gap: 8 }}>
+                            <Chip tone="success">{t('campaign-you-joined')}</Chip>
+                            {joinedTrack && <Chip>{pickLocalized(joinedTrack.name, i18n.language)}</Chip>}
+                        </View>
+                        <Text className="text-sm mt-3 leading-5" style={textSecondary}>
+                            {t('campaign-prebooked-note', { date: startDate })}
+                        </Text>
+                    </View>
+                )}
+                {notStarted && joined && !!campaignIntroVideoId() && (
+                    <View className="mb-6 -mx-3">
+                        <NavRow title={t('campaign-watch-video')} onPress={() => setVideoOpen('watch')} />
+                    </View>
+                )}
 
                 {ended && campaign.phase === 'final' && (
                     <TouchableOpacity
@@ -510,6 +551,11 @@ export default function CampaignDetailScreen() {
                     className="absolute left-0 right-0 bottom-0 px-4 pt-3"
                     style={{ paddingBottom: insets.bottom + 12, backgroundColor: theme.background, borderTopWidth: 1, borderTopColor: theme.border }}
                 >
+                    {notStarted && (
+                        <Text className="text-xs text-center mb-2" style={textSecondary}>
+                            {t('campaign-join-early-hint', { date: startDate })}
+                        </Text>
+                    )}
                     <TouchableOpacity
                         onPress={join}
                         disabled={joinDisabled}
@@ -527,7 +573,7 @@ export default function CampaignDetailScreen() {
                         {joining ? (
                             <ActivityIndicator color="#fff" />
                         ) : (
-                            <Text style={{ color: '#fff', fontFamily: FONT_MEDIUM, fontSize: 15 }}>{t('campaign-join')}</Text>
+                            <Text style={{ color: '#fff', fontFamily: FONT_MEDIUM, fontSize: 15 }}>{t(notStarted ? 'campaign-join-early' : 'campaign-join')}</Text>
                         )}
                     </TouchableOpacity>
                 </View>

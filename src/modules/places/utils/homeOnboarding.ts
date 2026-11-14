@@ -5,8 +5,11 @@ const HOME_ONBOARDING_KEY = '@traffic_app_home_onboarding_done';
 const HOME_LAST_PROMPTED_KEY = '@traffic_app_home_last_prompted';
 
 const COLD_START_PROMPT_INTERVAL_MS = 2 * 24 * 60 * 60 * 1000; // 2 days
+const USER_STORAGE_KEY = '@traffic_app_user';
+const NEW_ACCOUNT_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 export const HOME_ADDRESS_ROUTE = '/places/add-home';
+const ONBOARDING_HOME_ADDRESS_ROUTE = `${HOME_ADDRESS_ROUTE}?from=onboarding`;
 
 const hlog = (...args: any[]) => console.log('home addr', ...args);
 
@@ -18,6 +21,22 @@ export async function markHomeOnboardingDone(): Promise<void> {
 export async function resetHomeOnboarding(): Promise<void> {
     hlog('resetting onboarding flag (logout)');
     await AsyncStorage.multiRemove([HOME_ONBOARDING_KEY, HOME_LAST_PROMPTED_KEY]);
+}
+
+async function isNewAccount(): Promise<boolean> {
+    try {
+        const raw = await AsyncStorage.getItem(USER_STORAGE_KEY);
+        const createdAt = raw ? new Date(JSON.parse(raw)?.createdAt).getTime() : NaN;
+        return !Number.isNaN(createdAt) && Date.now() - createdAt < NEW_ACCOUNT_WINDOW_MS;
+    } catch {
+        return false;
+    }
+}
+
+async function homeAddressRoute(): Promise<string> {
+    const isNew = await isNewAccount();
+    hlog(`account is ${isNew ? 'new' : 'existing'}`);
+    return isNew ? ONBOARDING_HOME_ADDRESS_ROUTE : HOME_ADDRESS_ROUTE;
 }
 
 async function markHomePrompted(): Promise<void> {
@@ -42,11 +61,11 @@ export async function getPostAuthRoute(): Promise<string> {
 
         hlog('post-auth route: add-home (no HOME saved)');
         await markHomePrompted();
-        return HOME_ADDRESS_ROUTE;
+        return homeAddressRoute();
     } catch (error) {
         hlog('post-auth check failed, defaulting to add-home:', String(error));
         await markHomePrompted();
-        return HOME_ADDRESS_ROUTE;
+        return homeAddressRoute();
     }
 }
 

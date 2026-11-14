@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import { Image, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -7,9 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { hasCampaignEnded, isParticipating, refreshCampaigns, useCampaigns } from '../store/campaignStore';
 import { pickLocalized } from '../utils/localizedText';
-import { campaignService } from '../services/campaign.service';
 import { CampaignCountdown } from '../components/CampaignCountdown';
-import { Campaign } from '../types/campaign.types';
 import { NotificationsOffStrip } from '../../../shared/components/NotificationsOffStrip';
 import { Chip, FONT_MEDIUM, RADIUS, SectionLabel, SkeletonBlock } from '../components/CampaignUi';
 
@@ -23,24 +21,13 @@ export default function CampaignsListScreen() {
     const insets = useSafeAreaInsets();
     const { colors: theme, isDark } = useTheme();
     const state = useCampaigns();
-    // undefined while loading, null when nothing is scheduled; a failed call shows nothing about it
-    const [next, setNext] = useState<Campaign | null | undefined>(undefined);
-    const [nextFailed, setNextFailed] = useState(false);
-
-    const loadNext = useCallback(() => {
-        campaignService
-            .getNext()
-            .then((campaign) => {
-                setNext(campaign);
-                setNextFailed(false);
-            })
-            .catch(() => setNextFailed(true));
-    }, []);
+    // from the store: null when nothing is scheduled; undefined while loading or when the call failed (shows nothing)
+    const next = state.upcoming;
+    const nextJoined = !!next && state.me[next.slug]?.joined === true;
 
     const reload = useCallback(() => {
         void refreshCampaigns();
-        loadNext();
-    }, [loadNext]);
+    }, []);
 
     useFocusEffect(reload);
 
@@ -48,7 +35,7 @@ export default function CampaignsListScreen() {
     const nextUpcoming = !!nextStart && !Number.isNaN(nextStart.getTime()) && nextStart.getTime() > Date.now();
     const anyLive = state.campaigns.some((campaign) => !hasCampaignEnded(campaign));
     // "coming soon" only when nothing is running and nothing is scheduled
-    const showComingSoon = next === null && !nextFailed && !anyLive;
+    const showComingSoon = state.loaded && next === null && !anyLive;
 
     return (
         <View className="flex-1" style={{ paddingTop: insets.top, backgroundColor: theme.background }}>
@@ -88,7 +75,12 @@ export default function CampaignsListScreen() {
                 )}
 
                 {nextUpcoming && next && nextStart && (
-                    <View className="p-4 mb-3" style={{ borderRadius: RADIUS, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.primary }}>
+                    <TouchableOpacity
+                        onPress={() => router.push({ pathname: '/campaigns/[slug]', params: { slug: next.slug } })}
+                        activeOpacity={0.7}
+                        className="p-4 mb-3"
+                        style={{ borderRadius: RADIUS, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.primary }}
+                    >
                         <SectionLabel style={{ marginBottom: 6 }}>{t('campaign-next-title')}</SectionLabel>
                         <Text style={{ color: theme.textPrimary, fontSize: 20, lineHeight: 26, letterSpacing: -0.2 }} numberOfLines={2}>
                             {pickLocalized(next.name, i18n.language)}
@@ -100,7 +92,17 @@ export default function CampaignsListScreen() {
                         </Text>
                         {/* at zero it has started: it moves into the running list below */}
                         <CampaignCountdown endsAt={nextStart.toISOString()} label={t('campaign-starts-in')} onDone={reload} />
-                    </View>
+                        <View className="flex-row items-center justify-between mt-3">
+                            {nextJoined ? (
+                                <Chip tone="success">{t('campaign-you-joined')}</Chip>
+                            ) : (
+                                <Text style={{ color: theme.primary, fontFamily: FONT_MEDIUM, fontSize: 14 }}>
+                                    {next.requiresJoin ? t('campaign-join-early') : t('campaign-see-details')}
+                                </Text>
+                            )}
+                            <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
+                        </View>
+                    </TouchableOpacity>
                 )}
 
                 {showComingSoon && (
