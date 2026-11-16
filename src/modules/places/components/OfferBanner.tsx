@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Image, LayoutChangeEvent, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Image, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -15,17 +15,15 @@ const ROTATE_MS = 5000;
 
 interface Props {
     userLocation: { lat: number; lng: number } | null;
-    onHeightChange?: (height: number) => void;
-    onLoaded?: (count: number) => void;
 }
 
-export function OfferBanner({ userLocation, onHeightChange, onLoaded }: Props) {
+export function OfferBanner({ userLocation }: Props) {
     const router = useRouter();
     const { t, i18n } = useTranslation();
     const { colors: theme } = useTheme();
     const { catalog } = usePlaceCatalog();
     const lang = i18n.language;
-    const { offers, loaded } = useFeaturedOffers(userLocation);
+    const { offers } = useFeaturedOffers(userLocation);
     const images = useSignedImages(offers.map((row) => row.place.image));
     const [index, setIndex] = useState(0);
     const fade = useRef(new Animated.Value(1)).current;
@@ -48,15 +46,6 @@ export function OfferBanner({ userLocation, onHeightChange, onLoaded }: Props) {
         if (current) trackSeen(current.place.id, current.offer.id);
     }, [current]);
 
-    useEffect(() => {
-        if (loaded) onLoaded?.(count);
-    }, [loaded, count, onLoaded]);
-
-    useEffect(() => {
-        if (!count) onHeightChange?.(0);
-    }, [count, onHeightChange]);
-    useEffect(() => () => onHeightChange?.(0), [onHeightChange]);
-
     if (!current) return null;
 
     const placeName = pickLabel(current.place.name, lang);
@@ -68,53 +57,50 @@ export function OfferBanner({ userLocation, onHeightChange, onLoaded }: Props) {
     const open = () =>
         router.push({ pathname: '/places/offer', params: { placeId: current.place.id, offerId: current.offer.id, name: placeName } } as any);
 
+    const seeAll = () =>
+        router.push({ pathname: '/places/offers', params: userLocation ? { lat: userLocation.lat, lng: userLocation.lng } : {} } as any);
+
     return (
         <View
-            onLayout={(e: LayoutChangeEvent) => onHeightChange?.(e.nativeEvent.layout.height)}
+            className="flex-row items-center"
             style={{ borderRadius: RADIUS, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.background, overflow: 'hidden' }}
         >
-            <TouchableOpacity onPress={open} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel={`${current.offer.text}, ${placeName}`}>
-                <Animated.View className="flex-row items-center p-2.5" style={{ opacity: fade }}>
+            <TouchableOpacity onPress={open} activeOpacity={0.8} className="flex-1" accessibilityRole="button" accessibilityLabel={`${current.offer.text}, ${placeName}`}>
+                <Animated.View className="flex-row items-center p-2" style={{ opacity: fade }}>
                     {image ? (
-                        <Image source={{ uri: image }} style={{ width: 52, height: 52, borderRadius: 6, backgroundColor: theme.surface }} />
+                        <Image source={{ uri: image }} style={{ width: 40, height: 40, borderRadius: 6, backgroundColor: theme.surface }} />
                     ) : (
-                        <View className="items-center justify-center" style={{ width: 52, height: 52, borderRadius: 6, backgroundColor: theme.surface }}>
-                            <Ionicons name="pricetag-outline" size={20} color={theme.textSecondary} />
+                        <View className="items-center justify-center" style={{ width: 40, height: 40, borderRadius: 6, backgroundColor: theme.surface }}>
+                            <Ionicons name="pricetag-outline" size={18} color={theme.textSecondary} />
                         </View>
                     )}
-                    <View className="flex-1 ml-3">
+                    <View className="flex-1 ml-2.5">
                         <View className="flex-row items-center" style={{ gap: 6 }}>
-                            <View className="px-1.5 py-0.5" style={{ borderRadius: 4, backgroundColor: tint(theme.primary, '24') }}>
-                                <Text style={{ color: theme.textPrimary, fontSize: 11, fontFamily: FONT_MEDIUM }} numberOfLines={1}>{tag}</Text>
+                            <View className="px-1.5" style={{ borderRadius: 4, backgroundColor: tint(theme.primary, '24') }}>
+                                <Text style={{ color: theme.textPrimary, fontSize: 10.5, fontFamily: FONT_MEDIUM }} numberOfLines={1}>{tag}</Text>
                             </View>
-                            {current.promoted && (
-                                <Text style={{ color: theme.textSecondary, fontSize: 11 }}>{t('promoted')}</Text>
-                            )}
+                            {current.promoted && <Text style={{ color: theme.textSecondary, fontSize: 10.5 }}>{t('promoted')}</Text>}
                         </View>
-                        <Text className="mt-1" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM, fontSize: 15 }} numberOfLines={1}>
+                        <Text style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM, fontSize: 14 }} numberOfLines={1}>
                             {current.offer.text}
                         </Text>
-                        <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }} numberOfLines={1}>
+                        <Text style={{ color: theme.textSecondary, fontSize: 11 }} numberOfLines={1}>
                             {meta}
                         </Text>
                     </View>
                 </Animated.View>
             </TouchableOpacity>
-            <View className="flex-row items-center justify-between px-3 py-1.5" style={{ borderTopWidth: 1, borderTopColor: theme.border }}>
-                <View className="flex-row" style={{ gap: 4 }}>
-                    {count > 1 &&
-                        offers.map((row, i) => (
-                            <View
-                                key={`${row.place.id}-${row.offer.id}`}
-                                style={{ width: i === index % count ? 14 : 5, height: 5, borderRadius: 3, backgroundColor: i === index % count ? theme.primary : theme.border }}
-                            />
-                        ))}
-                </View>
-                <TouchableOpacity onPress={() => router.push({ pathname: '/places/offers', params: userLocation ? { lat: userLocation.lat, lng: userLocation.lng } : {} } as any)} hitSlop={8} className="flex-row items-center">
-                    <Text style={{ color: theme.primary, fontFamily: FONT_MEDIUM, fontSize: 13, lineHeight: 16, includeFontPadding: false }}>{t('see-all')}</Text>
-                    <Ionicons name="chevron-forward" size={14} color={theme.primary} style={{ marginLeft: 2 }} />
-                </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+                onPress={seeAll}
+                activeOpacity={0.7}
+                className="self-stretch flex-row items-center px-2.5"
+                style={{ borderLeftWidth: 1, borderLeftColor: theme.border }}
+                accessibilityRole="button"
+                accessibilityLabel={t('see-all')}
+            >
+                <Text style={{ color: theme.primary, fontFamily: FONT_MEDIUM, fontSize: 12, lineHeight: 15, includeFontPadding: false }}>{t('see-all')}</Text>
+                <Ionicons name="chevron-forward" size={13} color={theme.primary} style={{ marginLeft: 1 }} />
+            </TouchableOpacity>
         </View>
     );
 }

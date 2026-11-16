@@ -9,6 +9,7 @@ import {
     LoyaltyVisit,
     OfferUse,
     SavedOffer,
+    UsedOffer,
     StudentCheck,
     NearbyBuilding,
     NearbyOfferPlace,
@@ -67,6 +68,11 @@ export const businessService = {
     async setOfferPaused(placeId: string, offerId: string, paused: boolean): Promise<void> {
         const response = await apiService.patch(`/api/places/${placeId}/offers/${offerId}`, { paused });
         if (response.error) throw new ApiError(response, 'Failed to update offer');
+    },
+
+    async addOffer(placeId: string, offer: BusinessOffer): Promise<{ offer: BusinessOffer & { text?: string; status?: string }; business?: string; pin?: string | null }> {
+        const response = await apiService.post('/api/field/offers', { placeId, offer });
+        return unwrap(response, 'Could not add the offer');
     },
 
     async updatePlace(placeId: string, body: Record<string, unknown>): Promise<any> {
@@ -146,6 +152,12 @@ export const businessService = {
         const path = `/api/places/${placeId}/offers/${offerId}/save`;
         const response = saved ? await apiService.post(path) : await apiService.delete(path);
         return unwrap<{ saved: boolean }>(response, 'Could not update').saved;
+    },
+
+    async usedOffers(before?: string): Promise<UsedOffer[]> {
+        const response = await apiService.get(`/api/places/offers/used${before ? `?${query({ before })}` : ''}`);
+        const rows = unwrap<UsedOffer[]>(response, 'Failed to load');
+        return Array.isArray(rows) ? rows : [];
     },
 
     async savedOffers(): Promise<SavedOffer[]> {

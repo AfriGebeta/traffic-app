@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, useWindowDimensions } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { SearchBar, ProfileButton } from './SearchBar';
 import { QuickActions } from './QuickActions';
+import { setOffersMode, useOffersState } from '../../places/store/offersMode';
 import { FreeDriveButton } from './FreeDriveButton';
 import { SosButton } from './SosButton';
 import { MapLayersButton } from './MapLayersButton';
 import { SearchResults } from './SearchResults';
 import { DestinationCard } from './DestinationCard';
 import { BASE_GAP, FloatingActions } from './FloatingActions';
-import { BottomNavigation } from './BottomNavigation';
 import { OfferBanner } from '../../places/components/OfferBanner';
-import { setOffersMode, useOffersState } from '../../places/store/offersMode';
+import { BottomNavigation } from './BottomNavigation';
 import { CampaignTourProvider } from '../../campaigns/tour/CampaignTourProvider';
 import { CampaignEndingBanner } from '../../campaigns/components/CampaignEndingBanner';
 import { CampaignMapButton } from '../../campaigns/components/CampaignMapButton';
@@ -28,6 +28,8 @@ import type { RecentSearch } from '../../navigation/services/recentSearch.servic
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 import type { SavedPlace } from '../../places/types/place.types';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
+
+const FLOATING_COLUMN_WIDTH = 48;
 
 interface MapOverlayProps {
     searchQuery: string;
@@ -144,7 +146,6 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
     const [layersButtonBottom, setLayersButtonBottom] = useState(0);
     const [searchBarHeight, setSearchBarHeight] = useState(0);
     const [chipRowHeight, setChipRowHeight] = useState(0);
-    const [offerBannerHeight, setOfferBannerHeight] = useState(0);
     const { height: windowHeight } = useWindowDimensions();
     const { isCompact, isMedium, isWide, centeredInset, panelLeft } = useLayout();
 
@@ -161,23 +162,36 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
             : null;
     // wide: the rail stays visible next to place details / route preview, phones hide the bottom bar
     const showNavigationTabs = isWide || (!showRoutePreview && !showPlaceDetail);
+    const tourActions = useMapTourActions();
     const offers = useOffersState();
     const offersOn = offers.on;
     const offersCount = offers.loaded ? offers.places.length : null;
-    const toggleOffers = () => {
-        if (offersOn) return setOffersMode(false);
-        if (!userLocation) return showToast(t('offers-need-location'));
-        setOffersMode(true);
-    };
     React.useEffect(() => {
         if (offers.on && offers.loaded && offers.places.length === 0) {
             showToast(t('offers-none-nearby'));
             setOffersMode(false);
         }
     }, [offers.loaded]);
-    const tourActions = useMapTourActions();
     const showOfferBanner =
-        offersOn && showNavigationTabs && !showSearchContainer && !showExploreResults && !selectedExploreCategory && !isNavigationMinimized;
+        offersOn && !isWide && showNavigationTabs && !showSearchContainer && !showExploreResults && !selectedExploreCategory && !isNavigationMinimized;
+    const toggleOffers = () => {
+        if (offersOn) return setOffersMode(false);
+        if (!userLocation) return showToast(t('offers-need-location'));
+        if (selectedExploreCategory) onCloseSearch();
+        setOffersMode(true);
+    };
+    const selectCategory = (categoryId: string) => {
+        setOffersMode(false);
+        onExploreCategory?.(categoryId);
+    };
+    const handleSearchFocus = () => {
+        setOffersMode(false);
+        onSearchFocus?.();
+    };
+    useFocusEffect(
+        React.useCallback(() => () => setOffersMode(false), [])
+    );
+
 
     const handleProfilePress = () => {
         router.push('/profile');
@@ -201,7 +215,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                             value={searchQuery}
                             onChangeText={onSearchChange}
                             onClear={onSearchClear}
-                            onFocus={onSearchFocus}
+                            onFocus={handleSearchFocus}
                             onBlur={onSearchBlur}
                             placeholder={t('where-to-go')}
                             onProfilePress={handleProfilePress}
@@ -212,7 +226,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
 
                     {!isWide && (
                         <QuickActions
-                            onSelectCategory={onExploreCategory}
+                            onSelectCategory={selectCategory}
                             isLoading={isExploring}
                             selectedCategory={selectedExploreCategory}
                             offersActive={offersOn}
@@ -252,12 +266,9 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
             {/* wide: category chips run along the top of the map, beside the search panel */}
             {!showRoutePreview && isWide && (
                 <QuickActions
-                    onSelectCategory={onExploreCategory}
+                    onSelectCategory={selectCategory}
                     isLoading={isExploring}
                     selectedCategory={selectedExploreCategory}
-                    offersActive={offersOn}
-                    offersCount={offersCount}
-                    onToggleOffers={toggleOffers}
                     onLayout={(e) => setChipRowHeight(e.nativeEvent.layout.height)}
                     contentContainerStyle={{ paddingBottom: 0 }}
                     style={{
@@ -295,13 +306,16 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
             )}
 
             {showOfferBanner && (
-                <View className="absolute left-4 right-4" style={[{ bottom: insets.bottom + BASE_GAP - 4 }, bannerPlacement]}>
-                    <OfferBanner userLocation={userLocation} onHeightChange={setOfferBannerHeight} />
+                <View
+                    pointerEvents="box-none"
+                    className="absolute"
+                    style={{ left: 16, right: 16 + FLOATING_COLUMN_WIDTH + 10, bottom: insets.bottom + BASE_GAP - 4 }}
+                >
+                    <OfferBanner userLocation={userLocation} />
                 </View>
             )}
 
             <FloatingActions
-                liftBy={showOfferBanner && offerBannerHeight ? offerBannerHeight + 8 : 0}
                 onLocationPress={onLocationPress}
                 onTaxiPress={onTaxiPress}
                 isRoutePreviewActive={showRoutePreview}

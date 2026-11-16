@@ -60,6 +60,7 @@ export default function PlacesLayout() {
                 <Stack.Screen name="collection" options={{ title: 'My collection', headerShown: false }} />
                 <Stack.Screen name="offer" options={{ title: 'Offer', headerShown: false }} />
                 <Stack.Screen name="offers" options={{ title: 'Offers', headerShown: false }} />
+                <Stack.Screen name="add-offer" options={{ title: 'Add offer', headerShown: false }} />
                 <Stack.Screen name="counter" options={{ title: 'Offer', headerShown: false, gestureEnabled: false, animation: 'fade' }} />
                 <Stack.Screen name="offer-done" options={{ title: 'Offer', headerShown: false, gestureEnabled: false }} />
                 <Stack.Screen

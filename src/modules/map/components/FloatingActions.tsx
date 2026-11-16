@@ -21,7 +21,6 @@ interface FloatingActionsProps {
     isPlaceDetailActive?: boolean;
     middleActions?: React.ReactNode;
     bottomActions?: React.ReactNode;
-    liftBy?: number;
 }
 
 export const FloatingActions: React.FC<FloatingActionsProps> = ({
@@ -31,7 +30,6 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
     isPlaceDetailActive = false,
     middleActions,
     bottomActions,
-    liftBy = 0,
 }) => {
     const { isDark } = useTheme();
     const glass = useGlass();
@@ -43,7 +41,7 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
     const TaxiIcon = isDark ? DarkTaxiIcon : FloatingTaxiIcon;
 
     useEffect(() => {
-        let targetBottom = insets.bottom + BASE_GAP + liftBy;
+        let targetBottom = insets.bottom + BASE_GAP;
         if (isWide) {
             // wide: no bottom bar and sheets dock left, so the buttons never need to dodge them
             targetBottom = insets.bottom + LAYOUT_GUTTER * 2;
@@ -57,7 +55,7 @@ export const FloatingActions: React.FC<FloatingActionsProps> = ({
             duration: 250,
             useNativeDriver: false,
         }).start();
-    }, [isRoutePreviewActive, isPlaceDetailActive, insets.bottom, isWide, liftBy]);
+    }, [isRoutePreviewActive, isPlaceDetailActive, insets.bottom, isWide]);
 
     return (
         <Animated.View className="absolute right-4 gap-3" style={[{ bottom: bottomPosition }, isWide && { right: insets.right + 16 }]}>

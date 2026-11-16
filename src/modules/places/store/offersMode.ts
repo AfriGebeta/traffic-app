@@ -66,4 +66,3 @@ const subscribe = (listener: () => void) => {
 };
 
 export const useOffersState = () => useSyncExternalStore(subscribe, () => state);
-export const useOffersMode = () => useSyncExternalStore(subscribe, () => state.on);

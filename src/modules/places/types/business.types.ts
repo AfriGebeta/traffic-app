@@ -323,6 +323,17 @@ export interface SavedOffer {
     place: { id: string; name: string | LocalizedLabel; lat: number; lng: number; image?: string | null };
 }
 
+export interface UsedOffer {
+    code: string;
+    offerId: string;
+    text: string | null;
+    type: string | null;
+    studentsOnly: boolean;
+    usedAt: string;
+    feedback: 'given' | 'refused' | null;
+    place: { id: string; name: string | LocalizedLabel; lat: number; lng: number; image?: string | null };
+}
+
 export type StudentCheckStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
 
 export interface StudentCheck {

@@ -148,6 +148,21 @@ export default function OfferScreen() {
             setConfirmUse(true);
         });
 
+    const goDirections = () => {
+        const place = business.place;
+        if (!place || !Number.isFinite(place.lat) || !Number.isFinite(place.lng)) return;
+        trackEngagement(placeId, 'directions', offer?.id);
+        router.dismissTo({
+            pathname: '/',
+            params: {
+                routeDestLat: String(place.lat),
+                routeDestLng: String(place.lng),
+                routeDestName: placeName || pickLabel(place.name as any, lang, ''),
+                routeNonce: String(Date.now()),
+            },
+        } as any);
+    };
+
     const toggleSave = () =>
         void requireAuth(async () => {
             if (!offer || !placeId) return;
@@ -240,9 +255,24 @@ export default function OfferScreen() {
                         </View>
 
                         <Text style={{ color: theme.textPrimary, fontFamily: FONT_SEMIBOLD, fontSize: 24, lineHeight: 29, letterSpacing: -0.4 }}>{offer.text}</Text>
-                        <Text className="text-sm" style={{ color: theme.textSecondary }}>
-                            {[placeName || pickLabel(business.place?.name as any, lang, ''), address].filter(Boolean).join(' · ')}
-                        </Text>
+                        <View className="flex-row items-center" style={{ gap: 12 }}>
+                            <Text className="text-sm flex-1" style={{ color: theme.textSecondary }}>
+                                {[placeName || pickLabel(business.place?.name as any, lang, ''), address].filter(Boolean).join(' · ')}
+                            </Text>
+                            {!!business.place && (
+                                <TouchableOpacity
+                                    onPress={goDirections}
+                                    activeOpacity={0.7}
+                                    accessibilityRole="button"
+                                    accessibilityLabel={t('directions')}
+                                    className="flex-row items-center px-3"
+                                    style={{ height: 36, borderRadius: RADIUS_SM, borderWidth: 1, borderColor: theme.border }}
+                                >
+                                    <Ionicons name="navigate-outline" size={16} color={theme.textPrimary} />
+                                    <Text className="ml-1.5" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM, fontSize: 14 }}>{t('directions')}</Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
 
                         <View className="flex-row gap-2">
                             <Fact label={t('offer-when')} value={when} />

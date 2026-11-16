@@ -10,7 +10,7 @@ import { logBreadcrumb } from '../../../shared/utils/crashlytics';
 import { generateSessionId } from '../../../shared/utils/session';
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
-import type { VoiceNavigationData, NavigationOption, ConversationMessage, TaxiPlan } from '../types/voice-navigation.types';
+import type { AssistantOfferCard, VoiceNavigationData, NavigationOption, ConversationMessage, TaxiPlan } from '../types/voice-navigation.types';
 import type { TaxiNavigationResponse } from '../../taxi/types/taxi.types';
 import type { GeocodingPlace } from '../types/navigation.types';
 
@@ -130,6 +130,13 @@ export const useVoiceNavigation = ({
         });
     }, []);
 
+    const appendOffers = useCallback((offers: AssistantOfferCard[]) => {
+        setMessages((prev) => {
+            messageSeqRef.current += 1;
+            return [...prev, { id: `offers-${messageSeqRef.current}`, role: 'offers', text: '', offers }];
+        });
+    }, []);
+
     const appendOptions = useCallback((opts: NavigationOption[]) => {
         if (opts.length === 0) return;
         setMessages((prev) => {
@@ -246,6 +253,18 @@ export const useVoiceNavigation = ({
 
                 taxiSpokenRef.current = (data?.spokenMessage ?? '').trim();
                 appendPlaces(places);
+                finishProcessing();
+                break;
+            }
+
+            case 'offers': {
+                const offers: AssistantOfferCard[] = (Array.isArray(data?.offers) ? data.offers : [])
+                    .filter((card: any) => card && typeof card.placeId === 'string' && typeof card.offerId === 'string' && typeof card.text === 'string')
+                    .slice(0, 3);
+                vlog(`offers: ${offers.length} card(s)`);
+                taxiSpokenRef.current = (data?.spokenMessage ?? data?.message ?? '').trim();
+                if (data?.message) appendMessage('assistant', data.message);
+                if (offers.length) appendOffers(offers);
                 finishProcessing();
                 break;
             }
@@ -405,7 +424,7 @@ export const useVoiceNavigation = ({
                 vlog('unhandled event type:', type);
                 break;
         }
-    }, [finishProcessing, handleDestination, setIsProcessing, appendMessage, appendOptions, appendPlaces, appendTaxiPlan]);
+    }, [finishProcessing, handleDestination, setIsProcessing, appendMessage, appendOptions, appendPlaces, appendTaxiPlan, appendOffers]);
 
 
     useEffect(() => {

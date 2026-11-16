@@ -20,11 +20,12 @@ interface Props {
     catalog: PlaceCatalog;
     placeName: string;
     description: string;
+    single?: boolean;
 }
 
 type Suggestion = { label: string; why?: string; offer: Partial<BusinessOffer> };
 
-export function OfferEditor({ draft, onChange, catalog, placeName, description }: Props) {
+export function OfferEditor({ draft, onChange, catalog, placeName, description, single = false }: Props) {
     const { t, i18n } = useTranslation();
     const { colors: theme } = useTheme();
     const lang = i18n.language;
@@ -55,6 +56,10 @@ export function OfferEditor({ draft, onChange, catalog, placeName, description }
         onChange({ offers: draft.offers.map((offer, i) => (i === index ? { ...offer, ...patch } : offer)) });
 
     const addOffer = (base?: Partial<BusinessOffer>) => {
+        if (single) {
+            onChange({ offers: [newOffer(base)] });
+            return;
+        }
         if (draft.offers.length >= MAX_OFFERS) {
             showToast(t('max-offers', { max: MAX_OFFERS }));
             return;
@@ -171,10 +176,10 @@ export function OfferEditor({ draft, onChange, catalog, placeName, description }
                 return (
                     <FormSection
                         key={offer.id ?? `new-${index}`}
-                        title={t('offer-n', { n: index + 1 })}
+                        title={single ? t('new-offer') : t('offer-n', { n: index + 1 })}
                         subtitle={ended ? t('offer-ended') : offer.paused ? t('offer-paused') : undefined}
                         right={
-                            ended ? undefined : (
+                            ended || single ? undefined : (
                                 <TouchableOpacity onPress={() => onChange({ offers: draft.offers.filter((_, i) => i !== index) })} hitSlop={8}>
                                     <Ionicons name="trash-outline" size={18} color={theme.error} />
                                 </TouchableOpacity>
@@ -278,7 +283,7 @@ export function OfferEditor({ draft, onChange, catalog, placeName, description }
                 );
             })}
 
-            {draft.offers.length < MAX_OFFERS && (
+            {!single && draft.offers.length < MAX_OFFERS && (
                 <TouchableOpacity
                     onPress={() => addOffer()}
                     activeOpacity={0.7}
@@ -337,7 +342,7 @@ export function OfferEditor({ draft, onChange, catalog, placeName, description }
                 )}
             </View>
 
-            {offerUsesPin(draft.offers) && (
+            {!single && offerUsesPin(draft.offers) && (
                 <View>
                     <FieldLabel label={t('shop-pin')} optional hint={t('shop-pin-hint')} />
                     <View className="flex-row items-center gap-3">

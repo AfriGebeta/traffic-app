@@ -55,7 +55,7 @@ import { buildPreviewSteps, fitBoundsToCoords } from '../../navigation/utils/nav
 import { toReportHeading } from '../../../shared/utils/reportHeading';
 import { CampaignBanner } from '../../campaigns/components/CampaignBanner';
 import { loadOfferPins, useOffersState } from '../../places/store/offersMode';
-import { pickLabel, usePlaceCatalog } from '../../places/services/placeCatalog';
+import { pickLabel } from '../../places/services/placeCatalog';
 import { featuredOffer } from '../../places/hooks/useBusinessPlace';
 import { trackSeen } from '../../../shared/services/engagement.service';
 import type { OfferPin, OfferPinIcon } from '../../../components/GebetaMap';
@@ -75,6 +75,7 @@ export interface SharedRoute {
     origin?: { lat: number; lng: number; name?: string };
     waypoints: { lat: number; lng: number; name?: string }[];
     mode: 'driving' | 'walking';
+    nonce?: string;
 }
 
 interface TrafficMapProps {
@@ -413,7 +414,6 @@ export default function TrafficMap({ sharedLocation, sharedRoute, taxiDestinatio
     };
 
     const offersState = useOffersState();
-    const { catalog: placeCatalog } = usePlaceCatalog();
     const offersOn = offersState.on;
     const offerCenterRef = useRef<[number, number] | null>(null);
     const handleOfferRegionChange = useCallback((center: [number, number]) => {
@@ -434,13 +434,15 @@ export default function TrafficMap({ sharedLocation, sharedRoute, taxiDestinatio
     const offerPins: OfferPin[] = useMemo(() => {
         if (!offersOn) return [];
         const lang = i18n.language;
-        return offersState.places.map((place) => {
-            const offer = featuredOffer(place.offers);
-            const tagKey = offer?.type;
-            const tag = pickLabel(placeCatalog?.offerOptions.types.find((ty) => ty.key === tagKey)?.label, lang, offer?.badge || place.badges?.[0] || '');
-            return { id: place.id, name: pickLabel(place.name, lang), lat: place.lat, lng: place.lng, tag, offerText: offer?.text ?? '', offerId: offer?.id, icon: offerPinIcon(place.group, place.kind) };
-        });
-    }, [offersOn, offersState.places, placeCatalog]);
+        return offersState.places.map((place) => ({
+            id: place.id,
+            name: pickLabel(place.name, lang),
+            lat: place.lat,
+            lng: place.lng,
+            offerId: featuredOffer(place.offers)?.id,
+            icon: offerPinIcon(place.group, place.kind),
+        }));
+    }, [offersOn, offersState.places]);
 
     const handleOfferPinPress = (pin: OfferPin) => {
         handleSelectPlace({
@@ -914,7 +916,7 @@ export default function TrafficMap({ sharedLocation, sharedRoute, taxiDestinatio
     }, [voiceDestination, userLocation]);
 
     const sharedRouteKey = sharedRoute
-        ? `${sharedRoute.destination.lat},${sharedRoute.destination.lng}|${sharedRoute.origin ? `${sharedRoute.origin.lat},${sharedRoute.origin.lng}` : 'me'}|${sharedRoute.waypoints.map((p) => `${p.lat},${p.lng}`).join(';')}|${sharedRoute.mode}`
+        ? `${sharedRoute.destination.lat},${sharedRoute.destination.lng}|${sharedRoute.origin ? `${sharedRoute.origin.lat},${sharedRoute.origin.lng}` : 'me'}|${sharedRoute.waypoints.map((p) => `${p.lat},${p.lng}`).join(';')}|${sharedRoute.mode}|${sharedRoute.nonce ?? ''}`
         : null;
 
     useEffect(() => {

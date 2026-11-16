@@ -65,6 +65,7 @@ export default function CollectionScreen() {
     // back from the form: show the new entry
     useFocusEffect(
         useCallback(() => {
+            setDetails({});
             void load();
             // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [])
@@ -159,6 +160,29 @@ export default function CollectionScreen() {
                                 )}
                             </View>
                         ))}
+
+                        {!otherArea[row.id] && (rowStatus === 'Live' || rowStatus === 'Checked') && (
+                            <TouchableOpacity
+                                onPress={() =>
+                                    router.push({
+                                        pathname: '/places/add-offer',
+                                        params: {
+                                            placeId: row.id,
+                                            name: pickLabel(row.name as any, lang, ''),
+                                            group: row.business?.group ?? '',
+                                            kind: row.business?.kind ?? '',
+                                            products: JSON.stringify(row.business?.products ?? []),
+                                        },
+                                    } as any)
+                                }
+                                activeOpacity={0.7}
+                                className="flex-row items-center justify-center py-2.5"
+                                style={{ borderRadius: RADIUS_SM, borderWidth: 1, borderColor: theme.primary, borderStyle: 'dashed' }}
+                            >
+                                <Ionicons name="add" size={18} color={theme.primary} />
+                                <Text className="ml-1 text-sm" style={{ color: theme.primary, fontFamily: FONT_MEDIUM }}>{t('add-offer')}</Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
                 )}
             </View>

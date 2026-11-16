@@ -94,12 +94,25 @@ export interface TaxiPlan {
     started: boolean;
 }
 
+export interface AssistantOfferCard {
+    placeId: string;
+    placeName: string;
+    offerId: string;
+    text: string;
+    studentsOnly?: boolean;
+    availableNow?: boolean;
+    lat?: number;
+    lng?: number;
+    distanceM?: number;
+}
+
 export interface ConversationMessage {
     id: string;
-    role: 'user' | 'assistant' | 'options' | 'taxi' | 'places';
+    role: 'user' | 'assistant' | 'options' | 'taxi' | 'places' | 'offers';
     text: string;
     options?: NavigationOption[];
     taxiPlan?: TaxiPlan;
+    offers?: AssistantOfferCard[];
 }
 
 export interface VoiceNavigationData {

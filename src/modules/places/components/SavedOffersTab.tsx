@@ -11,7 +11,8 @@ import { showToast } from '../../../shared/utils/toast';
 import { FONT_MEDIUM, RADIUS, SectionLabel, SkeletonBlock } from '../../campaigns/components/CampaignUi';
 import { pickLabel } from '../services/placeCatalog';
 import { businessService } from '../services/business.service';
-import { FollowedPlace, SavedOffer } from '../types/business.types';
+import { FollowedPlace, SavedOffer, UsedOffer } from '../types/business.types';
+import { USED_PAGE_SIZE, UsedOffersSection } from './UsedOffersSection';
 import { parseIsoDate } from '../utils/businessDraft';
 import { shortDate } from './BusinessCardSections';
 import { useSignedImages } from '../hooks/useSignedImages';
@@ -38,7 +39,10 @@ export function SavedOffersTab() {
     const [refreshing, setRefreshing] = useState(false);
     const [offers, setOffers] = useState<SavedOffer[]>([]);
     const [following, setFollowing] = useState<FollowedPlace[]>([]);
-    const images = useSignedImages([...offers.map((o) => o.place.image), ...following.map((p) => p.image)]);
+    const [used, setUsed] = useState<UsedOffer[]>([]);
+    const [usedHasMore, setUsedHasMore] = useState(false);
+    const [loadingMoreUsed, setLoadingMoreUsed] = useState(false);
+    const images = useSignedImages([...used.map((u) => u.place.image), ...offers.map((o) => o.place.image), ...following.map((p) => p.image)]);
 
     const fetchAll = useCallback(async () => {
         if (!(await isAuthenticated())) {
@@ -46,7 +50,13 @@ export function SavedOffersTab() {
             return;
         }
         try {
-            const [saved, followed] = await Promise.all([businessService.savedOffers(), businessService.following()]);
+            const [saved, followed, usedPage] = await Promise.all([
+                businessService.savedOffers(),
+                businessService.following(),
+                businessService.usedOffers().catch(() => [] as UsedOffer[]),
+            ]);
+            setUsed(usedPage);
+            setUsedHasMore(usedPage.length >= USED_PAGE_SIZE);
             // live first, newest saved first; ended ones sink to the bottom
             saved.sort((a, b) => Number(hasEnded(a)) - Number(hasEnded(b)) || (b.savedAt ?? '').localeCompare(a.savedAt ?? ''));
             setOffers(saved);
@@ -79,6 +89,30 @@ export function SavedOffersTab() {
             showToast(t('could-not-update'));
         }
     };
+
+    const loadMoreUsed = async () => {
+        const last = used[used.length - 1];
+        if (!last || loadingMoreUsed) return;
+        setLoadingMoreUsed(true);
+        try {
+            const next = await businessService.usedOffers(last.usedAt);
+            const seen = new Set(used.map((u) => u.code));
+            setUsed((prev) => [...prev, ...next.filter((u) => !seen.has(u.code))]);
+            setUsedHasMore(next.length >= USED_PAGE_SIZE);
+        } catch {
+            showToast(t('could-not-update'));
+        } finally {
+            setLoadingMoreUsed(false);
+        }
+    };
+
+    const answerUsed = (code: string, feedback: 'given' | 'refused') =>
+        setUsed((prev) => prev.map((u) => (u.code === code ? { ...u, feedback } : u)));
+
+    const openUsed = (row: UsedOffer) =>
+        row.text
+            ? router.push({ pathname: '/places/offer', params: { placeId: row.place.id, offerId: row.offerId, name: pickLabel(row.place.name, lang) } } as any)
+            : router.push({ pathname: '/', params: { lat: row.place.lat, lng: row.place.lng, name: pickLabel(row.place.name, lang), businessId: row.place.id } } as any);
 
     const openOffer = (offer: SavedOffer) =>
         router.push({ pathname: '/places/offer', params: { placeId: offer.place.id, offerId: offer.offerId, name: pickLabel(offer.place.name, lang) } } as any);
@@ -133,6 +167,16 @@ export function SavedOffersTab() {
             contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
         >
+            <UsedOffersSection
+                rows={used}
+                hasMore={usedHasMore}
+                loadingMore={loadingMoreUsed}
+                onLoadMore={() => void loadMoreUsed()}
+                thumb={thumb}
+                onOpen={openUsed}
+                onAnswered={answerUsed}
+            />
+
             <SectionLabel style={{ marginBottom: 8 }}>{t('saved-offers')}</SectionLabel>
             {offers.length === 0 ? (
                 <Text className="text-sm mb-6" style={{ color: theme.textSecondary }}>{t('saved-offers-empty')}</Text>

@@ -58,7 +58,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
             >
                 {onToggleOffers && (
                     <View className="mr-2">
-                        <TouchableOpacity onPress={onToggleOffers} activeOpacity={0.8} accessibilityRole="switch" accessibilityState={{ checked: offersActive }}>
+                        <TouchableOpacity onPress={onToggleOffers} activeOpacity={0.8}>
                             <View
                                 className="px-4 py-2 flex-row items-center rounded-full"
                                 style={[glass.chip, offersActive && { backgroundColor: theme.primary, borderColor: theme.primaryHover }, { borderRadius: 9999 }]}

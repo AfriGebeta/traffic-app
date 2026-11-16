@@ -6828,5 +6828,145 @@
         "key": "offers-need-location",
         "EN_US": "Turn on location to see offers near you.",
         "AM": "በአቅራቢያዎ ያሉ ቅናሾችን ለማየት አካባቢን ያብሩ።"
+    },
+    {
+        "key": "offers-used",
+        "EN_US": "Offers used",
+        "AM": "የተጠቀሟቸው ቅናሾች"
+    },
+    {
+        "key": "offers-used-empty",
+        "EN_US": "Offers you use at the counter show up here.",
+        "AM": "ገንዘብ ተቀባዩ ጋ የተጠቀሟቸው ቅናሾች እዚህ ይታያሉ።"
+    },
+    {
+        "key": "used-on",
+        "EN_US": "used {{date}}",
+        "AM": "{{date}} ተጠቅመዋል"
+    },
+    {
+        "key": "offer-no-longer-available",
+        "EN_US": "Offer no longer available",
+        "AM": "ቅናሹ ከአሁን በኋላ የለም"
+    },
+    {
+        "key": "did-you-get-it",
+        "EN_US": "Did you get it?",
+        "AM": "አገኙት?"
+    },
+    {
+        "key": "offer-feedback-given",
+        "EN_US": "You got it",
+        "AM": "አግኝተዋል"
+    },
+    {
+        "key": "offer-feedback-refused",
+        "EN_US": "Reported. The field team will look into it.",
+        "AM": "ሪፖርት ተደርጓል። ቡድኑ ይመለከተዋል።"
+    },
+    {
+        "key": "show-more",
+        "EN_US": "Show more",
+        "AM": "ተጨማሪ አሳይ"
+    },
+    {
+        "key": "offer-notif-title",
+        "EN_US": "Offer notifications",
+        "AM": "የቅናሽ ማሳወቂያዎች"
+    },
+    {
+        "key": "offer-notif-nearby",
+        "EN_US": "Offers near me",
+        "AM": "በአቅራቢያዬ ያሉ ቅናሾች"
+    },
+    {
+        "key": "offer-notif-nearby-hint",
+        "EN_US": "At lunch and in the evening, when you’re close by",
+        "AM": "በምሳ ሰዓትና ምሽት፣ በአቅራቢያ ሲሆኑ"
+    },
+    {
+        "key": "offer-notif-following",
+        "EN_US": "Places I follow",
+        "AM": "የምከተላቸው ቦታዎች"
+    },
+    {
+        "key": "offer-notif-following-hint",
+        "EN_US": "When they add a new offer",
+        "AM": "አዲስ ቅናሽ ሲጨምሩ"
+    },
+    {
+        "key": "offer-notif-saved",
+        "EN_US": "Saved offers",
+        "AM": "የተቀመጡ ቅናሾች"
+    },
+    {
+        "key": "offer-notif-saved-hint",
+        "EN_US": "The morning a saved offer ends",
+        "AM": "የተቀመጠ ቅናሽ በሚያበቃበት ጠዋት"
+    },
+    {
+        "key": "offer-notif-weekly",
+        "EN_US": "Weekly round-up",
+        "AM": "ሳምንታዊ ማጠቃለያ"
+    },
+    {
+        "key": "offer-notif-weekly-hint",
+        "EN_US": "Monday morning",
+        "AM": "ሰኞ ጠዋት"
+    },
+    {
+        "key": "offer-notif-per-day",
+        "EN_US": "Most offer messages a day",
+        "AM": "በቀን ከፍተኛው የቅናሽ መልዕክቶች ብዛት"
+    },
+    {
+        "key": "offer-notif-quiet",
+        "EN_US": "Nothing is sent between 21:00 and 07:00.",
+        "AM": "ከምሽቱ 21:00 እስከ ጠዋቱ 07:00 ምንም አይላክም።"
+    },
+    {
+        "key": "offer-notif-load-failed",
+        "EN_US": "Could not load your offer notification settings.",
+        "AM": "የቅናሽ ማሳወቂያ ቅንብሮችዎን መጫን አልተቻለም።"
+    },
+    {
+        "key": "notifications-tab-updates",
+        "EN_US": "Updates",
+        "AM": "ማሻሻያዎች"
+    },
+    {
+        "key": "offer-inbox-empty",
+        "EN_US": "Offer messages show up here.",
+        "AM": "የቅናሽ መልዕክቶች እዚህ ይታያሉ።"
+    },
+    {
+        "key": "remind-me-at",
+        "EN_US": "Remind me at {{time}}",
+        "AM": "በ{{time}} አስታውሰኝ"
+    },
+    {
+        "key": "ai-suggest-offers-near-me",
+        "EN_US": "Offers near me",
+        "AM": "በአቅራቢያዬ ያሉ ቅናሾች"
+    },
+    {
+        "key": "ai-suggest-coffee-offer",
+        "EN_US": "Coffee with an offer",
+        "AM": "ቅናሽ ያለው ቡና"
+    },
+    {
+        "key": "new-offer",
+        "EN_US": "New offer",
+        "AM": "አዲስ ቅናሽ"
+    },
+    {
+        "key": "offer-added",
+        "EN_US": "Offer added",
+        "AM": "ቅናሹ ተጨምሯል"
+    },
+    {
+        "key": "offer-added-pin-hint",
+        "EN_US": "Give this PIN to the cashier. They type it to confirm codes.",
+        "AM": "ይህን ፒን ለገንዘብ ተቀባዩ ይስጡ። ኮዶችን ለማረጋገጥ ያስገቡታል።"
     }
 ]

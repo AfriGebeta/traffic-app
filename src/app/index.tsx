@@ -49,6 +49,7 @@ function routeFromParams(params: RouteParams): SharedRoute | undefined {
       : undefined,
     waypoints: waypointsFromParam(params.routeWaypoints),
     mode: params.routeMode === 'walking' ? 'walking' : 'driving',
+    nonce: typeof params.routeNonce === 'string' && params.routeNonce ? params.routeNonce : undefined,
   };
 }
 
