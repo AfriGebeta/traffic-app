@@ -281,14 +281,20 @@ export default function OfferScreen() {
                             <TouchableOpacity
                                 onPress={openCheck}
                                 activeOpacity={0.7}
-                                className="flex-row items-center p-3"
-                                style={{ borderRadius: RADIUS_SM, backgroundColor: theme.primaryMuted }}
+                                className="flex-row items-center"
+                                style={{ borderRadius: RADIUS, borderWidth: 1, borderColor: theme.primary, backgroundColor: theme.surface }}
                             >
-                                <Ionicons name="shield-checkmark-outline" size={18} color={theme.textPrimary} />
-                                <Text className="text-sm ml-2 flex-1" style={{ color: theme.textPrimary }}>
+                                <Text className="flex-1 pl-4 py-3.5" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM, fontSize: 14, lineHeight: 20 }}>
                                     {t(student.check?.status === 'PENDING' ? 'student-check-pending-note' : 'offer-students-note')}
                                 </Text>
-                                <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
+                                <View className="flex-row items-center ml-3 mr-3">
+                                    {student.check?.status !== 'PENDING' && (
+                                        <Text style={{ color: theme.primary, fontFamily: FONT_MEDIUM, fontSize: 14, lineHeight: 16, includeFontPadding: false, textAlignVertical: 'center' }}>
+                                            {t('verify')}
+                                        </Text>
+                                    )}
+                                    <Ionicons name="chevron-forward" size={16} color={theme.primary} style={{ marginLeft: 2 }} />
+                                </View>
                             </TouchableOpacity>
                         )}
 

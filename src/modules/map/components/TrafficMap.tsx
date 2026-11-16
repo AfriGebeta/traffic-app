@@ -54,6 +54,21 @@ import { resolvePlaceType } from '../../places/utils/placeTypeMapping';
 import { buildPreviewSteps, fitBoundsToCoords } from '../../navigation/utils/navigationPreviewUtils';
 import { toReportHeading } from '../../../shared/utils/reportHeading';
 import { CampaignBanner } from '../../campaigns/components/CampaignBanner';
+import { loadOfferPins, useOffersState } from '../../places/store/offersMode';
+import { pickLabel, usePlaceCatalog } from '../../places/services/placeCatalog';
+import { featuredOffer } from '../../places/hooks/useBusinessPlace';
+import { trackSeen } from '../../../shared/services/engagement.service';
+import type { OfferPin, OfferPinIcon } from '../../../components/GebetaMap';
+
+const offerPinIcon = (group?: string | null, kind?: string | null): OfferPinIcon => {
+    if (kind === 'atm') return 'atm';
+    if (kind === 'car-repair-and-garage' || kind === 'phone-and-computer-repair') return 'repair';
+    if (group === 'food-and-drink') return 'restaurant';
+    if (group === 'rooms-and-stays') return 'hotel';
+    if (group === 'health') return 'hospital';
+    if (group === 'finance') return 'bank';
+    return 'other';
+};
 
 export interface SharedRoute {
     destination: { lat: number; lng: number; name?: string };
@@ -397,6 +412,54 @@ export default function TrafficMap({ sharedLocation, sharedRoute, taxiDestinatio
         handleStartNavigation(setUserLocation);
     };
 
+    const offersState = useOffersState();
+    const { catalog: placeCatalog } = usePlaceCatalog();
+    const offersOn = offersState.on;
+    const offerCenterRef = useRef<[number, number] | null>(null);
+    const handleOfferRegionChange = useCallback((center: [number, number]) => {
+        offerCenterRef.current = center;
+        loadOfferPins(center[1], center[0]);
+    }, []);
+    const hasLocation = !!userLocation;
+    useEffect(() => {
+        if (!offersOn) {
+            offerCenterRef.current = null;
+            return;
+        }
+        const loc = userLocation;
+        const center = offerCenterRef.current ?? (loc ? ([loc.lng, loc.lat] as [number, number]) : null);
+        if (center) loadOfferPins(center[1], center[0]);
+    }, [offersOn, hasLocation]);
+    const handleOfferPinsVisible = useCallback((pins: OfferPin[]) => pins.forEach((pin) => trackSeen(pin.id, pin.offerId)), []);
+    const offerPins: OfferPin[] = useMemo(() => {
+        if (!offersOn) return [];
+        const lang = i18n.language;
+        return offersState.places.map((place) => {
+            const offer = featuredOffer(place.offers);
+            const tagKey = offer?.type;
+            const tag = pickLabel(placeCatalog?.offerOptions.types.find((ty) => ty.key === tagKey)?.label, lang, offer?.badge || place.badges?.[0] || '');
+            return { id: place.id, name: pickLabel(place.name, lang), lat: place.lat, lng: place.lng, tag, offerText: offer?.text ?? '', offerId: offer?.id, icon: offerPinIcon(place.group, place.kind) };
+        });
+    }, [offersOn, offersState.places, placeCatalog]);
+
+    const handleOfferPinPress = (pin: OfferPin) => {
+        handleSelectPlace({
+            id: `offer-${pin.id}`,
+            name: pin.name,
+            display_name: pin.name,
+            category: 'business',
+            location: { lat: pin.lat, lng: pin.lng },
+            address: { country: '', country_code: '' },
+            latitude: pin.lat,
+            longitude: pin.lng,
+            type: 'business',
+            City: '',
+            Country: '',
+            businessId: pin.id,
+        } as GeocodingPlace);
+        setShowPlaceDetail(true);
+    };
+
     const handleSelectPlace = (place: GeocodingPlace, autoNavigate: boolean = false, saveToRecents: boolean = false, skipPreview: boolean = false) => {
         const queryForRecent = searchQuery.trim() || undefined;
 
@@ -704,6 +767,7 @@ export default function TrafficMap({ sharedLocation, sharedRoute, taxiDestinatio
                 type: sharedLocation.type || 'location',
                 City: sharedLocation.city || '',
                 Country: sharedLocation.country || '',
+                ...(sharedLocation.businessId && { businessId: sharedLocation.businessId }),
             };
 
 
@@ -1370,6 +1434,10 @@ export default function TrafficMap({ sharedLocation, sharedRoute, taxiDestinatio
                 explorePlaces={exploreResults}
                 exploreCategory={selectedExploreCategory}
                 onExplorePlacePress={(place) => handleSelectPlace(place)}
+                offerPins={offerPins.length ? offerPins : undefined}
+                onOfferPinPress={handleOfferPinPress}
+                onOfferPinsVisible={handleOfferPinsVisible}
+                onRegionCenterChange={offersOn ? handleOfferRegionChange : undefined}
                 taxiStations={taxiStations || undefined}
                 taxiWalkRoutes={taxiWalkRoutes || undefined}
                 taxiRouteSegments={taxiRouteSegments || undefined}

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text as RNText, TouchableOpacity, ScrollView, ActivityIndicator, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { trackSeen } from '../../../shared/services/engagement.service';
 import { useRouter } from 'expo-router';
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 import type { RecentSearch } from '../../navigation/services/recentSearch.service';
@@ -291,6 +292,14 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     const anyOffers = results.some((place) => place.hasOffers);
     // a new search with no offers drops the filter so results never look empty
     const shown = offersOnly && anyOffers ? results.filter((place) => place.hasOffers) : results;
+
+    const listingResults = showContainer && !(showRecentSearches && !isLoading);
+    React.useEffect(() => {
+        if (!listingResults) return;
+        shown.forEach((place) => {
+            if (place.businessId) trackSeen(place.businessId, place.offer?.id);
+        });
+    }, [listingResults, shown]);
 
     if (!showContainer) return null;
 

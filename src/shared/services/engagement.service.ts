@@ -69,6 +69,18 @@ export const trackEngagement = (placeId: string | null | undefined, kind: Engage
     else schedule();
 };
 
+const seenThisRun = new Set<string>();
+const MAX_SEEN_KEYS = 5000;
+
+export const trackSeen = (placeId: string | null | undefined, offerId?: string | null): void => {
+    if (!placeId) return;
+    const key = `${placeId}|${offerId ?? ''}`;
+    if (seenThisRun.has(key)) return;
+    if (seenThisRun.size >= MAX_SEEN_KEYS) seenThisRun.clear();
+    seenThisRun.add(key);
+    trackEngagement(placeId, 'seen', offerId);
+};
+
 export const initEngagement = () => {
     appStateSub?.remove();
     appStateSub = AppState.addEventListener('change', (state) => {

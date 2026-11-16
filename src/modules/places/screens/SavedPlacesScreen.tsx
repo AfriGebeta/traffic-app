@@ -9,6 +9,8 @@ import { placeService } from '../services/place.service';
 import { hasSavedPlaceCoords, type SavedPlace, type SavedPlaceType } from '../types/place.types';
 import { showToast } from '../../../shared/utils/toast';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
+import { SavedOffersTab } from '../components/SavedOffersTab';
+import { FONT_MEDIUM, RADIUS_SM } from '../../campaigns/components/CampaignUi';
 
 type TabType = 'ALL' | SavedPlaceType;
 
@@ -20,6 +22,7 @@ export const SavedPlacesScreen = () => {
     const [savedPlaces, setSavedPlaces] = useState<SavedPlace[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<TabType>('ALL');
+    const [section, setSection] = useState<'places' | 'offers'>('places');
 
     useEffect(() => {
         loadSavedPlaces();
@@ -172,6 +175,29 @@ export const SavedPlacesScreen = () => {
                 </Text>
             </View>
 
+            <View className="flex-row mx-6 mb-4 p-1" style={{ borderRadius: 8, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
+                {(['places', 'offers'] as const).map((id) => {
+                    const active = section === id;
+                    return (
+                        <TouchableOpacity
+                            key={id}
+                            onPress={() => setSection(id)}
+                            activeOpacity={0.8}
+                            accessibilityRole="tab"
+                            accessibilityState={{ selected: active }}
+                            className="flex-1 items-center justify-center"
+                            style={{ height: 34, borderRadius: RADIUS_SM, backgroundColor: active ? theme.background : 'transparent', borderWidth: active ? 1 : 0, borderColor: theme.border }}
+                        >
+                            <Text style={{ color: active ? theme.textPrimary : theme.textSecondary, fontFamily: FONT_MEDIUM, fontSize: 14 }}>{t(id === 'places' ? 'saved-section-places' : 'offers')}</Text>
+                        </TouchableOpacity>
+                    );
+                })}
+            </View>
+
+            {section === 'offers' ? (
+                <SavedOffersTab />
+            ) : (
+            <>
             <View className="mb-4">
                 <ScrollView
                     horizontal
@@ -318,6 +344,8 @@ export const SavedPlacesScreen = () => {
             >
                 <Ionicons name="add" size={28} color="#fff" />
             </TouchableOpacity>
+            </>
+            )}
         </View>
     );
 };

@@ -2,16 +2,15 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, BackHandler, Easing, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
+import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { ApiError } from '../../../shared/utils/apiErrors';
-import { FONT_MEDIUM, RADIUS, RADIUS_SM } from '../../campaigns/components/CampaignUi';
+import { FONT_MEDIUM, RADIUS, RADIUS_SM, tint } from '../../campaigns/components/CampaignUi';
 import { userService } from '../../register/services/user.service';
 import { businessService } from '../services/business.service';
 import { LoyaltyVisit } from '../types/business.types';
-
-const INK = '#16181D';
 
 const str = (value: unknown) => (typeof value === 'string' ? value : '');
 const parseLoyalty = (raw: string): LoyaltyVisit | null => {
@@ -22,26 +21,22 @@ const parseLoyalty = (raw: string): LoyaltyVisit | null => {
     }
 };
 
-function MovingStripe() {
-    const shift = useRef(new Animated.Value(0)).current;
+function LiveDot({ color }: { color: string }) {
+    const pulse = useRef(new Animated.Value(1)).current;
     useEffect(() => {
-        const loop = Animated.loop(Animated.timing(shift, { toValue: 1, duration: 1600, easing: Easing.linear, useNativeDriver: true }));
+        const loop = Animated.loop(
+            Animated.sequence([
+                Animated.timing(pulse, { toValue: 0.25, duration: 700, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+                Animated.timing(pulse, { toValue: 1, duration: 700, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+            ])
+        );
         loop.start();
         return () => loop.stop();
-    }, [shift]);
-    const translateX = shift.interpolate({ inputRange: [0, 1], outputRange: [0, 24] });
-    return (
-        <View style={{ height: 18, overflow: 'hidden', borderRadius: 4 }}>
-            <Animated.View style={{ flexDirection: 'row', marginLeft: -24, transform: [{ translateX }] }}>
-                {Array.from({ length: 30 }, (_, i) => (
-                    <View key={i} style={{ width: 12, height: 18, marginRight: 12, backgroundColor: INK }} />
-                ))}
-            </Animated.View>
-        </View>
-    );
+    }, [pulse]);
+    return <Animated.View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color, opacity: pulse }} />;
 }
 
-function LiveClock() {
+function LiveClock({ color }: { color: string }) {
     const [now, setNow] = useState(new Date());
     useEffect(() => {
         const timer = setInterval(() => setNow(new Date()), 1000);
@@ -49,7 +44,7 @@ function LiveClock() {
     }, []);
     const pad = (n: number) => String(n).padStart(2, '0');
     return (
-        <Text style={{ color: INK, fontFamily: FONT_MEDIUM, fontSize: 34, fontVariant: ['tabular-nums'] }}>
+        <Text style={{ color, fontFamily: FONT_MEDIUM, fontSize: 30, fontVariant: ['tabular-nums'] }}>
             {pad(now.getHours())}:{pad(now.getMinutes())}:{pad(now.getSeconds())}
         </Text>
     );
@@ -166,23 +161,39 @@ export default function CounterScreen() {
                 </Text>
             </View>
 
-            <View className="mx-4 p-5 gap-3" style={{ borderRadius: RADIUS, backgroundColor: theme.primary }}>
-                <Text style={{ color: INK, fontFamily: FONT_MEDIUM, fontSize: 15 }} numberOfLines={1}>{placeName}</Text>
-                <Text style={{ color: INK, fontFamily: FONT_MEDIUM, fontSize: 26, lineHeight: 31 }}>{offerText}</Text>
+            <View className="mx-4 p-5" style={{ borderRadius: RADIUS, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surface }}>
+                <Text className="text-sm" style={{ color: theme.textSecondary }} numberOfLines={1}>{placeName}</Text>
+                <Text className="mt-1" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM, fontSize: 26, lineHeight: 32 }}>{offerText}</Text>
                 {studentsOnly && (
-                    <Text style={{ color: INK, fontFamily: FONT_MEDIUM, fontSize: 14 }}>
-                        {studentName ? t('verified-student-name', { name: studentName }) : t('verified-student')}
-                    </Text>
+                    <View className="flex-row items-center mt-3">
+                        <Ionicons name="shield-checkmark" size={16} color={theme.green} />
+                        <Text className="ml-1.5 text-sm" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM }}>
+                            {studentName ? t('verified-student-name', { name: studentName }) : t('verified-student')}
+                        </Text>
+                    </View>
                 )}
                 {!!loyalty && (
-                    <Text style={{ color: INK, fontFamily: FONT_MEDIUM, fontSize: loyalty.isReward ? 20 : 14 }}>
-                        {loyalty.isReward ? t('loyalty-reward-now', { reward: loyalty.reward }) : t('loyalty-visit', { visit: loyalty.visit, every: loyalty.every })}
-                    </Text>
+                    <View className="self-start mt-3 px-2 py-1" style={{ borderRadius: RADIUS_SM, backgroundColor: tint(theme.primary, '24') }}>
+                        <Text style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM, fontSize: loyalty.isReward ? 16 : 13 }}>
+                            {loyalty.isReward ? t('loyalty-reward-now', { reward: loyalty.reward }) : t('loyalty-visit', { visit: loyalty.visit, every: loyalty.every })}
+                        </Text>
+                    </View>
                 )}
-                <MovingStripe />
-                <View className="flex-row items-baseline justify-between">
-                    <LiveClock />
-                    <Text style={{ color: INK, fontFamily: FONT_MEDIUM, fontSize: 13 }}>{t('today')}</Text>
+                {mode === 'screen' && !!code && (
+                    <View className="flex-row items-baseline mt-3">
+                        <Text className="text-sm" style={{ color: theme.textSecondary }}>{t('your-code')}</Text>
+                        <Text className="ml-2" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM, fontSize: 15, letterSpacing: 2 }} selectable>
+                            {code}
+                        </Text>
+                    </View>
+                )}
+                <View className="mt-4 pt-4 flex-row items-center justify-between" style={{ borderTopWidth: 1, borderTopColor: theme.border }}>
+                    <View className="flex-row items-center">
+                        <LiveDot color={theme.green} />
+                        <Text className="ml-2 text-sm" style={{ color: theme.green, fontFamily: FONT_MEDIUM }}>{t('counter-live')}</Text>
+                        <Text className="ml-2 text-sm" style={{ color: theme.textSecondary }}>· {t('today')}</Text>
+                    </View>
+                    <LiveClock color={theme.textPrimary} />
                 </View>
             </View>
 

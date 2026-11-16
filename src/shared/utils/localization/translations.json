@@ -6341,8 +6341,8 @@
     },
     {
         "key": "counter-not-screenshot",
-        "EN_US": "The moving stripe and live clock show it isn’t a screenshot.",
-        "AM": "የሚንቀሳቀሰው መስመርና ሰዓቱ ይህ ስክሪንሾት አለመሆኑን ያሳያሉ።"
+        "EN_US": "The live dot and ticking clock show it isn’t a screenshot.",
+        "AM": "የሚሄደው ሰዓት ይህ ስክሪንሾት አለመሆኑን ያሳያሉ።"
     },
     {
         "key": "counter-hand-phone",
@@ -6506,8 +6506,8 @@
     },
     {
         "key": "student-check-pending-note",
-        "EN_US": "Your student check is being reviewed. Most are done within a day.",
-        "AM": "የተማሪ ማረጋገጫዎ እየታየ ነው። አብዛኞቹ በአንድ ቀን ውስጥ ይጠናቀቃሉ።"
+        "EN_US": "Your student check is being reviewed. Most are done within a day or two.",
+        "AM": "የተማሪ ማረጋገጫዎ እየታየ ነው። አብዛኞቹ በአንድ ወይም በሁለት ቀን ውስጥ ይጠናቀቃሉ።"
     },
     {
         "key": "thanks-for-telling-us",
@@ -6743,5 +6743,90 @@
         "key": "referral-progress",
         "EN_US": "Progress",
         "AM": "ሂደት"
+    },
+    {
+        "key": "counter-live",
+        "EN_US": "Live",
+        "AM": "ቀጥታ"
+    },
+    {
+        "key": "saved-offers",
+        "EN_US": "Saved offers",
+        "AM": "የተቀመጡ ቅናሾች"
+    },
+    {
+        "key": "saved-offers-empty",
+        "EN_US": "Save an offer and it shows here, with a reminder the morning it ends.",
+        "AM": "ቅናሽ ሲያስቀምጡ እዚህ ይታያል፣ በሚያበቃበት ጠዋት እናስታውስዎታለን።"
+    },
+    {
+        "key": "saved-offers-sign-in",
+        "EN_US": "Log in to see your saved offers and the places you follow.",
+        "AM": "የተቀመጡ ቅናሾችዎንና የሚከተሏቸውን ቦታዎች ለማየት ይግቡ።"
+    },
+    {
+        "key": "saved-offers-failed",
+        "EN_US": "Could not load your saved offers.",
+        "AM": "የተቀመጡ ቅናሾችዎን መጫን አልተቻለም።"
+    },
+    {
+        "key": "places-you-follow",
+        "EN_US": "Places you follow",
+        "AM": "የሚከተሏቸው ቦታዎች"
+    },
+    {
+        "key": "following-empty",
+        "EN_US": "Follow a place to hear about its next offer.",
+        "AM": "ስለ ቀጣዩ ቅናሹ ለመስማት ቦታን ይከተሉ።"
+    },
+    {
+        "key": "saved-section-places",
+        "EN_US": "Places",
+        "AM": "ቦታዎች"
+    },
+    {
+        "key": "see-all",
+        "EN_US": "See all",
+        "AM": "ሁሉንም ይመልከቱ"
+    },
+    {
+        "key": "offers-near-you",
+        "EN_US": "Offers near you",
+        "AM": "በአቅራቢያዎ ያሉ ቅናሾች"
+    },
+    {
+        "key": "around-area",
+        "EN_US": "Around {{area}}",
+        "AM": "በ{{area}} አካባቢ"
+    },
+    {
+        "key": "offer-of-the-day",
+        "EN_US": "Offer of the day",
+        "AM": "የዕለቱ ቅናሽ"
+    },
+    {
+        "key": "ends-today",
+        "EN_US": "ends today",
+        "AM": "ዛሬ ያበቃል"
+    },
+    {
+        "key": "offers-none-nearby",
+        "EN_US": "No offers near you right now.",
+        "AM": "አሁን በአቅራቢያዎ ቅናሽ የለም።"
+    },
+    {
+        "key": "offers-none-match",
+        "EN_US": "No offers match this filter.",
+        "AM": "ከዚህ ማጣሪያ ጋር የሚስማማ ቅናሽ የለም።"
+    },
+    {
+        "key": "offers-load-failed",
+        "EN_US": "Could not load offers. Pull to try again.",
+        "AM": "ቅናሾችን መጫን አልተቻለም። እንደገና ለመሞከር ወደ ታች ይጎትቱ።"
+    },
+    {
+        "key": "offers-need-location",
+        "EN_US": "Turn on location to see offers near you.",
+        "AM": "በአቅራቢያዎ ያሉ ቅናሾችን ለማየት አካባቢን ያብሩ።"
     }
 ]

@@ -124,6 +124,20 @@ const MARKER_BOUNDS_EPSILON = 1e-4;
 
 type MarkerBounds = [west: number, south: number, east: number, north: number];
 
+export interface OfferPin {
+    id: string;
+    name: string;
+    lat: number;
+    lng: number;
+    tag: string;
+    offerText: string;
+    offerId?: string;
+    icon: OfferPinIcon;
+}
+
+const OFFER_LABEL_ZOOM = 15.5;
+const OFFER_PIN_COLOR = '#F5A000';
+
 const isMarkerLayerVisible = (zoomLevel: number, minZoom: number, wasVisible: boolean) =>
     zoomLevel >= (wasVisible ? minZoom - MARKER_ZOOM_HYSTERESIS : minZoom);
 
@@ -163,6 +177,16 @@ const EXPLORE_IMAGES: Record<string, any> = {
     bank: require('../../../assets/images/bank.png'),
     atm: require('../../../assets/images/atm.png'),
 };
+
+// offer pins reuse the category-chip pins, registered once as map images
+const OFFER_PIN_ICONS = ['restaurant', 'hotel', 'hospital', 'repair', 'bank', 'atm', 'gas', 'parking', 'other'] as const;
+export type OfferPinIcon = (typeof OFFER_PIN_ICONS)[number];
+const OFFER_PIN_IMAGES: Record<string, any> = Object.fromEntries(
+    OFFER_PIN_ICONS.map((key) => [`offer-pin-${key}`, EXPLORE_IMAGES[key] ?? EXPLORE_FALLBACK_IMAGE])
+);
+
+// one stable object: a new one each render would make MapLibre re-register every image
+const MAP_IMAGES = { ...NAV_MARKER_MAP_IMAGES, navArrowHead: NAV_ARROWHEAD_IMAGE, taxiStation: TAXI_MARKER_IMAGE, ...OFFER_PIN_IMAGES };
 
 const INCIDENT_SVG_ICONS: Record<string, React.FC<{ width?: number; height?: number }>> = {
     ROAD_CLOSURE: MapIncidentClosureIcon,
@@ -260,6 +284,11 @@ interface ExtendedGebetaMapProps extends Omit<GebetaMapProps, 'center'> {
     }>;
     exploreCategory?: string | null;
     onExplorePlacePress?: (place: any) => void;
+    // businesses with a live offer (Offers chip on): orange pin, the tag, and the offer text when zoomed in
+    offerPins?: OfferPin[];
+    onOfferPinPress?: (pin: OfferPin) => void;
+    // pins inside the visible area, after each camera move (for "seen" counts)
+    onOfferPinsVisible?: (pins: OfferPin[]) => void;
     taxiStations?: Array<{
         id: number;
         name: string;
@@ -1080,7 +1109,7 @@ export type TrafficMapRef = GebetaMapRef & {
 };
 
 const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
-    ({ apiKey, center, zoom, onMapClick, onMapLongPress, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, routeEpoch, taxiActiveRouteGeoJSON, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, isHomeMap, staticInitialCamera, freeCamera, maneuvers, boundingBox, alternativeRoutesGeoJSON, routeTimeLabels }, ref) => {
+    ({ apiKey, center, zoom, onMapClick, onMapLongPress, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, offerPins, onOfferPinPress, onOfferPinsVisible, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, routeEpoch, taxiActiveRouteGeoJSON, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, isHomeMap, staticInitialCamera, freeCamera, maneuvers, boundingBox, alternativeRoutesGeoJSON, routeTimeLabels }, ref) => {
         const navPuckFraction = isTaxiNavigation ? 0.52 : NAV_PUCK_SCREEN_FRACTION;
         const navMarker = useNavMarker();
         const { isDark } = useTheme();
@@ -1593,6 +1622,26 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
                 setRenderKey(prev => prev + 1);
             }
         }, [waypointMarkers]);
+
+        const offerPinsShape = useMemo(() => {
+            if (!offerPins?.length) return null;
+            return {
+                type: 'FeatureCollection' as const,
+                features: offerPins.map((pin) => ({
+                    type: 'Feature' as const,
+                    id: pin.id,
+                    properties: { id: pin.id, icon: `offer-pin-${pin.icon}`, tag: pin.tag, offer: pin.offerText.length > 40 ? `${pin.offerText.slice(0, 38)}…` : pin.offerText },
+                    geometry: { type: 'Point' as const, coordinates: [pin.lng, pin.lat] },
+                })),
+            };
+        }, [offerPins]);
+
+        const onOfferPinsVisibleRef = useRef(onOfferPinsVisible);
+        onOfferPinsVisibleRef.current = onOfferPinsVisible;
+        useEffect(() => {
+            if (!offerPins?.length || !markerBounds) return;
+            onOfferPinsVisibleRef.current?.(filterMarkersToBounds(offerPins, markerBounds));
+        }, [offerPins, markerBounds]);
 
         const taxiStationsKey = useMemo(
             () => (taxiStations && taxiStations.length > 0
@@ -2356,7 +2405,7 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
                             />
                         )}
 
-                        <MapLibreGL.Images images={{ ...NAV_MARKER_MAP_IMAGES, navArrowHead: NAV_ARROWHEAD_IMAGE, taxiStation: TAXI_MARKER_IMAGE }} />
+                        <MapLibreGL.Images images={MAP_IMAGES} />
 
 
                         {!(isNavigating && isTaxiNavigation) && segmentedRoutes && segmentedRoutes.length > 0 && segmentedRoutes.map((route) => {
@@ -2938,6 +2987,59 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
                                 </MapLibreGL.PointAnnotation>
                             );
                         })}
+
+                        {offerPinsShape && !isNavigating && (
+                            <MapLibreGL.ShapeSource
+                                id="offer-pins-source"
+                                shape={offerPinsShape}
+                                hitbox={{ width: 28, height: 28 }}
+                                onPress={(e: any) => {
+                                    const id = e?.features?.[0]?.properties?.id;
+                                    const pin = id ? offerPins?.find((p) => p.id === id) : undefined;
+                                    if (pin) onOfferPinPress?.(pin);
+                                }}
+                            >
+                                {/* same pin as the category chips; anchored at its tip */}
+                                <MapLibreGL.SymbolLayer
+                                    id="offer-pins-icon"
+                                    style={{
+                                        iconImage: ['get', 'icon'],
+                                        iconSize: 0.7,
+                                        iconAnchor: 'bottom',
+                                        iconAllowOverlap: true,
+                                        iconIgnorePlacement: true,
+                                    }}
+                                />
+                                {/* small orange badge on the pin's top-right: this place has an offer */}
+                                <MapLibreGL.CircleLayer
+                                    id="offer-pins-badge"
+                                    style={{
+                                        circleRadius: 5,
+                                        circleColor: OFFER_PIN_COLOR,
+                                        circleStrokeColor: '#FFFFFF',
+                                        circleStrokeWidth: 1.5,
+                                        circleTranslate: [13, -38],
+                                        circleTranslateAnchor: 'viewport',
+                                    }}
+                                />
+                                <MapLibreGL.SymbolLayer
+                                    id="offer-pins-label"
+                                    minZoomLevel={13}
+                                    style={{
+                                        textField: ['step', ['zoom'], ['get', 'tag'], OFFER_LABEL_ZOOM, ['get', 'offer']],
+                                        textFont: ['JakartaSans'],
+                                        textSize: ['step', ['zoom'], 11, OFFER_LABEL_ZOOM, 12],
+                                        textColor: '#8A5200',
+                                        textHaloColor: '#FFFFFF',
+                                        textHaloWidth: 1.5,
+                                        textAnchor: 'top',
+                                        textOffset: [0, 0.3],
+                                        textMaxWidth: 10,
+                                        textOptional: true,
+                                    }}
+                                />
+                            </MapLibreGL.ShapeSource>
+                        )}
 
                         {taxiStationsShape && imagesLoaded && (
                             <MapLibreGL.ShapeSource id="taxi-stations-source" shape={taxiStationsShape}>

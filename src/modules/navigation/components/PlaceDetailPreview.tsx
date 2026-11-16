@@ -14,7 +14,7 @@ import { placeService } from '../../places/services/place.service';
 import { showToast } from '../../../shared/utils/toast';
 import { shareLocation } from '../../../shared/utils/shareLocation';
 import type { SavedPlace } from '../../places/types/place.types';
-import { trackEngagement } from '../../../shared/services/engagement.service';
+import { trackEngagement, trackSeen } from '../../../shared/services/engagement.service';
 import { featuredOffer, useBusinessPlace } from '../../places/hooks/useBusinessPlace';
 import { pickLabel, usePlaceCatalog } from '../../places/services/placeCatalog';
 import { CardDetails, CardOffer, OpenLine } from '../../places/components/BusinessCardSections';
@@ -125,6 +125,7 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
         if (!place.businessId || !business.loaded || openedFor.current === place.businessId) return;
         openedFor.current = place.businessId;
         trackEngagement(place.businessId, 'opened', firstOffer?.id);
+        trackSeen(place.businessId, firstOffer?.id);
     }, [place.businessId, business.loaded, firstOffer?.id]);
 
     const routeTo = (start: () => void) => () => {

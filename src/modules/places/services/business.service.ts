@@ -12,6 +12,7 @@ import {
     StudentCheck,
     NearbyBuilding,
     NearbyOfferPlace,
+    FeaturedOffer,
     OfferIdea,
     PlaceOffers,
     PublicPlace,
@@ -99,6 +100,12 @@ export const businessService = {
     async nearbyOffers(lat: number, lng: number, radius = 1000): Promise<NearbyOfferPlace[]> {
         const response = await apiService.get(`/api/places/offers/nearby?${query({ lat, lng, radius })}`);
         const rows = unwrap<NearbyOfferPlace[]>(response, 'Failed to load offers');
+        return Array.isArray(rows) ? rows : [];
+    },
+
+    async featuredOffers(lat: number, lng: number, radius = 3000): Promise<FeaturedOffer[]> {
+        const response = await apiService.get(`/api/places/offers/featured?${query({ lat, lng, radius })}`);
+        const rows = unwrap<FeaturedOffer[]>(response, 'Failed to load offers');
         return Array.isArray(rows) ? rows : [];
     },
 

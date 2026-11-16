@@ -232,8 +232,19 @@ export interface NearbyOfferPlace {
     lat: number;
     lng: number;
     distanceM: number;
+    promoted?: boolean;
     badges: string[];
     offers: PublicOffer[];
+    group?: string | null;
+    kind?: string | null;
+}
+
+export interface FeaturedOffer {
+    place: { id: string; name: string | LocalizedLabel; lat: number; lng: number; image?: string | null; area?: string | null };
+    offer: PublicOffer;
+    distanceM: number;
+    promoted: boolean;
+    season: { key: string; label: string | LocalizedLabel } | null;
 }
 
 export interface PublicOffer {

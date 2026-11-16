@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleProp, ViewStyle, LayoutChangeEvent } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { useGlass } from '../../../shared/theme/glass';
 import { GlassSheen } from '../../../shared/components/GlassSheen';
@@ -13,6 +14,9 @@ interface QuickActionsProps {
     style?: StyleProp<ViewStyle>;
     contentContainerStyle?: StyleProp<ViewStyle>;
     onLayout?: (event: LayoutChangeEvent) => void;
+    offersActive?: boolean;
+    offersCount?: number | null;
+    onToggleOffers?: () => void;
 }
 
 export const QuickActions: React.FC<QuickActionsProps> = ({
@@ -22,8 +26,11 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
     style,
     contentContainerStyle,
     onLayout,
+    offersActive = false,
+    offersCount,
+    onToggleOffers,
 }) => {
-    const { i18n } = useTranslation();
+    const { t, i18n } = useTranslation();
     const { colors: theme } = useTheme();
     const glass = useGlass();
     const [internalSelectedCategory, setInternalSelectedCategory] = useState<string | null>(null);
@@ -49,6 +56,27 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={[{ paddingLeft: 14, paddingRight: 14, paddingBottom: 8 }, contentContainerStyle]}
             >
+                {onToggleOffers && (
+                    <View className="mr-2">
+                        <TouchableOpacity onPress={onToggleOffers} activeOpacity={0.8} accessibilityRole="switch" accessibilityState={{ checked: offersActive }}>
+                            <View
+                                className="px-4 py-2 flex-row items-center rounded-full"
+                                style={[glass.chip, offersActive && { backgroundColor: theme.primary, borderColor: theme.primaryHover }, { borderRadius: 9999 }]}
+                            >
+                                {!offersActive && <GlassSheen strength="thin" />}
+                                <Ionicons name="pricetag-outline" size={14} color={offersActive ? '#FFFFFF' : theme.textPrimary} style={{ marginRight: 6 }} />
+                                <Text className="text-sm font-medium" style={{ color: offersActive ? '#FFFFFF' : theme.textPrimary }}>
+                                    {t('offers')}
+                                </Text>
+                                {offersActive && !!offersCount && (
+                                    <Text className="text-sm font-medium ml-1.5" style={{ color: '#FFFFFF', opacity: 0.85 }}>
+                                        {offersCount}
+                                    </Text>
+                                )}
+                            </View>
+                        </TouchableOpacity>
+                    </View>
+                )}
                 {categories.map((category, index) => (
                     <View
                         key={category.slug}
