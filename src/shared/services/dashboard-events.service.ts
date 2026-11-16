@@ -1,9 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
-import * as Application from 'expo-application';
 import { apiService } from './api';
 import telemetryService from './telemetry.service';
 import * as Location from './location';
+import { captureInstallReferrer } from '../../modules/referrals/services/referral.service';
 
 const INSTALL_SENT_KEY = '@dashboard_install_sent';
 
@@ -46,20 +45,6 @@ const lastKnownLocation = async (): Promise<{ lat: number; lng: number } | null>
   try {
     const fix = await withTimeout(Location.getLastKnownPositionAsync({ maxAge: LOCATION_MAX_AGE_MS }), 2000);
     return fix ? { lat: round(fix.coords.latitude, 5), lng: round(fix.coords.longitude, 5) } : null;
-  } catch {
-    return null;
-  }
-};
-
-const installRef = async (): Promise<string | null> => {
-  if (Platform.OS !== 'android') return null;
-  try {
-    const referrer = await withTimeout(Application.getInstallReferrerAsync(), 5000);
-    for (const pair of (referrer ?? '').split('&')) {
-      const [key, value = ''] = pair.split('=');
-      if (key === 'ref' && value) return decodeURIComponent(value.replace(/\+/g, ' ')).trim() || null;
-    }
-    return null;
   } catch {
     return null;
   }
@@ -111,8 +96,9 @@ class DashboardEventsService {
         // console.log('dashboard events: INSTALL already sent, skipping');
         return;
       }
-      const ref = await installRef();
-      await this.sendEvent('INSTALL', ref ? { ref } : undefined);
+      const ref = await captureInstallReferrer();
+      console.log('dashboard events: INSTALL referral ref:', ref ?? 'none');
+      await this.sendEvent('INSTALL', ref ? { ref, platform: 'android' } : undefined);
       await AsyncStorage.setItem(INSTALL_SENT_KEY, 'true');
     } catch (e) {
       console.error('dashboard events: INSTALL threw:', e);

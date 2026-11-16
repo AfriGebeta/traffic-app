@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../shared/theme/ThemeContext';
 import { FONT_MEDIUM, FONT_SEMIBOLD, RADIUS, RADIUS_SM } from './CampaignUi';
 import { getCampaignIntroVideo } from '../../../shared/config/remoteConfigValues';
+import i18n from '../../../shared/utils/localization/i18n';
 
 // accepts a bare id or any youtube link: watch?v=, youtu.be/, shorts/, embed/, live/
 export const youtubeId = (value: string | undefined): string | null => {
@@ -15,8 +16,9 @@ export const youtubeId = (value: string | undefined): string | null => {
     return match ? match[1] : null;
 };
 
-// read when needed, not at import: Remote Config hydrates after app start
-export const campaignIntroVideoId = () => youtubeId(getCampaignIntroVideo());
+// read when needed, not at import: Remote Config hydrates after app start.
+// amharic users get the amharic video when it's set, otherwise the default one
+export const campaignIntroVideoId = () => youtubeId(getCampaignIntroVideo(i18n.language));
 
 // youTube refuses embeds without a referrer (error 153), so the page gets an https base url
 const EMBED_ORIGIN = 'https://gebeta.app';
@@ -39,10 +41,12 @@ export const CampaignVideoModal = ({ visible, videoId: videoIdProp, onClose }: C
     const videoId = videoIdProp ?? campaignIntroVideoId();
     const { t } = useTranslation();
     const { colors: theme } = useTheme();
-    const { width } = useWindowDimensions();
+    const { width, height } = useWindowDimensions();
     const [loading, setLoading] = useState(true);
-    // card has 16px padding inside a 16px gutter
-    const playerWidth = Math.min(width, 520) - 64;
+    const maxPlayerWidth = Math.min(width, 520) - 64;
+    const maxPlayerHeight = height - 240;
+    const playerHeight = Math.min((maxPlayerWidth * 16) / 9, maxPlayerHeight);
+    const playerWidth = (playerHeight * 9) / 16;
 
     return (
         <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
@@ -53,7 +57,7 @@ export const CampaignVideoModal = ({ visible, videoId: videoIdProp, onClose }: C
                         {t('campaign-video-hint')}
                     </Text>
 
-                    <View style={{ width: playerWidth, height: (playerWidth * 9) / 16, borderRadius: RADIUS_SM, overflow: 'hidden', backgroundColor: '#000' }}>
+                    <View style={{ width: playerWidth, height: playerHeight, alignSelf: 'center', borderRadius: RADIUS_SM, overflow: 'hidden', backgroundColor: '#000' }}>
                         {visible && !!videoId && (
                             <WebView
                                 source={{ html: embedHtml(videoId), baseUrl: EMBED_ORIGIN }}

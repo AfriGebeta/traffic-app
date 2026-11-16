@@ -6568,5 +6568,180 @@
         "key": "offer-unsaved",
         "EN_US": "Removed from saved",
         "AM": "ከተቀመጡት ተወግዷል"
+    },
+    {
+        "key": "referral-code-label",
+        "EN_US": "Referral code (optional)",
+        "AM": "የሪፈራል ኮድ (አማራጭ)"
+    },
+    {
+        "key": "referral-code-placeholder",
+        "EN_US": "e.g. 2fmxk84y",
+        "AM": "ለምሳሌ 2fmxk84y"
+    },
+    {
+        "key": "referral-claimed",
+        "EN_US": "Referral code added",
+        "AM": "የሪፈራል ኮዱ ተጨምሯል"
+    },
+    {
+        "key": "referral-not-found",
+        "EN_US": "That referral code wasn't found. Check it and try again.",
+        "AM": "ይህ የሪፈራል ኮድ አልተገኘም። ኮዱን አረጋግጠው እንደገና ይሞክሩ።"
+    },
+    {
+        "key": "referral-not-allowed",
+        "EN_US": "This code can't be used on your account.",
+        "AM": "ይህ ኮድ በመለያዎ ላይ መጠቀም አይቻልም።"
+    },
+    {
+        "key": "referral-already-used",
+        "EN_US": "You've already used a referral code.",
+        "AM": "የሪፈራል ኮድ አስቀድመው ተጠቅመዋል።"
+    },
+    {
+        "key": "referral-failed",
+        "EN_US": "Couldn't add the code. Try again later.",
+        "AM": "ኮዱን ማከል አልተቻለም። ቆይተው እንደገና ይሞክሩ።"
+    },
+    {
+        "key": "campaign-join-early",
+        "EN_US": "Join early",
+        "AM": "ቀድመው ይቀላቀሉ"
+    },
+    {
+        "key": "campaign-joined-early",
+        "EN_US": "You're in. We'll let you know when it starts",
+        "AM": "ተቀላቅለዋል። ሲጀምር እናሳውቅዎታለን"
+    },
+    {
+        "key": "campaign-prebooked-note",
+        "EN_US": "Your spot is saved. Points start counting when the campaign starts on {{date}}.",
+        "AM": "ቦታዎ ተይዟል። ነጥቦች መቆጠር የሚጀምሩት ውድድሩ {{date}} ሲጀምር ነው።"
+    },
+    {
+        "key": "campaign-join-early-hint",
+        "EN_US": "Points count from {{date}}",
+        "AM": "ነጥቦች የሚቆጠሩት ከ{{date}} ጀምሮ ነው"
+    },
+    {
+        "key": "campaign-see-details",
+        "EN_US": "See details",
+        "AM": "ዝርዝር ይመልከቱ"
+    },
+    {
+        "key": "copied",
+        "EN_US": "Copied",
+        "AM": "ተቀድቷል"
+    },
+    {
+        "key": "referral-my-link",
+        "EN_US": "My referral link",
+        "AM": "የእኔ የሪፈራል ሊንክ"
+    },
+    {
+        "key": "referral-my-link-row-description",
+        "EN_US": "Share your link and see who joined",
+        "AM": "ሊንክዎን ያጋሩ እና ማን እንደተቀላቀለ ይመልከቱ"
+    },
+    {
+        "key": "referral-my-link-description",
+        "EN_US": "Share your link with friends. Friends on iPhone can type your code when they sign up.",
+        "AM": "ሊንክዎን ለጓደኞችዎ ያጋሩ። አይፎን የሚጠቀሙ ጓደኞች ሲመዘገቡ ኮድዎን ማስገባት ይችላሉ።"
+    },
+    {
+        "key": "referral-your-link",
+        "EN_US": "Your link",
+        "AM": "የእርስዎ ሊንክ"
+    },
+    {
+        "key": "referral-your-code",
+        "EN_US": "Your code",
+        "AM": "የእርስዎ ኮድ"
+    },
+    {
+        "key": "referral-share-link",
+        "EN_US": "Share link",
+        "AM": "ሊንኩን አጋራ"
+    },
+    {
+        "key": "referral-share-message",
+        "EN_US": "Join me on Gebeta Maps: {{url}}\nOn iPhone, enter my code when you sign up: {{code}}",
+        "AM": "በገበታ ማፕስ ይቀላቀሉኝ፦ {{url}}\nአይፎን ላይ ሲመዘገቡ ይህን ኮድ ያስገቡ፦ {{code}}"
+    },
+    {
+        "key": "referral-stat-clicks",
+        "EN_US": "Clicks",
+        "AM": "ክሊኮች"
+    },
+    {
+        "key": "referral-stat-installs",
+        "EN_US": "Installs",
+        "AM": "ጭነቶች"
+    },
+    {
+        "key": "referral-stat-registered",
+        "EN_US": "Signed up",
+        "AM": "ተመዝግበዋል"
+    },
+    {
+        "key": "referral-stat-joined",
+        "EN_US": "Joined",
+        "AM": "ተቀላቅለዋል"
+    },
+    {
+        "key": "referral-stat-qualified",
+        "EN_US": "Qualified",
+        "AM": "ብቁ ሆነዋል"
+    },
+    {
+        "key": "referral-people",
+        "EN_US": "People you referred",
+        "AM": "የጋበዟቸው ሰዎች"
+    },
+    {
+        "key": "referral-no-people",
+        "EN_US": "No one yet. Share your link to get started.",
+        "AM": "እስካሁን ማንም የለም። ለመጀመር ሊንክዎን ያጋሩ።"
+    },
+    {
+        "key": "referral-unnamed",
+        "EN_US": "New user",
+        "AM": "አዲስ ተጠቃሚ"
+    },
+    {
+        "key": "referral-stage-installed",
+        "EN_US": "Installed",
+        "AM": "ጭኗል"
+    },
+    {
+        "key": "referral-stage-registered",
+        "EN_US": "Signed up",
+        "AM": "ተመዝግቧል"
+    },
+    {
+        "key": "referral-stage-joined",
+        "EN_US": "Joined campaign",
+        "AM": "ዘመቻ ተቀላቅሏል"
+    },
+    {
+        "key": "referral-stage-qualified",
+        "EN_US": "Qualified",
+        "AM": "ብቁ ሆኗል"
+    },
+    {
+        "key": "referral-load-failed",
+        "EN_US": "Couldn't load your referral link.",
+        "AM": "የሪፈራል ሊንክዎን መጫን አልተቻለም።"
+    },
+    {
+        "key": "referral-section",
+        "EN_US": "Referral",
+        "AM": "ሪፈራል"
+    },
+    {
+        "key": "referral-progress",
+        "EN_US": "Progress",
+        "AM": "ሂደት"
     }
 ]

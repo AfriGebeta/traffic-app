@@ -225,14 +225,17 @@ export function getAppConfig(): AppConfigValues {
 // string values: kept apart from the numbers above, which hydrate only accepts when > 0
 // campaign intro video: a YouTube link or bare id; empty means no video
 export const CAMPAIGN_INTRO_VIDEO_KEY = 'campaign_intro_video';
+export const CAMPAIGN_INTRO_VIDEO_AM_KEY = 'campaign_intro_video_am';
 let campaignIntroVideo = '';
+let campaignIntroVideoAm = '';
 
-export function getCampaignIntroVideo(): string {
+export function getCampaignIntroVideo(language?: string): string {
+  if (language === 'am' && campaignIntroVideoAm) return campaignIntroVideoAm;
   return campaignIntroVideo;
 }
 
 export function buildRemoteConfigDefaults(): Record<string, number | string> {
-  const defaults: Record<string, number | string> = { [CAMPAIGN_INTRO_VIDEO_KEY]: '' };
+  const defaults: Record<string, number | string> = { [CAMPAIGN_INTRO_VIDEO_KEY]: '', [CAMPAIGN_INTRO_VIDEO_AM_KEY]: '' };
   for (const key of CONFIG_KEYS) {
     defaults[RC_KEYS[key]] = APP_CONFIG_DEFAULTS[key];
   }
@@ -254,6 +257,10 @@ export function hydrateAppConfig(rc: FirebaseRemoteConfigTypes.Module): void {
 
   try {
     campaignIntroVideo = getString(rc, CAMPAIGN_INTRO_VIDEO_KEY).trim();
+  } catch {
+  }
+  try {
+    campaignIntroVideoAm = getString(rc, CAMPAIGN_INTRO_VIDEO_AM_KEY).trim();
   } catch {
   }
 }

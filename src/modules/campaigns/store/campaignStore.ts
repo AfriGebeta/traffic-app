@@ -8,11 +8,12 @@ export interface CampaignState {
     loaded: boolean;
     loading: boolean;
     campaigns: Campaign[];
-    // keyed by slug; missing when signed out or the call failed
+    upcoming: Campaign | null | undefined;
+    // keyed by slug; missing when signed out or the call failed. Also holds the upcoming campaign's /me
     me: Record<string, CampaignMe>;
 }
 
-let state: CampaignState = { loaded: false, loading: false, campaigns: [], me: {} };
+let state: CampaignState = { loaded: false, loading: false, campaigns: [], upcoming: undefined, me: {} };
 const listeners = new Set<() => void>();
 let inFlight: Promise<void> | null = null;
 
@@ -49,6 +50,24 @@ const scheduleNextEnd = () => {
     }, Math.min(nextEnd - now + 1000, MAX_TIMER_MS));
 };
 
+export const isUpcoming = (campaign: Campaign, now = Date.now()): boolean => {
+    const start = campaign.startsAt ? new Date(campaign.startsAt).getTime() : NaN;
+    return !Number.isNaN(start) && start > now;
+};
+
+let startTimer: ReturnType<typeof setTimeout> | null = null;
+
+const scheduleUpcomingStart = () => {
+    if (startTimer) clearTimeout(startTimer);
+    startTimer = null;
+    const start = state.upcoming?.startsAt ? new Date(state.upcoming.startsAt).getTime() : NaN;
+    if (Number.isNaN(start) || start <= Date.now()) return;
+    startTimer = setTimeout(() => {
+        startTimer = null;
+        void refreshCampaigns();
+    }, Math.min(start - Date.now() + 2000, MAX_TIMER_MS));
+};
+
 const subscribe = (listener: () => void) => {
     listeners.add(listener);
     return () => {
@@ -64,19 +83,24 @@ export const refreshCampaigns = (): Promise<void> => {
 
     inFlight = (async () => {
         try {
-            const campaigns = await campaignService.getRunning();
+            const [campaigns, next] = await Promise.all([
+                campaignService.getRunning(),
+                campaignService.getNext().catch(() => undefined),
+            ]);
+            // once it starts it comes back from /running; never show it twice
+            const upcoming = next && isUpcoming(next) && !campaigns.some((c) => c.slug === next.slug) ? next : next === undefined ? undefined : null;
             const me: Record<string, CampaignMe> = {};
             if (await isAuthenticated()) {
-                const standings = await Promise.all(
-                    campaigns.map((campaign) => campaignService.getMe(campaign.slug).catch(() => null))
-                );
-                campaigns.forEach((campaign, i) => {
+                const all = upcoming ? [...campaigns, upcoming] : campaigns;
+                const standings = await Promise.all(all.map((campaign) => campaignService.getMe(campaign.slug).catch(() => null)));
+                all.forEach((campaign, i) => {
                     const standing = standings[i];
                     if (standing) me[campaign.slug] = standing;
                 });
             }
-            setState({ campaigns, me, loaded: true });
+            setState({ campaigns, upcoming, me, loaded: true });
             scheduleNextEnd();
+            scheduleUpcomingStart();
         } catch (error) {
             console.warn('campaigns: refresh failed', error);
             setState({ loaded: true });

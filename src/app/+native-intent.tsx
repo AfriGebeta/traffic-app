@@ -1,4 +1,5 @@
-import { extractShareCode, resolveLocationUrl } from '../shared/utils/deepLinking';
+import { extractReferralCode, extractShareCode, resolveLocationUrl } from '../shared/utils/deepLinking';
+import { claimPendingIfAny, savePendingCode, trackOpen } from '../modules/referrals/services/referral.service';
 
 export async function redirectSystemPath({
     path,
@@ -7,6 +8,15 @@ export async function redirectSystemPath({
     initial: boolean;
 }): Promise<string> {
     try {
+        const referralCode = extractReferralCode(path);
+        if (referralCode) {
+            console.log('referral link opened', path, '-> code', referralCode);
+            trackOpen(referralCode);
+            await savePendingCode(referralCode);
+            void claimPendingIfAny();
+            return '/';
+        }
+
         const shareCode = extractShareCode(path);
         if (shareCode) {
             // console.log('[share] incoming link', path, '-> /s/' + shareCode);
