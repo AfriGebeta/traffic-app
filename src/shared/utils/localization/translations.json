@@ -6968,5 +6968,10 @@
         "key": "offer-added-pin-hint",
         "EN_US": "Give this PIN to the cashier. They type it to confirm codes.",
         "AM": "ይህን ፒን ለገንዘብ ተቀባዩ ይስጡ። ኮዶችን ለማረጋገጥ ያስገቡታል።"
+    },
+    {
+        "key": "offer-ends-today",
+        "EN_US": "Ends today",
+        "AM": "ዛሬ ያበቃል"
     }
 ]

@@ -44,11 +44,13 @@ const tabs: Tab[] = [
 interface BottomNavigationProps {
     onTabPress?: (tabId: TabId) => void;
     onAddPress?: () => void;
+    hideBrand?: boolean;
 }
 
 export const BottomNavigation: React.FC<BottomNavigationProps> = ({
     onTabPress,
     onAddPress,
+    hideBrand = false,
 }) => {
     const { t } = useTranslation();
     const { colors: theme, isDark } = useTheme();
@@ -198,9 +200,11 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
             className="absolute left-4 right-4"
             style={[{ bottom: insets.bottom + 2 }, isMedium && { left: centeredInset(480), right: centeredInset(480) }]}
         >
-            <Text className="mb-2 ml-1" style={brandStyle}>
-                {t('gebeta-maps')}
-            </Text>
+            {!hideBrand && (
+                <Text className="mb-2 ml-1" style={brandStyle}>
+                    {t('gebeta-maps')}
+                </Text>
+            )}
 
             <View
                 className="rounded-full p-1"

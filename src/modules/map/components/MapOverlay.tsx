@@ -29,7 +29,8 @@ import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 import type { SavedPlace } from '../../places/types/place.types';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
 
-const FLOATING_COLUMN_WIDTH = 48;
+
+const BRAND_LINE_HEIGHT = 18;
 
 interface MapOverlayProps {
     searchQuery: string;
@@ -172,6 +173,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
             setOffersMode(false);
         }
     }, [offers.loaded]);
+    const [offerBannerHeight, setOfferBannerHeight] = useState(0);
     const showOfferBanner =
         offersOn && !isWide && showNavigationTabs && !showSearchContainer && !showExploreResults && !selectedExploreCategory && !isNavigationMinimized;
     const toggleOffers = () => {
@@ -309,13 +311,15 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                 <View
                     pointerEvents="box-none"
                     className="absolute"
-                    style={{ left: 16, right: 16 + FLOATING_COLUMN_WIDTH + 10, bottom: insets.bottom + BASE_GAP - 4 }}
+                    style={{ left: 16, right: 16, bottom: insets.bottom + BASE_GAP - 4 - BRAND_LINE_HEIGHT }}
+                    onLayout={(e) => setOfferBannerHeight(e.nativeEvent.layout.height)}
                 >
                     <OfferBanner userLocation={userLocation} />
                 </View>
             )}
 
             <FloatingActions
+                liftBy={showOfferBanner && offerBannerHeight ? offerBannerHeight + 8 - BRAND_LINE_HEIGHT : 0}
                 onLocationPress={onLocationPress}
                 onTaxiPress={onTaxiPress}
                 isRoutePreviewActive={showRoutePreview}
@@ -366,6 +370,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
 
             {showNavigationTabs && (
                 <BottomNavigation
+                    hideBrand={showOfferBanner}
                     onTabPress={(tabId) => {
                         void requireAuth(() => {
                             if (tabId === 'report') {
