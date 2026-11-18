@@ -29,7 +29,8 @@ export default function NotificationsScreen() {
     const insets = useSafeAreaInsets();
     const { colors: theme } = useTheme();
     // open: a delivery id to show expanded, e.g. from tapping a push that carries a full message
-    const { open: openId } = useLocalSearchParams<{ open?: string }>();
+    const { open: openId, tab: tabParam } = useLocalSearchParams<{ open?: string; tab?: string }>();
+    const [tab, setTab] = useState<'updates' | 'offers'>(tabParam === 'offers' ? 'offers' : 'updates');
 
     const [items, setItems] = useState<InboxNotification[]>([]);
     // messages with a full text, opened in place
@@ -124,6 +125,11 @@ export default function NotificationsScreen() {
         // markRead only changes this item's state
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [openId, items]);
+
+    const isOffer = (item: InboxNotification) => item.category === 'offers' || item.event === 'offer.message';
+    const visibleItems = items.filter((item) => (tab === 'offers' ? isOffer(item) : !isOffer(item)));
+    const offerUnread = items.filter((item) => isOffer(item) && !item.readAt).length;
+    const updatesUnread = Math.max(0, unread - offerUnread);
 
     const markAllRead = () => {
         markReadLocally('all');
@@ -225,6 +231,46 @@ export default function NotificationsScreen() {
 
             <NotificationsOffStrip style={{ marginHorizontal: 16, marginBottom: 12 }} />
 
+            <View className="flex-row mx-4 mb-3 p-1" style={{ borderRadius: RADIUS, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
+                {(['updates', 'offers'] as const).map((id) => {
+                    const active = tab === id;
+                    const count = id === 'updates' ? updatesUnread : offerUnread;
+                    return (
+                        <TouchableOpacity
+                            key={id}
+                            onPress={() => setTab(id)}
+                            activeOpacity={0.8}
+                            accessibilityRole="tab"
+                            accessibilityState={{ selected: active }}
+                            className="flex-1 flex-row items-center justify-center"
+                            style={{ height: 34, borderRadius: RADIUS_SM, backgroundColor: active ? theme.background : 'transparent', borderWidth: active ? 1 : 0, borderColor: theme.border }}
+                        >
+                            <Text style={{ color: active ? theme.textPrimary : theme.textSecondary, fontFamily: FONT_MEDIUM, fontSize: 14 }}>
+                                {t(id === 'updates' ? 'notifications-tab-updates' : 'offers')}
+                            </Text>
+                            {count > 0 && (
+                                <View className="ml-1.5 px-1.5 items-center justify-center" style={{ minWidth: 18, height: 18, borderRadius: 9, backgroundColor: theme.primary }}>
+                                    <Text style={{ color: '#fff', fontSize: 11, fontFamily: FONT_MEDIUM }}>{count > 99 ? '99+' : count}</Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
+                    );
+                })}
+            </View>
+
+            {tab === 'offers' && (
+                <TouchableOpacity
+                    onPress={() => router.push('/offer-notifications' as any)}
+                    activeOpacity={0.7}
+                    hitSlop={8}
+                    className="flex-row items-center self-start mx-4 mb-3"
+                    accessibilityRole="button"
+                >
+                    <Ionicons name="settings-outline" size={16} color={theme.textSecondary} />
+                    <Text className="text-sm ml-1.5" style={{ color: theme.textSecondary, fontFamily: FONT_MEDIUM }}>{t('offer-notif-title')}</Text>
+                </TouchableOpacity>
+            )}
+
             {loading ? (
                 // skeleton cards shaped like notifications: meta line, title, body
                 <View className="px-4" style={{ gap: 8 }}>
@@ -242,7 +288,7 @@ export default function NotificationsScreen() {
                 </View>
             ) : (
                 <FlatList
-                    data={items}
+                    data={visibleItems}
                     keyExtractor={(item) => item.id}
                     renderItem={renderItem}
                     contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24, flexGrow: 1 }}
@@ -254,7 +300,7 @@ export default function NotificationsScreen() {
                         <View className="items-center mt-16 px-6">
                             <Ionicons name={failed ? 'cloud-offline-outline' : 'notifications-outline'} size={36} color={theme.textSecondary} />
                             <Text className="text-sm text-center mt-3" style={{ color: theme.textSecondary }}>
-                                {t(failed ? 'notifications-failed' : 'notifications-empty')}
+                                {t(failed ? 'notifications-failed' : tab === 'offers' ? 'offer-inbox-empty' : 'notifications-empty')}
                             </Text>
                             {failed && (
                                 <TouchableOpacity onPress={() => void refresh()} className="mt-3" activeOpacity={0.7}>

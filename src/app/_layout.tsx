@@ -41,6 +41,8 @@ import { getNotificationStatus, hasDeniedAtLaunch, recordLaunchDenial } from '..
 import { usePushNotificationTaps } from '../shared/hooks/usePushNotificationTaps';
 
 import '../modules/navigation/services/nav-foreground-service';
+import { initEngagement } from '../shared/services/engagement.service';
+import { initOfferPresence } from '../shared/services/offerPresence.service';
 
 // First thing on the JS thread, so early failures are still captured.
 initializeCrashlytics();
@@ -127,6 +129,8 @@ function AppShell() {
     void dashboardEventsService.installOnce();
     initPush();
     initDataCollector();
+    initEngagement();
+    initOfferPresence();
     initReferrals();
   }, []);
 

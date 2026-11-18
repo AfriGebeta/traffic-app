@@ -5,6 +5,7 @@ export interface SharedLocation {
     city?: string;
     country?: string;
     type?: string;
+    businessId?: string;
 }
 
 const COORD_PAIR = /^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/;

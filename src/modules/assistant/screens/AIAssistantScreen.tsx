@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Audio } from 'expo-av';
 import AiIcon from '../../../../assets/images/ai-icon.svg';
 import TaxiPlanCard from '../components/TaxiPlanCard';
+import { OfferCards } from '../components/OfferCards';
 import { useVoiceNavigation } from '../../navigation/hooks/useVoiceNavigation';
 import { navigationService } from '../../navigation/services/navigation.service';
 import { useUserLocation } from '../../map/hooks/useUserLocation';
@@ -301,7 +302,7 @@ export default function AIAssistantScreen() {
     const hasConversation = messages.length > 0;
     const isIdle = !isRecording && !isProcessingVoice && !hasConversation && !showOptions;
     const isRecordingBlank = isRecording && !hasConversation && !showOptions;
-    const lastSpokenId = [...messages].reverse().find((m) => m.role === 'assistant' || m.role === 'taxi' || m.role === 'places')?.id;
+    const lastSpokenId = [...messages].reverse().find((m) => m.role === 'assistant' || m.role === 'taxi' || m.role === 'places' || m.role === 'offers')?.id;
     const lastOptionsId = [...messages].reverse().find((m) => m.role === 'options')?.id;
 
     const canSendDraft = draft.trim().length > 0 && !isRecording && !isProcessingVoice;
@@ -316,6 +317,12 @@ export default function AIAssistantScreen() {
     useEffect(() => {
         if (messages.length === 0) setInputMode('none');
     }, [messages.length]);
+
+    const askSuggestion = (text: string) => {
+        if (isRecording || isProcessingVoice) return;
+        setInputMode('text');
+        void sendTextMessage(text);
+    };
 
     const bottomBarStyle = useAnimatedStyle(() => ({
         paddingBottom: Math.max(keyboard.height.value, insets.bottom) + 8,
@@ -376,6 +383,22 @@ export default function AIAssistantScreen() {
                         <Text style={{ color: '#FFA500' }}>{t('ai-greeting-highlight2')}</Text>
                         <Text style={{ color: theme.textPrimary }}>{t('ai-greeting-part3')}</Text>
                     </Text>
+
+                    <View className="flex-row flex-wrap justify-center mt-6" style={{ gap: 8 }}>
+                        {(['ai-suggest-offers-near-me', 'ai-suggest-coffee-offer'] as const).map((key) => (
+                            <TouchableOpacity
+                                key={key}
+                                onPress={() => askSuggestion(t(key))}
+                                activeOpacity={0.7}
+                                className="px-4 py-2.5 rounded-full"
+                                style={{ borderWidth: 1, borderColor: theme.border, backgroundColor: theme.background }}
+                            >
+                                <Text className="text-sm" style={{ color: theme.textPrimary, fontFamily: 'PlusJakartaSans-Medium' }}>
+                                    {t(key)}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
 
                     <View
                         className="flex-row items-start mt-6 px-4 py-3 rounded-2xl"
@@ -460,6 +483,11 @@ export default function AIAssistantScreen() {
                                         </View>
                                     ))}
                                 </View>
+                                {renderAudioControl(message.id)}
+                            </View>
+                        ) : message.role === 'offers' && message.offers?.length ? (
+                            <View key={message.id}>
+                                <OfferCards offers={message.offers} />
                                 {renderAudioControl(message.id)}
                             </View>
                         ) : message.role === 'taxi' && message.taxiPlan ? (
