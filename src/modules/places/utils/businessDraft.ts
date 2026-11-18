@@ -16,7 +16,8 @@ export const STREET_LEVEL = '__street__';
 export const ADD_BUILDING = '__add__';
 export const CUSTOM_HOURS = 'different-hours';
 export const MAX_DESCRIPTION = 240;
-export const MAX_OFFERS = 3;
+export const MAX_OFFERS = 50;
+export const DEFAULT_OFFER_DAYS = 29;
 export const MAX_FLOORS = 20;
 
 export interface DayHours {
@@ -43,6 +44,7 @@ export interface BusinessDraft {
     group: string | null;
     kind: string | null;
     phone2: string;
+    telegram: string;
     hoursPreset: string | null;
     customHours: Record<DayKey, DayHours>;
     spend: SpendLevel | null;
@@ -71,6 +73,7 @@ export const emptyBusinessDraft = (): BusinessDraft => ({
     group: null,
     kind: null,
     phone2: '',
+    telegram: '',
     hoursPreset: null,
     customHours: Object.fromEntries(DAY_KEYS.map((day) => [day, emptyDay()])) as Record<DayKey, DayHours>,
     spend: null,
@@ -85,6 +88,29 @@ export const emptyBusinessDraft = (): BusinessDraft => ({
     offers: [],
     pin: '',
 });
+
+export const isoDate = (date: Date): string =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+export const addDays = (iso: string, days: number): string => {
+    const [y, m, d] = iso.split('-').map(Number);
+    return isoDate(new Date(y, m - 1, d + days));
+};
+
+export const parseIsoDate = (iso: string | null | undefined): Date | null => {
+    const match = iso?.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : null;
+};
+
+export const offerDatesText = (offer: { startsOn?: string | null; endsOn?: string | null; months?: string[] }, language: string): string => {
+    const start = parseIsoDate(offer.startsOn);
+    const end = parseIsoDate(offer.endsOn);
+    if (start && end) {
+        const fmt = (date: Date) => date.toLocaleDateString(language, { day: 'numeric', month: 'short' });
+        return `${fmt(start)} – ${fmt(end)}`;
+    }
+    return offer.months?.length ? offer.months.join(', ') : '';
+};
 
 export const normalizeTime = (raw: string): string | null => {
     const digits = raw.replace(/[^\d:]/g, '');
@@ -180,7 +206,9 @@ export const offerMissing = (offer: BusinessOffer, type: OfferTypeOption | undef
     if (!type) return ['type'];
     const missing = type.fields.filter((f) => f.required && (offer[f.key] === undefined || offer[f.key] === '')).map((f) => f.key);
     if (type.key === 'announce' && !offer.what && !String(offer.headline ?? '').trim()) missing.push('headline');
-    if (!offer.months?.length) missing.push('months');
+    const hasDates = !!offer.startsOn && !!offer.endsOn;
+    if (!hasDates && !offer.months?.length) missing.push('dates');
+    if (hasDates && offer.endsOn! < offer.startsOn!) missing.push('dates');
     for (const common of ['audience', 'days', 'time', 'redeem', 'limit'] as const) {
         if (type.common.includes(common) && !offer[common]) missing.push(common);
     }
@@ -221,6 +249,7 @@ export const buildBusiness = (draft: BusinessDraft, isCollector: boolean, catalo
         group: draft.group ?? '',
         kind: draft.kind ?? '',
         ...(draft.phone2.trim() && { phone2: draft.phone2.trim() }),
+        ...(isCollector && draft.telegram.trim() && { telegram: draft.telegram.trim() }),
         ...(draft.hoursPreset && { hoursPreset: draft.hoursPreset }),
         ...(hours && Object.keys(hours).length > 0 && { hours }),
     };

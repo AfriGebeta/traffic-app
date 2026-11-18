@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, useWindowDimensions } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { SearchBar, ProfileButton } from './SearchBar';
 import { QuickActions } from './QuickActions';
+import { setOffersMode, useOffersState } from '../../places/store/offersMode';
 import { FreeDriveButton } from './FreeDriveButton';
 import { SosButton } from './SosButton';
 import { MapLayersButton } from './MapLayersButton';
 import { SearchResults } from './SearchResults';
 import { DestinationCard } from './DestinationCard';
-import { FloatingActions } from './FloatingActions';
+import { BASE_GAP, FloatingActions } from './FloatingActions';
+import { OfferBanner } from '../../places/components/OfferBanner';
 import { BottomNavigation } from './BottomNavigation';
 import { CampaignTourProvider } from '../../campaigns/tour/CampaignTourProvider';
 import { CampaignEndingBanner } from '../../campaigns/components/CampaignEndingBanner';
@@ -26,6 +28,9 @@ import type { RecentSearch } from '../../navigation/services/recentSearch.servic
 import type { GeocodingPlace } from '../../navigation/types/navigation.types';
 import type { SavedPlace } from '../../places/types/place.types';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
+
+
+const BRAND_LINE_HEIGHT = 18;
 
 interface MapOverlayProps {
     searchQuery: string;
@@ -159,6 +164,36 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
     // wide: the rail stays visible next to place details / route preview, phones hide the bottom bar
     const showNavigationTabs = isWide || (!showRoutePreview && !showPlaceDetail);
     const tourActions = useMapTourActions();
+    const offers = useOffersState();
+    const offersOn = offers.on;
+    const offersCount = offers.loaded ? offers.places.length : null;
+    React.useEffect(() => {
+        if (offers.on && offers.loaded && offers.places.length === 0) {
+            showToast(t('offers-none-nearby'));
+            setOffersMode(false);
+        }
+    }, [offers.loaded]);
+    const [offerBannerHeight, setOfferBannerHeight] = useState(0);
+    const showOfferBanner =
+        offersOn && !isWide && showNavigationTabs && !showSearchContainer && !showExploreResults && !selectedExploreCategory && !isNavigationMinimized;
+    const toggleOffers = () => {
+        if (offersOn) return setOffersMode(false);
+        if (!userLocation) return showToast(t('offers-need-location'));
+        if (selectedExploreCategory) onCloseSearch();
+        setOffersMode(true);
+    };
+    const selectCategory = (categoryId: string) => {
+        setOffersMode(false);
+        onExploreCategory?.(categoryId);
+    };
+    const handleSearchFocus = () => {
+        setOffersMode(false);
+        onSearchFocus?.();
+    };
+    useFocusEffect(
+        React.useCallback(() => () => setOffersMode(false), [])
+    );
+
 
     const handleProfilePress = () => {
         router.push('/profile');
@@ -182,7 +217,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                             value={searchQuery}
                             onChangeText={onSearchChange}
                             onClear={onSearchClear}
-                            onFocus={onSearchFocus}
+                            onFocus={handleSearchFocus}
                             onBlur={onSearchBlur}
                             placeholder={t('where-to-go')}
                             onProfilePress={handleProfilePress}
@@ -193,9 +228,12 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
 
                     {!isWide && (
                         <QuickActions
-                            onSelectCategory={onExploreCategory}
+                            onSelectCategory={selectCategory}
                             isLoading={isExploring}
                             selectedCategory={selectedExploreCategory}
+                            offersActive={offersOn}
+                            offersCount={offersCount}
+                            onToggleOffers={toggleOffers}
                         />
                     )}
 
@@ -230,7 +268,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
             {/* wide: category chips run along the top of the map, beside the search panel */}
             {!showRoutePreview && isWide && (
                 <QuickActions
-                    onSelectCategory={onExploreCategory}
+                    onSelectCategory={selectCategory}
                     isLoading={isExploring}
                     selectedCategory={selectedExploreCategory}
                     onLayout={(e) => setChipRowHeight(e.nativeEvent.layout.height)}
@@ -269,7 +307,19 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
                 </View>
             )}
 
+            {showOfferBanner && (
+                <View
+                    pointerEvents="box-none"
+                    className="absolute"
+                    style={{ left: 16, right: 16, bottom: insets.bottom + BASE_GAP - 4 - BRAND_LINE_HEIGHT }}
+                    onLayout={(e) => setOfferBannerHeight(e.nativeEvent.layout.height)}
+                >
+                    <OfferBanner userLocation={userLocation} />
+                </View>
+            )}
+
             <FloatingActions
+                liftBy={showOfferBanner && offerBannerHeight ? offerBannerHeight + 8 - BRAND_LINE_HEIGHT : 0}
                 onLocationPress={onLocationPress}
                 onTaxiPress={onTaxiPress}
                 isRoutePreviewActive={showRoutePreview}
@@ -320,6 +370,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({
 
             {showNavigationTabs && (
                 <BottomNavigation
+                    hideBrand={showOfferBanner}
                     onTabPress={(tabId) => {
                         void requireAuth(() => {
                             if (tabId === 'report') {

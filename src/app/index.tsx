@@ -29,6 +29,7 @@ function locationFromParams(params: RouteParams): SharedLocation | null {
     city: (params.city || params.sharedCity) as string || undefined,
     country: (params.country || params.sharedCountry) as string || undefined,
     type: (params.type || params.sharedType) as string || undefined,
+    businessId: typeof params.businessId === 'string' && params.businessId ? params.businessId : undefined,
   };
 }
 
@@ -48,6 +49,7 @@ function routeFromParams(params: RouteParams): SharedRoute | undefined {
       : undefined,
     waypoints: waypointsFromParam(params.routeWaypoints),
     mode: params.routeMode === 'walking' ? 'walking' : 'driving',
+    nonce: typeof params.routeNonce === 'string' && params.routeNonce ? params.routeNonce : undefined,
   };
 }
 
@@ -106,7 +108,7 @@ export default function Index() {
     if (location) {
       setSharedLocation(location);
     }
-  }, [params.lat, params.lng, params.sharedLat, params.sharedLng, params.name, params.sharedName]);
+  }, [params.lat, params.lng, params.sharedLat, params.sharedLng, params.name, params.sharedName, params.businessId]);
 
   const checkRegistration = async () => {
     const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');

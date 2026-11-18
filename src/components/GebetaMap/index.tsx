@@ -124,6 +124,19 @@ const MARKER_BOUNDS_EPSILON = 1e-4;
 
 type MarkerBounds = [west: number, south: number, east: number, north: number];
 
+// a business with a live offer (Offers chip on); drawn exactly like the category-chip markers
+export type OfferPinIcon = 'restaurant' | 'hotel' | 'hospital' | 'repair' | 'bank' | 'atm' | 'gas' | 'parking' | 'other';
+export interface OfferPin {
+    id: string;
+    name: string;
+    lat: number;
+    lng: number;
+    offerId?: string;
+    icon: OfferPinIcon;
+}
+// a cap keeps the native marker count reasonable on low-end phones
+const MAX_OFFER_PINS = 40;
+
 const isMarkerLayerVisible = (zoomLevel: number, minZoom: number, wasVisible: boolean) =>
     zoomLevel >= (wasVisible ? minZoom - MARKER_ZOOM_HYSTERESIS : minZoom);
 
@@ -260,6 +273,10 @@ interface ExtendedGebetaMapProps extends Omit<GebetaMapProps, 'center'> {
     }>;
     exploreCategory?: string | null;
     onExplorePlacePress?: (place: any) => void;
+    offerPins?: OfferPin[];
+    onOfferPinPress?: (pin: OfferPin) => void;
+    // pins inside the visible area after each camera move (for "seen" counts)
+    onOfferPinsVisible?: (pins: OfferPin[]) => void;
     taxiStations?: Array<{
         id: number;
         name: string;
@@ -1080,7 +1097,7 @@ export type TrafficMapRef = GebetaMapRef & {
 };
 
 const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
-    ({ apiKey, center, zoom, onMapClick, onMapLongPress, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, routeEpoch, taxiActiveRouteGeoJSON, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, isHomeMap, staticInitialCamera, freeCamera, maneuvers, boundingBox, alternativeRoutesGeoJSON, routeTimeLabels }, ref) => {
+    ({ apiKey, center, zoom, onMapClick, onMapLongPress, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, offerPins, onOfferPinPress, onOfferPinsVisible, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, routeEpoch, taxiActiveRouteGeoJSON, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, isHomeMap, staticInitialCamera, freeCamera, maneuvers, boundingBox, alternativeRoutesGeoJSON, routeTimeLabels }, ref) => {
         const navPuckFraction = isTaxiNavigation ? 0.52 : NAV_PUCK_SCREEN_FRACTION;
         const navMarker = useNavMarker();
         const { isDark } = useTheme();
@@ -1156,6 +1173,13 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
             if (!incidents || !markerLayerVisibility.incidents) return [];
             return filterMarkersToBounds(incidents, markerBounds);
         }, [incidents, markerLayerVisibility.incidents, markerBounds]);
+
+        const onOfferPinsVisibleRef = useRef(onOfferPinsVisible);
+        onOfferPinsVisibleRef.current = onOfferPinsVisible;
+        useEffect(() => {
+            if (!offerPins?.length || !markerBounds) return;
+            onOfferPinsVisibleRef.current?.(filterMarkersToBounds(offerPins, markerBounds));
+        }, [offerPins, markerBounds]);
 
         const visibleRules = useMemo(() => {
             if (!rules || !markerLayerVisibility.rules) return [];
@@ -1559,6 +1583,19 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
                 setTimeout(() => setRenderKey(prev => prev + 1), 200);
             }
         }, [explorePlaces, exploreCategory, imagesLoaded]);
+
+        // same as the explore markers: a PointAnnotation snapshots its view, so retake it once the pin image has drawn
+        const offerPinsKey = offerPins?.map((pin) => pin.id).join('|') ?? '';
+        useEffect(() => {
+            if (!imagesLoaded || !offerPinsKey) return;
+            setRenderKey(prev => prev + 1);
+            const first = setTimeout(() => setRenderKey(prev => prev + 1), 100);
+            const second = setTimeout(() => setRenderKey(prev => prev + 1), 200);
+            return () => {
+                clearTimeout(first);
+                clearTimeout(second);
+            };
+        }, [offerPinsKey, imagesLoaded]);
 
         useEffect(() => {
             if (!imagesLoaded || !mapStyleState) return;
@@ -2907,6 +2944,31 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
                                 </View>
                             </MapLibreGL.PointAnnotation>
                         )}
+
+                        {offerPins && imagesLoaded && !isNavigating && offerPins.slice(0, MAX_OFFER_PINS).map((pin) => (
+                            <MapLibreGL.PointAnnotation
+                                key={`offer-${pin.id}-${renderKey}`}
+                                id={`offer-pin-${pin.id}`}
+                                coordinate={[pin.lng, pin.lat]}
+                                onSelected={() => onOfferPinPress?.(pin)}
+                            >
+                                <View style={{
+                                    width: 40,
+                                    height: 40,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}>
+                                    <Image
+                                        source={EXPLORE_IMAGES[pin.icon] ?? EXPLORE_FALLBACK_IMAGE}
+                                        style={{
+                                            width: 36,
+                                            height: 36,
+                                        }}
+                                        resizeMode="contain"
+                                    />
+                                </View>
+                            </MapLibreGL.PointAnnotation>
+                        ))}
 
                         {explorePlaces && imagesLoaded && explorePlaces.map((place, index) => {
                             const imageSource =

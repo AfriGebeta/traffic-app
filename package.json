@@ -16,6 +16,7 @@
     "@gebeta/tiles-react-native": "^1.2.0",
     "@maplibre/maplibre-react-native": "^10.4.0",
     "@react-native-async-storage/async-storage": "^2.2.0",
+    "@react-native-community/datetimepicker": "8.4.4",
     "@react-native-firebase/app": "^24.1.1",
     "@react-native-firebase/app-check": "^24.1.1",
     "@react-native-firebase/crashlytics": "24.1.1",

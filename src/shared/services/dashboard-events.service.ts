@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiService } from './api';
 import telemetryService from './telemetry.service';
+import * as Location from './location';
 import { captureInstallReferrer } from '../../modules/referrals/services/referral.service';
 
 const INSTALL_SENT_KEY = '@dashboard_install_sent';
@@ -29,6 +30,26 @@ const round = (value: number, digits = 2): number => {
   return Math.round(value * factor) / factor;
 };
 
+const LOCATED_EVENTS = new Set<DashboardEventType>(['INSTALL', 'SESSION_START', 'SEARCH', 'SEARCH_RESULT_SELECTED', 'SEARCH_NO_RESULTS']);
+const LOCATION_MAX_AGE_MS = 30 * 60 * 1000;
+
+const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T | null> => {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<null>((resolve) => {
+    timer = setTimeout(() => resolve(null), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+};
+
+const lastKnownLocation = async (): Promise<{ lat: number; lng: number } | null> => {
+  try {
+    const fix = await withTimeout(Location.getLastKnownPositionAsync({ maxAge: LOCATION_MAX_AGE_MS }), 2000);
+    return fix ? { lat: round(fix.coords.latitude, 5), lng: round(fix.coords.longitude, 5) } : null;
+  } catch {
+    return null;
+  }
+};
+
 class DashboardEventsService {
   private activeSince: number | null = null;
   private accumulatedMs = 0;
@@ -36,7 +57,9 @@ class DashboardEventsService {
   private async sendEvent(type: DashboardEventType, metadata?: Record<string, any>): Promise<void> {
     try {
       const deviceId = await telemetryService.getDeviceId();
-      const payload = { type, deviceId, ...(metadata ? { metadata } : {}) };
+      const location = LOCATED_EVENTS.has(type) ? await lastKnownLocation() : null;
+      const merged = location ? { ...metadata, ...location } : metadata;
+      const payload = { type, deviceId, ...(merged ? { metadata: merged } : {}) };
       console.log('dashboard events: sending', JSON.stringify(payload));
       const result = await apiService.post('/api/telemetry/event', payload);
       if (result.error) {
