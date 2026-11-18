@@ -3715,6 +3715,16 @@
         "AM": "በኋላ"
     },
     {
+        "key": "update-ready",
+        "EN_US": "Update ready",
+        "AM": "ማሻሻያው ዝግጁ ነው"
+    },
+    {
+        "key": "restart",
+        "EN_US": "Restart",
+        "AM": "እንደገና ያስጀምሩ"
+    },
+    {
         "key": "cafe",
         "EN_US": "Cafe",
         "AM": "ካፌ"
