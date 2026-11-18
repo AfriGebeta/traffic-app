@@ -60,11 +60,11 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
                     <View className="mr-2">
                         <TouchableOpacity onPress={onToggleOffers} activeOpacity={0.8}>
                             <View
-                                className="px-4 py-2 flex-row items-center rounded-full"
-                                style={[glass.chip, offersActive && { backgroundColor: theme.primary, borderColor: theme.primaryHover }, { borderRadius: 9999 }]}
+                                className="px-[17px] py-[8.5px] flex-row items-center rounded-full"
+                                style={[glass.chip, { borderWidth: 1, borderColor: theme.primary }, offersActive && { backgroundColor: theme.primary, borderColor: theme.primaryHover }, { borderRadius: 9999 }]}
                             >
                                 {!offersActive && <GlassSheen strength="thin" />}
-                                <Ionicons name="pricetag-outline" size={14} color={offersActive ? '#FFFFFF' : theme.textPrimary} style={{ marginRight: 6 }} />
+                                <Ionicons name="pricetag-outline" size={15} color={offersActive ? '#FFFFFF' : theme.textPrimary} style={{ marginRight: 6 }} />
                                 <Text className="text-sm font-medium" style={{ color: offersActive ? '#FFFFFF' : theme.textPrimary }}>
                                     {t('offers')}
                                 </Text>

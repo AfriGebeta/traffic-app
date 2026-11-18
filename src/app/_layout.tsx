@@ -15,6 +15,9 @@ import { useRemoteConfig, RemoteConfigProvider } from '../shared/contexts/Remote
 import { initializeAppCheckSingleton } from '../shared/utils/appCheck';
 import { ForceUpdateModal } from '../components/ForceUpdateModal';
 import { UpdateBanner } from '../components/UpdateBanner';
+import { UpdateReadySnackbar } from '../components/UpdateReadySnackbar';
+import { useInAppUpdate } from '../shared/hooks/useInAppUpdate';
+import { isNavigationPath } from '../shared/utils/navigationPaths';
 import { ToastHost } from '../shared/components/ToastHost';
 import { PointsPopupHost } from '../modules/campaigns/components/PointsPopupHost';
 import { NotificationPromptHost } from '../shared/components/NotificationPromptHost';
@@ -63,14 +66,6 @@ const restrictionMessage = ({ scope, expiresAt }: UserRestriction): string => {
   return i18n.t('reporting-paused');
 };
 
-const NAVIGATION_PATHS = [
-  '/navigation/route-preview',
-  '/taxi/navigation',
-  '/taxi/route-preview',
-  '/free-drive',
-];
-const isNavigationPath = (path: string) => NAVIGATION_PATHS.some((p) => path.startsWith(p));
-
 const rootScreenLayout = createScreenLayout({
   fullBleed: [
     'index',
@@ -117,7 +112,9 @@ function AppShell() {
   useOrientationPolicy();
   const { updateRequired, updateAvailable, latestVersion, storeUrl } = useRemoteConfig();
   const pathname = usePathname();
-  const showUpdateBanner = updateAvailable && !updateRequired && pathname === '/';
+  const inAppUpdate = useInAppUpdate({ updateRequired, updateAvailable, latestVersion, pathname });
+  const showUpdateBanner =
+    updateAvailable && !updateRequired && pathname === '/' && inAppUpdate.status === 'fallback';
   const backgroundedAtRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -238,6 +235,10 @@ function AppShell() {
                     visible={showUpdateBanner}
                     latestVersion={latestVersion}
                     storeUrl={storeUrl}
+                  />
+                  <UpdateReadySnackbar
+                    visible={inAppUpdate.readyToInstall && !updateRequired && !isNavigationPath(pathname)}
+                    onRestart={inAppUpdate.install}
                   />
                   <ForceUpdateModal visible={updateRequired} storeUrl={storeUrl} />
                 </IncidentFiltersProvider>

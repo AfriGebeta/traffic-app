@@ -6,8 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../shared/theme/ThemeContext';
 import { colors as palette } from '../shared/theme/colors';
-
-const DISMISSED_KEY = '@traffic_app_update_banner_dismissed_version';
+import { UPDATE_DISMISSED_KEY as DISMISSED_KEY } from '../shared/hooks/useInAppUpdate';
 
 interface Props {
     visible: boolean;
