@@ -6937,7 +6937,7 @@
     {
         "key": "offer-notif-load-failed",
         "EN_US": "Could not load your offer notification settings.",
-        "AM": "የቅናሽ ማሳወቂያ ቅንብሮችዎን መጫን አልተቻለም።"
+        "AM": "የቅናሽ ማሳወቂያ ሴቲንግ መጫን አልተቻለም።"
     },
     {
         "key": "notifications-tab-updates",
