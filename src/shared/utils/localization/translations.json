@@ -5380,6 +5380,16 @@
         "AM": "የምግብ ዝርዝሩን ፎቶዎች ይጨምሩ (እስከ {{max}})"
     },
     {
+        "key": "menu-or-prices-photos",
+        "EN_US": "Menu or price list photos",
+        "AM": "የምግብ ዝርዝር ወይም የዋጋ ዝርዝር ፎቶዎች"
+    },
+    {
+        "key": "menu-or-prices-photos-hint",
+        "EN_US": "Add photos of the menu or price list (up to {{max}})",
+        "AM": "የምግብ ዝርዝሩን ወይም የዋጋ ዝርዝሩን ፎቶዎች ይጨምሩ (እስከ {{max}})"
+    },
+    {
         "key": "place-category-unavailable",
         "EN_US": "This place type can't be added right now. Try again later.",
         "AM": "ይህን የቦታ አይነት አሁን መጨመር አይቻልም። ቆይተው እንደገና ይሞክሩ።"

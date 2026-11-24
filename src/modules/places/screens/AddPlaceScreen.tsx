@@ -31,7 +31,7 @@ import { BusinessFields } from '../components/BusinessFields';
 import { CollectorFields } from '../components/CollectorFields';
 import { OfferEditor } from '../components/OfferEditor';
 import { SelectField } from '../components/FormControls';
-import { MAX_DESCRIPTION, MAX_FLOORS, STREET_LEVEL, buildBusiness, draftDescription, emptyBusinessDraft, offersAllowed, BusinessDraft } from '../utils/businessDraft';
+import { MAX_DESCRIPTION, MAX_FLOORS, STREET_LEVEL, buildBusiness, draftDescription, emptyBusinessDraft, menuAllowed, offersAllowed, BusinessDraft } from '../utils/businessDraft';
 import { setPendingBuilding, takePendingBuilding } from '../utils/pendingBuilding';
 import { LabeledPhoto } from '../types/business.types';
 
@@ -105,7 +105,7 @@ export default function AddPlaceScreen() {
     const descriptionRequired = isCollector && isBusiness;
     const photosRequired = inCampaign || collectorPlace;
     const trimmedFloorCount = floorCount.trim();
-    const takesMenu = MENU_TYPES.includes(placeType);
+    const takesMenu = isBusiness ? menuAllowed(businessDraft, catalog) : MENU_TYPES.includes(placeType);
     const trimmedBlock = blockNumber.trim();
     // a block is a number, e.g. "12"
     const blockInvalid = isCondominium && !/^\d+$/.test(trimmedBlock);
@@ -318,12 +318,8 @@ export default function AddPlaceScreen() {
                 // the photo's fix is where the user stood; otherwise the live location
                 ...(photoFix ? deviceFieldsFromFix(photoFix) : userLocation && { deviceLat: userLocation.lat, deviceLng: userLocation.lng }),
             };
-            // TEMP: check what the backend receives
-            console.log(`[place-submit] type=${placeType} slug=${slugForType(placeType)}`, JSON.stringify(request, null, 2));
             const created: any = await placeService.contributePlace(request);
             const createdPlace = created?.data?.id ? created.data : created;
-            // TEMP: what the backend saved
-            console.log('[place-created]', JSON.stringify({ id: createdPlace?.id, status: createdPlace?.status, collectionStatus: createdPlace?.collectionStatus, business: !!createdPlace?.business, offerPin: !!createdPlace?.offerPin }));
 
             dashboardEventsService.contribute();
             showToast(t('place-contribution-submitted'));
@@ -636,7 +632,7 @@ export default function AddPlaceScreen() {
 
                     {takesMenu && (
                         <View>
-                            <FieldLabel label={t('menu-photos')} optional hint={t('menu-photos-hint', { max: MAX_MENU_PHOTOS })} />
+                            <FieldLabel label={t(isBusiness ? 'menu-or-prices-photos' : 'menu-photos')} optional hint={t(isBusiness ? 'menu-or-prices-photos-hint' : 'menu-photos-hint', { max: MAX_MENU_PHOTOS })} />
                             {/* no GPS needed and gallery allowed: menus are often shot indoors or saved earlier */}
                             <PhotoPicker
                                 photos={menuPhotos}

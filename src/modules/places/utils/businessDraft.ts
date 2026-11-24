@@ -169,6 +169,28 @@ export const offersAllowed = (draft: BusinessDraft, catalog: PlaceCatalog | null
     return !!group?.offers && !!kind?.offers;
 };
 
+const MENU_KINDS = [
+    'cafe',
+    'restaurant',
+    'juice-and-snack-bar',
+    'bakery-and-pastry',
+    'fast-food',
+    'bar-and-lounge',
+    'catering',
+    'hotel',
+    'guest-house',
+    'salon',
+    'barber',
+    'spa-and-massage',
+    'nail-studio',
+];
+
+export const menuAllowed = (draft: BusinessDraft, catalog: PlaceCatalog | null): boolean => {
+    if (!draft.kind) return false;
+    const kind = catalog?.businessGroups.find((g) => g.key === draft.group)?.kinds.find((k) => k.key === draft.kind);
+    return typeof kind?.menu === 'boolean' ? kind.menu : MENU_KINDS.includes(draft.kind);
+};
+
 // announcements have nothing to redeem; every other type (bundle too) can use a code
 export const offerUsesPin = (offers: BusinessOffer[]) => offers.some((offer) => offer.type !== 'announce' && offer.redeem === 'code-with-pin');
 
