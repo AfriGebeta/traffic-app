@@ -5390,6 +5390,16 @@
         "AM": "የምግብ ዝርዝሩን ወይም የዋጋ ዝርዝሩን ፎቶዎች ይጨምሩ (እስከ {{max}})"
     },
     {
+        "key": "route-fastest",
+        "EN_US": "Fastest",
+        "AM": "ፈጣኑ"
+    },
+    {
+        "key": "route-tap-to-switch",
+        "EN_US": "Tap a gray route on the map to switch",
+        "AM": "ለመቀየር በካርታው ላይ ግራጫውን መንገድ ይንኩ"
+    },
+    {
         "key": "place-category-unavailable",
         "EN_US": "This place type can't be added right now. Try again later.",
         "AM": "ይህን የቦታ አይነት አሁን መጨመር አይቻልም። ቆይተው እንደገና ይሞክሩ።"

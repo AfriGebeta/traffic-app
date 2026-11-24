@@ -11,7 +11,7 @@ import { GlassSheen } from '../../../shared/components/GlassSheen';
 import { useLayout, LAYOUT_GUTTER } from '../../../shared/layout/useLayout';
 
 export const BASE_GAP = 112;
-export const ROUTE_PREVIEW_GAP = 316;
+export const ROUTE_PREVIEW_GAP = 250;
 export const PLACE_DETAIL_GAP = 297;
 
 interface FloatingActionsProps {
