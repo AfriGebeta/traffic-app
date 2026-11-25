@@ -5380,6 +5380,26 @@
         "AM": "የምግብ ዝርዝሩን ፎቶዎች ይጨምሩ (እስከ {{max}})"
     },
     {
+        "key": "menu-or-prices-photos",
+        "EN_US": "Menu or price list photos",
+        "AM": "የምግብ ዝርዝር ወይም የዋጋ ዝርዝር ፎቶዎች"
+    },
+    {
+        "key": "menu-or-prices-photos-hint",
+        "EN_US": "Add photos of the menu or price list (up to {{max}})",
+        "AM": "የምግብ ዝርዝሩን ወይም የዋጋ ዝርዝሩን ፎቶዎች ይጨምሩ (እስከ {{max}})"
+    },
+    {
+        "key": "route-fastest",
+        "EN_US": "Fastest",
+        "AM": "ፈጣኑ"
+    },
+    {
+        "key": "route-tap-to-switch",
+        "EN_US": "Tap a gray route on the map to switch",
+        "AM": "ለመቀየር በካርታው ላይ ግራጫውን መንገድ ይንኩ"
+    },
+    {
         "key": "place-category-unavailable",
         "EN_US": "This place type can't be added right now. Try again later.",
         "AM": "ይህን የቦታ አይነት አሁን መጨመር አይቻልም። ቆይተው እንደገና ይሞክሩ።"
@@ -6937,7 +6957,7 @@
     {
         "key": "offer-notif-load-failed",
         "EN_US": "Could not load your offer notification settings.",
-        "AM": "የቅናሽ ማሳወቂያ ቅንብሮችዎን መጫን አልተቻለም።"
+        "AM": "የቅናሽ ማሳወቂያ ሴቲንግ መጫን አልተቻለም።"
     },
     {
         "key": "notifications-tab-updates",

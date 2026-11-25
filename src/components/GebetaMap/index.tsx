@@ -1,6 +1,6 @@
 import { MapGlassTarget } from '../../../modules/map-glass';
 import React, { forwardRef, useState, useImperativeHandle, useRef, useEffect, useLayoutEffect, memo, useMemo, useCallback } from 'react';
-import { View, StyleSheet, Text, Image, PixelRatio, AppState, Dimensions, Platform } from 'react-native';
+import { View, StyleSheet, Text, Image, PixelRatio, AppState, Dimensions, Platform, TouchableOpacity } from 'react-native';
 import MapLibreGL from '@maplibre/maplibre-react-native';
 import { GebetaMapRef, GebetaMapProps } from '@gebeta/tiles-react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -64,6 +64,7 @@ const HOME_PAN_PIXEL_TOLERANCE = 30;
 const HOME_ZOOM_TOLERANCE = 0.25;
 
 const EMPTY_FEATURE_COLLECTION = { type: 'FeatureCollection' as const, features: [] };
+const ROUTE_TAP_RADIUS = 40;
 
 // drawn bottom to top so a worse level's fade-in blends over the level beside it
 const CONGESTION_LEVELS_BY_RANK: CongestionLevel[] = ['low', 'medium', 'high'];
@@ -320,7 +321,8 @@ interface ExtendedGebetaMapProps extends Omit<GebetaMapProps, 'center'> {
         west: number;
     } | null;
     alternativeRoutesGeoJSON?: any[];
-    routeTimeLabels?: Array<{ coordinate: [number, number]; label: string; isPrimary: boolean }>;
+    routeTimeLabels?: Array<{ coordinate: [number, number]; label: string; isPrimary: boolean; altIndex?: number }>;
+    onAlternativeRoutePress?: (altIndex: number) => void;
 }
 
 
@@ -1094,10 +1096,15 @@ AnimatedNavLayer.displayName = 'AnimatedNavLayer';
 
 export type TrafficMapRef = GebetaMapRef & {
     queryRoadFeatures?: () => Promise<GeoJSON.Feature[]>;
+    fitBounds?: (options: {
+        coords: [number, number][];
+        padding?: { top?: number; right?: number; bottom?: number; left?: number };
+        duration?: number;
+    }) => void;
 };
 
 const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
-    ({ apiKey, center, zoom, onMapClick, onMapLongPress, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, offerPins, onOfferPinPress, onOfferPinsVisible, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, routeEpoch, taxiActiveRouteGeoJSON, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, isHomeMap, staticInitialCamera, freeCamera, maneuvers, boundingBox, alternativeRoutesGeoJSON, routeTimeLabels }, ref) => {
+    ({ apiKey, center, zoom, onMapClick, onMapLongPress, onMapLoaded, mapStyleUrl, mapStyleJson, routeGeoJSON, routeStyle, isNavigating, userLocation, userHeading, showUserLocationMarker, onUserLocationUpdate, onRegionCenterChange, onUserInteraction, incidents, rules, selectedLocation, clickedLocation, selectedDestination, routeOrigin, explorePlaces, exploreCategory, onExplorePlacePress, offerPins, onOfferPinPress, onOfferPinsVisible, taxiStations, taxiWalkRoutes, taxiRouteSegments, isTaxiNavigation, currentTaxiSegmentIndex, segmentedRoutes, routeEpoch, taxiActiveRouteGeoJSON, waypointMarkers, activeSegmentGeoJSON, previewStepLocation, externalCameraControl, isHomeMap, staticInitialCamera, freeCamera, maneuvers, boundingBox, alternativeRoutesGeoJSON, routeTimeLabels, onAlternativeRoutePress }, ref) => {
         const navPuckFraction = isTaxiNavigation ? 0.52 : NAV_PUCK_SCREEN_FRACTION;
         const navMarker = useNavMarker();
         const { isDark } = useTheme();
@@ -1281,6 +1288,65 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
             } else {
                 pendingFlyTo.current = options;
             }
+        }, [markHomeCommand]);
+
+        const applyFitBounds = useCallback((options: {
+            coords: [number, number][];
+            padding?: { top?: number; right?: number; bottom?: number; left?: number };
+            duration?: number;
+        }) => {
+            const { coords } = options;
+            if (!coords.length) return;
+            let minLng = coords[0][0], maxLng = coords[0][0];
+            let minLat = coords[0][1], maxLat = coords[0][1];
+            for (const [lng, lat] of coords) {
+                if (lng < minLng) minLng = lng;
+                if (lng > maxLng) maxLng = lng;
+                if (lat < minLat) minLat = lat;
+                if (lat > maxLat) maxLat = lat;
+            }
+            const ne: [number, number] = [maxLng, maxLat];
+            const sw: [number, number] = [minLng, minLat];
+
+            // never let padding eat the whole map, or the fit degenerates
+            const mapH = mapHeightRef.current || 0;
+            let top = options.padding?.top ?? 40;
+            let bottom = options.padding?.bottom ?? 40;
+            const left = options.padding?.left ?? 40;
+            const right = options.padding?.right ?? 40;
+            if (mapH > 0 && top + bottom > mapH * 0.7) {
+                const scale = (mapH * 0.7) / (top + bottom);
+                top *= scale;
+                bottom *= scale;
+            }
+            const padding = [top, right, bottom, left];
+            const duration = options.duration ?? 1000;
+
+            const run = () => {
+                if (!cameraRef.current) return false;
+                pendingFlyTo.current = null;
+                lastFlyToAtRef.current = Date.now();
+                markHomeCommand([(minLng + maxLng) / 2, (minLat + maxLat) / 2]);
+                cameraRef.current.fitBounds(ne, sw, padding, duration);
+                return true;
+            };
+
+            if (!run()) {
+                requestAnimationFrame(() => { run(); });
+                return;
+            }
+            const issuedAt = Date.now();
+            const token = ++flyToTokenRef.current;
+            setTimeout(() => {
+                if (
+                    flyToTokenRef.current === token &&
+                    cameraRef.current &&
+                    lastRegionEventAtRef.current < issuedAt
+                ) {
+                    run();
+                }
+            }, 300);
+            neutralizeCameraStopRef.current?.(duration + 400);
         }, [markHomeCommand]);
 
         const unlockNavCamera = useCallback((_reason: string) => {
@@ -1791,8 +1857,11 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
             hasAlternativeRoutes
                 ? {
                     type: 'FeatureCollection' as const,
-                    features: alternativeRoutesGeoJSON!.map((alt: any) => (
-                        alt?.type === 'FeatureCollection' ? alt.features ?? [] : [alt]
+                    features: alternativeRoutesGeoJSON!.map((alt: any, altIndex: number) => (
+                        (alt?.type === 'FeatureCollection' ? alt.features ?? [] : [alt]).map((feature: any) => ({
+                            ...feature,
+                            properties: { ...(feature?.properties ?? {}), altIndex },
+                        }))
                     )).flat(),
                 }
                 : EMPTY_FEATURE_COLLECTION
@@ -1917,6 +1986,7 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
             flyTo: (options: any) => {
                 applyFlyTo(options);
             },
+            fitBounds: applyFitBounds,
             refreshCamera: rebuildCameraInPlace,
             recenterOnce: (options: { center: [number, number]; zoom?: number; duration?: number }) => {
                 homeFollowPausedRef.current = true;
@@ -2012,7 +2082,7 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
             updateNavigationPosition: () => { },
             getNavigationState: () => null,
             isNavigating: () => false,
-        }), [applyFlyTo, markAnimatedProgrammaticCamera, markHomeCommand, rebuildCameraInPlace, NAV_ZOOM, zoom, mapStyleState]);
+        }), [applyFlyTo, applyFitBounds, markAnimatedProgrammaticCamera, markHomeCommand, rebuildCameraInPlace, NAV_ZOOM, zoom, mapStyleState]);
 
         // style download failures (usually no internet): a card with Try again instead of a raw alert,
         // plus automatic retries (backoff, and when the app comes back to the foreground)
@@ -2244,10 +2314,27 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
                         onRegionWillChange={handleRegionWillChange}
                         onPress={async (e) => {
                             const coords = (e.geometry as any)?.coordinates;
-                            if (!coords || !onMapClick) return;
-                            let features: any[] = [];
+                            if (!coords) return;
                             const screenPointX = (e.properties as any)?.screenPointX;
                             const screenPointY = (e.properties as any)?.screenPointY;
+                            if (hasAlternativeRoutes && onAlternativeRoutePress && mapViewRef.current && typeof screenPointX === 'number' && typeof screenPointY === 'number') {
+                                try {
+                                    const r = ROUTE_TAP_RADIUS;
+                                    const hit = await mapViewRef.current.queryRenderedFeaturesInRect(
+                                        [screenPointY - r, screenPointX + r, screenPointY + r, screenPointX - r],
+                                        undefined,
+                                        ['route-alternative-layer']
+                                    );
+                                    const altIndex = Number(hit?.features?.[0]?.properties?.altIndex);
+                                    if (Number.isInteger(altIndex)) {
+                                        onAlternativeRoutePress(altIndex);
+                                        return;
+                                    }
+                                } catch {
+                                }
+                            }
+                            if (!onMapClick) return;
+                            let features: any[] = [];
                             if (
                                 mapViewRef.current &&
                                 typeof screenPointX === 'number' &&
@@ -2674,9 +2761,12 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
                                 anchor={{ x: 0.5, y: 1 }}
                                 allowOverlap
                             >
-                                <View collapsable={false} style={{ width: 120, height: 44, alignItems: 'center', justifyContent: 'flex-end' }}>
-                                    <View
-                                        collapsable={false}
+                                <View collapsable={false} pointerEvents="box-none" style={{ width: 120, height: 44, alignItems: 'center', justifyContent: 'flex-end' }}>
+                                    <TouchableOpacity
+                                        activeOpacity={0.7}
+                                        disabled={item.isPrimary || item.altIndex == null || !onAlternativeRoutePress}
+                                        onPress={() => item.altIndex != null && onAlternativeRoutePress?.(item.altIndex)}
+                                        hitSlop={8}
                                         style={{
                                             backgroundColor: '#FFFFFF',
                                             paddingHorizontal: 10,
@@ -2701,7 +2791,7 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
                                         >
                                             {item.label}
                                         </Text>
-                                    </View>
+                                    </TouchableOpacity>
                                     <View
                                         style={{
                                             width: 0,

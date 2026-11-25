@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isAuthenticated } from '../../register/utils/authGate';
 import { campaignService } from '../services/campaign.service';
 import { Campaign, CampaignMe } from '../types/campaign.types';
@@ -11,9 +12,10 @@ export interface CampaignState {
     upcoming: Campaign | null | undefined;
     // keyed by slug; missing when signed out or the call failed. Also holds the upcoming campaign's /me
     me: Record<string, CampaignMe>;
+    hasCampaigns: boolean | null;
 }
 
-let state: CampaignState = { loaded: false, loading: false, campaigns: [], upcoming: undefined, me: {} };
+let state: CampaignState = { loaded: false, loading: false, campaigns: [], upcoming: undefined, me: {}, hasCampaigns: null };
 const listeners = new Set<() => void>();
 let inFlight: Promise<void> | null = null;
 
@@ -27,6 +29,25 @@ export const hasCampaignEnded = (campaign: Campaign, now = Date.now()): boolean 
     if (campaign.phase && campaign.phase !== 'live') return true;
     const end = campaign.endsAt ? new Date(campaign.endsAt).getTime() : NaN;
     return !Number.isNaN(end) && now >= end;
+};
+
+const HAS_CAMPAIGNS_KEY = '@traffic_app_has_campaigns';
+
+AsyncStorage.getItem(HAS_CAMPAIGNS_KEY)
+    .then((saved) => {
+        if (state.hasCampaigns === null && (saved === '1' || saved === '0')) setState({ hasCampaigns: saved === '1' });
+    })
+    .catch(() => undefined);
+
+const computeHasCampaigns = (campaigns: Campaign[], upcoming: Campaign | null | undefined, previous: boolean | null): boolean | null => {
+    if (campaigns.some((campaign) => !hasCampaignEnded(campaign)) || !!upcoming) return true;
+    return upcoming === undefined ? previous : false;
+};
+
+const updateHasCampaigns = (next: boolean | null) => {
+    if (next === null || next === state.hasCampaigns) return;
+    setState({ hasCampaigns: next });
+    AsyncStorage.setItem(HAS_CAMPAIGNS_KEY, next ? '1' : '0').catch(() => undefined);
 };
 
 // wake subscribers exactly when the next campaign ends, so badges/popups switch off on time.
@@ -46,6 +67,7 @@ const scheduleNextEnd = () => {
     endTimer = setTimeout(() => {
         // new object so useSyncExternalStore re-renders and every check re-reads the clock
         setState({});
+        updateHasCampaigns(computeHasCampaigns(state.campaigns, state.upcoming, state.hasCampaigns));
         scheduleNextEnd();
     }, Math.min(nextEnd - now + 1000, MAX_TIMER_MS));
 };
@@ -89,6 +111,7 @@ export const refreshCampaigns = (): Promise<void> => {
             ]);
             // once it starts it comes back from /running; never show it twice
             const upcoming = next && isUpcoming(next) && !campaigns.some((c) => c.slug === next.slug) ? next : next === undefined ? undefined : null;
+            updateHasCampaigns(computeHasCampaigns(campaigns, upcoming, state.hasCampaigns));
             const me: Record<string, CampaignMe> = {};
             if (await isAuthenticated()) {
                 const all = upcoming ? [...campaigns, upcoming] : campaigns;

@@ -8,6 +8,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { placeService } from '../services/place.service';
 import { showToast } from '../../../shared/utils/toast';
 import { colors } from '../../../shared/theme/colors';
+import { maybeAskForReview } from '../../../shared/utils/inAppReview';
 
 type VerificationMethod = 'TRADE_LICENSE' | 'TIN_CERTIFICATE';
 
@@ -66,6 +67,7 @@ export default function ClaimBusinessScreen() {
             });
 
             showToast(t('claim-submitted-successfully'));
+            void maybeAskForReview('claim');
             router.back();
         } catch (error: any) {
             showToast(error.message || t('failed-to-submit-claim'));

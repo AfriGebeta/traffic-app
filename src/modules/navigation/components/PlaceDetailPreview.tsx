@@ -205,6 +205,10 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
     };
 
     const locationLine = [place.City, place.Country].filter(Boolean).join(', ');
+    // split at the last comma so the neighborhood can render smaller than the name.
+    const commaIdx = place.name?.lastIndexOf(',') ?? -1;
+    const nameMain = commaIdx > 0 ? place.name.slice(0, commaIdx).trim() : place.name;
+    const nameSuffix = commaIdx > 0 ? place.name.slice(commaIdx + 1).trim() : '';
     const businessGroup = catalog?.businessGroups.find((g) => g.key === business.place?.business?.group);
     const businessKind = businessGroup?.kinds.find((k) => k.key === business.place?.business?.kind);
     const categoryLabel =
@@ -380,7 +384,12 @@ export const PlaceDetailPreview: React.FC<PlaceDetailPreviewProps> = ({
                         )}
 
                         <Text className="text-xl font-bold mb-0.5" style={{ color: theme.textPrimary }} numberOfLines={2}>
-                            {place.name}
+                            {nameSuffix ? nameMain : place.name}
+                            {!!nameSuffix && (
+                                <Text className="text-sm font-normal" style={{ color: theme.textSecondary }}>
+                                    {`, ${nameSuffix}`}
+                                </Text>
+                            )}
                         </Text>
 
                         <Text className="text-xs mb-1" style={{ color: theme.textSecondary }} numberOfLines={1}>

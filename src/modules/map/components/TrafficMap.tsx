@@ -51,7 +51,7 @@ import type { TaxiNavigationResponse } from '../../taxi/types/taxi.types';
 import { setNavigationPreviewData } from '../../navigation/services/navigationPreviewCache';
 import { dashboardEventsService } from '../../../shared/services/dashboard-events.service';
 import { resolvePlaceType } from '../../places/utils/placeTypeMapping';
-import { buildPreviewSteps, fitBoundsToCoords } from '../../navigation/utils/navigationPreviewUtils';
+import { buildPreviewSteps } from '../../navigation/utils/navigationPreviewUtils';
 import { toReportHeading } from '../../../shared/utils/reportHeading';
 import { CampaignBanner } from '../../campaigns/components/CampaignBanner';
 import { loadOfferPins, useOffersState } from '../../places/store/offersMode';
@@ -1257,22 +1257,20 @@ export default function TrafficMap({ sharedLocation, sharedRoute, taxiDestinatio
         if (mapRef.current && isMapLoaded && fittedTaxiRouteRef.current !== routeKey) {
             fittedTaxiRouteRef.current = routeKey;
 
-            const fit = fitBoundsToCoords([
+            const taxiFitCoords: [number, number][] = [
                 [taxiRouteData.origin.lng, taxiRouteData.origin.lat],
                 [taxiRouteData.startNode.lng, taxiRouteData.startNode.lat],
                 [taxiRouteData.endNode.lng, taxiRouteData.endNode.lat],
                 [taxiRouteData.destination.lng, taxiRouteData.destination.lat],
-            ]);
+            ];
 
-            if (fit) {
-                setTimeout(() => {
-                    mapRef.current?.flyTo({
-                        center: fit.center,
-                        zoom: Math.max(fit.zoom - 1, 9),
-                        duration: 1000,
-                    });
-                }, 100);
-            }
+            setTimeout(() => {
+                mapRef.current?.fitBounds?.({
+                    coords: taxiFitCoords,
+                    padding: { top: 210, right: 72, bottom: 270, left: 72 },
+                    duration: 1000,
+                });
+            }, 100);
         }
 
         return () => { cancelled = true; };
@@ -1343,7 +1341,8 @@ export default function TrafficMap({ sharedLocation, sharedRoute, taxiDestinatio
             return coords[Math.floor(coords.length / 2)];
         };
 
-        const labels: Array<{ coordinate: [number, number]; label: string; isPrimary: boolean }> = [];
+        const labels: Array<{ coordinate: [number, number]; label: string; isPrimary: boolean; altIndex?: number }> = [];
+        let altIndex = 0;
 
         const selectedMidpoint = midpointOf(selected.coordinates);
         if (selectedMidpoint) {
@@ -1367,11 +1366,18 @@ export default function TrafficMap({ sharedLocation, sharedRoute, taxiDestinatio
                 ? 'Same time'
                 : `${deltaMinutes} min ${deltaSeconds > 0 ? 'slower' : 'faster'}`;
 
-            labels.push({ coordinate: midpoint, label, isPrimary: false });
+            labels.push({ coordinate: midpoint, label, isPrimary: false, altIndex });
+            altIndex += 1;
         });
 
         return labels;
     }, [showAlternativeRoutes, allRouteOptions, selectedRouteIndex]);
+
+    const handleAlternativeRoutePress = useCallback((altIndex: number) => {
+        const routeIndex = allRouteOptions.map((_, i) => i).filter((i) => i !== selectedRouteIndex)[altIndex];
+        if (routeIndex == null) return;
+        handleSelectRoute(routeIndex);
+    }, [allRouteOptions, selectedRouteIndex, handleSelectRoute]);
 
     return (
         <MapGlassProvider>
@@ -1399,6 +1405,7 @@ export default function TrafficMap({ sharedLocation, sharedRoute, taxiDestinatio
                         : undefined
                 }
                 routeTimeLabels={routeTimeLabels}
+                onAlternativeRoutePress={showAlternativeRoutes ? handleAlternativeRoutePress : undefined}
                 routeStyle={{
                     color: navigationMode
                         ? '#3B82F6'

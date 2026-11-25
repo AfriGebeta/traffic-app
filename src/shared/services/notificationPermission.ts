@@ -145,6 +145,8 @@ export const askForNotifications = async (reason: NotificationAskReason): Promis
 
 export const dismissNotificationAsk = () => setPending(null);
 
+export const isNotificationAskPending = () => pendingReason !== null;
+
 // "don't allow" on the launch dialog is this launch's home ask; from the next launch home shows our card instead.
 // contribution/join asks are left alone: a "no" at launch doesn't stop the ask right after joining
 export const recordLaunchDenial = async (): Promise<void> => {

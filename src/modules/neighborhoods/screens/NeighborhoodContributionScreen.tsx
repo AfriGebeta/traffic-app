@@ -14,6 +14,7 @@ import { useTheme } from '../../../shared/theme/ThemeContext';
 import { FONT_MEDIUM, RADIUS, RADIUS_SM } from '../../campaigns/components/CampaignUi';
 import { FieldLabel } from '../../../shared/components/FieldLabel';
 import { useLocalSearchParams } from 'expo-router';
+import { maybeAskForReview } from '../../../shared/utils/inAppReview';
 
 export default function NeighborhoodContributionScreen() {
     const { t } = useTranslation();
@@ -102,6 +103,7 @@ export default function NeighborhoodContributionScreen() {
 
             dashboardEventsService.contribute();
             showToast(t('neighborhood-contribution-submitted'));
+            void maybeAskForReview('contribution');
             router.back();
         } catch (error) {
             console.error('Submit error:', error);

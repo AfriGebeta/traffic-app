@@ -440,16 +440,8 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
         );
     };
 
-    const handleGoRoute = (index: number) => {
-        onSelectRoute?.(index);
-        if (isCustomOrigin) {
-            handlePreviewPress();
-        } else {
-            handleStartNavigation();
-        }
-    };
 
-    const showRouteOptionCards = transportMode === 'driving' && !!routeOptions && routeOptions.length > 1;
+    const hasRouteChoices = transportMode === 'driving' && !!routeOptions && routeOptions.length > 1;
 
     const displayDistance = transportMode === 'taxi' && taxiRoute
         ? ((taxiRoute.originWalkRoute?.trip.summary.length || 0) + (taxiRoute.destinationWalkRoute?.trip.summary.length || 0)) * 1000
@@ -568,75 +560,6 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                             </TouchableOpacity>
                         </View>
                     </View>
-
-                    {showRouteOptionCards && (
-                        <ScrollView
-                            className="max-h-80"
-                            contentContainerStyle={{ padding: 8, gap: 8 }}
-                            showsVerticalScrollIndicator={false}
-                        >
-                            {routeOptions!.map((opt, i) => {
-                                const isSelected = i === selectedRouteIndex;
-                                return (
-                                    <TouchableOpacity
-                                        key={i}
-                                        activeOpacity={0.85}
-                                        onPress={() => onSelectRoute?.(i)}
-                                        className="rounded-2xl pl-4 pr-2 py-2"
-                                        style={{
-                                            borderWidth: 1,
-                                            borderColor: isSelected ? colors.primary.main : theme.border,
-                                            backgroundColor: theme.surface,
-                                        }}
-                                    >
-                                        <View className="flex-row items-center justify-between">
-                                            <View className="flex-1 mr-3">
-                                                {i === 0 && (
-                                                    <Text style={{ fontSize: 10, fontWeight: '700', color: colors.primary.main, marginBottom: 2, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                                                        Fastest
-                                                    </Text>
-                                                )}
-                                                <Text className="text-2xl font-bold" style={{ color: theme.textPrimary }}>
-                                                    {formatTime(opt.duration)}
-                                                </Text>
-                                                <Text className="text-sm mt-0.5" style={{ color: theme.textSecondary }}>
-                                                    {t('eta')} {formatETA(opt.duration)} • {formatDistance(opt.distance)}
-                                                </Text>
-                                            </View>
-
-                                            <View className="flex-row items-center flex-shrink-0">
-                                                {destination && (
-                                                    <TouchableOpacity
-                                                        onPress={handleShareDestination}
-                                                        className="w-11 h-11 items-center justify-center rounded-lg mr-2"
-                                                        style={{ borderWidth: 1.5, borderColor: colors.primary.main }}
-                                                    >
-                                                        <Ionicons name="share-social" size={20} color={colors.primary.main} />
-                                                    </TouchableOpacity>
-                                                )}
-                                                <TouchableOpacity
-                                                    onPress={() => handleGoRoute(i)}
-                                                    className="rounded-lg px-6 py-3 shadow-lg"
-                                                    style={{
-                                                        backgroundColor: colors.primary.main,
-                                                        shadowColor: colors.primary.main,
-                                                        shadowOffset: { width: 0, height: 4 },
-                                                        shadowOpacity: 0.3,
-                                                        shadowRadius: 8,
-                                                        elevation: 8,
-                                                    }}
-                                                >
-                                                    <Text className="text-white text-lg font-bold">
-                                                        {!isCustomOrigin ? t('go') : t('preview')}
-                                                    </Text>
-                                                </TouchableOpacity>
-                                            </View>
-                                        </View>
-                                    </TouchableOpacity>
-                                );
-                            })}
-                        </ScrollView>
-                    )}
 
                     {/* {__DEV__ && (
                         <View className="px-6 py-3" style={{ borderBottomWidth: 1, borderBottomColor: theme.border }}>
@@ -885,7 +808,6 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                         ) : null}
                     </ScrollView>
 
-                    {!showRouteOptionCards && (
                         <View className="p-2" style={{ borderTopWidth: 1, borderTopColor: theme.border }}>
                             <View className="rounded-2xl pl-4 pr-2 py-2" style={{ backgroundColor: isDark ? theme.surface : '#E5E7EB' }}>
                                 <View className="flex-row items-center justify-between">
@@ -917,6 +839,11 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                             </>
                                         ) : (
                                             <>
+                                                {hasRouteChoices && selectedRouteIndex === 0 && (
+                                                    <Text style={{ fontSize: 10, fontWeight: '700', color: colors.primary.main, marginBottom: 2, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                                        {t('route-fastest')}
+                                                    </Text>
+                                                )}
                                                 <View className="flex-row items-center">
                                                     <Text className="text-2xl font-bold" style={{ color: theme.textPrimary }}>
                                                         {formatTime(duration)}
@@ -928,6 +855,11 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                                 <Text className="text-sm" style={{ color: theme.textSecondary }}>
                                                     {t('eta')} {formatETA(duration)} • {formatDistance(distance)}
                                                 </Text>
+                                                {hasRouteChoices && (
+                                                    <Text className="text-xs mt-0.5" style={{ color: theme.textSecondary }} numberOfLines={1}>
+                                                        {t('route-tap-to-switch')}
+                                                    </Text>
+                                                )}
                                             </>
                                         )}
                                     </View>
@@ -983,7 +915,6 @@ export const RoutePreview: React.FC<RoutePreviewProps> = ({
                                 </View>
                             </View>
                         </View>
-                    )}
 
                 </View>
             </BlurView>

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../../shared/theme/colors';
 import { useTheme } from '../../../shared/theme/ThemeContext';
+import { maybeAskForReview } from '../../../shared/utils/inAppReview';
 
 interface ArrivalModalProps {
     visible: boolean;
@@ -25,12 +26,17 @@ export const ArrivalModal: React.FC<ArrivalModalProps> = ({
 
     const isApproaching = stage === 'approaching';
 
+    const handleClose = () => {
+        onClose();
+        if (!isApproaching) void maybeAskForReview('arrival');
+    };
+
     return (
         <Modal
             visible={visible}
             transparent
             animationType="fade"
-            onRequestClose={onClose}
+            onRequestClose={handleClose}
         >
             <View
                 className={`flex-1 items-center px-6 ${isApproaching ? 'justify-start bg-black/20' : 'justify-center bg-black/60'}`}
@@ -73,7 +79,7 @@ export const ArrivalModal: React.FC<ArrivalModalProps> = ({
                         )}
 
                         <TouchableOpacity
-                            onPress={onClose}
+                            onPress={handleClose}
                             className="py-4 rounded-xl"
                             style={{ backgroundColor: colors.primary.main }}
                         >

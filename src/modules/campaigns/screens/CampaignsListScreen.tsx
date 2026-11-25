@@ -10,6 +10,7 @@ import { pickLocalized } from '../utils/localizedText';
 import { CampaignCountdown } from '../components/CampaignCountdown';
 import { NotificationsOffStrip } from '../../../shared/components/NotificationsOffStrip';
 import { Chip, FONT_MEDIUM, RADIUS, SectionLabel, SkeletonBlock } from '../components/CampaignUi';
+import { getCampaignComingSoon } from '../../../shared/config/remoteConfigValues';
 
 const AnnouncementLight = require('../../../../assets/images/announcement-light.png');
 const AnnouncementDark = require('../../../../assets/images/announcement-dark.png');
@@ -36,6 +37,7 @@ export default function CampaignsListScreen() {
     const anyLive = state.campaigns.some((campaign) => !hasCampaignEnded(campaign));
     // "coming soon" only when nothing is running and nothing is scheduled
     const showComingSoon = state.loaded && next === null && !anyLive;
+    const comingSoon = getCampaignComingSoon(i18n.language);
 
     return (
         <View className="flex-1" style={{ paddingTop: insets.top, backgroundColor: theme.background }}>
@@ -109,10 +111,10 @@ export default function CampaignsListScreen() {
                     <View className="items-center px-6 py-8 mb-3" style={{ borderRadius: RADIUS, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
                         <Image source={isDark ? AnnouncementDark : AnnouncementLight} style={{ width: 64, height: 64 }} />
                         <Text className="text-base text-center mt-4" style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM }}>
-                            {t('campaign-next-soon-title')}
+                            {comingSoon.title || t('campaign-next-soon-title')}
                         </Text>
                         <Text className="text-xs text-center mt-1 leading-5" style={{ color: theme.textSecondary }}>
-                            {t('campaign-next-soon-body')}
+                            {comingSoon.body || t('campaign-next-soon-body')}
                         </Text>
                     </View>
                 )}

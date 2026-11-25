@@ -10,6 +10,7 @@ export interface CatalogOption {
 
 export interface BusinessKindOption extends CatalogOption {
     offers?: boolean;
+    menu?: boolean;
 }
 
 export interface OfferSuggestion {
