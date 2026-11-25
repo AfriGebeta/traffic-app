@@ -10,6 +10,7 @@ import { setHomeCompassSlot } from '../../../shared/utils/homeCompassSlot';
 import { CopilotStep } from 'react-native-copilot';
 import { TourTouchable } from '../tour/walkthroughables';
 import { useTourCampaign } from '../tour/useTourCampaign';
+import { useCampaigns } from '../store/campaignStore';
 
 const AnnouncementLight = require('../../../../assets/images/announcement-light.png');
 const AnnouncementDark = require('../../../../assets/images/announcement-dark.png');
@@ -37,6 +38,7 @@ export function CampaignMapButton() {
     const label = t('campaigns');
     // last map step of every campaign tour: where their campaigns live
     const tourStepActive = useTourCampaign().stage === 'map-report';
+    const { hasCampaigns } = useCampaigns();
 
     useEffect(() => {
         if (contentWidth <= 0 || revealedThisLaunch) return;
@@ -53,6 +55,8 @@ export function CampaignMapButton() {
     }));
 
     const open = () => router.push('/campaigns');
+
+    if (!hasCampaigns && !tourStepActive) return null;
 
     return (
         <View
