@@ -234,8 +234,24 @@ export function getCampaignIntroVideo(language?: string): string {
   return campaignIntroVideo;
 }
 
+export const CAMPAIGN_SOON_TITLE_KEY = 'campaign_coming_soon_title';
+export const CAMPAIGN_SOON_TITLE_AM_KEY = 'campaign_coming_soon_title_am';
+export const CAMPAIGN_SOON_BODY_KEY = 'campaign_coming_soon_body';
+export const CAMPAIGN_SOON_BODY_AM_KEY = 'campaign_coming_soon_body_am';
+const SOON_KEYS = [CAMPAIGN_SOON_TITLE_KEY, CAMPAIGN_SOON_TITLE_AM_KEY, CAMPAIGN_SOON_BODY_KEY, CAMPAIGN_SOON_BODY_AM_KEY];
+let campaignSoon: Record<string, string> = {};
+
+export function getCampaignComingSoon(language?: string): { title: string; body: string } {
+  const am = !!language?.toLowerCase().startsWith('am');
+  return {
+    title: (am && campaignSoon[CAMPAIGN_SOON_TITLE_AM_KEY]) || campaignSoon[CAMPAIGN_SOON_TITLE_KEY] || '',
+    body: (am && campaignSoon[CAMPAIGN_SOON_BODY_AM_KEY]) || campaignSoon[CAMPAIGN_SOON_BODY_KEY] || '',
+  };
+}
+
 export function buildRemoteConfigDefaults(): Record<string, number | string> {
   const defaults: Record<string, number | string> = { [CAMPAIGN_INTRO_VIDEO_KEY]: '', [CAMPAIGN_INTRO_VIDEO_AM_KEY]: '' };
+  for (const key of SOON_KEYS) defaults[key] = '';
   for (const key of CONFIG_KEYS) {
     defaults[RC_KEYS[key]] = APP_CONFIG_DEFAULTS[key];
   }
@@ -263,4 +279,12 @@ export function hydrateAppConfig(rc: FirebaseRemoteConfigTypes.Module): void {
     campaignIntroVideoAm = getString(rc, CAMPAIGN_INTRO_VIDEO_AM_KEY).trim();
   } catch {
   }
+  const soon: Record<string, string> = {};
+  for (const key of SOON_KEYS) {
+    try {
+      soon[key] = getString(rc, key).trim();
+    } catch {
+    }
+  }
+  campaignSoon = soon;
 }
