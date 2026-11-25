@@ -1096,6 +1096,11 @@ AnimatedNavLayer.displayName = 'AnimatedNavLayer';
 
 export type TrafficMapRef = GebetaMapRef & {
     queryRoadFeatures?: () => Promise<GeoJSON.Feature[]>;
+    fitBounds?: (options: {
+        coords: [number, number][];
+        padding?: { top?: number; right?: number; bottom?: number; left?: number };
+        duration?: number;
+    }) => void;
 };
 
 const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
@@ -1283,6 +1288,65 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
             } else {
                 pendingFlyTo.current = options;
             }
+        }, [markHomeCommand]);
+
+        const applyFitBounds = useCallback((options: {
+            coords: [number, number][];
+            padding?: { top?: number; right?: number; bottom?: number; left?: number };
+            duration?: number;
+        }) => {
+            const { coords } = options;
+            if (!coords.length) return;
+            let minLng = coords[0][0], maxLng = coords[0][0];
+            let minLat = coords[0][1], maxLat = coords[0][1];
+            for (const [lng, lat] of coords) {
+                if (lng < minLng) minLng = lng;
+                if (lng > maxLng) maxLng = lng;
+                if (lat < minLat) minLat = lat;
+                if (lat > maxLat) maxLat = lat;
+            }
+            const ne: [number, number] = [maxLng, maxLat];
+            const sw: [number, number] = [minLng, minLat];
+
+            // never let padding eat the whole map, or the fit degenerates
+            const mapH = mapHeightRef.current || 0;
+            let top = options.padding?.top ?? 40;
+            let bottom = options.padding?.bottom ?? 40;
+            const left = options.padding?.left ?? 40;
+            const right = options.padding?.right ?? 40;
+            if (mapH > 0 && top + bottom > mapH * 0.7) {
+                const scale = (mapH * 0.7) / (top + bottom);
+                top *= scale;
+                bottom *= scale;
+            }
+            const padding = [top, right, bottom, left];
+            const duration = options.duration ?? 1000;
+
+            const run = () => {
+                if (!cameraRef.current) return false;
+                pendingFlyTo.current = null;
+                lastFlyToAtRef.current = Date.now();
+                markHomeCommand([(minLng + maxLng) / 2, (minLat + maxLat) / 2]);
+                cameraRef.current.fitBounds(ne, sw, padding, duration);
+                return true;
+            };
+
+            if (!run()) {
+                requestAnimationFrame(() => { run(); });
+                return;
+            }
+            const issuedAt = Date.now();
+            const token = ++flyToTokenRef.current;
+            setTimeout(() => {
+                if (
+                    flyToTokenRef.current === token &&
+                    cameraRef.current &&
+                    lastRegionEventAtRef.current < issuedAt
+                ) {
+                    run();
+                }
+            }, 300);
+            neutralizeCameraStopRef.current?.(duration + 400);
         }, [markHomeCommand]);
 
         const unlockNavCamera = useCallback((_reason: string) => {
@@ -1922,6 +1986,7 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
             flyTo: (options: any) => {
                 applyFlyTo(options);
             },
+            fitBounds: applyFitBounds,
             refreshCamera: rebuildCameraInPlace,
             recenterOnce: (options: { center: [number, number]; zoom?: number; duration?: number }) => {
                 homeFollowPausedRef.current = true;
@@ -2017,7 +2082,7 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
             updateNavigationPosition: () => { },
             getNavigationState: () => null,
             isNavigating: () => false,
-        }), [applyFlyTo, markAnimatedProgrammaticCamera, markHomeCommand, rebuildCameraInPlace, NAV_ZOOM, zoom, mapStyleState]);
+        }), [applyFlyTo, applyFitBounds, markAnimatedProgrammaticCamera, markHomeCommand, rebuildCameraInPlace, NAV_ZOOM, zoom, mapStyleState]);
 
         // style download failures (usually no internet): a card with Try again instead of a raw alert,
         // plus automatic retries (backoff, and when the app comes back to the foreground)

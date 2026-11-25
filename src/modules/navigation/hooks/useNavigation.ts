@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import * as Location from '../../../shared/services/location';
 import type { GebetaMapRef } from '@gebeta/tiles-react-native';
+import type { TrafficMapRef } from '../../../components/GebetaMap';
 import type { GeocodingPlace, Leg, Maneuver } from '../types/navigation.types';
 import { navigationService } from '../services/navigation.service';
 import { showToast } from '../../../shared/utils/toast';
@@ -18,6 +19,8 @@ import { dashboardEventsService } from '../../../shared/services/dashboard-event
 import { calculateBearing, calculateDistance } from '../utils/navigationUtils';
 import { useTranslation } from '../../../shared/hooks/useTranslation';
 import { generateSessionId } from '../../../shared/utils/session';
+
+const ROUTE_PREVIEW_FIT_PADDING = { top: 210, right: 72, bottom: 270, left: 72 };
 
 export const useNavigation = (
     mapRef: React.RefObject<GebetaMapRef | null>,
@@ -425,45 +428,10 @@ export const useNavigation = (
             setIsNavigating(false);
 
             if (allCoordinates.length > 0) {
-                const bounds = allCoordinates.reduce((acc: { minLng: number; maxLng: number; minLat: number; maxLat: number }, [lng, lat]: [number, number]) => {
-                    return {
-                        minLng: Math.min(acc.minLng, lng),
-                        maxLng: Math.max(acc.maxLng, lng),
-                        minLat: Math.min(acc.minLat, lat),
-                        maxLat: Math.max(acc.maxLat, lat),
-                    };
-                }, {
-                    minLng: allCoordinates[0][0],
-                    maxLng: allCoordinates[0][0],
-                    minLat: allCoordinates[0][1],
-                    maxLat: allCoordinates[0][1],
-                });
-
-                const latDiff = bounds.maxLat - bounds.minLat;
-                const lngDiff = bounds.maxLng - bounds.minLng;
-
-                const adjustedLatDiff = latDiff * 1.8;
-                const maxDiff = Math.max(adjustedLatDiff, lngDiff);
-
-                let zoom = 13;
-                if (maxDiff > 0.15) zoom = 10;
-                else if (maxDiff > 0.1) zoom = 11;
-                else if (maxDiff > 0.05) zoom = 12;
-                else if (maxDiff > 0.02) zoom = 13;
-                else if (maxDiff > 0.01) zoom = 14;
-                else zoom = 15;
-
-                zoom = Math.max(zoom - 1, 10);
-
-                const latShift = (bounds.maxLat - bounds.minLat) * 1.3;
-                const centerLng = (bounds.minLng + bounds.maxLng) / 2;
-                const centerLat = (bounds.minLat + bounds.maxLat) / 2 - latShift;
-
-                mapRef.current.flyTo({
-                    center: [centerLng, centerLat],
-                    zoom: zoom,
+                (mapRef.current as TrafficMapRef).fitBounds?.({
+                    coords: allCoordinates,
+                    padding: ROUTE_PREVIEW_FIT_PADDING,
                     duration: 1500,
-                    pitch: 0,
                 });
             }
 
