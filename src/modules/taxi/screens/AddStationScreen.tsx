@@ -20,6 +20,7 @@ import { PhotoPicker, UploadedPhoto } from '../../../shared/components/PhotoPick
 import { PHOTO_PIN_LIMIT_M, deviceFieldsFromFix, latestPhotoFix, photoPinGap } from '../../../shared/utils/photoFix';
 import { isRouteSlot } from '../utils/routeStationHandoff';
 import { askForNotifications } from '../../../shared/services/notificationPermission';
+import { maybeAskForReview } from '../../../shared/utils/inAppReview';
 
 const NEARBY_RADIUS_METERS = 300;
 
@@ -262,6 +263,7 @@ export default function AddStationScreen() {
                     isExisting: true,
                 });
                 showToast(t(merged ? 'report-merged-thanks' : 'station-created-successfully'));
+                void maybeAskForReview('contribution');
                 router.back();
                 return;
             }
@@ -284,6 +286,7 @@ export default function AddStationScreen() {
             }
 
             showToast(t(merged ? 'report-merged-thanks' : 'station-created-successfully'));
+            void maybeAskForReview('contribution');
             router.back();
         } catch (error: any) {
             console.error('[AddStation] Error creating node:', error);

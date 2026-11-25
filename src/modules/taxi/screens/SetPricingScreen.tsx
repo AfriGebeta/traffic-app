@@ -12,6 +12,7 @@ import { showToast } from '../../../shared/utils/toast';
 import { ApiError, isRestrictedError } from '../../../shared/utils/apiErrors';
 import { estimateCampaignPoints, showPointsPopup } from '../../campaigns/utils/pointsPopup';
 import { askForNotifications } from '../../../shared/services/notificationPermission';
+import { maybeAskForReview } from '../../../shared/utils/inAppReview';
 
 interface RouteStop {
     id: string;
@@ -195,6 +196,7 @@ export default function SetPricingScreen() {
             showToast(t('route-created-successfully'));
             showPointsPopup(pendingPoints);
             void askForNotifications('contribution');
+            void maybeAskForReview('contribution');
 
             const segments = [];
             for (let i = 0; i < stops.length - 1; i++) {

@@ -34,6 +34,7 @@ import { SelectField } from '../components/FormControls';
 import { MAX_DESCRIPTION, MAX_FLOORS, STREET_LEVEL, buildBusiness, draftDescription, emptyBusinessDraft, menuAllowed, offersAllowed, BusinessDraft } from '../utils/businessDraft';
 import { setPendingBuilding, takePendingBuilding } from '../utils/pendingBuilding';
 import { LabeledPhoto } from '../types/business.types';
+import { maybeAskForReview } from '../../../shared/utils/inAppReview';
 
 // types the backend accepts menu photos for (others answer 400 E0007)
 const MENU_TYPES: PlaceType[] = ['restaurant', 'cafe', 'hotel'];
@@ -325,6 +326,7 @@ export default function AddPlaceScreen() {
             showToast(t('place-contribution-submitted'));
             showCampaignPointsEstimate('place', coordinates, { hasPhoto: images.length > 0, category: slugForType(placeType) });
             void askForNotifications('contribution');
+            void maybeAskForReview('contribution');
 
             // hand the new building back to the business form, one screen back
             if (isBuilding && returnToBusiness && createdPlace?.id) {

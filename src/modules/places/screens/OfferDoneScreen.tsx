@@ -10,6 +10,7 @@ import { FONT_MEDIUM, RADIUS, RADIUS_SM } from '../../campaigns/components/Campa
 import { businessService } from '../services/business.service';
 import { useBusinessPlace } from '../hooks/useBusinessPlace';
 import { LoyaltyVisit } from '../types/business.types';
+import { maybeAskForReview } from '../../../shared/utils/inAppReview';
 
 const str = (value: unknown) => (typeof value === 'string' ? value : '');
 
@@ -42,6 +43,7 @@ export default function OfferDoneScreen() {
         try {
             await businessService.redemptionFeedback(placeId, code, given, given ? undefined : note);
             setFeedback('sent');
+            if (given) void maybeAskForReview('offer');
         } catch {
             showToast(t('could-not-send'));
         } finally {

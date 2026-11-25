@@ -13,6 +13,7 @@ import { businessService } from '../services/business.service';
 import { isActive, usePlaceCatalog } from '../services/placeCatalog';
 import { CatalogOption } from '../types/business.types';
 import { DEFAULT_OFFER_DAYS, addDays, cleanOffer, emptyBusinessDraft, isoDate, offerMissing, BusinessDraft } from '../utils/businessDraft';
+import { maybeAskForReview } from '../../../shared/utils/inAppReview';
 
 const str = (value: unknown) => (typeof value === 'string' ? value : '');
 
@@ -112,7 +113,10 @@ export default function AddOfferScreen() {
                 </View>
                 <View className="px-4">
                     <TouchableOpacity
-                        onPress={() => router.back()}
+                        onPress={() => {
+                            router.back();
+                            void maybeAskForReview('offer');
+                        }}
                         activeOpacity={0.8}
                         className="items-center justify-center"
                         style={{ height: 48, borderRadius: RADIUS, backgroundColor: theme.primary }}
