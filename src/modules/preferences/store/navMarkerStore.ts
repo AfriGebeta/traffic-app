@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const NAV_MARKER_KEY = '@nav_marker';
 
-export type NavMarkerId = 'puck' | 'car-white' | 'car-black' | 'car-blue' | 'car-brown' | 'car-red';
+export type NavMarkerId = 'puck' | 'car-white' | 'car-black' | 'car-blue' | 'car-brown' | 'car-red' | 'car-3d';
 
 export interface NavMarkerOption {
     id: NavMarkerId;
@@ -13,6 +13,7 @@ export interface NavMarkerOption {
     mapImage: string;
     iconSize: number;
     overlayScale: number;
+    overlayAspect: number;
 }
 
 const PUCK_UNITS = 50 * 1.1;
@@ -27,7 +28,13 @@ const car = (id: NavMarkerId, labelKey: string, swatch: string, image: any): Nav
     mapImage: `navMarker-${id}`,
     iconSize: CAR_ICON_SIZE,
     overlayScale: CAR_OVERLAY_SCALE,
+    overlayAspect: 1.25,
 });
+
+const CAR_3D_IMAGE_W = 156;
+const CAR_3D_IMAGE_H = 150;
+const CAR_3D_ICON_SIZE = (39 * (CAR_3D_IMAGE_W / 112)) / CAR_3D_IMAGE_W;
+const CAR_3D_OVERLAY_SCALE = (CAR_3D_IMAGE_W * CAR_3D_ICON_SIZE) / (48 * (CAR_3D_IMAGE_W / CAR_3D_IMAGE_H));
 
 export const NAV_MARKER_OPTIONS: NavMarkerOption[] = [
     {
@@ -38,12 +45,23 @@ export const NAV_MARKER_OPTIONS: NavMarkerOption[] = [
         mapImage: 'navPuck',
         iconSize: 1.1,
         overlayScale: 1,
+        overlayAspect: 1.25,
     },
     car('car-white', 'marker-color-white', '#F5F5F5', require('../../../../assets/images/nav-car-white.png')),
     car('car-black', 'marker-color-black', '#1F2937', require('../../../../assets/images/nav-car-black.png')),
     car('car-blue', 'marker-color-blue', '#2563EB', require('../../../../assets/images/nav-car-blue.png')),
     car('car-brown', 'marker-color-brown', '#8B5A2B', require('../../../../assets/images/nav-car-brown.png')),
     car('car-red', 'marker-color-red', '#DC2626', require('../../../../assets/images/nav-car-red.png')),
+    {
+        id: 'car-3d',
+        labelKey: 'marker-car-3d',
+        swatch: '#E5E7EB',
+        image: require('../../../../assets/images/nav-car-3d.png'),
+        mapImage: 'navMarker-car-3d',
+        iconSize: CAR_3D_ICON_SIZE,
+        overlayScale: CAR_3D_OVERLAY_SCALE,
+        overlayAspect: CAR_3D_IMAGE_W / CAR_3D_IMAGE_H,
+    },
 ];
 
 export const DEFAULT_NAV_MARKER: NavMarkerId = 'puck';

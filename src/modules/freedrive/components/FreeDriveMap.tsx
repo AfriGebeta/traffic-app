@@ -418,6 +418,7 @@ const FreeDriveMapInner = forwardRef<FreeDriveMapHandle, FreeDriveMapProps>(({
                             iconSize: marker.iconSize,
                             iconRotate: ['get', 'heading'],
                             iconRotationAlignment: 'map',
+                            iconPitchAlignment: 'viewport',
                             iconAllowOverlap: true,
                             iconIgnorePlacement: true,
                             iconAnchor: 'center',

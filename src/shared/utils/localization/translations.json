@@ -5155,6 +5155,11 @@
         "AM": "ቀይ መኪና"
     },
     {
+        "key": "marker-car-3d",
+        "EN_US": "3D car",
+        "AM": "3D መኪና"
+    },
+    {
         "key": "marker-classic-puck",
         "EN_US": "Default",
         "AM": "የነበረ"

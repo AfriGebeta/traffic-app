@@ -36,6 +36,7 @@ import {
 } from '../../modules/navigation/utils/routeCongestion';
 import type { CongestionLevel } from '../../modules/incidents/types/incident.types';
 import { NAV_MARKER_MAP_IMAGES, useNavMarker } from '../../modules/preferences/store/navMarkerStore';
+import { navPerf } from '../../shared/utils/navPerf';
 import MapIncidentAccidentIcon from '../../../assets/images/map-incident-accident.svg';
 import MapIncidentBadWeatherIcon from '../../../assets/images/map-incident-bad-weather.svg';
 import MapIncidentBrokenRoadIcon from '../../../assets/images/map-incident-broken-road.svg';
@@ -372,6 +373,8 @@ const NavigationMarker = memo(forwardRef<any, {
                     iconSize: marker.iconSize,
                     iconRotate: ['get', 'heading'],
                     iconRotationAlignment: 'map',
+                    // upright on the tilted map (not lying flat), like mobile-gps-tests' car and like the screen overlay puck
+                    iconPitchAlignment: 'viewport',
                     iconAllowOverlap: true,
                     iconIgnorePlacement: true,
                     iconAnchor: 'center',
@@ -566,6 +569,95 @@ const NAV_UNSNAP_HEADING_ANGLE = 70;
 const NAV_UNSNAP_HEADING_MIN_DIST = 8;
 const NAV_UNSNAP_HEADING_MIN_MOVE = 8;
 
+const NAV_LINE_MODE: 'grey' | 'split' | 'slice' = 'grey';
+const NAV_LINE_NEAR_M = 400;
+const NAV_LINE_NEAR_MIN_M = 100;
+const NAV_GREY_MS = 500;
+const NAV_GREY_MIN_M = 1;
+const NAV_GREY_CORE = '#C2C1D2';
+const NAV_GREY_CASING = '#808086';
+const NAV_CASING_COLOR = '#1e3a8a';
+const NAV_LINE_FALLBACK_COLOR = '#4285F4';
+
+const drivenGradient = (fraction: number, driven: string, ahead: string): any => {
+    if (fraction <= 0.0005) return ['step', ['line-progress'], ahead, 1, ahead];
+    if (fraction >= 0.9995) return ['step', ['line-progress'], driven, 1, driven];
+    return ['step', ['line-progress'], driven, fraction, ahead];
+};
+
+const NavGreyLineLayers = memo(({
+    setDrivenRef,
+    totalM,
+    lineWidth,
+    lineColor,
+    sourceID,
+}: {
+    setDrivenRef: React.MutableRefObject<((s: number) => void) | null>;
+    totalM: number;
+    lineWidth: number;
+    lineColor: string;
+    sourceID?: string;
+}) => {
+    const [drivenM, setDrivenM] = useState(0);
+    useLayoutEffect(() => {
+        setDrivenRef.current = setDrivenM;
+        return () => { setDrivenRef.current = null; };
+    }, [setDrivenRef]);
+    const fraction = totalM > 0 ? Math.min(1, Math.max(0, drivenM / totalM)) : 0;
+    return (
+        <>
+            <MapLibreGL.LineLayer
+                id="route-nav-casing-layer"
+                sourceID={sourceID}
+                belowLayerID="nav-marker-layer"
+                style={{
+                    lineGradient: drivenGradient(fraction, NAV_GREY_CASING, NAV_CASING_COLOR),
+                    lineWidth: lineWidth + 4,
+                    lineOpacity: 0.5,
+                    lineCap: 'round',
+                    lineJoin: 'round',
+                }}
+            />
+            <MapLibreGL.LineLayer
+                id="route-nav-animated-layer"
+                sourceID={sourceID}
+                belowLayerID="nav-marker-layer"
+                style={{
+                    lineGradient: drivenGradient(fraction, NAV_GREY_CORE, lineColor),
+                    lineWidth,
+                    lineOpacity: 1,
+                    lineCap: 'round',
+                    lineJoin: 'round',
+                }}
+            />
+        </>
+    );
+});
+NavGreyLineLayers.displayName = 'NavGreyLineLayers';
+
+const NAV_REDRAW_GATE = true;
+const NAV_REDRAW_MIN_M = 0.01;
+const NAV_REDRAW_MIN_DEG = 0.05;
+const NAV_REDRAW_HEARTBEAT_MS = 500;
+const NAV_SETTLE_M = 0.05;
+const NAV_SETTLE_DEG = 0.1;
+
+const NAV_MAP_FPS: number | undefined = undefined;
+
+const NAV_PITCH = 60;
+
+const metresBetween = (aLat: number, aLng: number, bLat: number, bLng: number) => {
+    const dy = (bLat - aLat) * 111_320;
+    const dx = (bLng - aLng) * 111_320 * Math.cos((aLat * Math.PI) / 180);
+    return Math.hypot(dx, dy);
+};
+
+const lineFeature = (coordinates: [number, number][]) => (
+    coordinates.length >= 2
+        ? { type: 'Feature' as const, properties: {}, geometry: { type: 'LineString' as const, coordinates } }
+        : EMPTY_FEATURE_COLLECTION
+);
+
 const angleDiff = (a: number, b: number) => {
     let diff = Math.abs(a - b);
     if (diff > 180) diff = 360 - diff;
@@ -620,6 +712,9 @@ const AnimatedNavLayer = memo(({
     }, [coords, cum, rawCoords, maneuvers]);
 
     const isDashed = !!routeLineStyle.lineDasharray;
+    const lineMode = NAV_LINE_MODE === 'grey' && isDashed ? 'split' : NAV_LINE_MODE;
+    const greyLine = lineMode === 'grey';
+    const splitLine = lineMode === 'split';
     const congestionPieces = useMemo(() => {
         if (!useRouteModel || !coords || !cum || isDashed || !incidents?.length) return [];
         return buildCongestionPieces(computeCongestionSpans(coords, cum, incidents));
@@ -635,6 +730,10 @@ const AnimatedNavLayer = memo(({
 
     const puckSrcRef = useRef<any>(null);
     const lineSrcRef = useRef<any>(null);
+    const farLineSrcRef = useRef<any>(null);
+    const farStartRef = useRef(-1);
+    const forceDrawRef = useRef(true);
+    const greySetRef = useRef<((s: number) => void) | null>(null);
     const taxiLineFrameRef = useRef<((lat: number, lng: number) => void) | null>(null);
 
     const renderedSRef = useRef(0);
@@ -667,7 +766,14 @@ const AnimatedNavLayer = memo(({
         setLineS(0);
         arrowIdxRef.current = -1;
         setArrowIdx(-1);
+        farStartRef.current = -1;
+        forceDrawRef.current = true;
+        greySetRef.current?.(0);
     }, [coords]);
+
+    useEffect(() => {
+        forceDrawRef.current = true;
+    }, [cameraLocked]);
 
     useEffect(() => {
         if (!isNavigating || !userLocation) return;
@@ -806,9 +912,28 @@ const AnimatedNavLayer = memo(({
         let lastLine = 0;
         let lastCam = 0;
         let lastTick = 0;
+        let pushed: { lat: number; lng: number; heading: number; t: number } | null = null;
+        forceDrawRef.current = true;
+        let farPending = false;
+        let lastGrey = 0;
+        let greyS = Number.NEGATIVE_INFINITY;
+
+        const approach = (cur: number, to: number, alpha: number, settle: number) => (
+            NAV_REDRAW_GATE && Math.abs(to - cur) < settle ? to : cur + (to - cur) * alpha
+        );
+        const approachHeading = (target: number, alpha: number) => {
+            let diff = target - headingRef.current;
+            if (diff > 180) diff -= 360;
+            if (diff < -180) diff += 360;
+            if (NAV_REDRAW_GATE && Math.abs(diff) < NAV_SETTLE_DEG) headingRef.current = target;
+            else headingRef.current += diff * alpha;
+        };
+        // ~1 cm in degrees, for the free-roam lat/lng approach
+        const SETTLE_DEG_POS = NAV_REDRAW_MIN_M / 111_320;
 
         const tick = () => {
             const now = Date.now();
+            navPerf('nav.frame');
             const dt = lastTick ? Math.min((now - lastTick) / 1000, NAV_DT_CLAMP_S) : 0.016;
             lastTick = now;
             const headAlpha = 1 - Math.exp(-dt / NAV_HEADING_TAU);
@@ -834,30 +959,22 @@ const AnimatedNavLayer = memo(({
             } else if (!useRouteModel || !coords || !cum) {
                 const cur = taxiCurRef.current;
                 const to = taxiToRef.current;
-                lat = cur.lat + (to.lat - cur.lat) * freeAlpha;
-                lng = cur.lng + (to.lng - cur.lng) * freeAlpha;
+                lat = approach(cur.lat, to.lat, freeAlpha, SETTLE_DEG_POS);
+                lng = approach(cur.lng, to.lng, freeAlpha, SETTLE_DEG_POS);
                 taxiCurRef.current = { lat, lng };
                 if (Math.abs(to.lat - lat) > 1e-6 || Math.abs(to.lng - lng) > 1e-6) {
-                    const raw = calcBearing({ lat, lng }, to);
-                    let diff = raw - headingRef.current;
-                    if (diff > 180) diff -= 360;
-                    if (diff < -180) diff += 360;
-                    headingRef.current += diff * headAlpha;
+                    approachHeading(calcBearing({ lat, lng }, to), headAlpha);
                 }
                 heading = headingRef.current;
                 s = 0;
             } else if (freeRoamRef.current) {
                 const cur = freeCurRef.current;
                 const to = freeTargetRef.current;
-                lat = cur.lat + (to.lat - cur.lat) * freeAlpha;
-                lng = cur.lng + (to.lng - cur.lng) * freeAlpha;
+                lat = approach(cur.lat, to.lat, freeAlpha, SETTLE_DEG_POS);
+                lng = approach(cur.lng, to.lng, freeAlpha, SETTLE_DEG_POS);
                 freeCurRef.current = { lat, lng };
                 if (Math.abs(to.lat - lat) > 1e-6 || Math.abs(to.lng - lng) > 1e-6) {
-                    const raw = calcBearing({ lat, lng }, to);
-                    let diff = raw - headingRef.current;
-                    if (diff > 180) diff -= 360;
-                    if (diff < -180) diff += 360;
-                    headingRef.current += diff * headAlpha;
+                    approachHeading(calcBearing({ lat, lng }, to), headAlpha);
                 }
                 heading = headingRef.current;
                 s = lastOnRouteSRef.current;
@@ -869,7 +986,7 @@ const AnimatedNavLayer = memo(({
                 const targetS = fix ? Math.min(fix.s + vRef.current * sinceFix, total) : renderedSRef.current;
 
                 const corrAlpha = 1 - Math.exp(-dt / NAV_CORR_TAU);
-                let newS = renderedSRef.current + (targetS - renderedSRef.current) * corrAlpha;
+                let newS = approach(renderedSRef.current, targetS, corrAlpha, NAV_SETTLE_M);
                 const fixBehind = fix != null && fix.s < renderedSRef.current - NAV_BACKTRACK_MIN_M;
                 if (!fixBehind && newS < renderedSRef.current) newS = renderedSRef.current;
                 if (newS > total) newS = total;
@@ -882,35 +999,76 @@ const AnimatedNavLayer = memo(({
                 const rawH = (Math.abs(aheadPt[0] - pt[0]) > 1e-7 || Math.abs(aheadPt[1] - pt[1]) > 1e-7)
                     ? calculateBearing(pt, aheadPt)
                     : headingAtDistance(coords, cum, s);
-                let diff = rawH - headingRef.current;
-                if (diff > 180) diff -= 360;
-                if (diff < -180) diff += 360;
-                headingRef.current += diff * headAlpha;
+                approachHeading(rawH, headAlpha);
                 heading = headingRef.current;
             }
 
-            if (isTaxiNavigation) taxiLineFrameRef.current?.(lat, lng);
-            puckSrcRef.current?.setNativeProps({
-                shape: JSON.stringify({
-                    type: 'Feature',
-                    properties: { heading },
-                    geometry: { type: 'Point', coordinates: [lng, lat] },
-                }),
-            });
+            let draw = true;
+            if (NAV_REDRAW_GATE && pushed && !forceDrawRef.current && now - pushed.t < NAV_REDRAW_HEARTBEAT_MS) {
+                draw = metresBetween(pushed.lat, pushed.lng, lat, lng) >= NAV_REDRAW_MIN_M
+                    || angleDiff(pushed.heading, heading) >= NAV_REDRAW_MIN_DEG;
+            }
 
-            if (useRouteModel && !isTaxiNavigation && coords && cum && now - lastLine >= NAV_LINE_MS) {
-                lastLine = now;
-                const lineFromS = s + NAV_LINE_TRIM_AHEAD_M + vRef.current * NAV_LINE_LAG_COMP_S;
-                lineSrcRef.current?.setNativeProps({
+            if (draw) {
+                pushed = { lat, lng, heading, t: now };
+                forceDrawRef.current = false;
+
+                if (isTaxiNavigation) taxiLineFrameRef.current?.(lat, lng);
+                navPerf('nav.puck');
+                puckSrcRef.current?.setNativeProps({
                     shape: JSON.stringify({
                         type: 'Feature',
-                        properties: {},
-                        geometry: {
-                            type: 'LineString',
-                            coordinates: sliceFromDistance(coords, cum, lineFromS),
-                        },
+                        properties: { heading },
+                        geometry: { type: 'Point', coordinates: [lng, lat] },
                     }),
                 });
+            }
+
+            if (draw && useRouteModel && !isTaxiNavigation && coords && cum && now - lastLine >= NAV_LINE_MS) {
+                lastLine = now;
+                const lineFromS = s + NAV_LINE_TRIM_AHEAD_M + vRef.current * NAV_LINE_LAG_COMP_S;
+                if (greyLine) {
+                    if (now - lastGrey >= NAV_GREY_MS && Math.abs(s - greyS) >= NAV_GREY_MIN_M) {
+                        lastGrey = now;
+                        greyS = s;
+                        navPerf('nav.line.grey');
+                        greySetRef.current?.(s);
+                    }
+                } else if (splitLine) {
+                    const sendFar = () => {
+                        farPending = false;
+                        navPerf('nav.line.far');
+                        farLineSrcRef.current?.setNativeProps({
+                            shape: JSON.stringify(lineFeature(sliceFromDistance(coords, cum, farStartRef.current))),
+                        });
+                    };
+                    const farStart = farStartRef.current;
+                    if (farPending) {
+                        sendFar();
+                    } else if (farStart < 0) {
+                        farStartRef.current = lineFromS + NAV_LINE_NEAR_M;
+                        sendFar();
+                    } else if (lineFromS > farStart - NAV_LINE_NEAR_MIN_M || lineFromS < farStart - 2 * NAV_LINE_NEAR_M) {
+                        farStartRef.current = lineFromS + NAV_LINE_NEAR_M;
+                        farPending = true;
+                    }
+                    navPerf('nav.line.near');
+                    lineSrcRef.current?.setNativeProps({
+                        shape: JSON.stringify(lineFeature(sliceRangeDistance(coords, cum, lineFromS, farStartRef.current))),
+                    });
+                } else {
+                    navPerf('nav.line');
+                    lineSrcRef.current?.setNativeProps({
+                        shape: JSON.stringify({
+                            type: 'Feature',
+                            properties: {},
+                            geometry: {
+                                type: 'LineString',
+                                coordinates: sliceFromDistance(coords, cum, lineFromS),
+                            },
+                        }),
+                    });
+                }
 
                 const pieces = congestionPiecesRef.current;
                 if (pieces.length > 0) {
@@ -918,6 +1076,7 @@ const AnimatedNavLayer = memo(({
                         const key = congestionClipKey(pieces, level, lineFromS);
                         if (key === congestionKeysRef.current[level]) continue;
                         congestionKeysRef.current[level] = key;
+                        navPerf('nav.congestion');
                         congestionSrcRefs.current[level]?.setNativeProps({
                             shape: JSON.stringify(congestionShapeAt(coords, cum, pieces, level, lineFromS)),
                         });
@@ -939,8 +1098,9 @@ const AnimatedNavLayer = memo(({
                 }
             }
 
-            if (moveCamera && now - lastCam >= NAV_CAMERA_MS) {
+            if (draw && moveCamera && now - lastCam >= NAV_CAMERA_MS) {
                 lastCam = now;
+                navPerf('nav.camera');
                 moveCamera([lng, lat], heading);
             }
 
@@ -949,7 +1109,7 @@ const AnimatedNavLayer = memo(({
 
         rafId = requestAnimationFrame(tick);
         return () => cancelAnimationFrame(rafId);
-    }, [isNavigating, useRouteModel, coords, cum, moveCamera, isTaxiNavigation, maneuverS]);
+    }, [isNavigating, useRouteModel, coords, cum, moveCamera, isTaxiNavigation, maneuverS, greyLine, splitLine]);
 
     const arrowShapes = useMemo(() => {
         if (!useRouteModel || !coords || !cum || arrowIdx < 0 || arrowIdx >= maneuverS.length) return null;
@@ -971,17 +1131,30 @@ const AnimatedNavLayer = memo(({
         };
     }, [useRouteModel, coords, cum, arrowIdx, maneuverS]);
 
-    const lineShape = useMemo(() => {
-        if (!useRouteModel || isTaxiNavigation || !coords || !cum) return null;
+    const greyShape = useMemo(() => {
+        if (!greyLine || !useRouteModel || isTaxiNavigation || !coords || !cum) return null;
+        return lineFeature(coords);
+    }, [greyLine, useRouteModel, isTaxiNavigation, coords, cum]);
+
+    const cutShape = useMemo(() => {
+        if (greyLine || !useRouteModel || isTaxiNavigation || !coords || !cum) return null;
+        const fromS = lineS + NAV_LINE_TRIM_AHEAD_M;
+        if (splitLine) return lineFeature(sliceRangeDistance(coords, cum, fromS, fromS + NAV_LINE_NEAR_M));
         return {
             type: 'Feature' as const,
             properties: {},
             geometry: {
                 type: 'LineString' as const,
-                coordinates: sliceFromDistance(coords, cum, lineS + NAV_LINE_TRIM_AHEAD_M),
+                coordinates: sliceFromDistance(coords, cum, fromS),
             },
         };
-    }, [useRouteModel, isTaxiNavigation, coords, cum, lineS]);
+    }, [useRouteModel, isTaxiNavigation, coords, cum, lineS, greyLine, splitLine]);
+    const lineShape = greyShape ?? cutShape;
+
+    const farLineShape = useMemo(() => {
+        if (!splitLine || !useRouteModel || isTaxiNavigation || !coords || !cum) return null;
+        return lineFeature(sliceFromDistance(coords, cum, lineS + NAV_LINE_TRIM_AHEAD_M + NAV_LINE_NEAR_M));
+    }, [useRouteModel, isTaxiNavigation, coords, cum, lineS, splitLine]);
 
     const congestionShapes = useMemo(
         () => (coords && cum ? congestionShapesAt(coords, cum, congestionPieces, lineS + NAV_LINE_TRIM_AHEAD_M) : null),
@@ -1001,8 +1174,41 @@ const AnimatedNavLayer = memo(({
                     taxiActiveRouteGeoJSON={taxiActiveRouteGeoJSON}
                 />
             )}
-            {isNavigating && lineShape && (
-                <MapLibreGL.ShapeSource ref={lineSrcRef} id="route-nav-animated-source" shape={lineShape}>
+            {isNavigating && farLineShape && (
+                <MapLibreGL.ShapeSource ref={farLineSrcRef} id="route-nav-far-source" shape={farLineShape}>
+                    {!routeLineStyle.lineDasharray && (
+                        <MapLibreGL.LineLayer
+                            id="route-nav-far-casing-layer"
+                            belowLayerID="nav-marker-layer"
+                            style={{
+                                lineColor: '#1e3a8a',
+                                lineWidth: (routeLineStyle.lineWidth ?? 16) + 4,
+                                lineOpacity: 0.5,
+                                lineCap: 'butt',
+                                lineJoin: 'round',
+                            }}
+                        />
+                    )}
+                    <MapLibreGL.LineLayer
+                        id="route-nav-far-layer"
+                        belowLayerID="nav-marker-layer"
+                        style={{ ...routeLineStyle, lineOpacity: 1, ...(!routeLineStyle.lineDasharray && { lineCap: 'butt' }) }}
+                    />
+                </MapLibreGL.ShapeSource>
+            )}
+            {isNavigating && lineShape && greyLine && cum && (
+                <MapLibreGL.ShapeSource key="grey" ref={lineSrcRef} id="route-nav-animated-source" shape={lineShape} lineMetrics>
+                    <NavGreyLineLayers
+                        setDrivenRef={greySetRef}
+                        sourceID="route-nav-animated-source"
+                        totalM={cum[cum.length - 1]}
+                        lineWidth={routeLineStyle.lineWidth ?? 16}
+                        lineColor={routeLineStyle.lineColor ?? NAV_LINE_FALLBACK_COLOR}
+                    />
+                </MapLibreGL.ShapeSource>
+            )}
+            {isNavigating && lineShape && !greyLine && (
+                <MapLibreGL.ShapeSource key="cut" ref={lineSrcRef} id="route-nav-animated-source" shape={lineShape}>
                     {!routeLineStyle.lineDasharray && (
                         <MapLibreGL.LineLayer
                             id="route-nav-casing-layer"
@@ -1011,7 +1217,7 @@ const AnimatedNavLayer = memo(({
                                 lineColor: '#1e3a8a',
                                 lineWidth: (routeLineStyle.lineWidth ?? 16) + 4,
                                 lineOpacity: 0.5,
-                                lineCap: 'round',
+                                lineCap: splitLine ? 'butt' : 'round',
                                 lineJoin: 'round',
                             }}
                         />
@@ -1019,7 +1225,7 @@ const AnimatedNavLayer = memo(({
                     <MapLibreGL.LineLayer
                         id="route-nav-animated-layer"
                         belowLayerID="nav-marker-layer"
-                        style={{ ...routeLineStyle, lineOpacity: 1 }}
+                        style={{ ...routeLineStyle, lineOpacity: 1, ...(splitLine && !routeLineStyle.lineDasharray && { lineCap: 'butt' }) }}
                     />
                 </MapLibreGL.ShapeSource>
             )}
@@ -1525,7 +1731,7 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
                 padding: { paddingTop: navCameraPaddingTop(mapHeightRef.current, navPuckFraction) },
                 zoomLevel: NAV_ZOOM,
                 heading: userHeading || 0,
-                pitch: 60,
+                pitch: NAV_PITCH,
 
                 animationDuration: 600,
                 animationMode: 'flyTo',
@@ -1557,7 +1763,7 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
                     centerCoordinate: center,
                     padding: { paddingTop: navCameraPaddingTop(mapHeightRef.current, navPuckFraction) },
                     heading,
-                    pitch: 60,
+                    pitch: NAV_PITCH,
                     zoomLevel: NAV_ZOOM,
                     animationDuration: 600,
                     animationMode: 'flyTo',
@@ -1570,7 +1776,7 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
                 centerCoordinate: center,
                 padding: { paddingTop: navCameraPaddingTop(mapHeightRef.current, navPuckFraction) },
                 heading,
-                pitch: 60,
+                pitch: NAV_PITCH,
                 animationDuration: 0,
                 animationMode: 'moveTo',
             });
@@ -1740,7 +1946,7 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
                         padding: { paddingTop: navCameraPaddingTop(mapHeightRef.current, navPuckFraction) },
                         zoomLevel: NAV_ZOOM,
                         animationDuration: 500,
-                        pitch: 60,
+                        pitch: NAV_PITCH,
                         heading: userHeading || 0,
                         animationMode: 'flyTo',
                     });
@@ -2263,7 +2469,7 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
         const followCameraDefaultSettings = useMemo(() => ({
             centerCoordinate: cameraDefaultCenter,
             zoomLevel: NAV_ZOOM,
-            pitch: 60,
+            pitch: NAV_PITCH,
             heading: userHeading || 0,
         }), [
             cameraDefaultCenter,
@@ -2301,6 +2507,7 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
                     <MapLibreGL.MapView
                         ref={mapViewRef}
                         surfaceView={Platform.OS === 'android' && Platform.Version < 31}
+                        {...(NAV_MAP_FPS ? { preferredFramesPerSecond: isNavigating ? NAV_MAP_FPS : 60 } : {})}
                         style={styles.mapSurface}
                         mapStyle={mapStyleState}
                         attributionEnabled={false}
@@ -3143,7 +3350,7 @@ const CustomGebetaMap = forwardRef<TrafficMapRef, ExtendedGebetaMapProps>(
                             <Image
                                 source={navMarker.image}
                                 style={{
-                                    width: NAV_PUCK_OVERLAY_SIZE * 1.25 * navMarker.overlayScale,
+                                    width: NAV_PUCK_OVERLAY_SIZE * navMarker.overlayAspect * navMarker.overlayScale,
                                     height: NAV_PUCK_OVERLAY_SIZE * navMarker.overlayScale,
                                 }}
                                 resizeMode="stretch"
