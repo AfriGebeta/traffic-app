@@ -16,9 +16,12 @@ import { refreshStudentCheck, useStudentCheck } from '../hooks/useStudentCheck';
 import { SelectField } from '../components/FormControls';
 import { FONT_MEDIUM, FONT_SEMIBOLD, RADIUS, RADIUS_SM, tint } from '../../campaigns/components/CampaignUi';
 import { featuredOffer, useBusinessPlace } from '../hooks/useBusinessPlace';
+import { useSignedImages } from '../hooks/useSignedImages';
 import { pickLabel, usePlaceCatalog } from '../services/placeCatalog';
 import { CatalogOption, PublicOffer } from '../types/business.types';
 import { shortDate } from '../components/BusinessCardSections';
+
+const POSTER_MIN_RATIO = 0.75;
 
 const optionLabel = (list: CatalogOption[] | undefined, key: string | null | undefined, lang: string) =>
     key ? pickLabel(list?.find((o) => o.key === key)?.label, lang, key) : '';
@@ -57,6 +60,10 @@ export default function OfferScreen() {
     const photos = business.photos;
     const { width } = useWindowDimensions();
     const [photoIndex, setPhotoIndex] = useState(0);
+    const posterKey = offer?.posterUrl || null;
+    const posterImages = useSignedImages([posterKey]);
+    const poster = posterKey ? posterImages[posterKey] : undefined;
+    const [posterRatio, setPosterRatio] = useState(3 / 4);
     const onPhotoScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
         const page = Math.round(event.nativeEvent.contentOffset.x / Math.max(1, width));
         if (page !== photoIndex) setPhotoIndex(page);
@@ -243,6 +250,18 @@ export default function OfferScreen() {
 
                 {!!offer && (
                     <View className="px-4 pt-4 gap-3">
+                        {!!poster && (
+                            <Image
+                                source={{ uri: poster }}
+                                onLoad={(e) => {
+                                    const { width: w, height: h } = e.nativeEvent.source ?? {};
+                                    if (w > 0 && h > 0) setPosterRatio(w / h);
+                                }}
+                                style={{ width: '100%', aspectRatio: Math.max(posterRatio, POSTER_MIN_RATIO), borderRadius: RADIUS, backgroundColor: theme.surface }}
+                                resizeMode="contain"
+                                accessibilityIgnoresInvertColors
+                            />
+                        )}
                         <View className="flex-row gap-1.5">
                             <View className="px-2 py-0.5" style={{ borderRadius: 4, backgroundColor: tint(theme.primary, '26') }}>
                                 <Text style={{ color: theme.textPrimary, fontSize: 11, fontFamily: FONT_MEDIUM }}>{kindLabel}</Text>

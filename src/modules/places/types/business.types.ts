@@ -265,6 +265,7 @@ export interface PublicOffer {
     studentsOnly?: boolean;
     availableNow: boolean;
     loyalty?: LoyaltyCard | null;
+    posterUrl?: string | null;
 }
 
 export interface LoyaltyCard {
@@ -321,6 +322,7 @@ export interface SavedOffer {
     startsOn?: string | null;
     endsOn?: string | null;
     savedAt: string;
+    posterUrl?: string | null;
     place: { id: string; name: string | LocalizedLabel; lat: number; lng: number; image?: string | null };
 }
 
@@ -332,6 +334,7 @@ export interface UsedOffer {
     studentsOnly: boolean;
     usedAt: string;
     feedback: 'given' | 'refused' | null;
+    posterUrl?: string | null;
     place: { id: string; name: string | LocalizedLabel; lat: number; lng: number; image?: string | null };
 }
 

@@ -42,7 +42,11 @@ export function SavedOffersTab() {
     const [used, setUsed] = useState<UsedOffer[]>([]);
     const [usedHasMore, setUsedHasMore] = useState(false);
     const [loadingMoreUsed, setLoadingMoreUsed] = useState(false);
-    const images = useSignedImages([...used.map((u) => u.place.image), ...offers.map((o) => o.place.image), ...following.map((p) => p.image)]);
+    const images = useSignedImages([
+        ...used.map((u) => u.posterUrl || u.place.image),
+        ...offers.map((o) => o.posterUrl || o.place.image),
+        ...following.map((p) => p.image),
+    ]);
 
     const fetchAll = useCallback(async () => {
         if (!(await isAuthenticated())) {
@@ -199,7 +203,7 @@ export function SavedOffersTab() {
                             >
                                 {/* an ended offer has no page to open any more */}
                                 <TouchableOpacity onPress={() => openOffer(offer)} disabled={ended} activeOpacity={0.7} className="flex-1 flex-row items-center">
-                                    {thumb(offer.place.image)}
+                                    {thumb(offer.posterUrl || offer.place.image)}
                                     <View className="flex-1 ml-3">
                                         <Text style={{ color: theme.textPrimary, fontFamily: FONT_MEDIUM, fontSize: 15 }} numberOfLines={2}>
                                             {offer.text}

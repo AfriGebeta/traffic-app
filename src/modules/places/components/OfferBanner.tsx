@@ -30,7 +30,7 @@ export function OfferBanner({ userLocation }: Props) {
     const { catalog } = usePlaceCatalog();
     const lang = i18n.language;
     const { offers } = useFeaturedOffers(userLocation);
-    const images = useSignedImages(offers.map((row) => row.place.image));
+    const images = useSignedImages(offers.map((row) => row.offer.posterUrl || row.place.image));
     const [pos, setPos] = useState(0); 
     const [active, setActive] = useState(false); 
     const [width, setWidth] = useState(0);
@@ -113,7 +113,8 @@ export function OfferBanner({ userLocation }: Props) {
         const kind = pickLabel(catalog?.offerOptions.types.find((ty) => ty.key === row.offer.type)?.label, lang, row.offer.badge);
         const label =
             row.offer.endsOn === isoDate(new Date()) ? t('offer-ends-today') : row.season ? pickLabel(row.season.label, lang) : kind;
-        const image = row.place.image ? images[row.place.image] : undefined;
+        const imageKey = row.offer.posterUrl || row.place.image;
+        const image = imageKey ? images[imageKey] : undefined;
         const meta = [placeName, distanceText(row.distanceM)].filter(Boolean).join(' · ');
         const open = () =>
             router.push({ pathname: '/places/offer', params: { placeId: row.place.id, offerId: row.offer.id, name: placeName } } as any);

@@ -108,7 +108,7 @@ function UsedRow({
     return (
         <View className="px-3 py-3" style={{ borderTopWidth: first ? 0 : 1, borderTopColor: theme.border }}>
             <TouchableOpacity onPress={() => onOpen(row)} activeOpacity={0.7} className="flex-row items-center">
-                {thumb(row.place.image)}
+                {thumb(row.posterUrl || row.place.image)}
                 <View className="flex-1 ml-3">
                     <Text
                         style={{ color: gone ? theme.textSecondary : theme.textPrimary, fontFamily: gone ? undefined : FONT_MEDIUM, fontSize: 15 }}

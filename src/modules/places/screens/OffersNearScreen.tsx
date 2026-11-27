@@ -106,7 +106,8 @@ export default function OffersNearScreen() {
     const today = isoDate(new Date());
     const hero = featured[0];
     const imageByPlace = useMemo(() => Object.fromEntries(featured.map((row) => [row.place.id, row.place.image])), [featured]);
-    const images = useSignedImages([hero?.place.image, ...featured.map((row) => row.place.image)]);
+    const heroImage = hero ? hero.offer.posterUrl || hero.place.image : null;
+    const images = useSignedImages([heroImage, ...featured.map((row) => row.place.image)]);
 
     const allRows: Row[] = useMemo(() => {
         const rows = places.flatMap((place) =>
@@ -169,8 +170,8 @@ export default function OffersNearScreen() {
                     className="mb-4 overflow-hidden"
                     style={{ borderRadius: RADIUS, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.background }}
                 >
-                    {hero.place.image && images[hero.place.image] ? (
-                        <Image source={{ uri: images[hero.place.image] }} style={{ width: '100%', height: 150, backgroundColor: theme.surface }} resizeMode="cover" />
+                    {heroImage && images[heroImage] ? (
+                        <Image source={{ uri: images[heroImage] }} style={{ width: '100%', height: 150, backgroundColor: theme.surface }} resizeMode="cover" />
                     ) : (
                         <View className="items-center justify-center" style={{ height: 96, backgroundColor: theme.surface }}>
                             <Ionicons name="pricetag-outline" size={28} color={theme.textSecondary} />
